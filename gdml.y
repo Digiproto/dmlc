@@ -488,7 +488,7 @@ ident
 
 extern char yytext[];
 extern int column;
-
+extern FILE *yyin;
 yyerror(s)
 char *s;
 {
@@ -496,7 +496,18 @@ char *s;
 	printf("\n%*s\n%*s\n", column, "^", column, s);
 }
 
-main()
+int main(int argc, char* argv[])
 {
+	if(argc != 2){
+                fprintf(stderr,"Usage: %s source\n", argv[0]);
+                exit(-1);
+        }
+        char* filename = argv[1];
+        yyin = fopen(filename,"r");
+//        init();
         yyparse();
+        fclose(yyin);
+
+        yyparse();
+	return 0;
 }
