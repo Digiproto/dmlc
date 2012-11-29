@@ -1,0 +1,30 @@
+// Copyright 2005-2009 Virtutech AB
+dml 1.2;
+
+device simple_device;
+
+parameter desc = "DML device template";
+
+import "utility.dml";
+
+bank regs {
+    parameter register_size = 4;
+    register counter @ 0x00 {
+        parameter documentation = "A simple counter.";
+    }
+}
+
+// The init and post_init methods can be removed if they are not needed
+
+method init {
+    // Add code here that will be run to set the empty state of the
+    // model, before any configuration or checkpointed attributes are
+    // set.
+}
+
+method post_init {
+    // Add code here that is run after all configuration attributes
+    // have been set.  This happens both when the initial
+    // configuration is set and when the configuration is loaded from
+    // a checkpoint.
+}
