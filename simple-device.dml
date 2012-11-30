@@ -1,5 +1,5 @@
 // Copyright 2005-2009 Virtutech AB
-dml 1.2;
+//dml 1.2;
 
 device simple_device;
 

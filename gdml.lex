@@ -9,13 +9,16 @@ IS          (u|U|l|L)*
 %{  
 #include <stdio.h>  
 #include "gdml.tab.h"  
-      
+extern int      lineno;      
 void count();  
 %}  
       
 %%  
 "/*"            { comment(); }  
-      
+"//"		{ comment1(); }
+
+"dml"		{ count(); return(DML);}      
+"device"	{ count(); return(DEVICE);}
 "auto"          { count(); return(AUTO); }  
 "break"         { count(); return(BREAK); }  
 "case"          { count(); return(CASE); }  
@@ -74,6 +77,7 @@ void count();
 "using"		{ count(); return(USING);}
 "new"		{ count(); return(NEW);}
 "delete"	{ count(); return(DELETE);}
+"\".*\""	{ count(); return(STRING_LITERAL);}
     
 {L}({L}|{D})*       { count(); return(check_type()); }  
     
@@ -87,7 +91,8 @@ L?'(\\.|[^\\'])+'   { count(); return(INTEGER_LITERAL); }
 {D}+"."{D}*({E})?{FS}?  { count(); return(INTEGER_LITERAL); }  
       
 L?\"(\\.|[^\\"])*\" { count(); return(STRING_LITERAL); }  
-      
+
+"@"		{ count(); return(REG_OFFSET);}
 "..."           { count(); return(ELLIPSIS); }  
 ".."		{count(); return(RANGE_SIGN);}
 "->"		{count(); return(METHOD_RETURN);}
@@ -135,8 +140,8 @@ L?\"(\\.|[^\\"])*\" { count(); return(STRING_LITERAL); }
 "^"         { count(); return('^'); }  
 "|"         { count(); return('|'); }  
 "?"         { count(); return('?'); }  
-    
-[ \t\v\n\f]     { count(); }  
+"\n"                    ++lineno;     
+[ \t\v\f]     { count(); }  
 .           { /* ignore bad characters */ }  
     
 %%  
@@ -163,8 +168,15 @@ comment()
       
         if (c != 0)  
             putchar(c1);  
-}  
-      
+}
+
+comment1()
+{
+	char c;
+	while((c = input()) != '\n')
+		putchar(c);
+	lineno++;
+}
       
 int column = 0;  
      

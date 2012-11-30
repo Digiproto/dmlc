@@ -1,8 +1,8 @@
-%token IDENTIFIER INTEGER_LITERAL STRING_LITERAL SIZEOF
+%token DML IDENTIFIER INTEGER_LITERAL STRING_LITERAL SIZEOF
 %token INC_OP DEC_OP LEFT_OP RIGHT_OP LE_OP GE_OP EQ_OP NE_OP
 %token AND_OP OR_OP MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN ADD_ASSIGN
 %token SUB_ASSIGN LEFT_ASSIGN RIGHT_ASSIGN AND_ASSIGN
-%token XOR_ASSIGN OR_ASSIGN TYPE_NAME
+%token XOR_ASSIGN OR_ASSIGN TYPE_NAME REG_OFFSET
 
 %token TYPEDEF EXTERN STATIC AUTO REGISTER
 %token CHAR SHORT INT LONG SIGNED UNSIGNED FLOAT DOUBLE CONST VOLATILE VOID
@@ -16,7 +16,7 @@
 %token USING PORT PUBLIC PROTECTED PRIVATE STRICT THIS SELECT IS IMPLEMENT VECT WHERE
 %token DEVICE DEFINED AFTER ASSERT BITORDER CATCH TRY THROW CLASS LOG METHOD
 %token CALL CAST CONSTANT ERROR FOREACH INLINE LOCAL NAMESPACE 
-%token RESTRICT SIZEOFTYPE TYPEOF UNDEFINED VIRTUAL NEW DELETE IDENTIFIER
+%token RESTRICT SIZEOFTYPE TYPEOF UNDEFINED VIRTUAL NEW DELETE
 
 %start dml
 %%
@@ -27,7 +27,7 @@ dml
 	;
 
 syntax_modifiers
-	: ''
+	: 
 	| syntax_modifiers syntax_modifier
 	;
 
@@ -37,7 +37,7 @@ syntax_modifier
 
 device_statements
 	: device_statements device_statement
-	| ''
+	| 
 	;
 
 device_statement
@@ -47,7 +47,7 @@ device_statement
 	;
 
 object
-	: BANK maybe_objident istemplate object_desc
+	: BANK maybe_objident istemplate object_spec
 	| REGISTER objident sizespec offsetspec istemplate object_spec
 	| REGISTER objident '[' arraydef ']' sizespec istemplate object_spec
 	| FIELD objident bitrange istemplate object_spec
@@ -91,7 +91,7 @@ import
 	: IMPORT STRING_LITERAL ';'
 object_desc
 	: STRING_LITERAL
-	| ''
+	| 
 	;
 object_spec
 	:object_desc ';'
@@ -99,7 +99,7 @@ object_spec
 	;
 object_statements
 	: object_statements object_statement
-	| ''
+	| 
 	;
 object_statement
 	: object
@@ -121,19 +121,20 @@ parameter
 paramspec
 	: ';'
 	| '=' expression ';'
+	| '=' STRING_LITERAL ';'
 	| DEFAULT expression ';'
 	| AUTO ';'
 	;
 
 method_params
-	: ''
+	: 
 	| '(' cdecl_or_ident_list ')'
 	| METHOD_RETURN '(' cdecl_or_ident_list ')'
 	| '(' cdecl_or_ident_list ')' METHOD_RETURN '(' cdecl_or_ident_list ')'
 	;
 
 returnargs
-	: ''
+	: 
 	| METHOD_RETURN '(' expression_list ')'
 	;
 
@@ -143,18 +144,18 @@ method_def
 	;
 
 istemplate
-	: ''
+	: 
 	| IS '(' objident_list ')'
 	;
 
 sizespec
 	: SIZE expression
-	| ''
+	| 
 	;
 
 offsetspec
-	: '@' expression
-	| ''
+	: REG_OFFSET expression
+	| 
 	;
 bitrange
 	: '[' expression ']'
@@ -183,13 +184,13 @@ cdecl2
 	;
 cdecl3
 	: typeident
-	| ''
+	| 
 	| cdecl3 '[' expression ']'
 	| cdecl3 '(' cdecl_list ')'
 	| '(' cdecl2 ')'
 	;
 cdecl_list
-	: ''
+	: 
 	| cdecl_list2
 	;
 cdecl_list2
@@ -199,7 +200,7 @@ cdecl_list2
 	| cdecl_list2 ',' ELLIPSIS
 	;
 cdecl_or_ident_list
-	: ''
+	: 
 	| cdecl_or_ident_list2
 	;
 cdecl_or_ident_list2
@@ -216,7 +217,7 @@ struct
 
 struct_decls
 	: struct_decls cdecl ';'
-	| ''
+	| 
 	;
 layout
 	:LAYOUT STRING_LITERAL '{' layout_decls '}'
@@ -224,7 +225,7 @@ layout
 
 layout_decls
 	:layout_decls cdecl ';'
-	| ''
+	| 
 	;
 
 bitfields
@@ -233,7 +234,7 @@ bitfields
 
 bitfields_decls
 	: bitfields_decls cdecl '@' '[' expression ':' expression ']' ';'
-	| ""
+	| 
 	;
 ctypedecl
 	: const_opt basetype ctypedecl_ptr
@@ -243,7 +244,7 @@ ctypedecl_ptr
 	;
 
 stars
-	: ''
+	: 
 	| '*' CONST stars
 	| '*' stars
 	;
@@ -254,12 +255,12 @@ ctypedecl_array
 
 ctypedecl_simple
 	: '(' ctypedecl_ptr ')'
-	| ''
+	| 
 	;
 
 const_opt
 	: CONST 
-	| ''
+	| 
 	;
 
 typeident
@@ -352,20 +353,20 @@ expression
 
 endianflag
 	: ',' IDENTIFIER
-	|''
+	|
 	;
 
 expression_opt
 	: expression
-	|''
+	|
 	;
 comma_expression_opt
 	: comma_expression
-	| ''
+	| 
 	;
 
 expression_list
-	:''
+	:
 	| expression
 	| expression ',' expression_list
 	;
@@ -405,7 +406,7 @@ statement
 	;
 
 log_args
-	: ''
+	: 
 	| log_args ',' expression
 	;
 
@@ -438,7 +439,7 @@ objident_list
 
 maybe_objident
 	: objident
-	| ''
+	| 
 	;
 
 objident
@@ -485,15 +486,28 @@ ident
 
 %%
 #include <stdio.h>
+#include <stdlib.h>
 
-extern char yytext[];
+//extern char yytext[];
+extern char     *yytext;        /* last token, defined in lex.l  */
 extern int column;
 extern FILE *yyin;
+int             lineno  = 1;    /* number of current source line */
+/*
 yyerror(s)
 char *s;
 {
 	fflush(stdout);
 	printf("\n%*s\n%*s\n", column, "^", column, s);
+}
+*/
+void
+yyerror(char *s)
+{
+	fflush(stdout);
+	fprintf(stderr,"Syntax error on line #%d, column #%d: %s\n", lineno, column, s);
+	fprintf(stderr,"Last token was \"%s\"\n",yytext);
+	exit(1);
 }
 
 int main(int argc, char* argv[])
@@ -507,7 +521,5 @@ int main(int argc, char* argv[])
 //        init();
         yyparse();
         fclose(yyin);
-
-        yyparse();
 	return 0;
 }
