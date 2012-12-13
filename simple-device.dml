@@ -13,7 +13,6 @@ bank regs {
         parameter documentation = "A simple counter.";
     }
 }
-
 // The init and post_init methods can be removed if they are not needed
 
 method init {

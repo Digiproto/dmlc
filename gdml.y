@@ -1,3 +1,16 @@
+%{
+#include "types.h"
+#include "ast.h"
+#define YYDEBUG 1
+%}
+
+%union  {
+	int ival;
+	char* sval;
+	//objtype* objval;	
+	node_t* nodeval;
+}
+
 %token DML IDENTIFIER INTEGER_LITERAL STRING_LITERAL SIZEOF
 %token INC_OP DEC_OP LEFT_OP RIGHT_OP LE_OP GE_OP EQ_OP NE_OP
 %token AND_OP OR_OP MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN ADD_ASSIGN
@@ -19,36 +32,109 @@
 %token RESTRICT SIZEOFTYPE TYPEOF UNDEFINED VIRTUAL NEW DELETE
 
 %start dml
+
+%type	<ival> DEVICE
+%type	<ival> IMPORT
+%type	<sval> IDENTIFIER
+%type   <sval> objident
+%type   <sval> maybe_objident
+%type   <sval> ident
+%type   <sval> paramspec
+%type   <ival> expression
+%type   <sval> STRING_LITERAL
+%type   <sval> INTEGER_LITERAL
+%type 	<nodeval> syntax_modifiers
+%type 	<nodeval> device_statements
+%type 	<nodeval> device_statement
+%type 	<nodeval> syntax_modifier
+%type 	<nodeval> toplevel
+%type 	<nodeval> import
+%type 	<nodeval> parameter
+%type 	<nodeval> object_statement
+%type 	<nodeval> method
+%type 	<nodeval> object
+%type	<nodeval> object_spec
+%type	<nodeval> object_statements
+
 %%
 
 dml
-	: DEVICE objident ';' syntax_modifiers device_statements
+	: DEVICE objident ';' syntax_modifiers device_statements {
+		symbol_insert($2, DEVICE_TYPE);
+		node_t* root = create_ast($2);
+		if($4 != NULL)	
+			add_child(root, $4);
+		if($5 != NULL)
+			add_child(root, $5);
+		printf("Device type is %s\n", $2);
+	}
 	| syntax_modifiers device_statements
 	;
 
 syntax_modifiers
-	: 
-	| syntax_modifiers syntax_modifier
+	: {
+		$$ = NULL;
+	}
+	| syntax_modifiers syntax_modifier{
+		printf("In syntax_modifiers\n");
+		$$ = create_node_list($1, $2);
+	}
 	;
 
 syntax_modifier
-	: BITORDER ident ';'
+	: BITORDER ident ';' {
+		$$ = create_node($2);
+	}
 	;
 
 device_statements
-	: device_statements device_statement
-	| 
+	:{
+		$$ = NULL;
+	} 
+	| device_statements device_statement{
+		printf("In device_statements\n");
+		if($1 == NULL && $2 != NULL)
+			$$ = $2;
+		else if($1 != NULL && $2 != NULL)
+			$$ = create_node_list($1, $2);
+		else
+			printf("something wrong in device_statements\n");
+	}
 	;
 
 device_statement
-	: object_statement
-	| toplevel
-	| import
+	: object_statement{
+		printf("object_statement In device_statement\n");
+		$$ = $1;
+	}
+	| toplevel{
+		$$ = $1;
+	}
+	| import{
+		$$ = $1;
+	}
 	;
 
 object
-	: BANK maybe_objident istemplate object_spec
-	| REGISTER objident sizespec offsetspec istemplate object_spec
+	: BANK maybe_objident istemplate object_spec {
+		//insert_symbol()
+		printf("BANK is %s\n", $2);
+		#if 1
+		node_t* bank = create_node($2, BANK_TYPE);
+		if($4 != NULL)
+			add_child(bank, $4);
+		$$ = bank;
+		#endif
+	}
+	| REGISTER objident sizespec offsetspec istemplate object_spec{
+		printf("register is %s\n", $2);
+		node_t* reg = create_node($2, REGISTER_TYPE);
+		if($6 != NULL){
+			printf("add_child for register\n");
+			add_child(reg, $6);
+		}
+		$$ = reg;
+	}
 	| REGISTER objident '[' arraydef ']' sizespec istemplate object_spec
 	| FIELD objident bitrange istemplate object_spec
 	| FIELD objident istemplate object_spec
@@ -65,7 +151,11 @@ object
 	| CONNECT objident '[' arraydef ']' istemplate object_spec
 	;
 method
-	: METHOD objident method_params method_def
+	: METHOD objident method_params method_def{
+		symbol_insert($2, METHOD_TYPE);	
+		$$ = create_node($2, METHOD_TYPE);
+		printf("method is %s\n", $2);
+	}
 	| METHOD EXTERN objident method_params method_def
 	;
 
@@ -85,26 +175,58 @@ toplevel
 	;
 
 istemplate_stmt
-	: IS objident ';'
+	: IS objident ';' {
+		//$$ = $2;
+	}
+	;
 
 import
-	: IMPORT STRING_LITERAL ';'
+	: IMPORT STRING_LITERAL ';'{
+		symbol_insert($2, IMPORT_TYPE);	
+		printf("import file is %s\n", $2);
+
+		$$ = create_node($2, IMPORT_TYPE);
+	}
+	;
 object_desc
 	: STRING_LITERAL
 	| 
 	;
 object_spec
 	:object_desc ';'
-	| object_desc '{' object_statements '}'
+	| object_desc '{' object_statements '}'{
+		printf("object_statements for object_spec\n");
+		$$ = $3;
+	}
 	;
 object_statements
-	: object_statements object_statement
-	| 
+	: object_statements object_statement{
+		printf("In object_statements\n");
+		if($1 == NULL && $2 != NULL)
+			$$ = $2;
+		else if($1 != NULL && $2 != NULL)
+			$$ = create_node_list($1, $2);
+		else
+			printf("something wrong in object_statements\n");
+	}
+	| {
+		$$ = NULL;
+	}
 	;
 object_statement
-	: object
-	| parameter
-	| method
+	: object{
+		printf("in object for object_statement\n");
+		$$ = $1;
+	}
+	
+	| parameter{
+		printf("parameter \n");
+		$$ = $1;
+	}
+	| method{
+		printf("method \n");
+		$$ = $1;
+	}
 	| istemplate_stmt
 	| object_if
 	;
@@ -115,13 +237,23 @@ object_if
 	| IF '(' expression ')' '{' object_statements '}' ELSE object_if
 	;
 parameter
-	: PARAMETER objident paramspec
+	: PARAMETER objident paramspec{
+		//symbol_insert($2, PARAMETER_TYPE);	
+		parameter_insert($2, $3);
+		$$ = create_node($2, PARAMETER_TYPE);
+		printf("parameter name is %s\n", $2);
+	}
 	;
 
 paramspec
 	: ';'
-	| '=' expression ';'
-	| '=' STRING_LITERAL ';'
+	| '=' expression ';'{
+		//printf("paramspec, expression=%d\n", $2);
+		//$$ = $2;
+	}
+	| '=' STRING_LITERAL ';'{
+		$$ = $2;
+	}
 	| DEFAULT expression ';'
 	| AUTO ';'
 	;
@@ -282,7 +414,10 @@ comma_expression
 	;
 
 expression
-	: expression '=' expression
+	: expression '=' expression {
+		//assign_exec($1, $3);
+		//$$ = $3;
+	}
 	| expression ADD_ASSIGN expression
 	| expression SUB_ASSIGN expression
 	| expression MUL_ASSIGN expression
@@ -327,8 +462,12 @@ expression
 	| expression INC_OP
 	| expression DEC_OP
 	| expression '(' expression_list ')'
-	| INTEGER_LITERAL
-	| STRING_LITERAL
+	| INTEGER_LITERAL{
+		$$=$1;
+	}
+	| STRING_LITERAL{
+		$$=$1;
+	}
 	| UNDEFINED
 	| '$' objident
 	| ident
@@ -438,7 +577,9 @@ objident_list
 	;
 
 maybe_objident
-	: objident
+	: objident {
+		$$ = $1;
+	}
 	| 
 	;
 
@@ -451,7 +592,9 @@ objident
 	;
 
 ident
-	: IDENTIFIER
+	: IDENTIFIER{
+		$$ = $1;
+	}
 	| ATTRIBUTE
 	| BANK
 	| BITORDER
@@ -521,5 +664,6 @@ int main(int argc, char* argv[])
 //        init();
         yyparse();
         fclose(yyin);
+	print_ast();
 	return 0;
 }

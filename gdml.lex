@@ -8,6 +8,8 @@ IS          (u|U|l|L)*
 
 %{  
 #include <stdio.h>  
+#include "types.h"
+#include "ast.h"
 #include "gdml.tab.h"  
 extern int      lineno;      
 void count();  
@@ -77,20 +79,20 @@ void count();
 "using"		{ count(); return(USING);}
 "new"		{ count(); return(NEW);}
 "delete"	{ count(); return(DELETE);}
-"\".*\""	{ count(); return(STRING_LITERAL);}
+"\".*\""	{ count(); return get_string();}
     
-{L}({L}|{D})*       { count(); return(check_type()); }  
+{L}({L}|{D})*       { count(); return check_type(); }  
     
 0[xX]{H}+{IS}?      { count(); return(INTEGER_LITERAL); }  
 0{D}+{IS}?      { count(); return(INTEGER_LITERAL); }  
-{D}+{IS}?       { count(); return(INTEGER_LITERAL); }  
+{D}+{IS}?       { count(); return get_integer(); }  
 L?'(\\.|[^\\'])+'   { count(); return(INTEGER_LITERAL); }  
       
 {D}+{E}{FS}?        { count(); return(INTEGER_LITERAL); }  
 {D}*"."{D}+({E})?{FS}?  { count(); return(INTEGER_LITERAL); }  
 {D}+"."{D}*({E})?{FS}?  { count(); return(INTEGER_LITERAL); }  
       
-L?\"(\\.|[^\\"])*\" { count(); return(STRING_LITERAL); }  
+L?\"(\\.|[^\\"])*\" { count(); return(get_string()); }  
 
 "@"		{ count(); return(REG_OFFSET);}
 "..."           { count(); return(ELLIPSIS); }  
@@ -173,8 +175,10 @@ comment()
 comment1()
 {
 	char c;
+	printf("Comment begin:");
 	while((c = input()) != '\n')
 		putchar(c);
+	putchar('\n');
 	lineno++;
 }
       
@@ -192,7 +196,8 @@ void count()
             else  
                 column++;  
       
-        ECHO;  
+        //ECHO;  
+	//printf("lineno=%d\n", lineno);
 }  
       
       
@@ -210,6 +215,17 @@ int check_type()
     /*  
     *   it actually will only return IDENTIFIER  
     */  
-      
+	//printf("lineno=%d,yytext=%s, in %s\n", lineno, yytext, __FUNCTION__);
+	yylval.sval = (char *) strdup(yytext);  
         return(IDENTIFIER);  
-}  
+}
+int get_string(){
+	//printf("lineno=%d,yytext=%s, in %s\n", lineno, yytext, __FUNCTION__);
+	yylval.sval = (char *) strdup(yytext);  
+        return(STRING_LITERAL);  
+} 
+
+int get_integer(){
+	yylval.sval = (char *) strdup(yytext);
+	return(INTEGER_LITERAL);
+}
