@@ -1,8 +1,31 @@
 %{
+#include <stdio.h>
+#include <assert.h>
 #include "types.h"
 #include "ast.h"
+#include "Parser.h"
 #define YYDEBUG 1
+const char* dir = "/opt/virtutech/simics-4.0/simics-model-builder-4.0.16/amd64-linux/bin/dml/1.2/";
+
+typedef struct YYLTYPE
+{
+int first_line;
+int first_column;
+int last_line;
+int last_column;
+} YYLTYPE;
+#include "Lexer.h"
+
+extern int  yylex(YYSTYPE *yylval_param, yyscan_t yyscanner);
 %}
+
+%output  "Parser.c"
+%defines "Parser.h"
+
+%define api.pure
+
+%lex-param   { yyscan_t scanner }
+%parse-param { yyscan_t scanner }
 
 %union  {
 	int ival;
@@ -55,6 +78,7 @@
 %type 	<nodeval> object
 %type	<nodeval> object_spec
 %type	<nodeval> object_statements
+%type	<nodeval> istemplate_stmt
 
 %%
 
@@ -165,10 +189,16 @@ arraydef
 	;
 
 toplevel
-	: TEMPLATE objident object_spec
+	: TEMPLATE objident object_spec{
+		printf("in TEMPLATE %s\n", $2);
+		$$ = create_node($2, TEMPLATE_TYPE);
+	}
 	| LOGGROUP ident ';'
 	| CONSTANT ident '=' expression ';'
-	| EXTERN cdecl_or_ident ';'
+	| EXTERN cdecl_or_ident ';'{
+		$$ = create_node("extern", EXTERN_TYPE);
+		//$$ = $2;
+	}
 	| TYPEDEF cdecl ';'
 	| EXTERN TYPEDEF cdecl ';'
 	| STRUCT ident '{' struct_decls '}'
@@ -176,6 +206,8 @@ toplevel
 
 istemplate_stmt
 	: IS objident ';' {
+		printf("In IS statement\n");
+		$$ = create_node($2, IS_TYPE);
 		//$$ = $2;
 	}
 	;
@@ -184,7 +216,78 @@ import
 	: IMPORT STRING_LITERAL ';'{
 		symbol_insert($2, IMPORT_TYPE);	
 		printf("import file is %s\n", $2);
+		char fullname[1024];
+		int dirlen = strlen(dir);
+		int filelen = strlen($2);
+		assert((dirlen + filelen) < 1024);
+		strncpy(&fullname[0], dir, dirlen);
+		if(*($2) == '"')
+			$2 ++;
+		else
+		/* something wrong */
+			fprintf(stderr, "the import file format is wrong\n");
+		if(*($2 + strlen($2) - 1) == '"')
+			strncpy(&fullname[dirlen], $2, filelen - 1);
+		else
+			/* something wrong */
+			fprintf(stderr, "the import file format is wrong\n");
+		fullname[dirlen + filelen - 2] = '\0';
+		printf("In IMPORT, fullname=%s, dirlen=%d, filelen=%d\n", fullname, dirlen, filelen);
 
+		FILE *file = fopen(fullname, "r");
+		if (file == NULL)
+		{
+			printf("Can't open imported file %s.\n", fullname);
+			return EXIT_FAILURE;
+		}
+
+		yyscan_t scanner;
+		printf("Begin parse the import file %s\n", fullname);
+		yylex_init(&scanner);
+		yyrestart(file, scanner);
+		yyparse(scanner);
+		yylex_destroy(scanner);
+		fclose(file);
+		printf("End of parse the import file %s\n", fullname);
+
+		#if 0
+			void* buffer;
+			yylex_init(buffer);
+			//yylex(buffer);
+			yylex_init
+			FILE* backup_fd = yyin;
+			char fullname[1024];
+			int dirlen = strlen(dir);
+			int filelen = strlen($2);
+			assert((dirlen + filelen) < 1024);
+			strncpy(&fullname[0], dir, dirlen);
+			if(*($2) == '"')
+				$2 ++;
+			else
+			/* something wrong */
+				fprintf(stderr, "the import file format is wrong\n");
+
+			if(*($2 + strlen($2) - 1) == '"')
+				strncpy(&fullname[dirlen], $2, filelen - 1);
+			else
+				/* something wrong */
+				fprintf(stderr, "the import file format is wrong\n");
+			fullname[dirlen + filelen - 2] = '\0';
+			printf("In IMPORT, fullname=%s, dirlen=%d, filelen=%d\n", fullname, dirlen, filelen);
+			yyin = fopen(fullname, "r");
+			if(yyin != NULL){
+				printf("open file %s successfully\n", fullname);
+				//yyparse();
+				fclose(yyin);
+			}
+			else{
+				fprintf(stderr, "Can not open the import file %s\n", $2);
+			}
+			yyparse(buffer);
+			yylex_destroy(buffer);
+			yyin = backup_fd;
+			yylex_destroy
+		#endif
 		$$ = create_node($2, IMPORT_TYPE);
 	}
 	;
@@ -295,10 +398,13 @@ bitrange
 	;
 
 cdecl_or_ident
-	: cdecl
+	: cdecl{
+		//$$ = $1;
+	}
 	;
 cdecl
-	: basetype cdecl2
+	: basetype cdecl2{
+	}
 	| CONST basetype cdecl2
 	;
 basetype
@@ -469,7 +575,9 @@ expression
 		$$=$1;
 	}
 	| UNDEFINED
-	| '$' objident
+	| '$' objident{
+		printf("In $objident\n");
+	}
 	| ident
 	| expression '.' objident
 	| expression METHOD_RETURN objident
@@ -527,7 +635,9 @@ statement
 	| CALL expression returnargs ';'
 	| INLINE expression returnargs ';'
 	| ASSERT expression ';'
-	| LOG STRING_LITERAL ',' expression ',' expression ':' STRING_LITERAL log_args ';'
+	| LOG STRING_LITERAL ',' expression ',' expression ':' STRING_LITERAL ',' log_args ';'{
+		printf("In LOG statement,\n");
+	}
 	| LOG STRING_LITERAL ',' expression ':' STRING_LITERAL log_args ';'
 	| LOG STRING_LITERAL ':' STRING_LITERAL log_args ';'
 	| SELECT ident IN '(' expression ')' WHERE '(' expression ')' statement ELSE statement
@@ -547,6 +657,7 @@ statement
 log_args
 	: 
 	| log_args ',' expression
+	| expression
 	;
 
 compound_statement
@@ -566,7 +677,9 @@ local_keyword
 
 local
 	: local_keyword cdecl ';'
-	| STATIC cdecl ';'
+	| STATIC cdecl ';'{
+		printf("In STATIC \n");
+	}
 	| local_keyword cdecl '=' expression ';'
 	| STATIC cdecl '=' expression ';'
 	;
@@ -584,7 +697,9 @@ maybe_objident
 	;
 
 objident
-	:ident
+	:ident{
+		printf("ident\n");
+	}
 	| THIS
 	| REGISTER
 	| SIGNED
@@ -632,9 +747,8 @@ ident
 #include <stdlib.h>
 
 //extern char yytext[];
-extern char     *yytext;        /* last token, defined in lex.l  */
+//extern char     *yytext;        /* last token, defined in lex.l  */
 extern int column;
-extern FILE *yyin;
 int             lineno  = 1;    /* number of current source line */
 /*
 yyerror(s)
@@ -645,11 +759,11 @@ char *s;
 }
 */
 void
-yyerror(char *s)
+yyerror(yyscan_t* scanner, char *s)
 {
 	fflush(stdout);
 	fprintf(stderr,"Syntax error on line #%d, column #%d: %s\n", lineno, column, s);
-	fprintf(stderr,"Last token was \"%s\"\n",yytext);
+	//fprintf(stderr,"Last token was \"%s\"\n",yytext);
 	exit(1);
 }
 
@@ -659,11 +773,27 @@ int main(int argc, char* argv[])
                 fprintf(stderr,"Usage: %s source\n", argv[0]);
                 exit(-1);
         }
-        char* filename = argv[1];
-        yyin = fopen(filename,"r");
+        //char* filename = argv[1];
+        //yyin = fopen(filename,"r");
 //        init();
-        yyparse();
-        fclose(yyin);
+	FILE *file = fopen(argv[1], "r");
+	if (file == NULL)
+	{
+		printf("Can't open file %s.\n", argv[0]);
+		return EXIT_FAILURE;
+	}
+
+	yyscan_t scanner;
+	yylex_init(&scanner);
+	yyrestart(file, scanner);
+	yyparse(scanner);
+	yylex_destroy(scanner);
+	
+	//YYSTYPE *lvalp;
+	//YYLTYPE *llocp;
+	//yyscan_t scan;
+        //yyparse(lvalp, llocp, scan);
+        //fclose(yyin);
 	print_ast();
 	return 0;
 }

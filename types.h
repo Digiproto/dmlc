@@ -30,7 +30,10 @@ typedef enum{
 	METHOD_TYPE,
 	BANK_TYPE,
 	REGISTER_TYPE,
-	IMPORT_TYPE
+	IMPORT_TYPE,
+	TEMPLATE_TYPE,
+	IS_TYPE,
+	EXTERN_TYPE
 }ident_type_t;
 
 typedef struct obj_variable{

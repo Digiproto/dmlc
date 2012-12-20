@@ -1,8 +1,8 @@
-dmlc:gdml.tab.c lex.yy.c symbol.c ast.c
-	gcc -g -o dmlc gdml.tab.c lex.yy.c symbol.c ast.c
-lex.yy.c:gdml.lex
+dmlc:Parser.c Lexer.c symbol.c ast.c
+	gcc -g -o dmlc Parser.c Lexer.c symbol.c ast.c
+Lexer.c:gdml.lex
 	flex gdml.lex
-gdml.tab.c:gdml.y
+Parser.c:gdml.y
 	bison -d gdml.y
 clean:
-	rm gdml.tab.c lex.yy.c gdml.tab.h dmlc tags -r -f
+	rm Parser.c Lexer.c Lexer.h Parser.h gdml.tab.h dmlc tags -r -f
