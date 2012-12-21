@@ -1,5 +1,5 @@
 dmlc:Parser.c Lexer.c symbol.c ast.c
-	gcc -g -o dmlc Parser.c Lexer.c symbol.c ast.c
+	gcc -g -o dmlc Parser.c Lexer.c symbol.c ast.c dmlc.c
 Lexer.c:gdml.lex
 	flex gdml.lex
 Parser.c:gdml.y

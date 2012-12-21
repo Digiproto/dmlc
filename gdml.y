@@ -785,35 +785,3 @@ yyerror(yyscan_t* scanner, char *s)
 	//fprintf(stderr,"Last token was \"%s\"\n",yytext);
 	exit(1);
 }
-
-int main(int argc, char* argv[])
-{
-	if(argc != 2){
-                fprintf(stderr,"Usage: %s source\n", argv[0]);
-                exit(-1);
-        }
-        //char* filename = argv[1];
-        //yyin = fopen(filename,"r");
-//        init();
-	FILE *file = fopen(argv[1], "r");
-	if (file == NULL)
-	{
-		printf("Can't open file %s.\n", argv[0]);
-		return EXIT_FAILURE;
-	}
-
-	yyscan_t scanner;
-	node_t* root = NULL;
-	yylex_init(&scanner);
-	yyrestart(file, scanner);
-	yyparse(scanner, &root);
-	yylex_destroy(scanner);
-	
-	//YYSTYPE *lvalp;
-	//YYLTYPE *llocp;
-	//yyscan_t scan;
-        //yyparse(lvalp, llocp, scan);
-        //fclose(yyin);
-	print_ast(root);
-	return 0;
-}
