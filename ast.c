@@ -38,12 +38,13 @@ static node_t* find_tail(node_t* head){
 		it = it->sibling;
 	return it;
 }
-node_t* root = NULL;
-int create_ast(char* name){
-	root = (node_t *)malloc(sizeof(node_t));
+//node_t* root = NULL;
+node_t* create_ast(char* name){
+	node_t* root = (node_t *)malloc(sizeof(node_t));
 	root->name = strdup(name);
 	root->type = 0;
 	root->sibling = NULL;
+	return root;
 }
 
 void add_child(node_t* parent, node_t* child){
@@ -119,7 +120,7 @@ void print_node(node_t* node, int pos){
 /**
 * @brief print the whole ast for debug purpose
 */
-void print_ast(){
+void print_ast(node_t* root){
 	node_t* it = root;
 	node_t* child = NULL;
 	printf("begin print the ast(total node num is %d):\n", node_num);

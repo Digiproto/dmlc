@@ -33,6 +33,7 @@ typedef enum{
 	IMPORT_TYPE,
 	TEMPLATE_TYPE,
 	IS_TYPE,
+	BITORDER_TYPE,
 	EXTERN_TYPE
 }ident_type_t;
 

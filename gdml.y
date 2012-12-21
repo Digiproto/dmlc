@@ -26,6 +26,7 @@ extern int  yylex(YYSTYPE *yylval_param, yyscan_t yyscanner);
 
 %lex-param   { yyscan_t scanner }
 %parse-param { yyscan_t scanner }
+%parse-param {node_t** root_ptr}
 
 %union  {
 	int ival;
@@ -85,14 +86,30 @@ extern int  yylex(YYSTYPE *yylval_param, yyscan_t yyscanner);
 dml
 	: DEVICE objident ';' syntax_modifiers device_statements {
 		symbol_insert($2, DEVICE_TYPE);
-		node_t* root = create_ast($2);
+		if(*root_ptr != NULL){
+			/* something wrong */
+			printf("root of ast already exists\n");
+			exit(-1);
+		}
+		*root_ptr = create_ast($2);
 		if($4 != NULL)	
-			add_child(root, $4);
+			add_child(*root_ptr, $4);
 		if($5 != NULL)
-			add_child(root, $5);
+			add_child(*root_ptr, $5);
 		printf("Device type is %s\n", $2);
 	}
-	| syntax_modifiers device_statements
+	| syntax_modifiers device_statements{
+		if((*root_ptr)->type != IMPORT_TYPE){
+			/* something wrong */
+			printf("root of ast should be import type. \n");
+			exit(-1);
+		}
+		if($1 != NULL)	
+			add_child(*root_ptr, $1);
+		if($2 != NULL)
+			add_child(*root_ptr, $2);
+		//printf("DML type is %s\n", $2);
+	}
 	;
 
 syntax_modifiers
@@ -107,7 +124,7 @@ syntax_modifiers
 
 syntax_modifier
 	: BITORDER ident ';' {
-		$$ = create_node($2);
+		$$ = create_node($2, BITORDER_TYPE);
 	}
 	;
 
@@ -242,12 +259,14 @@ import
 		}
 
 		yyscan_t scanner;
+		node_t* root = create_node($2, IMPORT_TYPE);
 		printf("Begin parse the import file %s\n", fullname);
 		yylex_init(&scanner);
 		yyrestart(file, scanner);
-		yyparse(scanner);
+		yyparse(scanner, &root);
 		yylex_destroy(scanner);
 		fclose(file);
+		print_ast(root);
 		printf("End of parse the import file %s\n", fullname);
 
 		#if 0
@@ -288,7 +307,7 @@ import
 			yyin = backup_fd;
 			yylex_destroy
 		#endif
-		$$ = create_node($2, IMPORT_TYPE);
+		$$ = root;
 	}
 	;
 object_desc
@@ -784,9 +803,10 @@ int main(int argc, char* argv[])
 	}
 
 	yyscan_t scanner;
+	node_t* root = NULL;
 	yylex_init(&scanner);
 	yyrestart(file, scanner);
-	yyparse(scanner);
+	yyparse(scanner, &root);
 	yylex_destroy(scanner);
 	
 	//YYSTYPE *lvalp;
@@ -794,6 +814,6 @@ int main(int argc, char* argv[])
 	//yyscan_t scan;
         //yyparse(lvalp, llocp, scan);
         //fclose(yyin);
-	print_ast();
+	print_ast(root);
 	return 0;
 }
