@@ -24,6 +24,7 @@
 */
 
 #include <stdio.h>
+#include <time.h>
 #include "types.h"
 #include "ast.h"
 #include "symbol.h"
@@ -33,16 +34,43 @@
 * @param file the file written to
 */
 void generate_module_id_source(node_t* root, FILE* file){
+	/* get the device name */
+	symbol_t* symbol = symbol_find("DEVICE", DEVICE_TYPE);
+	if(symbol == NULL){
+		printf("can not find device\n");
+		exit(-1);
+	}
+		
+	device_attr_t* attr = (device_attr_t*)symbol->attr.device;	
+	char* device_name = attr->name;
+	time_t timep;
+	time (&timep);
+
+	printf("In %s\n", __FUNCTION__);
 	fprintf(file, "\
-/*\n						\
-* module_id.c - automatically generated, do not edit\n\
-*/\n						\
+/*						\
+\n* module_id.c - automatically generated, do not edit\
+\n*/						\
 \n						\
-#include <simics/global.h>\n			\
-#include <simics/build-id.h>\n			\
-#include <simics/core/types.h>\n		\
-#include <simics/utils.h>\n			\
-");
+\n#include <simics/global.h>			\
+\n#include <simics/build-id.h>			\
+\n#include <simics/core/types.h>		\
+\n#include <simics/utils.h>			\
+\n						\
+\n#define EXTRA \"                                           \"\
+\n						\
+\nextern const char _module_capabilities_[];	\
+\nconst char _module_capabilities_[] =		\
+\n\t\"VER:\" SYMBOL_TO_STRING(SIM_VERSION_COMPAT) \";\"\
+\n\t\"BLD:\" SYMBOL_TO_STRING(SIM_VERSION) \";\"\
+\n\t\"BUILDDATE:\" \"1287200153\" \";\"\
+\n\t\"MOD:\" \"%s\" \";\"\
+\n\t\"CLS:%s\" \";\"\
+\n\t\"HOSTTYPE:\" \"x86-linux\" \";\"\
+\n\t\"THREADSAFE;\"				\
+\n\tEXTRA \";\";				\
+\nconst char _module_date[] = \"%s\";\
+", device_name, device_name, asctime(gmtime(&timep)));
 
 }
 
