@@ -33,15 +33,15 @@
 * @param file the file written to
 */
 void generate_module_id_source(node_t* root, FILE* file){
-	fprintf(file, "					\
-	/*\n						\
-	* module_id.c - automatically generated, do not edit\n\
-	*/\n						\
-	\n						\
-	#include <simics/global.h>\n			\
-	#include <simics/build-id.h>\n			\
-	#include <simics/core/types.h>\n		\
-	#include <simics/utils.h>\n			\
+	fprintf(file, "\
+/*\n						\
+* module_id.c - automatically generated, do not edit\n\
+*/\n						\
+\n						\
+#include <simics/global.h>\n			\
+#include <simics/build-id.h>\n			\
+#include <simics/core/types.h>\n		\
+#include <simics/utils.h>\n			\
 ");
 
 }
@@ -81,16 +81,12 @@ gen_code_func_t gen_code[GEN_FILE_NUM] = {
 };
 
 const char* module_id_filename = "module_id.c";
-const char* device_suffix = "-dml.c";
-const char* device_header_suffix = "-dml.h";
-const char* device_struct_suffix = "-dml-struct.h";
-const char* device_protos_suffix = "-dml-protos.c";
 
 char* suffix_filename[GEN_FILE_NUM] = {
 	"",
 	"-dml.c",
 	"-dml.h",
-	"-dml-struct.",
+	"-dml-struct.h",
 	"-dml-protos.c"
 	};
 
