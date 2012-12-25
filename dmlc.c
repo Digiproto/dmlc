@@ -70,6 +70,6 @@ int main(int argc, char* argv[])
 	
         char* filename = argv[1];
         node_t* ast = get_ast(filename);
-	generate_code(ast);
+	generate_code(ast, "./output/");
 	return 0;
 }

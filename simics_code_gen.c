@@ -103,17 +103,28 @@ char* concat_filename(char* device_name, char* suffix){
 }
 
 #define DEBUG_FILELIST 1
-void complete_filename(char* device_name){
+void complete_filename(char* device_name, char* path_name){
 	gen_filename[MODULE_ID] = module_id_filename;
 	int i = DEVICE_DML;
 	for(; i < GEN_FILE_NUM; i++)
 		gen_filename[i] = concat_filename(device_name, suffix_filename[i]);
+
+	i = MODULE_ID;
+	for(; i < GEN_FILE_NUM; i++){
+		/* we need to free the previous memory space and set the full name */
+		char* full_filename = concat_filename(path_name, gen_filename[i]);
+		if(i != MODULE_ID)
+			free(gen_filename[i]);
+		gen_filename[i] = NULL;
+		gen_filename[i] = full_filename;
+	}
 	#if DEBUG_FILELIST
+	i = MODULE_ID;
 	for(; i < GEN_FILE_NUM; i++)
 		printf("filename[%d] = %s\n", i, gen_filename[i]);
 	#endif
 }
-void generate_code(node_t* root){
+void generate_code(node_t* root, char* path_name){
 	/* get the device name */
 	symbol_t* symbol = symbol_find("DEVICE", DEVICE_TYPE);
 	if(symbol == NULL){
@@ -124,8 +135,10 @@ void generate_code(node_t* root){
 	device_attr_t* attr = (device_attr_t*)symbol->attr.device;	
 	char* device_name = attr->name;
 
-	/* complete the filename generated */
-	complete_filename(device_name);
+	/* complete the full filename generated */
+	complete_filename(device_name, path_name);
+
+	/* begin to generate the c source file */
 	FILE* file = NULL;
 	int i = 0;
 	for(; i < GEN_FILE_NUM; i++){
