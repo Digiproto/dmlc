@@ -41,5 +41,6 @@ typedef struct obj_variable{
 	int type;
 	char* name;
 }objtype;
-
+typedef struct expression{
+}expression_t;
 #endif

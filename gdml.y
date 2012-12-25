@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include "types.h"
+#include "symbol.h"
 #include "ast.h"
 #include "Parser.h"
 #define YYDEBUG 1
@@ -85,7 +86,9 @@ extern int  yylex(YYSTYPE *yylval_param, yyscan_t yyscanner);
 
 dml
 	: DEVICE objident ';' syntax_modifiers device_statements {
-		symbol_insert($2, DEVICE_TYPE);
+		device_attr_t* attr = (device_attr_t*)malloc(sizeof(device_attr_t));
+		attr->name = strdup($2);
+		symbol_insert("DEVICE", DEVICE_TYPE, attr);
 		if(*root_ptr != NULL){
 			/* something wrong */
 			printf("root of ast already exists\n");
@@ -193,7 +196,7 @@ object
 	;
 method
 	: METHOD objident method_params method_def{
-		symbol_insert($2, METHOD_TYPE);	
+		//symbol_insert($2, METHOD_TYPE);	
 		$$ = create_node($2, METHOD_TYPE);
 		printf("method is %s\n", $2);
 	}
@@ -231,7 +234,7 @@ istemplate_stmt
 
 import
 	: IMPORT STRING_LITERAL ';'{
-		symbol_insert($2, IMPORT_TYPE);	
+		//symbol_insert($2, IMPORT_TYPE);	
 		printf("import file is %s\n", $2);
 		char fullname[1024];
 		int dirlen = strlen(dir);
@@ -360,24 +363,46 @@ object_if
 	;
 parameter
 	: PARAMETER objident paramspec{
-		//symbol_insert($2, PARAMETER_TYPE);	
-		parameter_insert($2, $3);
+		//symbol_insert($2, PARAMETER_TYPE);
+		//parameter_insert($2, $3);
+		//symbol_insert($2, PARAMETER_TYPE, $3);
 		$$ = create_node($2, PARAMETER_TYPE);
 		printf("parameter name is %s\n", $2);
 	}
 	;
 
 paramspec
-	: ';'
+	: ';'{
+		parameter_attr_t* attr = NULL;
+		$$ = attr;
+	}
 	| '=' expression ';'{
 		//printf("paramspec, expression=%d\n", $2);
 		//$$ = $2;
+		parameter_attr_t* attr = malloc(sizeof(parameter_attr_t));
+		attr->value.exp = $2;
+		$$ = attr;
 	}
 	| '=' STRING_LITERAL ';'{
-		$$ = $2;
+		parameter_attr_t* attr = malloc(sizeof(parameter_attr_t));
+		attr->value.str = $2;
+		$$ = attr;
 	}
-	| DEFAULT expression ';'
-	| AUTO ';'
+	| DEFAULT expression ';'{
+		parameter_attr_t* attr = malloc(sizeof(parameter_attr_t));
+		attr->value.exp = $2;
+		attr->is_default = 1;
+		attr->is_auto = 0;
+		$$ = attr;
+	}
+
+	| AUTO ';'{
+		parameter_attr_t* attr = malloc(sizeof(parameter_attr_t));
+		attr->value.exp = NULL;
+		attr->is_default = 0;
+		attr->is_auto = 1;
+		$$ = attr;
+	}
 	;
 
 method_params

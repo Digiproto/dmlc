@@ -1,3 +1,21 @@
+/* Copyright (C) 
+* 2012 - Michael.Kang blackfin.kang@gmail.com
+* This program is free software; you can redistribute it and/or
+* modify it under the terms of the GNU General Public License
+* as published by the Free Software Foundation; either version 2
+* of the License, or (at your option) any later version.
+* 
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+* 
+* You should have received a copy of the GNU General Public License
+* along with this program; if not, write to the Free Software
+* Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+* 
+*/
+
 /* 
 * Symbol table management for gdml.
 */
@@ -12,85 +30,62 @@
 #include <stdio.h> /* for (f)printf(), std{out,int} */
 #include <stdlib.h> /* for exit */
 #include <string.h> /* for strcmp, strdup & friends */
-//#include "micro.tab.h" /* token type definitions from .y file */
+#include <assert.h>
 #include "symbol.h"
 
-typedef struct {
-	char *name; 
-	int type;  /* READ, WRITE, or NAME */
-	union value{
-		char* string;
-	};
-	int declared; /* NAME only: 1 iff already declared in JVM code, 0 else */
-} ENTRY;
-
-#define  MAX_SYMBOLS 100
-static ENTRY symbol_table[MAX_SYMBOLS]; /* not visible from outside */
-static int n_symbol_table = 0; /* number of entries in symbol table */
-
-int
-symbol_find(char* name) {
-	/* Find index of symbol table entry, -1 if not found */
-	int i;
-
-	for (i = 0; (i < n_symbol_table); ++i)
-	if (strcmp(symbol_table[i].name, name)==0)
-		return i;
-	return -1;
-}
-
-int
-symbol_insert(char* name,int type) {
-	#if 1
-  /* Insert new symbol with a given type into symbol table,
-   * returns index new value */
-	if (n_symbol_table>=MAX_SYMBOLS) {
-		fprintf(stderr, "Symbol table overflow (%d) entries\n", n_symbol_table);
-		exit(1);
+#define  MAX_SYMBOLS 10000
+static int str_hash(const char* str)  
+{  
+	if(!*str)
+        	return 0;
+	int len = strlen(str);
+	int i = 0;
+	int s[4] = {0, 0, 0, 0};
+	for(; i < 4; i++){
+		int j = 0;
+		while(j < len){
+			s[i] += str[j];
+			j += 4; 
+		}
 	}
-	symbol_table[n_symbol_table].name = strdup(name);
-	symbol_table[n_symbol_table].type = type;
-	symbol_table[n_symbol_table].declared = 0;
-	#endif
-	return n_symbol_table++;
-}
-int parameter_insert(char* name, char* value){
-	if (n_symbol_table>=MAX_SYMBOLS) {
-		fprintf(stderr, "Symbol table overflow (%d) entries\n", n_symbol_table);
-		exit(1);
+	return (s[0] % 10) * 1000 + (s[1] % 10) * 100 
+		+ (s[2] % 10) * 10 + s[3] % 10;
+} 
+static symbol_t* symbol_table[MAX_SYMBOLS]; /* not visible from outside */
+
+symbol_t*
+symbol_find(char* name, int type) {
+	symbol_t* symbol = symbol_table[str_hash(name)];
+	printf("In %s, name=%s, hash value=%d\n", __FUNCTION__, name, str_hash(name));
+	if(symbol == NULL){
+		/* can not find the symbol */
+		printf("can not find the symbol %s(type:%d)\n", name, type);
 	}
-	printf("In %s, name=%s, value=%s\n", __FUNCTION__, name, value);
-	symbol_table[n_symbol_table].name = strdup(name);
-	//symbol_table[n_symbol_table].type = type;
-	symbol_table[n_symbol_table].declared = 0;
-
-	return n_symbol_table++;
+	else
+		if(symbol->type == type){
+			/* hash hit, find the right type */
+		}
+		else{
+			/* hash conflict */
+			return NULL;
+		}
+	return symbol;
 }
 
-int
-symbol_type(int i) {
-  /* Return type of symbol at position i in table. */
-  /* ASSERT ((0<=i)&&(i<n_symbol_table)) */
-	return symbol_table[i].type;
-}
-
-void
-symbol_declare(int i) {
-  /* Mark a symbol in the table as declared */
-  /* ASSERT ((0<=i)&&(i<n_symbol_table)&&(symbol_table[i].type==NAME)) */
-	symbol_table[i].declared = 1;
-}
-
-int
-symbol_declared(int i) {
-  /* Return declared property of symbol */
-  /* ASSERT ((0<=i)&&(i<n_symbol_table)&&(symbol_table[i].type==NAME)) */
-	return symbol_table[i].declared;
-}
-
-char*
-symbol_name(int i) {
-  /* Return name of symbol */
-  /* ASSERT ((0<=i)&&(i<n_symbol_table)) */
-	return symbol_table[i].name;
+int symbol_insert(char* name, int type, void* attr){
+	assert(name != NULL);
+	symbol_t* s = symbol_table[str_hash(name)];
+	printf("In %s, name=%s, type=%d, hash value=%d\n", __FUNCTION__, name, type, str_hash(name));
+	if(s == NULL){ /* blank slot */
+		s = (symbol_t*)malloc(sizeof(symbol_t));
+		s->name = strdup(name);
+		s->type = type;	
+		s->attr.default_type = attr;
+		symbol_table[str_hash(name)] = s;
+	}
+	else{ /* conflict */
+		fprintf("hash conflict in %s, hash value is %d\n", __FUNCTION__, str_hash(name));
+		exit(-1);
+	}
+	return 0;
 }

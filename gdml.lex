@@ -38,12 +38,12 @@ void count(yyscanner);
 		}
 	}
 	c1 = input(yyscanner);
-     printf("In comment, c=%d, c1=%c\n", c, c1); 
+//     printf("In comment, c=%d, c1=%c\n", c, c1); 
 	if(c1 == '\n')
 		lineno ++;
         if ((c1) != '/' && c != 0)  
         {  
-		printf("In comment, c1 = %c, c=%c\n",c1, c);
+//		printf("In comment, c1 = %c, c=%c\n",c1, c);
             unput(c1);  
             goto loop;  
         }  

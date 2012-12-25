@@ -30,7 +30,15 @@
 #include "Parser.h"
 #include "Lexer.h"
 
+#define DEBUG_AST 1
 
+/**
+* @brief generate an ast from a dml source file.
+*
+* @param filename dml source file name
+*
+* @return the root node of ast
+*/
 node_t* get_ast(char* filename){
 	FILE *file = fopen(filename, "r");
 	if (file == NULL)
@@ -46,14 +54,13 @@ node_t* get_ast(char* filename){
 	yyparse(scanner, &root);
 	yylex_destroy(scanner);
 	
-	//YYSTYPE *lvalp;
-	//YYLTYPE *llocp;
-	//yyscan_t scan;
-        //yyparse(lvalp, llocp, scan);
-        //fclose(yyin);
+	fclose(file);
+	#if DEBUG_AST
 	print_ast(root);
+	#endif
 	return root;
 }
+
 int main(int argc, char* argv[])
 {
 	if(argc != 2){
@@ -62,7 +69,7 @@ int main(int argc, char* argv[])
         }
 	
         char* filename = argv[1];
-        get_ast(filename);
-//        init();
+        node_t* ast = get_ast(filename);
+	generate_code(ast);
 	return 0;
 }
