@@ -32,6 +32,13 @@
 
 #define DEBUG_AST 1
 
+const char* simics_dml_dir = "/opt/virtutech/simics-4.0/simics-model-builder-4.0.16/amd64-linux/bin/dml/1.0/";
+const char* import_file_list[] = {
+	"dml-builtins.dml",
+	"simics-configuration.dml",
+	NULL
+};
+
 /**
 * @brief generate an ast from a dml source file.
 *
@@ -65,11 +72,20 @@ int main(int argc, char* argv[])
 {
 	if(argc != 2){
                 fprintf(stderr,"Usage: %s source\n", argv[0]);
-                exit(-1);
+                exit(-1); 
         }
 	
+	char* builtin_filename = concat_filename(simics_dml_dir, import_file_list[0]);
+	//printf("In %s, builtin_filename=%s\n", __FUNCTION__, builtin_filename);
+	//sleep(1);
+	/* dml-builtins.dml */
+	node_t* import_ast = get_ast(builtin_filename);
+	free(builtin_filename); /* free memory allocated in concat_filename function */
+
+	/* main ast */
         char* filename = argv[1];
         node_t* ast = get_ast(filename);
+	assert(ast != NULL);
 	generate_code(ast, "./output/");
 	return 0;
 }
