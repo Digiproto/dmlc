@@ -33,30 +33,34 @@
 #include <assert.h>
 #include "symbol.h"
 
-#define  MAX_SYMBOLS 10000
+#define MAX_SYMBOLS 10000
 static int str_hash(const char* str)  
 {  
 	if(!*str)
         	return 0;
 	int len = strlen(str);
-	int i = 0;
+	int i = 0, j = 0;
 	int s[4] = {0, 0, 0, 0};
 	for(; i < 4; i++){
-		int j = 0;
+		j = i;
 		while(j < len){
-			s[i] += str[j];
+			s[i] += (int)str[j];
+			//printf("for s[%d]=%d, str[%d]=%d\n", i, s[i], j, str[j]);
 			j += 4; 
 		}
+		//printf("s[%d]=%d\n", i, s[i]);
 	}
-	return (s[0] % 10) * 1000 + (s[1] % 10) * 100 
+	int hash_value = (s[0] % 10) * 1000 + (s[1] % 10) * 100 
 		+ (s[2] % 10) * 10 + s[3] % 10;
+	//printf("hash of %s is %d\n", str, hash_value);
+	return hash_value;
 } 
 static symbol_t* symbol_table[MAX_SYMBOLS]; /* not visible from outside */
 
 symbol_t*
 symbol_find(char* name, int type) {
 	symbol_t* symbol = symbol_table[str_hash(name)];
-	printf("In %s, name=%s, hash value=%d\n", __FUNCTION__, name, str_hash(name));
+	//printf("In %s, name=%s, hash value=%d\n", __FUNCTION__, name, str_hash(name));
 	if(symbol == NULL){
 		/* can not find the symbol */
 		printf("can not find the symbol %s(type:%d)\n", name, type);
@@ -84,7 +88,7 @@ int symbol_insert(char* name, int type, void* attr){
 		symbol_table[str_hash(name)] = s;
 	}
 	else{ /* conflict */
-		fprintf("hash conflict in %s, hash value is %d\n", __FUNCTION__, str_hash(name));
+		fprintf(stderr, "hash conflict in %s, hash value is %d\n", __FUNCTION__, str_hash(name));
 		exit(-1);
 	}
 	return 0;
