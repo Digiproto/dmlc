@@ -6,7 +6,7 @@
 #include "ast.h"
 #include "Parser.h"
 #define YYDEBUG 1
-const char* dir = "/opt/virtutech/simics-4.0/simics-model-builder-4.0.16/amd64-linux/bin/dml/1.2/";
+const char* dir = "/opt/virtutech/simics-4.0/simics-model-builder-4.0.16/amd64-linux/bin/dml/1.0/";
 
 typedef struct YYLTYPE
 {
@@ -68,6 +68,7 @@ extern int  yylex(YYSTYPE *yylval_param, yyscan_t yyscanner);
 %type   <ival> expression
 %type   <sval> STRING_LITERAL
 %type   <sval> INTEGER_LITERAL
+%type 	<nodeval> dml
 %type 	<nodeval> syntax_modifiers
 %type 	<nodeval> device_statements
 %type 	<nodeval> device_statement
@@ -84,36 +85,45 @@ extern int  yylex(YYSTYPE *yylval_param, yyscan_t yyscanner);
 
 %%
 begin_unit
-	: DML INTEGER_LITERAL ';' dml
+	: DML INTEGER_LITERAL ';' dml{
+		dml_attr_t* attr = (dml_attr_t*)malloc(sizeof(dml_attr_t));
+		symbol_insert("DML", DML_TYPE, attr);
+
+		if(*root_ptr != NULL){
+			/* something wrong */
+			printf("root of ast already exists\n");
+			exit(-1);
+		}
+		*root_ptr = create_node("DML", DML_TYPE);
+		if($4 != NULL)
+			add_child(*root_ptr, $4);
+	}
 	;
 dml
 	: DEVICE objident ';' syntax_modifiers device_statements {
 		device_attr_t* attr = (device_attr_t*)malloc(sizeof(device_attr_t));
 		attr->name = strdup($2);
 		symbol_insert("DEVICE", DEVICE_TYPE, attr);
-		if(*root_ptr != NULL){
-			/* something wrong */
-			printf("root of ast already exists\n");
-			exit(-1);
-		}
-		*root_ptr = create_ast($2);
+		node_t* node = create_node("DEVICE", DEVICE_TYPE);
 		if($4 != NULL)	
-			add_child(*root_ptr, $4);
+			create_node_list(node, $4);
 		if($5 != NULL)
-			add_child(*root_ptr, $5);
+			create_node_list(node, $5);
 		printf("Device type is %s\n", $2);
+		$$ = node;
 	}
 	| syntax_modifiers device_statements{
-		if((*root_ptr)->type != IMPORT_TYPE){
-			/* something wrong */
-			printf("root of ast should be import type. \n");
-			exit(-1);
+		if($1 == NULL && $2 != NULL)
+			$$ = $2;
+		else if($1 != NULL && $2 == NULL)
+			$$ = $1;
+		else if($1 != NULL && $2 != NULL){
+			create_node_list($1, $2);
+			$$ = $1;
 		}
-		if($1 != NULL)	
-			add_child(*root_ptr, $1);
-		if($2 != NULL)
-			add_child(*root_ptr, $2);
-		//printf("DML type is %s\n", $2);
+		else{
+			printf("something Wrong\n");
+		}
 	}
 	;
 
@@ -123,12 +133,18 @@ syntax_modifiers
 	}
 	| syntax_modifiers syntax_modifier{
 		printf("In syntax_modifiers\n");
-		$$ = create_node_list($1, $2);
+		if($1 == NULL && $2 != NULL)
+			$$ = $2;
+		else if($1 != NULL && $2 != NULL)
+			$$ = create_node_list($1, $2);
+		else
+			$$ = NULL;
 	}
 	;
 
 syntax_modifier
 	: BITORDER ident ';' {
+		printf("In BITORDER\n");
 		$$ = create_node($2, BITORDER_TYPE);
 	}
 	;
@@ -154,9 +170,11 @@ device_statement
 		$$ = $1;
 	}
 	| toplevel{
+		printf("toplevel In device_statement\n");
 		$$ = $1;
 	}
 	| import{
+		printf("import In device_statement\n");
 		$$ = $1;
 	}
 	;
@@ -217,13 +235,26 @@ toplevel
 		symbol_insert($2, TEMPLATE_TYPE, attr);
 		$$ = create_node($2, TEMPLATE_TYPE);
 	}
-	| LOGGROUP ident ';'
-	| CONSTANT ident '=' expression ';'
+	| LOGGROUP ident ';'{
+		printf("in LOGGROUP %s\n", $2);
+		symbol_insert($2, LOGGROUP_TYPE, NULL);
+		$$ = create_node($2, LOGGROUP_TYPE);
+
+	}
+	| CONSTANT ident '=' expression ';'{
+		constant_attr_t* attr = malloc(sizeof(constant_attr_t));
+		/* FIXME, should provide a correct expression value */
+		attr->value = NULL;
+		symbol_insert($2, CONSTANT_TYPE, attr);
+		$$ = create_node($2, CONSTANT_TYPE);
+	}
 	| EXTERN cdecl_or_ident ';'{
 		$$ = create_node("extern", EXTERN_TYPE);
 		//$$ = $2;
 	}
-	| TYPEDEF cdecl ';'
+	| TYPEDEF cdecl ';'{
+		$$ = create_node("UNIMP", TYPEDEF_TYPE);
+	}
 	| EXTERN TYPEDEF cdecl ';'
 	| STRUCT ident '{' struct_decls '}'
 	;
@@ -267,18 +298,19 @@ import
 		if (file == NULL)
 		{
 			printf("Can't open imported file %s.\n", fullname);
-			return EXIT_FAILURE;
+			exit(EXIT_FAILURE);
 		}
 
 		yyscan_t scanner;
 		node_t* root = create_node($2, IMPORT_TYPE);
 		printf("Begin parse the import file %s\n", fullname);
+		node_t* ast = NULL;
 		yylex_init(&scanner);
 		yyrestart(file, scanner);
-		yyparse(scanner, &root);
+		yyparse(scanner, &ast);
 		yylex_destroy(scanner);
 		fclose(file);
-		print_ast(root);
+		print_ast(ast);
 		printf("End of parse the import file %s\n", fullname);
 
 		#if 0

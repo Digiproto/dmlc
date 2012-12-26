@@ -126,6 +126,8 @@ void count(yyscanner);
 "delete"	{ count(yyscanner); return(DELETE);}
 "is"		{ count(yyscanner); return(IS);}
 "defined"		{ count(yyscanner); return(DEFINED);}
+"bitorder"	{count(yyscanner); return(BITORDER);}
+"constant"	{count(yyscanner); return(CONSTANT);}
 "\".*\""	{ count(yyscanner); 
 			yylval_param->sval = (char *) strdup(yyget_text(yyscanner));
 			return(STRING_LITERAL);

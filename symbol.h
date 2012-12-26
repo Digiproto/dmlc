@@ -50,6 +50,7 @@ typedef struct loggroup_attr{
 typedef struct typedef_attr{
 }typedef_attr_t;
 typedef struct constant_attr{
+	expression_t* value;
 }constant_attr_t;
 typedef struct struct_attr{
 }struct_attr_t;
@@ -63,6 +64,7 @@ typedef struct parameter_attr{
 		expression_t* exp;
 	}value;
 }parameter_attr_t;
+
 typedef struct method_attr{
 	int is_static;
 	int is_inline;
