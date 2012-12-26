@@ -38,7 +38,7 @@ typedef struct import_attr{
 	char* filename;
 }import_attr_t;
 typedef struct template_attr{
-	char* name;
+	char* desc;
 }template_attr_t;
 typedef struct loggroup_attr{
 }loggroup_attr_t;
@@ -105,7 +105,7 @@ typedef struct port_attr{
 typedef struct implement_attr{
 }implement_attr_t;
 #endif
-typedef struct {
+typedef struct symbol{
 	char *name; 
 	int type;  /* READ, WRITE, or NAME */
 	union{
@@ -113,6 +113,7 @@ typedef struct {
 		device_attr_t* device;
 		bitorder_attr_t* bitorder;
 	}attr;
+	struct symbol* next; /* the other symbol with the same hash value */
 } symbol_t;
 
 symbol_t* symbol_find(char* name, int type);
