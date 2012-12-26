@@ -25,7 +25,8 @@
 #ifndef __TYPES_H__
 #define __TYPES_H__
 typedef enum{
-	DEVICE_TYPE = 1,
+	DML_TYPE = 1,
+	DEVICE_TYPE,
 	PARAMETER_TYPE,
 	METHOD_TYPE,
 	BANK_TYPE,
@@ -34,6 +35,9 @@ typedef enum{
 	TEMPLATE_TYPE,
 	IS_TYPE,
 	BITORDER_TYPE,
+	LOGGROUP_TYPE,
+	TYPEDEF_TYPE,
+	CONSTANT_TYPE,
 	EXTERN_TYPE
 }ident_type_t;
 
