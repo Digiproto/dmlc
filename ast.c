@@ -38,6 +38,7 @@ static node_t* find_tail(node_t* head){
 		it = it->sibling;
 	return it;
 }
+#if 0
 //node_t* root = NULL;
 node_t* create_ast(char* name){
 	node_t* root = (node_t *)malloc(sizeof(node_t));
@@ -46,7 +47,7 @@ node_t* create_ast(char* name){
 	root->sibling = NULL;
 	return root;
 }
-
+#endif
 void add_child(node_t* parent, node_t* child){
 	assert(parent != NULL);
 	printf("In %s, child->name=%s\n", __FUNCTION__, child->name);
@@ -137,6 +138,7 @@ void print_ast(node_t* root){
 		}
 	}
 	#endif
+	#if 0
 	if(root)
 		printf("root->name=%s\n", root->name);
 	if(root->child)
@@ -147,6 +149,5 @@ void print_ast(node_t* root){
 		printf("root->child->sibling->name=%s\n", root->child->sibling->sibling->name);
 	if(root->child->sibling->sibling->child)
 		printf("root->child->sibling->child->name=%s\n", root->child->sibling->sibling->child->name);
-
-		
+	#endif
 }
