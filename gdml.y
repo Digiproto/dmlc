@@ -56,7 +56,7 @@ extern int  yylex(YYSTYPE *yylval_param, yyscan_t yyscanner);
 %token CALL CAST CONSTANT ERROR FOREACH INLINE LOCAL NAMESPACE 
 %token RESTRICT SIZEOFTYPE TYPEOF UNDEFINED VIRTUAL NEW DELETE
 
-%start dml
+%start begin_unit
 
 %type	<ival> DEVICE
 %type	<ival> IMPORT
@@ -83,7 +83,9 @@ extern int  yylex(YYSTYPE *yylval_param, yyscan_t yyscanner);
 %type	<nodeval> istemplate_stmt
 
 %%
-
+begin_unit
+	: DML INTEGER_LITERAL ';' dml
+	;
 dml
 	: DEVICE objident ';' syntax_modifiers device_statements {
 		device_attr_t* attr = (device_attr_t*)malloc(sizeof(device_attr_t));
@@ -211,6 +213,8 @@ arraydef
 toplevel
 	: TEMPLATE objident object_spec{
 		printf("in TEMPLATE %s\n", $2);
+		template_attr_t* attr = malloc(sizeof(template_attr_t));
+		symbol_insert($2, TEMPLATE_TYPE, attr);
 		$$ = create_node($2, TEMPLATE_TYPE);
 	}
 	| LOGGROUP ident ';'
@@ -227,6 +231,11 @@ toplevel
 istemplate_stmt
 	: IS objident ';' {
 		printf("In IS statement\n");
+		symbol_t* symbol = symbol_find($2, TEMPLATE_TYPE);	
+		if(symbol == NULL){
+			fprintf(stderr, "No such template %s in IS statement\n", $2);
+			exit(-1);
+		}
 		$$ = create_node($2, IS_TYPE);
 		//$$ = $2;
 	}
