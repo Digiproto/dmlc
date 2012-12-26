@@ -71,25 +71,29 @@ symbol_find(char* name, int type) {
 		}
 		else{
 			/* hash conflict */
-			return NULL;
+			while(symbol->type != type && symbol != NULL){
+				symbol = symbol->next;
+			}
 		}
 	return symbol;
 }
-
 int symbol_insert(char* name, int type, void* attr){
 	assert(name != NULL);
 	symbol_t* s = symbol_table[str_hash(name)];
+	symbol_t* new_symbol = (symbol_t*)malloc(sizeof(symbol_t));
+	new_symbol->name = strdup(name);
+	new_symbol->type = type;	
+	new_symbol->attr.default_type = attr;
+	new_symbol->next = NULL;
+
 	printf("In %s, name=%s, type=%d, hash value=%d\n", __FUNCTION__, name, type, str_hash(name));
 	if(s == NULL){ /* blank slot */
-		s = (symbol_t*)malloc(sizeof(symbol_t));
-		s->name = strdup(name);
-		s->type = type;	
-		s->attr.default_type = attr;
-		symbol_table[str_hash(name)] = s;
+		symbol_table[str_hash(name)] = new_symbol;
 	}
 	else{ /* conflict */
-		fprintf(stderr, "hash conflict in %s, hash value is %d\n", __FUNCTION__, str_hash(name));
-		exit(-1);
+		while(s->next != NULL)
+			s = s->next;
+		s->next = new_symbol;
 	}
 	return 0;
 }

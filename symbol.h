@@ -26,6 +26,10 @@
 #ifndef	SYMBOL_H
 #define	SYMBOL_H
 #include "types.h"
+typedef struct dml_attr{
+	float version;
+}dml_attr_t;
+
 typedef struct device_attr{
 	char* name;
 }device_attr_t;
