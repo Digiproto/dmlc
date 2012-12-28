@@ -109,7 +109,46 @@ void count(yyscanner);
 "group"		{ count(yyscanner); return(GROUP);}
 "in"		{ count(yyscanner); return(IN);}
 "template"	{ count(yyscanner); return(TEMPLATE);}
-"header"	{ count(yyscanner); return(HEADER);}
+"foreach"	{ count(yyscanner); return(FOREACH);}
+"header"	{ 
+	count(yyscanner);
+	char c, c1;
+        while ((c = input(yyscanner)) != '%' && c != 0) { 
+		if(c == ' '){
+		}
+		else if(c == '\n'){
+			lineno ++;
+			column = 0;
+		}
+		else{
+			/* something wrong */
+		}
+	}
+	/* the next character should be '{' */
+	c1 = input(yyscanner);
+	if(c1 != '{'){
+		/* something wrong */
+		lineno ++;
+	}
+header_loop:
+	printf("begin header_loop\n");
+	/* try to get the end token "%}" */
+	while ((c = input(yyscanner)) != '%' && c != 0) { 
+		if(c == '\n'){
+			lineno ++;
+			column = 0;
+		}
+	}
+	c1 = input(yyscanner);
+        if ((c1) != '}' && c != 0)  
+        {  
+//		printf("In comment, c1 = %c, c=%c\n",c1, c);
+		unput(c1);  
+		goto header_loop;  
+        }  
+     	/* get the complete header */ 
+	return(HEADER);
+}
 "footer"	{ count(yyscanner); return(FOOTER);}
 "loggroup"	{ count(yyscanner); return(LOGGROUP);}
 "log"		{ count(yyscanner); return(LOG);}
