@@ -1,6 +1,6 @@
 # Written by Michael.Kang(blackfin.kang@gmail.com)
 
-dmlc:Parser.c Lexer.c symbol.c ast.c simics_code_gen.c
+dmlc:Parser.c Lexer.c symbol.c ast.c simics_code_gen.c dmlc.c
 	gcc -g -o dmlc Parser.c Lexer.c symbol.c ast.c dmlc.c simics_code_gen.c
 Lexer.c:gdml.lex
 	flex gdml.lex
