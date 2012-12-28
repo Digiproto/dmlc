@@ -27,11 +27,11 @@ void count(yyscanner);
 %%  
 "/*"            { 
 	//comment(); 
-	printf("Comment begin:");
+	//printf("Comment begin:");
         char c, c1;
     loop:  
         while ((c = input(yyscanner)) != '*' && c != 0) { 
-            putchar(c);  
+		//putchar(c);  
 		if(c == '\n'){
 			lineno ++;
 			column = 0;
@@ -49,16 +49,17 @@ void count(yyscanner);
         }  
       
         if (c != 0) { 
-	putchar(c);
-            putchar(c1);  
+		//putchar(c);
+		//putchar(c1);  
 	}
 }  
 "//"		{  
 	char c;
-	printf("Comment begin:");
-	while((c = input(yyscanner)) != '\n')
-		putchar(c);
-	putchar('\n');
+	//printf("Comment begin:");
+	while((c = input(yyscanner)) != '\n'){
+		//putchar(c);
+	}
+	//putchar('\n');
 	lineno++;
 	column = 0;
 }
