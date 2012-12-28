@@ -31,6 +31,11 @@ typedef struct Exp_list {
   struct list* next;
 } ast_list;
 */
+#ifdef AST_DEBUG
+#define DBG(fmt, ...) do { fprintf(stderr, fmt, ## __VA_ARGS__); } while (0)
+#else
+#define DBG(fmt, ...) do { } while (0)
+#endif
 
 static node_t* find_tail(node_t* head){
 	node_t* it = head;
@@ -50,7 +55,7 @@ node_t* create_ast(char* name){
 #endif
 void add_child(node_t* parent, node_t* child){
 	assert(parent != NULL);
-	printf("In %s, child->name=%s\n", __FUNCTION__, child->name);
+	DBG("In %s, child->name=%s\n", __FUNCTION__, child->name);
 	parent->child = child;
 }
 static int node_num = 0;
@@ -59,7 +64,7 @@ node_t* create_node(char* name, int type){
 	node->name = strdup(name);
 	node->sibling = NULL;
 	node->child = NULL;
-	printf("In %s, name=%s, type = %d\n", __FUNCTION__, name, type);
+	DBG("In %s, name=%s, type = %d\n", __FUNCTION__, name, type);
 	node->type = type;
 	node_num ++;
 	return node;
@@ -79,7 +84,7 @@ node_t* create_node(char* name, int type){
 */
 node_t* create_node_list(node_t* root, node_t* new_node){
 	if(root != NULL && new_node != NULL)
-		printf("In %s, root->name=%s, new_node->name=%s\n", __FUNCTION__, root->name, new_node->name);
+		DBG("In %s, root->name=%s, new_node->name=%s\n", __FUNCTION__, root->name, new_node->name);
 	assert(new_node != NULL);
 	assert(root != NULL);
 		
