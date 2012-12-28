@@ -110,6 +110,15 @@ void count(yyscanner);
 "in"		{ count(yyscanner); return(IN);}
 "template"	{ count(yyscanner); return(TEMPLATE);}
 "foreach"	{ count(yyscanner); return(FOREACH);}
+"try"		{ count(yyscanner); return(TRY);}
+"catch"		{ count(yyscanner); return(CATCH);}
+"inline"	{ count(yyscanner); return(INLINE);}
+"throw"		{ count(yyscanner); return(THROW);}
+"local"		{ count(yyscanner); return(LOCAL);}
+"error"		{ count(yyscanner); return(ERROR);}
+"typeof"		{ count(yyscanner); return(TYPEOF);}
+"assert"	{count(yyscanner); return(ASSERT);}
+"cast"		{count(yyscanner); return(CAST);}
 "header"	{ 
 	count(yyscanner);
 	char c, c1;

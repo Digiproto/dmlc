@@ -8,6 +8,12 @@
 #define YYDEBUG 1
 const char* dir = "/opt/virtutech/simics-4.0/simics-model-builder-4.0.16/amd64-linux/bin/dml/1.0/";
 
+#ifdef PARSE_DEBUG
+#define DBG(fmt, ...) do { fprintf(stderr, fmt, ## __VA_ARGS__); } while (0)
+#else
+#define DBG(fmt, ...) do { } while (0)
+#endif
+
 typedef struct YYLTYPE
 {
 int first_line;
@@ -82,6 +88,8 @@ extern int  yylex(YYSTYPE *yylval_param, yyscan_t yyscanner);
 %type	<nodeval> object_spec
 %type	<nodeval> object_statements
 %type	<nodeval> istemplate_stmt
+%type	<nodeval> statement
+%type	<nodeval> compound_statement
 
 %%
 begin_unit
@@ -202,7 +210,9 @@ object
 	| REGISTER objident '[' arraydef ']' sizespec istemplate object_spec
 	| FIELD objident bitrange istemplate object_spec
 	| FIELD objident istemplate object_spec
-	| DATA cdecl ';'
+	| DATA cdecl ';'{
+		$$ = create_node("ANON", DATA_TYPE);
+	}
 	| CONNECT objident istemplate object_spec
 	| INTERFACE objident istemplate object_spec
 	| ATTRIBUTE objident istemplate object_spec
@@ -220,7 +230,11 @@ method
 		$$ = create_node($2, METHOD_TYPE);
 		printf("method is %s\n", $2);
 	}
-	| METHOD EXTERN objident method_params method_def
+	| METHOD EXTERN objident method_params method_def{
+		$$ = create_node($3, METHOD_TYPE);
+		printf("method extern is %s\n", $3);
+
+	}
 	;
 
 arraydef
@@ -257,6 +271,9 @@ toplevel
 	}
 	| EXTERN TYPEDEF cdecl ';'
 	| STRUCT ident '{' struct_decls '}'
+	| HEADER {
+		$$ = create_node("HEADER", HEADER_TYPE);
+	}
 	;
 
 istemplate_stmt
@@ -265,7 +282,7 @@ istemplate_stmt
 		symbol_t* symbol = symbol_find($2, TEMPLATE_TYPE);	
 		if(symbol == NULL){
 			fprintf(stderr, "No such template %s in IS statement\n", $2);
-			exit(-1);
+			//exit(-1);
 		}
 		$$ = create_node($2, IS_TYPE);
 		//$$ = $2;
@@ -393,8 +410,13 @@ object_statement
 		printf("method \n");
 		$$ = $1;
 	}
-	| istemplate_stmt
-	| object_if
+	| istemplate_stmt{
+		printf("istemplate_stmt in object_statement \n");
+		$$ = $1;
+	}
+	| object_if{
+		printf("object_if in object_statement \n");
+	}
 	;
 
 object_if
@@ -450,7 +472,9 @@ method_params
 	: 
 	| '(' cdecl_or_ident_list ')'
 	| METHOD_RETURN '(' cdecl_or_ident_list ')'
-	| '(' cdecl_or_ident_list ')' METHOD_RETURN '(' cdecl_or_ident_list ')'
+	| '(' cdecl_or_ident_list ')' METHOD_RETURN '(' cdecl_or_ident_list ')'{
+		printf("with METHOD_RETURN in method_params\n");
+	}
 	;
 
 returnargs
@@ -459,7 +483,9 @@ returnargs
 	;
 
 method_def
-	: compound_statement
+	: compound_statement{
+		printf("compound_statement in method_def\n");
+	}
 	| DEFAULT compound_statement
 	;
 
@@ -704,10 +730,15 @@ expression_list
 	;
 
 statement
-	: compound_statement
+	: compound_statement{
+		$$ = $1;
+	}
 	| local
 	| ';'
-	| expression ';'
+	| expression ';'{
+		printf("expression in statement\n");
+		$$ = create_node("ANON", EXPRESSION_TYPE);
+	}
 	| IF '(' expression ')' statement
 	| IF '(' expression ')' statement ELSE statement
 	| WHILE '(' expression ')' statement
@@ -715,9 +746,14 @@ statement
 	| FOR '(' comma_expression_opt ';' expression_opt ';' comma_expression_opt ')' statement
 	| SWITCH '(' expression ')' statement
 	| DELETE expression ';'
-	| TRY statement CATCH statement
+	| TRY statement CATCH statement{
+		printf(" try catch in statement\n");
+	}
 	| AFTER '(' expression ')' CALL expression ';'
-	| CALL expression returnargs ';'
+	| CALL expression returnargs ';'{
+		$$ = create_node("CALL", CALL_TYPE);
+		printf("CALL statement\n");
+	}
 	| INLINE expression returnargs ';'
 	| ASSERT expression ';'
 	| LOG STRING_LITERAL ',' expression ',' expression ':' STRING_LITERAL ',' log_args ';'{
@@ -726,7 +762,11 @@ statement
 	| LOG STRING_LITERAL ',' expression ':' STRING_LITERAL log_args ';'
 	| LOG STRING_LITERAL ':' STRING_LITERAL log_args ';'
 	| SELECT ident IN '(' expression ')' WHERE '(' expression ')' statement ELSE statement
-	| FOREACH ident IN '(' expression ')' statement
+	| FOREACH ident IN '(' expression ')' statement{
+		$$ = create_node("FOREACH", FOREACH_TYPE);
+		printf("FOREACH in statement\n");
+
+	}
 	| ident ':' statement
 	| CASE expression ':' statement
 	| DEFAULT ':' statement
@@ -806,7 +846,6 @@ ident
 	| FIELD
 	| FOOTER
 	| GROUP
-	| HEADER
 	| IMPLEMENT
 	| IMPORT
 	| INTERFACE
