@@ -46,7 +46,7 @@ void generate_module_id_source(node_t* root, FILE* file){
 	time_t timep;
 	time (&timep);
 
-	printf("In %s\n", __FUNCTION__);
+	//printf("In %s\n", __FUNCTION__);
 	fprintf(file, "\
 /*						\
 \n* module_id.c - automatically generated, do not edit\

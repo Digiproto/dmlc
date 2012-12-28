@@ -141,7 +141,7 @@ void count(yyscanner);
 		lineno ++;
 	}
 header_loop:
-	printf("begin header_loop\n");
+	//printf("begin header_loop\n");
 	/* try to get the end token "%}" */
 	while ((c = input(yyscanner)) != '%' && c != 0) { 
 		if(c == '\n'){
