@@ -32,6 +32,11 @@
 #include <string.h> /* for strcmp, strdup & friends */
 #include <assert.h>
 #include "symbol.h"
+#ifdef SYMBOL_DEBUG
+#define DBG(fmt, ...) do { fprintf(stderr, fmt, ## __VA_ARGS__); } while (0)
+#else
+#define DBG(fmt, ...) do { } while (0)
+#endif
 
 #define MAX_SYMBOLS 10000
 static int str_hash(const char* str)  
@@ -86,7 +91,7 @@ int symbol_insert(char* name, int type, void* attr){
 	new_symbol->attr.default_type = attr;
 	new_symbol->next = NULL;
 
-	printf("In %s, name=%s, type=%d, hash value=%d\n", __FUNCTION__, name, type, str_hash(name));
+	DBG("In %s, name=%s, type=%d, hash value=%d\n", __FUNCTION__, name, type, str_hash(name));
 	if(s == NULL){ /* blank slot */
 		symbol_table[str_hash(name)] = new_symbol;
 	}
