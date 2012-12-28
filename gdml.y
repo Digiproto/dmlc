@@ -117,7 +117,7 @@ dml
 			create_node_list(node, $4);
 		if($5 != NULL)
 			create_node_list(node, $5);
-		printf("Device type is %s\n", $2);
+		DBG("Device type is %s\n", $2);
 		$$ = node;
 	}
 	| syntax_modifiers device_statements{
@@ -140,7 +140,7 @@ syntax_modifiers
 		$$ = NULL;
 	}
 	| syntax_modifiers syntax_modifier{
-		printf("In syntax_modifiers\n");
+		DBG("In syntax_modifiers\n");
 		if($1 == NULL && $2 != NULL)
 			$$ = $2;
 		else if($1 != NULL && $2 != NULL)
@@ -152,7 +152,7 @@ syntax_modifiers
 
 syntax_modifier
 	: BITORDER ident ';' {
-		printf("In BITORDER\n");
+		DBG("In BITORDER\n");
 		$$ = create_node($2, BITORDER_TYPE);
 	}
 	;
@@ -162,7 +162,7 @@ device_statements
 		$$ = NULL;
 	} 
 	| device_statements device_statement{
-		printf("In device_statements\n");
+		DBG("In device_statements\n");
 		if($1 == NULL && $2 != NULL)
 			$$ = $2;
 		else if($1 != NULL && $2 != NULL)
@@ -174,15 +174,15 @@ device_statements
 
 device_statement
 	: object_statement{
-		printf("object_statement In device_statement\n");
+		DBG("object_statement In device_statement\n");
 		$$ = $1;
 	}
 	| toplevel{
-		printf("toplevel In device_statement\n");
+		DBG("toplevel In device_statement\n");
 		$$ = $1;
 	}
 	| import{
-		printf("import In device_statement\n");
+		DBG("import In device_statement\n");
 		$$ = $1;
 	}
 	;
@@ -190,7 +190,7 @@ device_statement
 object
 	: BANK maybe_objident istemplate object_spec {
 		//insert_symbol()
-		printf("BANK is %s\n", $2);
+		DBG("BANK is %s\n", $2);
 		#if 1
 		node_t* bank = create_node($2, BANK_TYPE);
 		if($4 != NULL)
@@ -199,10 +199,10 @@ object
 		#endif
 	}
 	| REGISTER objident sizespec offsetspec istemplate object_spec{
-		printf("register is %s\n", $2);
+		DBG("register is %s\n", $2);
 		node_t* reg = create_node($2, REGISTER_TYPE);
 		if($6 != NULL){
-			printf("add_child for register\n");
+			DBG("add_child for register\n");
 			add_child(reg, $6);
 		}
 		$$ = reg;
@@ -228,11 +228,11 @@ method
 	: METHOD objident method_params method_def{
 		//symbol_insert($2, METHOD_TYPE);	
 		$$ = create_node($2, METHOD_TYPE);
-		printf("method is %s\n", $2);
+		DBG("method is %s\n", $2);
 	}
 	| METHOD EXTERN objident method_params method_def{
 		$$ = create_node($3, METHOD_TYPE);
-		printf("method extern is %s\n", $3);
+		DBG("method extern is %s\n", $3);
 
 	}
 	;
@@ -244,13 +244,13 @@ arraydef
 
 toplevel
 	: TEMPLATE objident object_spec{
-		printf("in TEMPLATE %s\n", $2);
+		DBG("in TEMPLATE %s\n", $2);
 		template_attr_t* attr = malloc(sizeof(template_attr_t));
 		symbol_insert($2, TEMPLATE_TYPE, attr);
 		$$ = create_node($2, TEMPLATE_TYPE);
 	}
 	| LOGGROUP ident ';'{
-		printf("in LOGGROUP %s\n", $2);
+		DBG("in LOGGROUP %s\n", $2);
 		symbol_insert($2, LOGGROUP_TYPE, NULL);
 		$$ = create_node($2, LOGGROUP_TYPE);
 
@@ -278,7 +278,7 @@ toplevel
 
 istemplate_stmt
 	: IS objident ';' {
-		printf("In IS statement\n");
+		DBG("In IS statement\n");
 		symbol_t* symbol = symbol_find($2, TEMPLATE_TYPE);	
 		if(symbol == NULL){
 			fprintf(stderr, "No such template %s in IS statement\n", $2);
@@ -292,7 +292,7 @@ istemplate_stmt
 import
 	: IMPORT STRING_LITERAL ';'{
 		//symbol_insert($2, IMPORT_TYPE);	
-		printf("import file is %s\n", $2);
+		DBG("import file is %s\n", $2);
 		char fullname[1024];
 		int dirlen = strlen(dir);
 		int filelen = strlen($2);
@@ -320,15 +320,15 @@ import
 
 		yyscan_t scanner;
 		node_t* root = create_node($2, IMPORT_TYPE);
-		printf("Begin parse the import file %s\n", fullname);
+		DBG("Begin parse the import file %s\n", fullname);
 		node_t* ast = NULL;
 		yylex_init(&scanner);
 		yyrestart(file, scanner);
 		yyparse(scanner, &ast);
 		yylex_destroy(scanner);
 		fclose(file);
-		print_ast(ast);
-		printf("End of parse the import file %s\n", fullname);
+		//print_ast(ast);
+		DBG("End of parse the import file %s\n", fullname);
 
 		#if 0
 			void* buffer;
@@ -378,13 +378,13 @@ object_desc
 object_spec
 	:object_desc ';'
 	| object_desc '{' object_statements '}'{
-		printf("object_statements for object_spec\n");
+		DBG("object_statements for object_spec\n");
 		$$ = $3;
 	}
 	;
 object_statements
 	: object_statements object_statement{
-		printf("In object_statements\n");
+		DBG("In object_statements\n");
 		if($1 == NULL && $2 != NULL)
 			$$ = $2;
 		else if($1 != NULL && $2 != NULL)
@@ -398,24 +398,24 @@ object_statements
 	;
 object_statement
 	: object{
-		printf("in object for object_statement\n");
+		DBG("in object for object_statement\n");
 		$$ = $1;
 	}
 	
 	| parameter{
-		printf("parameter \n");
+		DBG("parameter \n");
 		$$ = $1;
 	}
 	| method{
-		printf("method \n");
+		DBG("method \n");
 		$$ = $1;
 	}
 	| istemplate_stmt{
-		printf("istemplate_stmt in object_statement \n");
+		DBG("istemplate_stmt in object_statement \n");
 		$$ = $1;
 	}
 	| object_if{
-		printf("object_if in object_statement \n");
+		DBG("object_if in object_statement \n");
 	}
 	;
 
@@ -430,7 +430,7 @@ parameter
 		//parameter_insert($2, $3);
 		//symbol_insert($2, PARAMETER_TYPE, $3);
 		$$ = create_node($2, PARAMETER_TYPE);
-		printf("parameter name is %s\n", $2);
+		DBG("parameter name is %s\n", $2);
 	}
 	;
 
@@ -473,7 +473,7 @@ method_params
 	| '(' cdecl_or_ident_list ')'
 	| METHOD_RETURN '(' cdecl_or_ident_list ')'
 	| '(' cdecl_or_ident_list ')' METHOD_RETURN '(' cdecl_or_ident_list ')'{
-		printf("with METHOD_RETURN in method_params\n");
+		DBG("with METHOD_RETURN in method_params\n");
 	}
 	;
 
@@ -484,7 +484,7 @@ returnargs
 
 method_def
 	: compound_statement{
-		printf("compound_statement in method_def\n");
+		DBG("compound_statement in method_def\n");
 	}
 	| DEFAULT compound_statement
 	;
@@ -687,7 +687,7 @@ expression
 	}
 	| UNDEFINED
 	| '$' objident{
-		printf("In $objident\n");
+		DBG("In $objident\n");
 	}
 	| ident
 	| expression '.' objident
@@ -736,7 +736,7 @@ statement
 	| local
 	| ';'
 	| expression ';'{
-		printf("expression in statement\n");
+		DBG("expression in statement\n");
 		$$ = create_node("ANON", EXPRESSION_TYPE);
 	}
 	| IF '(' expression ')' statement
@@ -747,24 +747,24 @@ statement
 	| SWITCH '(' expression ')' statement
 	| DELETE expression ';'
 	| TRY statement CATCH statement{
-		printf(" try catch in statement\n");
+		DBG(" try catch in statement\n");
 	}
 	| AFTER '(' expression ')' CALL expression ';'
 	| CALL expression returnargs ';'{
 		$$ = create_node("CALL", CALL_TYPE);
-		printf("CALL statement\n");
+		DBG("CALL statement\n");
 	}
 	| INLINE expression returnargs ';'
 	| ASSERT expression ';'
 	| LOG STRING_LITERAL ',' expression ',' expression ':' STRING_LITERAL ',' log_args ';'{
-		printf("In LOG statement,\n");
+		DBG("In LOG statement,\n");
 	}
 	| LOG STRING_LITERAL ',' expression ':' STRING_LITERAL log_args ';'
 	| LOG STRING_LITERAL ':' STRING_LITERAL log_args ';'
 	| SELECT ident IN '(' expression ')' WHERE '(' expression ')' statement ELSE statement
 	| FOREACH ident IN '(' expression ')' statement{
 		$$ = create_node("FOREACH", FOREACH_TYPE);
-		printf("FOREACH in statement\n");
+		DBG("FOREACH in statement\n");
 
 	}
 	| ident ':' statement
@@ -803,7 +803,7 @@ local_keyword
 local
 	: local_keyword cdecl ';'
 	| STATIC cdecl ';'{
-		printf("In STATIC \n");
+		DBG("In STATIC \n");
 	}
 	| local_keyword cdecl '=' expression ';'
 	| STATIC cdecl '=' expression ';'
@@ -823,7 +823,7 @@ maybe_objident
 
 objident
 	:ident{
-		printf("ident\n");
+		DBG("ident\n");
 	}
 	| THIS
 	| REGISTER
