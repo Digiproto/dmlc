@@ -8,6 +8,7 @@
 #define YYDEBUG 1
 const char* dir = "/opt/virtutech/simics-4.0/simics-model-builder-4.0.16/amd64-linux/bin/dml/1.0/";
 
+//#define PARSE_DEBUG
 #ifdef PARSE_DEBUG
 #define DBG(fmt, ...) do { fprintf(stderr, fmt, ## __VA_ARGS__); } while (0)
 #else
@@ -24,6 +25,7 @@ int last_column;
 #include "Lexer.h"
 
 extern int  yylex(YYSTYPE *yylval_param, yyscan_t yyscanner);
+extern char* builtin_filename;
 %}
 
 %output  "Parser.c"
@@ -113,10 +115,18 @@ dml
 		attr->name = strdup($2);
 		symbol_insert("DEVICE", DEVICE_TYPE, attr);
 		node_t* node = create_node("DEVICE", DEVICE_TYPE);
+		node_t* import_ast = NULL;
+		if(builtin_filename != NULL){
+			import_ast = get_ast(builtin_filename);
+			if(import_ast->child != NULL)
+				create_node_list(node, import_ast->child);
+		}
+
 		if($4 != NULL)	
 			create_node_list(node, $4);
 		if($5 != NULL)
 			create_node_list(node, $5);
+
 		DBG("Device type is %s\n", $2);
 		$$ = node;
 	}
@@ -126,6 +136,7 @@ dml
 		else if($1 != NULL && $2 == NULL)
 			$$ = $1;
 		else if($1 != NULL && $2 != NULL){
+			//printf("device statements\n");
 			create_node_list($1, $2);
 			$$ = $1;
 		}
@@ -165,8 +176,10 @@ device_statements
 		DBG("In device_statements\n");
 		if($1 == NULL && $2 != NULL)
 			$$ = $2;
-		else if($1 != NULL && $2 != NULL)
+		else if($1 != NULL && $2 != NULL){
+			//printf("create_node_list, $1=0x%x, $2=0x%x. | device_statements device_statement\n", $1, $2);
 			$$ = create_node_list($1, $2);
+		}
 		else
 			printf("something wrong in device_statements\n");
 	}
@@ -182,6 +195,7 @@ device_statement
 		$$ = $1;
 	}
 	| import{
+		//printf("import In device_statement, $1=0x%x\n", $1);
 		DBG("import In device_statement\n");
 		$$ = $1;
 	}
@@ -291,7 +305,8 @@ istemplate_stmt
 
 import
 	: IMPORT STRING_LITERAL ';'{
-		//symbol_insert($2, IMPORT_TYPE);	
+		/* FIXME, should check if the same filename is imported already. */
+		symbol_insert($2, IMPORT_TYPE, NULL);
 		DBG("import file is %s\n", $2);
 		char fullname[1024];
 		int dirlen = strlen(dir);
@@ -368,7 +383,8 @@ import
 			yyin = backup_fd;
 			yylex_destroy
 		#endif
-		$$ = root;
+		//$$ = root;
+		$$ = ast->child;
 	}
 	;
 object_desc

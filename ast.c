@@ -39,8 +39,10 @@ typedef struct Exp_list {
 
 static node_t* find_tail(node_t* head){
 	node_t* it = head;
-	while(it->sibling != NULL)
+	while(it->sibling != NULL){
 		it = it->sibling;
+		DBG("In %s, head=0x%x, it=0x%x\n", __FUNCTION__, head, it);
+	}
 	return it;
 }
 #if 0

@@ -63,11 +63,11 @@ node_t* get_ast(char* filename){
 	
 	fclose(file);
 	#if DEBUG_AST
-	print_ast(root);
+	//print_ast(root);
 	#endif
 	return root;
 }
-
+char* builtin_filename = NULL;
 int main(int argc, char* argv[])
 {
 	if(argc != 2){
@@ -75,17 +75,18 @@ int main(int argc, char* argv[])
                 exit(-1); 
         }
 	
-	char* builtin_filename = concat_filename(simics_dml_dir, import_file_list[0]);
+	builtin_filename = concat_filename(simics_dml_dir, import_file_list[0]);
 	//printf("In %s, builtin_filename=%s\n", __FUNCTION__, builtin_filename);
 	//sleep(1);
 	/* dml-builtins.dml */
-	node_t* import_ast = get_ast(builtin_filename);
-	free(builtin_filename); /* free memory allocated in concat_filename function */
+	//node_t* import_ast = get_ast(builtin_filename);
 
 	/* main ast */
         char* filename = argv[1];
         node_t* ast = get_ast(filename);
 	assert(ast != NULL);
+	print_ast(ast);
 	generate_code(ast, "./output/");
+	free(builtin_filename); /* free memory allocated in concat_filename function */
 	return 0;
 }
