@@ -80,8 +80,63 @@ void generate_module_id_source(node_t* root, FILE* file){
 * @param file
 */
 void generate_device_source(node_t* root, FILE* file){
+#if 0
+	fprintf(file, "\
+static conf_object_t *\
+simple_device_new_instance(parse_object_t *parse_obj)\
+{\
+\n\
+\tsimple_device_t *_dev UNUSED = MM_ZALLOC(1, simple_device_t);\
+\t_init_static_vars(_dev);\
+\tSIM_log_constructor(&_dev->log, parse_obj);\
+\t{\
+\n\t\tuint8/*bool*/ v2__exc = 0;\
+\n\t\t{\
+\n\t\t\tv2__exc = hard_reset(_dev);
+\n\t\t\tif (v2__exc) {
+                #line 4 "/home/simics32/simics-workspace/modules/simple-device/simple-device.dml"
+                SIM_log_error(&_dev->log, 0, "Uncaught DML exception");
+            }
+        }
+    }
+    #line 60 "simple-device-dml.c"
+    return &_dev->log.obj;
 }
 
+static void
+simple_device_finalize_instance(conf_object_t *_obj)
+{
+    simple_device_t *_dev UNUSED = (simple_device_t *)_obj;
+    ;
+}");
+#endif
+       /* get the device name */
+        symbol_t* symbol = symbol_find("DEVICE", DEVICE_TYPE);
+        if(symbol == NULL){
+                printf("can not find device\n");
+                exit(-1);
+        }
+
+        device_attr_t* attr = (device_attr_t*)symbol->attr.device;
+        char* device_name = attr->name;
+
+	/* output initilization of device */
+	fprintf(file, "\
+\nconf_class_t *\
+\ninitialize_%s(void)\
+\n{\
+
+	", device_name);
+
+	/* output the init_local */
+	fprintf(file, "\
+\nvoid\
+\ninit_local(void)\
+\n{\
+\n\tinitialize_%s();\
+\n}\
+\n", device_name);
+}
 void generate_device_header(node_t* root, FILE* file){
 }
 
