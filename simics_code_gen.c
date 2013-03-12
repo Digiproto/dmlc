@@ -125,8 +125,8 @@ simple_device_finalize_instance(conf_object_t *_obj)
 \nconf_class_t *\
 \ninitialize_%s(void)\
 \n{\
-
-	", device_name);
+\n}\
+\n", device_name);
 
 	/* output the init_local */
 	fprintf(file, "\
