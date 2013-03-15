@@ -32,7 +32,7 @@
 
 #define DEBUG_AST 1
 
-const char* simics_dml_dir = "/opt/virtutech/simics-4.0/simics-model-builder-4.0.16/amd64-linux/bin/dml/1.0/";
+const char* simics_dml_dir = "/home/alloc/dmlc/gdml/simics/";
 const char* import_file_list[] = {
 	"dml-builtins.dml",
 	"simics-configuration.dml",
@@ -75,7 +75,9 @@ int main(int argc, char* argv[])
                 exit(-1); 
         }
 	
-	builtin_filename = concat_filename(simics_dml_dir, import_file_list[0]);
+	char tmp[256];
+	snprintf(tmp,256,"%s/%s",simics_dml_dir,import_file_list[0]);
+	builtin_filename = tmp;
 	//printf("In %s, builtin_filename=%s\n", __FUNCTION__, builtin_filename);
 	//sleep(1);
 	/* dml-builtins.dml */
@@ -86,7 +88,7 @@ int main(int argc, char* argv[])
         node_t* ast = get_ast(filename);
 	assert(ast != NULL);
 	print_ast(ast);
-	generate_code(ast, "./output/");
+	gen_code(ast, "./output/");
 	free(builtin_filename); /* free memory allocated in concat_filename function */
 	return 0;
 }
