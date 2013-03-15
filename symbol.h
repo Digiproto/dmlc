@@ -30,9 +30,6 @@ typedef struct dml_attr{
 	float version;
 }dml_attr_t;
 
-typedef struct device_attr{
-	char* name;
-}device_attr_t;
 
 typedef struct bitorder_attr{
 	char* name;
@@ -55,7 +52,7 @@ typedef struct constant_attr{
 typedef struct struct_attr{
 }struct_attr_t;
 typedef struct object_stmt_node{
-};
+}stmt_attr_t;
 typedef struct parameter_attr{
 	int is_default;
 	int is_auto;
@@ -72,12 +69,27 @@ typedef struct method_attr{
 	void* arg_list;
 }method_attr_t;
 
-typedef struct bank_attr{
-	char* template_name;
-}bank_attr_t;
+struct bank_attr;
 
 typedef struct register_attr{
+	char* name;
+	int offset; 
+	struct bank_attr *bank;
 }register_attr_t;
+
+typedef struct register_list_node {
+	register_attr_t *reg;
+	struct register_list_node *next;
+}register_list_node_t;
+
+typedef struct bank_attr{
+	char* template_name;
+	char* name;
+	int register_size;
+	int size;
+	register_list_node_t *registers;
+}bank_attr_t;
+
 typedef struct register_array_attr{
 }register_array_attr_t;
 
@@ -110,6 +122,20 @@ typedef struct port_attr{
 }port_attr_t;
 typedef struct implement_attr{
 }implement_attr_t;
+
+typedef struct bank_list_node {
+	bank_attr_t *bank;
+	struct bank_list_node *next;
+}bank_list_node_t; 
+
+
+typedef struct device_attr{
+	char* name;
+	int endian;
+	bank_list_node_t *banks;
+}device_attr_t;
+
+
 #endif
 typedef struct symbol{
 	char *name; 
