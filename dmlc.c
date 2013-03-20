@@ -32,7 +32,7 @@
 
 #define DEBUG_AST 1
 
-const char* simics_dml_dir = "/home/alloc/dmlc/gdml/simics/";
+const char* simics_dml_dir = "/opt/simics-4.0/simics-model-builder-4.0.16/amd64-linux/bin/dml/1.0/";
 const char* import_file_list[] = {
 	"dml-builtins.dml",
 	"simics-configuration.dml",
@@ -89,6 +89,5 @@ int main(int argc, char* argv[])
 	assert(ast != NULL);
 	print_ast(ast);
 	gen_code(ast, "./output/");
-	free(builtin_filename); /* free memory allocated in concat_filename function */
 	return 0;
 }
