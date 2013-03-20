@@ -94,12 +94,29 @@ static void gen_header_file(device_attr_t *dev,FILE* f){
 }
 
 static void gen_device_props(device_attr_t *dev,FILE *f){
+	fprintf(f,"\nstatic Property %s_props[] = {\
+			\n\t",dev->name);
+	fprintf(f,"\n\tDEFINE_PROP_END_OF_LIST()");
+	fprintf(f,"\n};\n");	
 }
 
 static void gen_interface(interface_attr_t *iface,FILE* f){
 }
 
 static void gen_device_vmstate(device_attr_t *dev,FILE *f){
+	fprintf(f,"\nstatic const VMStateDescription %s_vmstate = { \
+	\n\t.name = \"%s\",\
+	\n\t.version_id = 1,\
+	\n\t.minumum_version_id = 1,\
+	\n\t.minumum_old_version_id = 1,\
+	\n\t.fields = {\
+	\n",dev->name,dev->name);
+	
+	fprintf(f,"\n\t\tVMSTATE_END_OF_LIST()\n");
+	
+	fprintf(f,"\n\t}\n");
+		
+	fprintf(f,"\n};\n");	
 }
 
 static void gen_register_read_access(device_attr_t *dev,register_attr_t *reg,FILE* f){
@@ -201,7 +218,7 @@ static void gen_memory_region(device_attr_t *dev,FILE *f){
 				\n\t\t.min_access_size = 1;\
 				\n\t\t.max_access_size = %d;\
 				\n\t},\
-				\n};",b->name,b->name,b->name,endian,b->register_size);
+				\n};\n",b->name,b->name,b->name,endian,b->register_size);
 	}
 	
 }
@@ -269,7 +286,7 @@ static void gen_device_init(device_attr_t *dev,FILE* f){
 			\n\t%s_regs_init(_dev);\
 			\n\t%s_regs_mr_init(_dev);\
 			\n\treturn 0;\
-			\n}",dev->name,dev_name,dev_name);
+			\n}\n",dev->name,dev_name,dev_name);
 	
 }
 
@@ -305,7 +322,7 @@ static void gen_device_reset(device_attr_t *dev,FILE* f){
 	
 	char* name = dev->name;
 	fprintf(f,"\nstatic void %s_reset(DeviceState *dev){\
-			\n\t%_t *_dev = DO_UPCAST(%s_t,dev.busdev,dev);\
+			\n\t%s_t *_dev = DO_UPCAST(%s_t,dev.busdev,dev);\
 			\n",name,name,name);
 	/*inline hard reset code*/
 	bank_attr_t *b;
@@ -349,7 +366,7 @@ static void gen_device_type_info(device_attr_t *dev,FILE* f){
 	\n\t.class_init = %s_class_init,\
 	\n};\n",dev_name,dev_name,dev_name,dev_name);
 
-	fprintf(f,"static void %s_register_types(void){ \
+	fprintf(f,"\nstatic void %s_register_types(void){ \
 			\n\ttype_register_static(&%s_info);\
 			\n}\n",dev_name,dev_name);
 
