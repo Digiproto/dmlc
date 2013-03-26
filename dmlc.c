@@ -31,8 +31,14 @@
 #include "Lexer.h"
 
 #define DEBUG_AST 1
+#define QEMU 0
 
-const char* simics_dml_dir = "/opt/simics-4.0/simics-model-builder-4.0.16/amd64-linux/bin/dml/1.0/";
+#if QEMU
+const char* simics_dml_dir = "/opt/simics-4.0/simics-model-builder-4.0.16/amd64-linux/bin/dml/1.0";
+#else
+const char* simics_dml_dir = "/opt/virtutech/simics-4.0/simics-model-builder-4.0.16/amd64-linux/bin/dml/1.0";
+#endif
+
 const char* import_file_list[] = {
 	"dml-builtins.dml",
 	"simics-configuration.dml",
@@ -88,6 +94,11 @@ int main(int argc, char* argv[])
         node_t* ast = get_ast(filename);
 	assert(ast != NULL);
 	print_ast(ast);
-	gen_code(ast, "./output/");
+#if QEMU
+	gen_qemu_code(ast, "./output/");
+#else
+	generate_simics_code(ast, "./output/");
+#endif
+
 	return 0;
 }

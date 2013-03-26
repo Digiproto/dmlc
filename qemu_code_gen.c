@@ -373,7 +373,7 @@ static void gen_device_type_info(device_attr_t *dev,FILE* f){
 	fprintf(f,"\ntype_init(%s_register_types)\n",dev_name);
 }
 
-void gen_code(node_t *root, char* name){
+void gen_qemu_code(node_t *root, char* name){
 	symbol_t *sym = symbol_find("DEVICE",DEVICE_TYPE);
 	if(!sym){
 		printf("cannot find device tree\n");	

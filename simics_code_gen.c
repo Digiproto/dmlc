@@ -203,7 +203,7 @@ void complete_filename(char* device_name, char* path_name){
 		printf("filename[%d] = %s\n", i, gen_filename[i]);
 	#endif
 }
-void generate_code(node_t* root, char* path_name){
+void generate_simics_code(node_t* root, char* path_name){
 	/* get the device name */
 	symbol_t* symbol = symbol_find("DEVICE", DEVICE_TYPE);
 	if(symbol == NULL){
