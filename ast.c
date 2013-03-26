@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include "ast.h"
+#include "debug_color.h"
 /*
 typedef struct Exp_list { 
   node*             elem;
@@ -41,7 +42,7 @@ static node_t* find_tail(node_t* head){
 	node_t* it = head;
 	while(it->sibling != NULL){
 		it = it->sibling;
-		DBG("In %s, head=0x%x, it=0x%x\n", __FUNCTION__, head, it);
+		DEBUG_FIND_TAIL("In %s, head=0x%x, it=0x%x\n", __FUNCTION__, head, it);
 	}
 	return it;
 }
@@ -57,7 +58,7 @@ node_t* create_ast(char* name){
 #endif
 void add_child(node_t* parent, node_t* child){
 	assert(parent != NULL);
-	DBG("In %s, child->name=%s\n", __FUNCTION__, child->name);
+	DEBUG_ADD_CHILD("In %s, child->name=%s\n", __FUNCTION__, child->name);
 	parent->child = child;
 }
 static int node_num = 0;
@@ -66,7 +67,7 @@ node_t* create_node(char* name, int type){
 	node->name = strdup(name);
 	node->sibling = NULL;
 	node->child = NULL;
-	DBG("In %s, name=%s, type = %d\n", __FUNCTION__, name, type);
+	DEBUG_CREATE_NODE("In %s, name=%s, type = %d\n", __FUNCTION__, name, type);
 	node->type = type;
 	node_num ++;
 	return node;
@@ -86,7 +87,7 @@ node_t* create_node(char* name, int type){
 */
 node_t* create_node_list(node_t* root, node_t* new_node){
 	if(root != NULL && new_node != NULL)
-		DBG("In %s, root->name=%s, new_node->name=%s\n", __FUNCTION__, root->name, new_node->name);
+		DEBUG_CREATE_NODE_LIST("In %s, root->name=%s, new_node->name=%s\n", __FUNCTION__, root->name, new_node->name);
 	assert(new_node != NULL);
 	assert(root != NULL);
 		
