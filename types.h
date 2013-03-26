@@ -43,7 +43,13 @@ typedef enum{
 	CALL_TYPE,
 	EXPRESSION_TYPE,
 	DATA_TYPE,
-	EXTERN_TYPE
+	EXTERN_TYPE,
+	IMPLEMENT_TYPE,
+	FIELD_TYPE,
+	AFTER_TYPE,
+	ATTRIBUTE_TYPE,
+	CONNECT_TYPE,
+	INTERFACE_TYPE
 }ident_type_t;
 
 typedef struct obj_variable{

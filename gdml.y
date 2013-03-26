@@ -8,7 +8,7 @@
 #define YYDEBUG 1
 const char* dir = "/opt/virtutech/simics-4.0/simics-model-builder-4.0.16/amd64-linux/bin/dml/1.0/";
 
-//#define PARSE_DEBUG
+#define PARSE_DEBUG
 #ifdef PARSE_DEBUG
 #define DBG(fmt, ...) do { fprintf(stderr, fmt, ## __VA_ARGS__); } while (0)
 #else
@@ -177,7 +177,7 @@ device_statements
 		if($1 == NULL && $2 != NULL)
 			$$ = $2;
 		else if($1 != NULL && $2 != NULL){
-			//printf("create_node_list, $1=0x%x, $2=0x%x. | device_statements device_statement\n", $1, $2);
+			printf("create_node_list, $1=0x%x, $2=0x%x. | device_statements device_statement\n", $1, $2);
 			$$ = create_node_list($1, $2);
 		}
 		else
@@ -222,18 +222,34 @@ object
 		$$ = reg;
 	}
 	| REGISTER objident '[' arraydef ']' sizespec istemplate object_spec
-	| FIELD objident bitrange istemplate object_spec
+	| FIELD objident bitrange istemplate object_spec {
+		/* shenoubang add 2013-3-20 */
+       $$ =  create_node($2, FIELD_TYPE);
+	}
 	| FIELD objident istemplate object_spec
 	| DATA cdecl ';'{
 		$$ = create_node("ANON", DATA_TYPE);
 	}
-	| CONNECT objident istemplate object_spec
-	| INTERFACE objident istemplate object_spec
-	| ATTRIBUTE objident istemplate object_spec
+	| CONNECT objident istemplate object_spec {
+		$$ = create_node($2, CONNECT_TYPE);
+		DBG("CONNECT_TYPE: %s\n", $2);
+	}
+	| INTERFACE objident istemplate object_spec {
+		$$ = create_node($2, INTERFACE_TYPE);
+		DBG("Interface_type: %s\n", $2);
+	}
+	| ATTRIBUTE objident istemplate object_spec {
+		$$ = create_node($2, ATTRIBUTE_TYPE);
+		DBG("Attribute: %s\n", $2);
+	}
 	| EVENT objident istemplate object_spec
 	| GROUP objident istemplate object_spec
 	| PORT objident istemplate object_spec
-	| IMPLEMENT objident istemplate object_spec
+	| IMPLEMENT objident istemplate object_spec {
+		/* shenoubang add 2013-3-20 */
+		$$ = create_node($2, IMPLEMENT_TYPE);
+		DBG("objident: %s\n", $2);
+	}
 	| ATTRIBUTE objident '[' arraydef ']' istemplate object_spec
 	| GROUP objident '[' arraydef ']' istemplate object_spec
 	| CONNECT objident '[' arraydef ']' istemplate object_spec
@@ -466,6 +482,7 @@ paramspec
 		parameter_attr_t* attr = malloc(sizeof(parameter_attr_t));
 		attr->value.str = $2;
 		$$ = attr;
+		DBG("paramspec: %s\n", attr->value.str);
 	}
 	| DEFAULT expression ';'{
 		parameter_attr_t* attr = malloc(sizeof(parameter_attr_t));
@@ -694,7 +711,12 @@ expression
 	| DEC_OP expression
 	| expression INC_OP
 	| expression DEC_OP
-	| expression '(' expression_list ')'
+	| expression '(' expression_list ')' {
+		/* shenoubang 2013-3-20
+		* FIXME: This maybe some problems
+		*/
+		$$ = $1;
+	}
 	| INTEGER_LITERAL{
 		$$=$1;
 	}
@@ -765,7 +787,10 @@ statement
 	| TRY statement CATCH statement{
 		DBG(" try catch in statement\n");
 	}
-	| AFTER '(' expression ')' CALL expression ';'
+	| AFTER '(' expression ')' CALL expression ';' {
+		$$ = create_node("AFTER", AFTER_TYPE);
+		DBG("AFTER CALL statement\n");
+	}
 	| CALL expression returnargs ';'{
 		$$ = create_node("CALL", CALL_TYPE);
 		DBG("CALL statement\n");
@@ -777,7 +802,12 @@ statement
 	}
 	| LOG STRING_LITERAL ',' expression ':' STRING_LITERAL log_args ';'
 	| LOG STRING_LITERAL ':' STRING_LITERAL log_args ';'
-	| SELECT ident IN '(' expression ')' WHERE '(' expression ')' statement ELSE statement
+	| SELECT ident IN '(' expression ')' WHERE '(' expression ')' statement ELSE statement {
+		/* shenoubang add 2013-3-20
+		*  FIXME: This is some problem, please fix it.
+		*/
+		DBG("select, Pay attention: There is not implement it~~~~~~~~\N");
+	}
 	| FOREACH ident IN '(' expression ')' statement{
 		$$ = create_node("FOREACH", FOREACH_TYPE);
 		DBG("FOREACH in statement\n");

@@ -27,39 +27,39 @@ void count(yyscanner);
 %%  
 "/*"            { 
 	//comment(); 
-	//printf("Comment begin:");
+	printf("Comment begin:");
         char c, c1;
     loop:  
         while ((c = input(yyscanner)) != '*' && c != 0) { 
-		//putchar(c);  
+		putchar(c);
 		if(c == '\n'){
 			lineno ++;
 			column = 0;
 		}
 	}
 	c1 = input(yyscanner);
-//     printf("In comment, c=%d, c1=%c\n", c, c1); 
+    printf("In comment, c=%d, c1=%c\n", c, c1);
 	if(c1 == '\n')
 		lineno ++;
         if ((c1) != '/' && c != 0)  
-        {  
-//		printf("In comment, c1 = %c, c=%c\n",c1, c);
+        {
+		printf("In comment, c1 = %c, c=%c\n",c1, c);
             unput(c1);  
             goto loop;  
         }  
       
         if (c != 0) { 
-		//putchar(c);
-		//putchar(c1);  
+			putchar(c);
+			putchar(c1);
 	}
 }  
 "//"		{  
 	char c;
-	//printf("Comment begin:");
+	printf("Comment begin:");
 	while((c = input(yyscanner)) != '\n'){
-		//putchar(c);
+		putchar(c);
 	}
-	//putchar('\n');
+	putchar('\n');
 	lineno++;
 	column = 0;
 }
@@ -133,6 +133,7 @@ void count(yyscanner);
 		else{
 			/* something wrong */
 		}
+		putchar(c);
 	}
 	/* the next character should be '{' */
 	c1 = input(yyscanner);
@@ -141,7 +142,7 @@ void count(yyscanner);
 		lineno ++;
 	}
 header_loop:
-	//printf("begin header_loop\n");
+	printf("begin header_loop\n");
 	/* try to get the end token "%}" */
 	while ((c = input(yyscanner)) != '%' && c != 0) { 
 		if(c == '\n'){
@@ -152,7 +153,7 @@ header_loop:
 	c1 = input(yyscanner);
         if ((c1) != '}' && c != 0)  
         {  
-//		printf("In comment, c1 = %c, c=%c\n",c1, c);
+		printf("In comment, c1 = %c, c=%c\n",c1, c);
 		unput(c1);  
 		goto header_loop;  
         }  
@@ -177,6 +178,10 @@ header_loop:
 "defined"		{ count(yyscanner); return(DEFINED);}
 "bitorder"	{count(yyscanner); return(BITORDER);}
 "constant"	{count(yyscanner); return(CONSTANT);}
+"implement" {count(yyscanner); return(IMPLEMENT);}
+"select"   {count(yyscanner); return(SELECT);}
+"where"        {count(yyscanner); return(WHERE);}
+"after"        {count(yyscanner); return(AFTER);}
 "\".*\""	{ count(yyscanner); 
 			yylval_param->sval = (char *) strdup(yyget_text(yyscanner));
 			return(STRING_LITERAL);
@@ -255,7 +260,8 @@ L?\"(\\.|[^\\"])*\" { count(yyscanner);
 ">"          { count(yyscanner); return('>'); }  
 "^"         { count(yyscanner); return('^'); }  
 "|"         { count(yyscanner); return('|'); }  
-"?"         { count(yyscanner); return('?'); }  
+"?"         { count(yyscanner); return('?'); }
+"$"         { count(yyscanner); return('$'); }
 "\n"                {    ++lineno; column = 0;}
 [ \t\v\f]     { count(yyscanner); }  
 .           { /* ignore bad characters */ }  
@@ -312,8 +318,10 @@ void count(yyscan_t scanner)
                 column += 8 - (column % 8);  
             else  
                 column++;
-        //ECHO;  
-	//printf("In %s, lineno=%d, yytext=%s\n", __FUNCTION__, lineno, text);
+
+	if (strcmp(text, " ") != 0) {
+		printf("In %s, lineno=%d, yytext=%s\n", __FUNCTION__, lineno, text);
+	}
 }  
       
       
