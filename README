@@ -1,0 +1,22 @@
+	README
+
+1. Install requred tools for parser
+--------------------------------------------
+You need to install bison and flex tools to do parser.
+
+2. Config the directory of simics
+------------------------
+Modify "simics_dml_dir" variable in [dmlc.c:35] to your simics install directory.
+Modify "dir" variable in [gdml.y:9] to your simics install directory.
+
+3. Build the gdml
+Run "make" to run
+
+4. Run the gdml
+./dmlc testcase/simple-device.dml
+
+The C source file for Simics platform will be generated at output directory.
+And also the grammar tree will output on your screen after run dmlc.
+
+Thanks
+SkyEye Team
