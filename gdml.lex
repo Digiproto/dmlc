@@ -13,7 +13,9 @@ INTS          (u|U|l|L)*
 #include "Parser.h"  
 extern int lineno;
 int column = 0;
-void count(yyscanner);  
+void count(yyscanner);
+/* the max length of include file name */
+#define MAX_INCLUDE 1024
 %}  
 
 %option outfile="Lexer.c" header-file="Lexer.h"
@@ -26,40 +28,39 @@ void count(yyscanner);
       
 %%  
 "/*"            { 
-	//comment(); 
-	printf("Comment begin:");
+	//printf("Comment begin:");
         char c, c1;
     loop:  
         while ((c = input(yyscanner)) != '*' && c != 0) { 
-		putchar(c);
+		//putchar(c);
 		if(c == '\n'){
 			lineno ++;
 			column = 0;
 		}
 	}
 	c1 = input(yyscanner);
-    printf("In comment, c=%d, c1=%c\n", c, c1);
+    //printf("In comment, c=%d, c1=%c\n", c, c1);
 	if(c1 == '\n')
 		lineno ++;
         if ((c1) != '/' && c != 0)  
         {
-		printf("In comment, c1 = %c, c=%c\n",c1, c);
+		//printf("In comment, c1 = %c, c=%c\n",c1, c);
             unput(c1);  
             goto loop;  
         }  
       
         if (c != 0) { 
-			putchar(c);
-			putchar(c1);
+			//putchar(c);
+			//putchar(c1);
 	}
 }  
 "//"		{  
 	char c;
-	printf("Comment begin:");
+	//printf("Comment begin:");
 	while((c = input(yyscanner)) != '\n'){
-		putchar(c);
+		//putchar(c);
 	}
-	putchar('\n');
+	//putchar('\n');
 	lineno++;
 	column = 0;
 }
@@ -123,41 +124,49 @@ void count(yyscanner);
 "header"	{ 
 	count(yyscanner);
 	char c, c1;
-        while ((c = input(yyscanner)) != '%' && c != 0) { 
-		if(c == ' '){
-		}
-		else if(c == '\n'){
-			lineno ++;
-			column = 0;
-		}
-		else{
-			/* something wrong */
-		}
-		putchar(c);
-	}
-	/* the next character should be '{' */
-	c1 = input(yyscanner);
-	if(c1 != '{'){
-		/* something wrong */
-		lineno ++;
-	}
+	char include_buf[MAX_INCLUDE]; // store the include file name
+	int i = 0;
+    while ((c = input(yyscanner)) != '%' && c != 0) {
+        if(c == ' '){
+        }
+        else if(c == '\n'){
+            lineno ++;
+            column = 0;
+        }
+        else{
+            /* something wrong */
+        }
+    }
+    /* the next character should be '{' */
+    c1 = input(yyscanner);
+    if(c1 != '{'){
+        /* something wrong */
+        lineno ++;
+    }
 header_loop:
-	printf("begin header_loop\n");
-	/* try to get the end token "%}" */
-	while ((c = input(yyscanner)) != '%' && c != 0) { 
-		if(c == '\n'){
-			lineno ++;
-			column = 0;
+    //printf("begin header_loop\n");
+    /* try to get the end token "%}" */
+    while ((c = input(yyscanner)) != '%' && c != 0) {
+        if(c == '\n'){
+            lineno ++;
+            column = 0;
+        }
+		//putchar(c);
+		include_buf[i++] = c;
+		if (i >= MAX_INCLUDE) {
+			fprintf(stderr, "The include file name is out of bounds!\n");
+			exit(-1);
 		}
-	}
-	c1 = input(yyscanner);
-        if ((c1) != '}' && c != 0)  
-        {  
-		printf("In comment, c1 = %c, c=%c\n",c1, c);
-		unput(c1);  
-		goto header_loop;  
-        }  
-     	/* get the complete header */ 
+    }
+	include_buf[i] = '\0';
+	yylval_param->sval = strdup(include_buf);
+    c1 = input(yyscanner);
+    if ((c1) != '}' && c != 0) {
+        //printf("In comment, c1 = %c, c=%c\n",c1, c);
+        unput(c1);
+        goto header_loop;
+    }
+	/* get the complete header */
 	return(HEADER);
 }
 "footer"	{ count(yyscanner); return(FOOTER);}
@@ -196,7 +205,9 @@ header_loop:
 			return(IDENTIFIER);  
 			}  
    
-0[xX]{H}+{INTS}?      { count(yyscanner); return(INTEGER_LITERAL); }  
+0[xX]{H}+{INTS}?      { count(yyscanner);
+						yylval_param->sval = (char *) strdup(yyget_text(yyscanner));
+						return(INTEGER_LITERAL); }
 0{D}+{INTS}?      { count(yyscanner); return(INTEGER_LITERAL); }  
 {D}+{INTS}?       { count(yyscanner); 
 			yylval_param->sval = (char *) strdup(yyget_text(yyscanner));
@@ -268,92 +279,40 @@ L?\"(\\.|[^\\"])*\" { count(yyscanner);
     
 %%  
 
-/*      
-yywrap()  
-{  
-        return(1);  
-}  
-  */    
-      
-comment()  
-{  
-        char c, c1;  
-     /* 
-    loop:  
-        while ((c = input()) != '*' && c != 0)  
-            putchar(c);  
-      
-        if ((c1 = input()) != '/' && c != 0)  
-        {  
-            unput(c1);  
-            goto loop;  
-        }  
-      
-        if (c != 0)  
-            putchar(c1);  
-	*/
-}
-
-comment1()
-{
-/*
-	char c;
-	printf("Comment begin:");
-	while((c = input()) != '\n')
-		putchar(c);
-	putchar('\n');
-	lineno++;
-*/
-}
-      
-     
 void count(yyscan_t scanner)
 {  
 	int i;  
 	char* text = yyget_text(scanner);   
-        for (i = 0; text[i] != '\0'; i++)  
-            if (text[i] == '\n')  
-                column = 0;  
-            else if (text[i] == '\t')  
-                column += 8 - (column % 8);  
-            else  
-                column++;
 
+        for (i = 0; text[i] != '\0'; i++) {
+            if (text[i] == '\n') {
+                column = 0;  
+			}
+            else if (text[i] == '\t') {
+                column += 8 - (column % 8);  
+			}
+            else {
+                column++;
+			}
+		}
+
+#if 0
 	if (strcmp(text, " ") != 0) {
 		printf("In %s, lineno=%d, yytext=%s\n", __FUNCTION__, lineno, text);
 	}
+#endif
 }  
       
       
 int check_type()  
 {  
-    /*  
-    * pseudo code --- this is what it should check  
-    *  
-    *   if (yytext == type_name)  
-    *       return(TYPE_NAME);  
-    *  
-    *   return(IDENTIFIER);  
-    */  
-      
-    /*  
-    *   it actually will only return IDENTIFIER  
-    */  
-	//printf("lineno=%d,yytext=%s, in %s\n", lineno, yytext, __FUNCTION__);
-//	yylval.sval = (char *) strdup(yytext);  
         return(IDENTIFIER);  
 }
 
 int get_string(yyscan_t scanner){
-//int get_string(){
-	//YYSTYPE* yylval = yyget_lval(scanner);
-	//yylval.sval = (char *) strdup(yyget_text(scanner));
-	//yyset_lval(yylval, scanner);
-	//char* yytext = (char *) strdup(yyget_text(scanner));
         return(STRING_LITERAL);  
 } 
 
 int get_integer(){
-//	yylval.sval = (char *) strdup(yytext);
 	return(INTEGER_LITERAL);
 }
