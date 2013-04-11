@@ -24,19 +24,93 @@
 */
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
+#include <stdlib.h>
+#include <limits.h>
+#include <errno.h>
+
 #include "ast.h"
 #include "debug_color.h"
-/*
-typedef struct Exp_list { 
-  node*             elem;
-  struct list* next;
-} ast_list;
-*/
+
 #ifdef AST_DEBUG
 #define DBG(fmt, ...) do { fprintf(stderr, fmt, ## __VA_ARGS__); } while (0)
 #else
 #define DBG(fmt, ...) do { } while (0)
 #endif
+
+/**
+ * @brief get_digits: get the digits from string
+ *
+ * @param str: the string of digits
+ * @param base: the carinal number of  digits: 16,10,8
+ *
+ * @return: the integer of digits
+ */
+long get_digits(char* str, int base) {
+	char *endptr = NULL;
+	long value = 0;
+
+	/* To distinguish success/failure after call */
+	errno = 0;
+
+	value = strtol(str, &endptr, base);
+
+	/* Check for various possible errors */
+	if ((errno == ERANGE && (value == LONG_MAX || value == LONG_MIN))
+		 || (errno != 0 && value == 0)) {
+		perror("strtol");
+		exit(EXIT_FAILURE);
+	}
+
+	if (endptr == str) {
+		fprintf(stderr, "No digits were found\n");
+		exit(EXIT_FAILURE);
+	}
+
+	if (*endptr != '\0') {
+		fprintf(stderr, "Further characters after number(%s : %s)\n", str, endptr);
+		exit(EXIT_FAILURE);
+	}
+
+	return value;
+}
+
+/**
+ * @brief strtoi: change the data string to data
+ *
+ * @param str: the string of data
+ *
+ * @return: the data of decimal
+ */
+long int strtoi(char* str) {
+	char* stop = NULL;
+	char* first_pos = NULL;
+	long int value = 0;
+	int length = 0;
+
+	if (str == NULL) {
+		fprintf(stderr, "The string changed to int is NULL\n");
+		return -1;
+	}
+
+    if (((first_pos = strstr(str, "0x")) != NULL) ||
+			((first_pos = strstr(str, "0X")) != NULL)) {
+        DBG("Value: %s\n", str);
+		value = get_digits(str, 16);
+    }//hex
+	else if (((first_pos = strchr(str, '0')) != NULL) &&
+			((str[first_pos - str + 1]) >= '0') &&
+			((str[first_pos - str + 1]) < '9')) {
+			DBG("Value: %s\n", str);
+			value = get_digits(str, 8);
+	}// Octal
+    else {
+        DBG("Value: %s\n", str);
+		value = get_digits(str, 10);
+    }//decimal
+
+	return value;
+}
 
 static node_t* find_tail(node_t* head){
 	node_t* it = head;
@@ -46,22 +120,44 @@ static node_t* find_tail(node_t* head){
 	}
 	return it;
 }
-#if 0
-//node_t* root = NULL;
-node_t* create_ast(char* name){
-	node_t* root = (node_t *)malloc(sizeof(node_t));
-	root->name = strdup(name);
-	root->type = 0;
-	root->sibling = NULL;
-	return root;
+
+
+/**
+ * @brief find_node: find the node with node type
+ *
+ * @param node: the entrance node of finding
+ * @param type: the type of node that be found
+ *
+ * @return: return the found node
+ */
+node_t* find_node(node_t* node, int type) {
+	if (node == NULL) {
+		return NULL;
+	}
+	if ((node->type) == type) {
+		DBG("node find, name: %s\n", node->name);
+		return node;
+	}
+	else if (((node->child) != NULL) && ((node->type) != type)) {
+		return find_node(node->child, type);
+	}
+	else if (((node->sibling) != NULL) && ((node->type) != type)) {
+		return find_node(node->sibling,  type);
+	}
+	else {
+		printf("Not find the node.\n");
+		return NULL;
+	}
 }
-#endif
+
 void add_child(node_t* parent, node_t* child){
 	assert(parent != NULL);
 	DEBUG_ADD_CHILD("In %s, child->name=%s\n", __FUNCTION__, child->name);
 	parent->child = child;
 }
+
 static int node_num = 0;
+
 node_t* create_node(char* name, int type){
 	node_t* node = (node_t *)malloc(sizeof(node_t));
 	node->name = strdup(name);
@@ -71,10 +167,6 @@ node_t* create_node(char* name, int type){
 	node->type = type;
 	node_num ++;
 	return node;
-	/*
-	current->child = node;
-	current = node;	
-	*/
 }
 
 /**
@@ -102,14 +194,12 @@ node_t* create_node_list(node_t* root, node_t* new_node){
 *
 * @param node
 */
-//char* init_pos = "\t\t\t\t\t\t";
 void print_pos(int i){
-	while(i--)
-		printf("\t");
+	while((i--) > 0)
+		printf("|    ");
 }
-int init_pos = 6;
+int init_pos = 20;
 void print_node(node_t* node, int pos){
-	//print_pos(pos);
 	if(node->child != NULL){
 		pos --;
 		//printf("pos=%d, father is %s, child is %s\n", pos, node->name, node->child->name);
@@ -135,27 +225,4 @@ void print_ast(node_t* root){
 	printf("begin print the ast(total node num is %d):\n", node_num);
 	printf("---------------------\n");
 	print_node(root, init_pos);
-	
-	#if 0
-	while(it != NULL){
-		print()
-		/* print its child firstly */
-		if((child = it->child) != NULL){
-			do{
-			}while(it->)
-		}
-	}
-	#endif
-	#if 0
-	if(root)
-		printf("root->name=%s\n", root->name);
-	if(root->child)
-		printf("root->child->name=%s\n", root->child->name);
-	if(root->child->sibling)
-		printf("root->child->sibling->name=%s\n", root->child->sibling->name);
-	if(root->child->sibling->sibling)
-		printf("root->child->sibling->name=%s\n", root->child->sibling->sibling->name);
-	if(root->child->sibling->sibling->child)
-		printf("root->child->sibling->child->name=%s\n", root->child->sibling->sibling->child->name);
-	#endif
 }

@@ -26,6 +26,7 @@
 #ifndef	SYMBOL_H
 #define	SYMBOL_H
 #include "types.h"
+
 typedef struct dml_attr{
 	float version;
 }dml_attr_t;
@@ -34,11 +35,12 @@ typedef struct dml_attr{
 typedef struct bitorder_attr{
 	char* name;
 }bitorder_attr_t;
-#if 1
+
 typedef struct import_attr{
 	char* filename;
 }import_attr_t;
 typedef struct template_attr{
+	char* name;
 	char* desc;
 }template_attr_t;
 typedef struct loggroup_attr{
@@ -47,6 +49,7 @@ typedef struct loggroup_attr{
 typedef struct typedef_attr{
 }typedef_attr_t;
 typedef struct constant_attr{
+	char* name;
 	expression_t* value;
 }constant_attr_t;
 typedef struct struct_attr{
@@ -54,6 +57,7 @@ typedef struct struct_attr{
 typedef struct object_stmt_node{
 }stmt_attr_t;
 typedef struct parameter_attr{
+	char* name;
 	int is_default;
 	int is_auto;
 	union{
@@ -63,8 +67,10 @@ typedef struct parameter_attr{
 }parameter_attr_t;
 
 typedef struct method_attr{
+	char* name;
 	int is_static;
 	int is_inline;
+	int is_template;
 	int argc;
 	void* arg_list;
 }method_attr_t;
@@ -73,7 +79,9 @@ struct bank_attr;
 
 typedef struct register_attr{
 	char* name;
-	int offset; 
+	int is_array;
+	int size;
+	int offset;
 	struct bank_attr *bank;
 }register_attr_t;
 
@@ -94,8 +102,11 @@ typedef struct register_array_attr{
 }register_array_attr_t;
 
 typedef struct field_attr{
+	char* name;
+	int is_range;
 }field_attr_t;
 typedef struct data_attr{
+	char* name;
 }data_attr_t;
 typedef struct connect_attr{
 }connect_attr_t;
@@ -128,15 +139,20 @@ typedef struct bank_list_node {
 	struct bank_list_node *next;
 }bank_list_node_t; 
 
-
 typedef struct device_attr{
 	char* name;
 	int endian;
 	bank_list_node_t *banks;
 }device_attr_t;
 
+typedef struct ident_attr {
+	char* name;
+}ident_attr_t;
 
-#endif
+typedef struct const_str_attr {
+	char* name;
+}const_str_attr_t;
+
 typedef struct symbol{
 	char *name; 
 	int type;  /* READ, WRITE, or NAME */
