@@ -27,13 +27,39 @@
 
 #include "debug_color.h"
 
+/*
+ * The max length of string of user input
+ */
+#define MAX_LENGTH 1024
+
+
+/**
+ * @brief out_bounds: charge the input contents is out bounds of buf
+ *
+ * @param buf: the buffer to store input contents
+ *
+ * @return: 0
+ */
+static int out_bounds(char* buf) {
+	/*
+	 * if the last charachter is not NULL,
+	 * the input contents maybe out bounds
+	 * */
+	if ((buf[MAX_LENGTH - 1]) != '\0') {
+		fprintf(stderr, "The color log buf is out of bounds!\n");
+	}
+
+	return 0;
+}
+
 void debug_color(COLOR_TYPE type, char *format, ...)
 {
-    static char buf[1024];
-    memset(buf, '\0', 1024);
+    static char buf[MAX_LENGTH];
+    memset(buf, '\0', MAX_LENGTH);
     va_list args;
     va_start(args, format);
     vsprintf(buf, format, args);
+	out_bounds(buf);
     va_end(args);
     switch (type) {
     case BLACK:
@@ -82,11 +108,12 @@ void debug_color(COLOR_TYPE type, char *format, ...)
 }
 
 int debug_find_tail(char* format, ...) {
-    char buf[1024];
-    memset(buf, '\0', 1024);
+    char buf[MAX_LENGTH];
+    memset(buf, '\0', MAX_LENGTH);
     va_list args;
     va_start(args, format);
     vsprintf(buf, format, args);
+	out_bounds(buf);
     va_end(args);
 
     _debug_in_blue("%s", buf);
@@ -95,11 +122,12 @@ int debug_find_tail(char* format, ...) {
 }
 
 int debug_add_child(char* format, ...) {
-    char buf[1024];
-    memset(buf, '\0', 1024);
+    char buf[MAX_LENGTH];
+    memset(buf, '\0', MAX_LENGTH);
     va_list args;
     va_start(args, format);
     vsprintf(buf, format, args);
+	out_bounds(buf);
     va_end(args);
 
     _debug_in_blue("%s", buf);
@@ -108,11 +136,12 @@ int debug_add_child(char* format, ...) {
 }
 
 int debug_create_node(char* format, ...) {
-    char buf[1024];
-    memset(buf, '\0', 1024);
+    char buf[MAX_LENGTH];
+    memset(buf, '\0', MAX_LENGTH);
     va_list args;
     va_start(args, format);
     vsprintf(buf, format, args);
+	out_bounds(buf);
     va_end(args);
 
     _debug_in_green("%s", buf);
@@ -121,14 +150,28 @@ int debug_create_node(char* format, ...) {
 }
 
 int debug_create_node_list(char* format, ...) {
-    char buf[1024];
-    memset(buf, '\0', 1024);
+    char buf[MAX_LENGTH];
+    memset(buf, '\0', MAX_LENGTH);
     va_list args;
     va_start(args, format);
     vsprintf(buf, format, args);
+	out_bounds(buf);
     va_end(args);
 
 	_debug_in_red("%s", buf);
 
+	return 0;
+}
+
+int debug_proc(char* format, ...) {
+    char buf[MAX_LENGTH];
+    memset(buf, '\0', MAX_LENGTH);
+    va_list args;
+    va_start(args, format);
+    vsprintf(buf, format, args);
+	out_bounds(buf);
+    va_end(args);
+
+    _debug_in_light_red("\t%s", buf);
 	return 0;
 }
