@@ -1,3 +1,4 @@
+
 /*
  * debug_color.c:
  *
@@ -40,138 +41,144 @@
  *
  * @return: 0
  */
-static int out_bounds(char* buf) {
+static int out_bounds (char *buf)
+{
 	/*
 	 * if the last charachter is not NULL,
 	 * the input contents maybe out bounds
 	 * */
 	if ((buf[MAX_LENGTH - 1]) != '\0') {
-		fprintf(stderr, "The color log buf is out of bounds!\n");
+		fprintf (stderr, "The color log buf is out of bounds!\n");
 	}
 
 	return 0;
 }
 
-void debug_color(COLOR_TYPE type, char *format, ...)
+void debug_color (COLOR_TYPE type, char *format, ...)
 {
-    static char buf[MAX_LENGTH];
-    memset(buf, '\0', MAX_LENGTH);
-    va_list args;
-    va_start(args, format);
-    vsprintf(buf, format, args);
-	out_bounds(buf);
-    va_end(args);
-    switch (type) {
-    case BLACK:
-        _debug_in_black("%s", buf);
-        break;
-    case BLUE:
-        _debug_in_blue("%s", buf);
-        break;
-    case BROWN:
-        _debug_in_brown("%s", buf);
-        break;
-    case CYAN:
-        _debug_in_cyan("%s", buf);
-        break;
-    case DARK_GRAY:
-        _debug_in_dark_gray("%s", buf);
-        break;
-    case GREEN:
-        _debug_in_green("%s", buf);
-        break;
-    case LIGHT_BLUE:
-        _debug_in_light_blue("%s", buf);
-        break;
-    case LIGHT_CYAN:
-        _debug_in_light_cyan("%s", buf);
-        break;
-    case LIGHT_GREEN:
-        _debug_in_light_green("%s", buf);
-        break;
-    case LIGHT_PURPLE:
-        _debug_in_light_purple("%s", buf);
-        break;
-    case LIGHT_RED:
-        _debug_in_light_red("%s", buf);
-        break;
-    case PURPLE:
-        _debug_in_purple("%s", buf);
-        break;
-    case RED:
-        _debug_in_red("%s", buf);
-        break;
-    default:
-        fprintf(stderr, "Not supported color type %d\n", type);
-        break;
-    }
+	static char buf[MAX_LENGTH];
+	memset (buf, '\0', MAX_LENGTH);
+	va_list args;
+	va_start (args, format);
+	vsprintf (buf, format, args);
+	out_bounds (buf);
+	va_end (args);
+	switch (type) {
+	case BLACK:
+		_debug_in_black ("%s", buf);
+		break;
+	case BLUE:
+		_debug_in_blue ("%s", buf);
+		break;
+	case BROWN:
+		_debug_in_brown ("%s", buf);
+		break;
+	case CYAN:
+		_debug_in_cyan ("%s", buf);
+		break;
+	case DARK_GRAY:
+		_debug_in_dark_gray ("%s", buf);
+		break;
+	case GREEN:
+		_debug_in_green ("%s", buf);
+		break;
+	case LIGHT_BLUE:
+		_debug_in_light_blue ("%s", buf);
+		break;
+	case LIGHT_CYAN:
+		_debug_in_light_cyan ("%s", buf);
+		break;
+	case LIGHT_GREEN:
+		_debug_in_light_green ("%s", buf);
+		break;
+	case LIGHT_PURPLE:
+		_debug_in_light_purple ("%s", buf);
+		break;
+	case LIGHT_RED:
+		_debug_in_light_red ("%s", buf);
+		break;
+	case PURPLE:
+		_debug_in_purple ("%s", buf);
+		break;
+	case RED:
+		_debug_in_red ("%s", buf);
+		break;
+	default:
+		fprintf (stderr, "Not supported color type %d\n", type);
+		break;
+	}
 }
 
-int debug_find_tail(char* format, ...) {
-    char buf[MAX_LENGTH];
-    memset(buf, '\0', MAX_LENGTH);
-    va_list args;
-    va_start(args, format);
-    vsprintf(buf, format, args);
-	out_bounds(buf);
-    va_end(args);
+int debug_find_tail (char *format, ...)
+{
+	char buf[MAX_LENGTH];
+	memset (buf, '\0', MAX_LENGTH);
+	va_list args;
+	va_start (args, format);
+	vsprintf (buf, format, args);
+	out_bounds (buf);
+	va_end (args);
 
-    _debug_in_blue("%s", buf);
+	_debug_in_blue ("%s", buf);
 
 	return 0;
 }
 
-int debug_add_child(char* format, ...) {
-    char buf[MAX_LENGTH];
-    memset(buf, '\0', MAX_LENGTH);
-    va_list args;
-    va_start(args, format);
-    vsprintf(buf, format, args);
-	out_bounds(buf);
-    va_end(args);
+int debug_add_child (char *format, ...)
+{
+	char buf[MAX_LENGTH];
+	memset (buf, '\0', MAX_LENGTH);
+	va_list args;
+	va_start (args, format);
+	vsprintf (buf, format, args);
+	out_bounds (buf);
+	va_end (args);
 
-    _debug_in_blue("%s", buf);
-
-	return 0;
-}
-
-int debug_create_node(char* format, ...) {
-    char buf[MAX_LENGTH];
-    memset(buf, '\0', MAX_LENGTH);
-    va_list args;
-    va_start(args, format);
-    vsprintf(buf, format, args);
-	out_bounds(buf);
-    va_end(args);
-
-    _debug_in_green("%s", buf);
+	_debug_in_blue ("%s", buf);
 
 	return 0;
 }
 
-int debug_create_node_list(char* format, ...) {
-    char buf[MAX_LENGTH];
-    memset(buf, '\0', MAX_LENGTH);
-    va_list args;
-    va_start(args, format);
-    vsprintf(buf, format, args);
-	out_bounds(buf);
-    va_end(args);
+int debug_create_node (char *format, ...)
+{
+	char buf[MAX_LENGTH];
+	memset (buf, '\0', MAX_LENGTH);
+	va_list args;
+	va_start (args, format);
+	vsprintf (buf, format, args);
+	out_bounds (buf);
+	va_end (args);
 
-	_debug_in_red("%s", buf);
+	_debug_in_green ("%s", buf);
 
 	return 0;
 }
 
-int debug_proc(char* format, ...) {
-    char buf[MAX_LENGTH];
-    memset(buf, '\0', MAX_LENGTH);
-    va_list args;
-    va_start(args, format);
-    vsprintf(buf, format, args);
-	out_bounds(buf);
-    va_end(args);
+int debug_create_node_list (char *format, ...)
+{
+	char buf[MAX_LENGTH];
+	memset (buf, '\0', MAX_LENGTH);
+	va_list args;
+	va_start (args, format);
+	vsprintf (buf, format, args);
+	out_bounds (buf);
+	va_end (args);
 
-    _debug_in_light_red("\t%s", buf);
+	_debug_in_red ("%s", buf);
+
+	return 0;
+}
+
+int debug_proc (char *format, ...)
+{
+	char buf[MAX_LENGTH];
+	memset (buf, '\0', MAX_LENGTH);
+	va_list args;
+	va_start (args, format);
+	vsprintf (buf, format, args);
+	out_bounds (buf);
+	va_end (args);
+
+	_debug_in_light_red ("\t%s", buf);
 	return 0;
 }

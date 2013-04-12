@@ -1,3 +1,4 @@
+
 /*
  * debug_color.h:
  *
@@ -24,23 +25,24 @@
 #ifndef __DEBUG_COLOR_H__
 #define __DEBUG_COLOR_H__  1
 
-typedef enum {
-    RED,
-    LIGHT_RED,
-    BLACK,
-    DARK_GRAY,
-    BLUE,
-    LIGHT_BLUE,
-    GREEN,
-    LIGHT_GREEN,
-    CYAN,
-    LIGHT_CYAN,
-    PURPLE,
-    LIGHT_PURPLE,
-    BROWN,
-    YELLOW,
-    LIGHT_GRAY,
-    WHITE
+typedef enum
+{
+	RED,
+	LIGHT_RED,
+	BLACK,
+	DARK_GRAY,
+	BLUE,
+	LIGHT_BLUE,
+	GREEN,
+	LIGHT_GREEN,
+	CYAN,
+	LIGHT_CYAN,
+	PURPLE,
+	LIGHT_PURPLE,
+	BROWN,
+	YELLOW,
+	LIGHT_GRAY,
+	WHITE
 } COLOR_TYPE;
 
 #define _debug_in_red(fmt,...)      printf("\033[0;31m"fmt"\033[0m", ## __VA_ARGS__)
@@ -60,11 +62,11 @@ typedef enum {
 #define _debug_in_light_gray(fmt,...)   printf("\033[0;37m"fmt"\033[0m", ## __VA_ARGS__)
 #define _debug_in_white(fmt,...)    printf("\033[1;37m"fmt"\033[0m", ## __VA_ARGS__)
 
-void debug_color(COLOR_TYPE type, char *format, ...);
-int debug_find_tail(char* format, ...);
-int debug_add_child(char* format, ...);
-int debug_create_node(char* format, ...);
-int debug_create_node_list(char* format, ...);
+void debug_color (COLOR_TYPE type, char *format, ...);
+int debug_find_tail (char *format, ...);
+int debug_add_child (char *format, ...);
+int debug_create_node (char *format, ...);
+int debug_create_node_list (char *format, ...);
 
 //#define DEBUG_CODE_COLOR
 
@@ -82,4 +84,4 @@ int debug_create_node_list(char* format, ...);
 #define DEBUG_CREATE_NODE_LIST
 #endif
 
-#endif /* __DEBUG_COLOR_H__ */
+#endif							/* __DEBUG_COLOR_H__ */

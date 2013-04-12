@@ -17,10 +17,10 @@ const char* dir = "/opt/virtutech/simics-4.0/simics-model-builder-4.0.16/amd64-l
 
 typedef struct YYLTYPE
 {
-int first_line;
-int first_column;
-int last_line;
-int last_column;
+	int first_line;
+	int first_column;
+	int last_line;
+	int last_column;
 } YYLTYPE;
 #include "Lexer.h"
 
@@ -35,12 +35,11 @@ extern char* builtin_filename;
 
 %lex-param   { yyscan_t scanner }
 %parse-param { yyscan_t scanner }
-%parse-param {node_t** root_ptr}
+%parse-param { node_t** root_ptr }
 
 %union  {
 	int ival;
 	char* sval;
-	//objtype* objval;	
 	node_t* nodeval;
 }
 
@@ -142,11 +141,11 @@ extern char* builtin_filename;
 
 %%
 begin_unit
-	: DML INTEGER_LITERAL ';' dml{
+	: DML INTEGER_LITERAL ';' dml {
 		dml_attr_t* attr = (dml_attr_t*)malloc(sizeof(dml_attr_t));
 		symbol_insert("DML", DML_TYPE, attr);
 
-		if(*root_ptr != NULL){
+		if(*root_ptr != NULL) {
 			/* something wrong */
 			printf("root of ast already exists\n");
 			exit(-1);
@@ -164,7 +163,7 @@ dml
 		symbol_insert("DEVICE", DEVICE_TYPE, attr);
 		node_t* node = create_node($2, DEVICE_TYPE);
 		node_t* import_ast = NULL;
-		if(builtin_filename != NULL){
+		if(builtin_filename != NULL) {
 			import_ast = get_ast(builtin_filename);
 			if(import_ast->child != NULL)
 				create_node_list(node, import_ast->child);
@@ -178,7 +177,7 @@ dml
 		DBG("Device type is %s\n", $2);
 		$$ = node;
 	}
-	| syntax_modifiers device_statements{
+	| syntax_modifiers device_statements {
 		if($1 == NULL && $2 != NULL) {
 			$$ = $2;
 		}
@@ -189,7 +188,7 @@ dml
 			create_node_list($1, $2);
 			$$ = $1;
 		}
-		else{
+		else {
 			printf("maybe something Wrong\n");
 		}
 	}
@@ -199,7 +198,7 @@ syntax_modifiers
 	: {
 		$$ = NULL;
 	}
-	| syntax_modifiers syntax_modifier{
+	| syntax_modifiers syntax_modifier {
 		DBG("In syntax_modifiers\n");
 		if($1 == NULL && $2 != NULL) {
 			$$ = $2;
@@ -231,7 +230,7 @@ device_statements
 	: {
 		$$ = NULL;
 	} 
-	| device_statements device_statement{
+	| device_statements device_statement {
 		DBG("In device_statements\n");
 		if($1 == NULL && $2 != NULL) {
 			$$ = $2;
@@ -248,15 +247,15 @@ device_statements
 	;
 
 device_statement
-	: object_statement{
+	: object_statement {
 		DBG("object_statement In device_statement\n");
 		$$ = $1;
 	}
-	| toplevel{
+	| toplevel {
 		DBG("toplevel In device_statement\n");
 		$$ = $1;
 	}
-	| import{
+	| import {
 		DBG("import In device_statement\n");
 		$$ = $1;
 	}
@@ -312,7 +311,7 @@ object
 		symbol_insert($2, REGISTER_TYPE, attr);
 
 		node_t* reg = create_node($2, REGISTER_TYPE);
-		if(($5 != NULL) && ($6 == NULL)){
+		if(($5 != NULL) && ($6 == NULL)) {
 			DBG("add_child for register\n");
 			add_child(reg, $5);
 		}
@@ -407,7 +406,7 @@ object
 		}
 		$$ = field;
 	}
-	| DATA cdecl ';'{
+	| DATA cdecl ';' {
 		node_t* node = find_node($2, INDENTIFIER_TYPE);
 		data_attr_t* attr = malloc(sizeof(data_attr_t));
 		memset(attr, 0, sizeof(data_attr_t));
@@ -465,7 +464,7 @@ object
 	;
 
 method
-	: METHOD objident method_params method_def{
+	: METHOD objident method_params method_def {
 		method_attr_t* attr = (method_attr_t*)malloc(sizeof(method_attr_t));
 		memset(attr, 0, sizeof(method_attr_t));
 		attr->name = strdup($2);
@@ -482,7 +481,7 @@ method
 		DBG("method is %s\n", $2);
 		$$ = node;
 	}
-	| METHOD EXTERN objident method_params method_def{
+	| METHOD EXTERN objident method_params method_def {
 		node_t* node = create_node($3, METHOD_EXTERN_TYPE);
 		if ($4 != NULL) {
 			add_child(node, $4);
@@ -527,14 +526,14 @@ toplevel
 		add_child(node, $3);
 		$$ = node;
 	}
-	| LOGGROUP ident ';'{
+	| LOGGROUP ident ';' {
 		DBG("in LOGGROUP %s\n", $2);
 		symbol_insert($2, LOGGROUP_TYPE, NULL);
 
 		node_t* node = create_node($2, LOGGROUP_TYPE);
 		$$ = node;
 	}
-	| CONSTANT ident '=' expression ';'{
+	| CONSTANT ident '=' expression ';' {
 		constant_attr_t* attr = malloc(sizeof(constant_attr_t));
 		memset(attr, 0, sizeof(attr));
 		/* FIXME, should provide a correct expression value */
@@ -546,7 +545,7 @@ toplevel
 		add_child(assign, $4);
 		$$ = node;
 	}
-	| EXTERN cdecl_or_ident ';'{
+	| EXTERN cdecl_or_ident ';' {
 		/* FIXME: we should find the name of extern */
 		//symbol_t* symbol = symbol_find()
 		DBG("\nPay attention: we should find the name of extern\n\n");
@@ -554,7 +553,7 @@ toplevel
 		add_child(extern_key, $2);
 		$$ = extern_key;
 	}
-	| TYPEDEF cdecl ';'{
+	| TYPEDEF cdecl ';' {
 		/* FIXME: we should find the name cdecl */
 		DBG("\nPay attention: we should find the name of typedef cdecl\n\n");
 		//$$ = create_node("UNIMP", TYPEDEF_TYPE);
@@ -593,7 +592,7 @@ istemplate_stmt
 	;
 
 import
-	: IMPORT STRING_LITERAL ';'{
+	: IMPORT STRING_LITERAL ';' {
 		DBG("import file is %s\n", $2);
 		char fullname[1024];
 		int dirlen = strlen(dir);
@@ -621,8 +620,7 @@ import
 		DBG("In IMPORT, fullname=%s, dirlen=%d, filelen=%d\n", fullname, dirlen, filelen);
 
 		FILE *file = fopen(fullname, "r");
-		if (file == NULL)
-		{
+		if (file == NULL) {
 			printf("Can't open imported file %s.\n", fullname);
 			exit(EXIT_FAILURE);
 		}
@@ -664,7 +662,7 @@ object_spec
 			$$ = node;
 		}
 	}
-	| object_desc '{' object_statements '}'{
+	| object_desc '{' object_statements '}' {
 		DBG("object_statements for object_spec\n");
 		node_t* pre_braces = create_node("{", PRE_BRACES_TYPE);
 		node_t* aft_braces = create_node("}", AFTER_BRACES_TYPE);
@@ -684,7 +682,7 @@ object_spec
 			create_node_list(node, aft_braces);
 			$$ = node;
 		}
-		else if (($1 != NULL) && ($3 != NULL)){
+		else if (($1 != NULL) && ($3 != NULL)) {
 			node_t* node = create_node($1, CONST_STRING_TYPE);
 			create_node_list(node, pre_braces);
 			create_node_list(node, $3);
@@ -695,7 +693,7 @@ object_spec
 	;
 
 object_statements
-	: object_statements object_statement{
+	: object_statements object_statement {
 		DBG("In object_statements\n");
 		if($1 == NULL && $2 != NULL) {
 			$$ = $2;
@@ -728,7 +726,7 @@ object_statement
 		DBG("istemplate_stmt in object_statement\n");
 		$$ = $1;
 	}
-	| object_if{
+	| object_if {
 		debug_proc("Line : %d\n", __LINE__);
 		DBG("object_if in object_statement \n");
 		$$ = NULL;
@@ -767,28 +765,28 @@ parameter
 	;
 
 paramspec
-	: ';'{
+	: ';' {
 		node_t* node = create_node(";", SEMICOLON_TYPE);
 		$$ = node;
 	}
-	| '=' expression ';'{
+	| '=' expression ';' {
 		node_t* node = create_node("=", ASSIGN_TYPE);
 		add_child(node, $2);
 		$$ = node;
 	}
-	| '=' STRING_LITERAL ';'{
+	| '=' STRING_LITERAL ';' {
 		node_t* node = create_node("=", ASSIGN_TYPE);
 		node_t* str = create_node($2, CONST_STRING_TYPE);
 		add_child(node, str);
 		DBG("paramspec: %s\n", $2);
 		$$ = node;
 	}
-	| DEFAULT expression ';'{
+	| DEFAULT expression ';' {
 		node_t* node = create_node("default", DEFAULT_TYPE);
 		add_child(node, $2);
 		$$ = node;
 	}
-	| AUTO ';'{
+	| AUTO ';' {
 		node_t* node = create_node("auto", AUTO_TYPE);
 		$$ = node;
 	}
@@ -826,7 +824,7 @@ method_params
 		}
 		$$ = method_ret;
 	}
-	| '(' cdecl_or_ident_list ')' METHOD_RETURN '(' cdecl_or_ident_list ')'{
+	| '(' cdecl_or_ident_list ')' METHOD_RETURN '(' cdecl_or_ident_list ')' {
 		node_t* method_ret = create_node("->", METHOD_RETURN_TYPE);
 		node_t* pre_brack_1 = create_node("(", PRE_BRACKETS_TYPE);
 		node_t* aft_brack_1 = create_node(")", AFTER_BRACKETS_TYPE);
@@ -1177,6 +1175,8 @@ layout
 
 layout_decls
 	:layout_decls cdecl ';' {
+		debug_proc("Line : %d\n", __LINE__);
+		$$ = NULL;
 	}
 	|  {
 		debug_proc("Line : %d\n", __LINE__);
@@ -1598,7 +1598,7 @@ expression
 		debug_proc("Line : %d\n", __LINE__);
 		$$ = NULL;
 	}
-	| '$' objident{
+	| '$' objident {
 		node_t* node = create_node("$", QUOTE_TYPE);
 		node_t* ident = create_node($2, CONST_STRING_TYPE);
 		create_node_list(node, ident);
@@ -1797,7 +1797,7 @@ statement
 		debug_proc("Line : %d\n", __LINE__);
 		$$ = NULL;
 	}
-	| TRY statement CATCH statement{
+	| TRY statement CATCH statement {
 		node_t* try_node = create_node("try", TRY_TYPE);
 		node_t* catch_node = create_node("catch", CATCH_TYPE);
 		add_child(try_node, $2);
@@ -1811,7 +1811,7 @@ statement
 		$$ = create_node("AFTER", AFTER_TYPE);
 		DBG("AFTER CALL statement\n");
 	}
-	| CALL expression returnargs ';'{
+	| CALL expression returnargs ';' {
 		node_t* node = create_node("call", CALL_TYPE);
 		node_t* semicolon = create_node(";", SEMICOLON_TYPE);
 		add_child(node, $2);
@@ -1836,7 +1836,7 @@ statement
 		add_child(node, $2);
 		$$ = node;
 	}
-	| LOG STRING_LITERAL ',' expression ',' expression ':' STRING_LITERAL ',' log_args ';'{
+	| LOG STRING_LITERAL ',' expression ',' expression ':' STRING_LITERAL ',' log_args ';' {
 		DBG("In LOG statement: %s\n", $8);
 		node_t* node = create_node("log", LOG_KYE_TYPE);
 		node_t* log_type = create_node($2, LOG_TYPE);
@@ -1885,7 +1885,7 @@ statement
 		debug_proc("Line : %d\n", __LINE__);
 		$$ = NULL;
 	}
-	| FOREACH ident IN '(' expression ')' statement{
+	| FOREACH ident IN '(' expression ')' statement {
 		node_t* node = create_node($2, FOREACH_TYPE);
 		node_t* pre_brack = create_node("(", PRE_BRACKETS_TYPE);
 		node_t* aft_brack = create_node(")", AFTER_BRACKETS_TYPE);
@@ -2001,7 +2001,7 @@ local
 		add_child(node, $2);
 		$$ = node;
 	}
-	| STATIC cdecl ';'{
+	| STATIC cdecl ';' {
 		debug_proc("Line : %d\n", __LINE__);
 		DBG("In STATIC \n");
 		$$ = NULL;
@@ -2054,7 +2054,7 @@ maybe_objident
 	;
 
 objident
-	:ident{
+	:ident {
 		DBG("ident: %s\n", $1);
 		$$ = $1;
 	}
@@ -2073,7 +2073,7 @@ objident
 	;
 
 ident
-	: IDENTIFIER{
+	: IDENTIFIER {
 		$$ = $1;
 	}
 	| ATTRIBUTE {

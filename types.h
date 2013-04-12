@@ -1,3 +1,4 @@
+
 /* Copyright (C) 
 * 2012 - Michael.Kang blackfin.kang@gmail.com
 * This program is free software; you can redistribute it and/or
@@ -15,6 +16,7 @@
 * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 * 
 */
+
 /**
 * @file types.h
 * @brief The type of variable
@@ -24,7 +26,8 @@
 */
 #ifndef __TYPES_H__
 #define __TYPES_H__
-typedef enum{
+typedef enum
+{
 	DML_TYPE = 1,
 	DEVICE_TYPE,
 	PARAMETER_TYPE,
@@ -59,7 +62,7 @@ typedef enum{
 	INDENTIFIER_TYPE,
 	/* the array with a fix length eg: arr[10] */
 	ARRAY_FIX_TYPE,
-	/* array like [i int 0..15]*/
+	/* array like [i int 0..15] */
 	ARRAY_RANGE_TYPE,
 	/* array minist index */
 	ARRAY_START_TYPE,
@@ -198,12 +201,14 @@ typedef enum{
 	CAST_TYPE,
 	/* assert */
 	ASSERT_TYPE
-}ident_type_t;
+} ident_type_t;
 
-typedef struct obj_variable{
+typedef struct obj_variable
+{
 	int type;
-	char* name;
-}objtype;
-typedef struct expression{
-}expression_t;
+	char *name;
+} objtype;
+typedef struct expression
+{
+} expression_t;
 #endif

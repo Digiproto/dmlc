@@ -1,3 +1,4 @@
+
 /* Copyright (C) 
 * 2012 - Michael.Kang blackfin.kang@gmail.com
 * This program is free software; you can redistribute it and/or
@@ -15,6 +16,7 @@
 * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 * 
 */
+
 /**
 * @file code_gen.c
 * @brief The c source code generation
@@ -28,26 +30,32 @@
 #include "types.h"
 #include "ast.h"
 #include "symbol.h"
+
 /**
 * @brief generate the source file module_id.c
 *
 * @param file the file written to
 */
-void generate_module_id_source(node_t* root, FILE* file){
+void generate_module_id_source (node_t * root, FILE * file)
+{
 	/* get the device name */
-	symbol_t* symbol = symbol_find("DEVICE", DEVICE_TYPE);
-	if(symbol == NULL){
-		printf("can not find device\n");
-		exit(-1);
+	symbol_t *symbol = symbol_find ("DEVICE", DEVICE_TYPE);
+
+	if (symbol == NULL) {
+		printf ("can not find device\n");
+		exit (-1);
 	}
-		
-	device_attr_t* attr = (device_attr_t*)symbol->attr.device;	
-	char* device_name = attr->name;
+
+	device_attr_t *attr = (device_attr_t *) symbol->attr.device;
+
+	char *device_name = attr->name;
+
 	time_t timep;
+
 	time (&timep);
 
 	//printf("In %s\n", __FUNCTION__);
-	fprintf(file, "\
+	fprintf (file, "\
 /*						\
 \n* module_id.c - automatically generated, do not edit\
 \n*/						\
@@ -70,7 +78,7 @@ void generate_module_id_source(node_t* root, FILE* file){
 \n\t\"THREADSAFE;\"				\
 \n\tEXTRA \";\";				\
 \nconst char _module_date[] = \"%s\";\
-", device_name, device_name, asctime(gmtime(&timep)));
+", device_name, device_name, asctime (gmtime (&timep)));
 
 }
 
@@ -79,9 +87,10 @@ void generate_module_id_source(node_t* root, FILE* file){
 *
 * @param file
 */
-void generate_device_source(node_t* root, FILE* file){
+void generate_device_source (node_t * root, FILE * file)
+{
 #if 0
-	fprintf(file, "\
+	fprintf (file, "\
 static conf_object_t *\
 simple_device_new_instance(parse_object_t *parse_obj)\
 {\
@@ -94,12 +103,12 @@ simple_device_new_instance(parse_object_t *parse_obj)\
 \n\t\t{\
 \n\t\t\tv2__exc = hard_reset(_dev);
 \n\t\t\tif (v2__exc) {
-                #line 4 "/home/simics32/simics-workspace/modules/simple-device/simple-device.dml"
-                SIM_log_error(&_dev->log, 0, "Uncaught DML exception");
+                #line 4 " / home / simics32 / simics - workspace / modules / simple - device / simple - device.dml "
+                SIM_log_error(&_dev->log, 0, " Uncaught DML exception ");
             }
         }
     }
-    #line 60 "simple-device-dml.c"
+    #line 60 " simple - device - dml.c "
     return &_dev->log.obj;
 }
 
@@ -110,18 +119,20 @@ simple_device_finalize_instance(conf_object_t *_obj)
     ;
 }");
 #endif
-       /* get the device name */
-        symbol_t* symbol = symbol_find("DEVICE", DEVICE_TYPE);
-        if(symbol == NULL){
-                printf("can not find device\n");
-                exit(-1);
-        }
+	/* get the device name */
+	symbol_t *symbol = symbol_find ("DEVICE", DEVICE_TYPE);
 
-        device_attr_t* attr = (device_attr_t*)symbol->attr.device;
-        char* device_name = attr->name;
+	if (symbol == NULL) {
+		printf ("can not find device\n");
+		exit (-1);
+	}
+
+	device_attr_t *attr = (device_attr_t *) symbol->attr.device;
+
+	char *device_name = attr->name;
 
 	/* output initilization of device */
-	fprintf(file, "\
+	fprintf (file, "\
 \nconf_class_t *\
 \ninitialize_%s(void)\
 \n{\
@@ -129,7 +140,7 @@ simple_device_finalize_instance(conf_object_t *_obj)
 \n", device_name);
 
 	/* output the init_local */
-	fprintf(file, "\
+	fprintf (file, "\
 \nvoid\
 \ninit_local(void)\
 \n{\
@@ -137,24 +148,33 @@ simple_device_finalize_instance(conf_object_t *_obj)
 \n}\
 \n", device_name);
 }
-void generate_device_header(node_t* root, FILE* file){
+
+void generate_device_header (node_t * root, FILE * file)
+{
 }
 
-void generate_device_struct_header(node_t* root, FILE* file){
+void generate_device_struct_header (node_t * root, FILE * file)
+{
 }
 
-void generate_device_protos_source(node_t* root, FILE* file){
+void generate_device_protos_source (node_t * root, FILE * file)
+{
 }
-typedef enum{
+
+typedef enum
+{
 	MODULE_ID = 0,
 	DEVICE_DML,
 	DEVICE_HEADER,
 	DEVICE_STRUCT_HEADER,
 	DEVICE_PROTOS,
 	GEN_FILE_NUM
-}filename_list_t;
-char* gen_filename[GEN_FILE_NUM];
-typedef void(*gen_code_func_t)(node_t* root, FILE* output);
+} filename_list_t;
+
+char *gen_filename[GEN_FILE_NUM];
+
+typedef void (*gen_code_func_t) (node_t * root, FILE * output);
+
 gen_code_func_t gen_code[GEN_FILE_NUM] = {
 	generate_module_id_source,
 	generate_device_source,
@@ -163,72 +183,83 @@ gen_code_func_t gen_code[GEN_FILE_NUM] = {
 	generate_device_protos_source
 };
 
-const char* module_id_filename = "module_id.c";
+const char *module_id_filename = "module_id.c";
 
-char* suffix_filename[GEN_FILE_NUM] = {
+char *suffix_filename[GEN_FILE_NUM] = {
 	"",
 	"-dml.c",
 	"-dml.h",
 	"-dml-struct.h",
 	"-dml-protos.c"
-	};
+};
 
-char* concat_filename(char* device_name, char* suffix){
-	char* filename = (char *)malloc(strlen(device_name) + strlen(suffix) + 1);
-	strncpy(filename, device_name, strlen(device_name));
-	filename[strlen(device_name)] = '\0';
-	strcat(filename, suffix);
+char *concat_filename (char *device_name, char *suffix)
+{
+	char *filename =
+		(char *) malloc (strlen (device_name) + strlen (suffix) + 1);
+	strncpy (filename, device_name, strlen (device_name));
+	filename[strlen (device_name)] = '\0';
+	strcat (filename, suffix);
 	return filename;
 }
 
 #define DEBUG_FILELIST 1
-void complete_filename(char* device_name, char* path_name){
+void complete_filename (char *device_name, char *path_name)
+{
 	gen_filename[MODULE_ID] = module_id_filename;
 	int i = DEVICE_DML;
-	for(; i < GEN_FILE_NUM; i++)
-		gen_filename[i] = concat_filename(device_name, suffix_filename[i]);
+
+	for (; i < GEN_FILE_NUM; i++)
+		gen_filename[i] = concat_filename (device_name, suffix_filename[i]);
 
 	i = MODULE_ID;
-	for(; i < GEN_FILE_NUM; i++){
+	for (; i < GEN_FILE_NUM; i++) {
 		/* we need to free the previous memory space and set the full name */
-		char* full_filename = concat_filename(path_name, gen_filename[i]);
-		if(i != MODULE_ID)
-			free(gen_filename[i]);
+		char *full_filename = concat_filename (path_name, gen_filename[i]);
+
+		if (i != MODULE_ID)
+			free (gen_filename[i]);
 		gen_filename[i] = NULL;
 		gen_filename[i] = full_filename;
 	}
-	#if DEBUG_FILELIST
+#if DEBUG_FILELIST
 	i = MODULE_ID;
-	for(; i < GEN_FILE_NUM; i++)
-		printf("filename[%d] = %s\n", i, gen_filename[i]);
-	#endif
+	for (; i < GEN_FILE_NUM; i++)
+		printf ("filename[%d] = %s\n", i, gen_filename[i]);
+#endif
 }
-void generate_simics_code(node_t* root, char* path_name){
+
+void generate_simics_code (node_t * root, char *path_name)
+{
 	/* get the device name */
-	symbol_t* symbol = symbol_find("DEVICE", DEVICE_TYPE);
-	if(symbol == NULL){
-		printf("can not find device\n");
-		exit(-1);
+	symbol_t *symbol = symbol_find ("DEVICE", DEVICE_TYPE);
+
+	if (symbol == NULL) {
+		printf ("can not find device\n");
+		exit (-1);
 	}
-		
-	device_attr_t* attr = (device_attr_t*)symbol->attr.device;	
-	char* device_name = attr->name;
+
+	device_attr_t *attr = (device_attr_t *) symbol->attr.device;
+
+	char *device_name = attr->name;
 
 	/* complete the full filename generated */
-	complete_filename(device_name, path_name);
+	complete_filename (device_name, path_name);
 
 	/* begin to generate the c source file */
-	FILE* file = NULL;
+	FILE *file = NULL;
+
 	int i = 0;
-	for(; i < GEN_FILE_NUM; i++){
-		file = fopen(gen_filename[i], "w");
-		if(file != NULL){
-			gen_code[i](root, file);
-			fclose(file);
+
+	for (; i < GEN_FILE_NUM; i++) {
+		file = fopen (gen_filename[i], "w");
+		if (file != NULL) {
+			gen_code[i] (root, file);
+			fclose (file);
 		}
-		else{
-			fprintf(stderr, "can not open file %s\n", gen_filename[i]);
-			exit(-1);
+		else {
+			fprintf (stderr, "can not open file %s\n", gen_filename[i]);
+			exit (-1);
 		}
 	}
 }
