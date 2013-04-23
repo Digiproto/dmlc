@@ -6,5 +6,10 @@ Lexer.c:gdml.lex
 	flex gdml.lex
 Parser.c:gdml.y
 	bison -d gdml.y
+module_test: symbol
+
+symbol: symbol.c
+	gcc -g -DSYMBOL_DEBUG -o symbol symbol.c
 clean:
 	rm Parser.c Lexer.c Lexer.h Parser.h gdml.tab.h dmlc tags -r -f
+	rm symbol -rf
