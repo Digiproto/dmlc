@@ -39,14 +39,18 @@
 void generate_module_id_source (node_t * root, FILE * file)
 {
 	/* get the device name */
-	symbol_t *symbol = symbol_find ("DEVICE", DEVICE_TYPE);
+	//symbol_t *symbol = symbol_find ("DEVICE", DEVICE_TYPE);
+	/* FIXME: there is something wrong, we need to find symbol in symbol table */
+	symbol_t *symbol;
 
 	if (symbol == NULL) {
 		printf ("can not find device\n");
 		exit (-1);
 	}
 
-	device_attr_t *attr = (device_attr_t *) symbol->attr.device;
+	//device_attr_t *attr = (device_attr_t *) symbol->attr.device;
+	/* FIXME: shoud get the device */
+	device_attr_t *attr;
 
 	char *device_name = attr->name;
 
@@ -120,14 +124,18 @@ simple_device_finalize_instance(conf_object_t *_obj)
 }");
 #endif
 	/* get the device name */
-	symbol_t *symbol = symbol_find ("DEVICE", DEVICE_TYPE);
+	//symbol_t *symbol = symbol_find ("DEVICE", DEVICE_TYPE);
+	/* FIXME: There is something wrong, we should fine symbol from symbol table */
+	symbol_t *symbol;
 
 	if (symbol == NULL) {
 		printf ("can not find device\n");
 		exit (-1);
 	}
 
-	device_attr_t *attr = (device_attr_t *) symbol->attr.device;
+	//device_attr_t *attr = (device_attr_t *) symbol->attr.device;
+	/* FIXME: we should get the device */
+	device_attr_t *attr;
 
 	char *device_name = attr->name;
 
@@ -232,14 +240,18 @@ void complete_filename (char *device_name, char *path_name)
 void generate_simics_code (node_t * root, char *path_name)
 {
 	/* get the device name */
-	symbol_t *symbol = symbol_find ("DEVICE", DEVICE_TYPE);
+	//symbol_t *symbol = symbol_find ("DEVICE", DEVICE_TYPE);
+	/* FIXME: There is something wrong, we shoul find the device from symbol table */
+	symbol_t *symbol;
 
 	if (symbol == NULL) {
 		printf ("can not find device\n");
 		exit (-1);
 	}
 
-	device_attr_t *attr = (device_attr_t *) symbol->attr.device;
+	//device_attr_t *attr = (device_attr_t *) symbol->attr.device;
+	/* FIXME: we should get the device */
+	device_attr_t *attr;
 
 	char *device_name = attr->name;
 

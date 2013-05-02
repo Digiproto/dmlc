@@ -198,7 +198,7 @@ typedef enum
 	BITFIELDS_DECL_TYPE,
 	/* layout */
 	LAYOUT_TYPE
-} ident_type_t;
+} type_t;
 
 typedef struct obj_variable
 {

@@ -34,14 +34,13 @@
 #include <string.h>				/* for strcmp, strdup & friends */
 #include <assert.h>
 #include "symbol.h"
-#define SYMBOL_DEBUG
 #ifdef SYMBOL_DEBUG
 #define DBG(fmt, ...) do { fprintf(stderr, fmt, ## __VA_ARGS__); } while (0)
 #else
 #define DBG(fmt, ...) do { } while (0)
 #endif
 
-#define MAX_SYMBOLS 10000
+//#define MAX_SYMBOLS 10000
 static int str_hash (const char *str)
 {
 	if (!*str)
@@ -64,47 +63,302 @@ static int str_hash (const char *str)
 	return hash_value;
 }
 
-static symbol_t *symbol_table[MAX_SYMBOLS];	/* not visible from outside */
-
-symbol_t *symbol_find (char *name, int type)
-{
-	symbol_t *symbol = symbol_table[str_hash (name)];
-	//printf("In %s, name=%s, hash value=%d\n", __FUNCTION__, name, str_hash(name));
+/**
+ * @brief find information of the symbol with same name on the hash table.
+ *
+ * @param symbol_table the hash table finding from.
+ * @param name         the identifier name.
+ *
+ * @return return symbol structure pointer or NULL on error.
+ */
+static symbol_t _symbol_find(symbol_t* symbol_table, char* name, type_t type) {
+    symbol_t symbol = symbol_table[str_hash(name)];
 	if (symbol == NULL) {
-		/* can not find the symbol */
-		printf ("can not find the symbol %s(type:%d)\n", name, type);
+		/* can not find symbol */
+		printf("Can not find the symbol %s(type: %d)\n", name, (int)type);
 	}
 	else if (symbol->type == type) {
-		/* hash hit, find the right type */
+		return symbol;
 	}
 	else {
 		/* hash conflict */
-		while (symbol->type != type && symbol != NULL) {
+		while ((symbol->type != type) && (symbol != NULL)) {
 			symbol = symbol->next;
 		}
 	}
-	return symbol;
+    return NULL;
 }
 
-int symbol_insert (const char *name, int type, void *attr)
+/**
+ * @brief malloc a new table.
+ *
+ * @return return the table pointer.
+ */
+static symtab_t table_malloc()
 {
-	assert (name != NULL);
-	symbol_t *s = symbol_table[str_hash (name)];
-	symbol_t *new_symbol = (symbol_t *) malloc (sizeof (symbol_t));
-	new_symbol->name = strdup (name);
-	new_symbol->type = type;
-	new_symbol->attr.default_type = attr;
-	new_symbol->next = NULL;
-
-	DBG ("In %s, name=%s, type=%d, hash value=%d\n", __FUNCTION__, name, type,
-		 str_hash (name));
-	if (s == NULL) {			/* blank slot */
-		symbol_table[str_hash (name)] = new_symbol;
-	}
-	else {						/* conflict */
-		while (s->next != NULL)
-			s = s->next;
-		s->next = new_symbol;
-	}
-	return 0;
+    symtab_t new_symtab = (symtab_t) malloc(sizeof(struct symtab));
+    assert(new_symtab != NULL);
+    bzero(new_symtab, sizeof(struct symtab));
+    return new_symtab;
 }
+
+/**
+ * @brief malloc a new symbol and set number with name, type and attr.
+ *
+ * @param name the name of symbol.
+ * @param type the type of symbol.
+ * @param attr the pointer to attribute of symbol.
+ *
+ * @return return the table pointer.
+ */
+static symbol_t symbol_new(char *name, type_t type, void *attr)
+{
+    symbol_t new_undef = (symbol_t) malloc(sizeof(struct symbol));
+    assert(new_undef != NULL);
+    if(name) {
+        new_undef->name = strdup(name);
+    }
+    new_undef->type = type;
+    new_undef->attr = attr;
+    new_undef->next = NULL;
+    return new_undef;
+}
+
+/**
+ * @brief find the symbol with same name from the current symbol table or parent.
+ *
+ * @param symtab the current symbol table.
+ * @param name   the symbol name found.
+ *
+ * @return the pointer of the symbol with information.
+ */
+symbol_t symbol_find(symtab_t symtab, char *name, type_t type)
+{
+    assert(symtab != NULL && name != NULL);
+    symtab_t tmp = symtab;
+    symbol_t rt;
+    while(tmp != NULL) {
+        rt = _symbol_find(tmp->table, name, type);
+        if(rt) {
+            return rt;
+        }
+        tmp = tmp->parent;
+    }
+    return NULL;
+}
+
+/**
+ * @brief insert a new symbol into the current table.
+ *
+ * @param symtab the current table.
+ * @param name   the symbol name.
+ * @param type   the symbol type.
+ * @param attr   the pointer of the symbol attribute.
+ *
+ * @return return 0 or !0 on error.
+ */
+int symbol_insert(symtab_t symtab, char* name, type_t type, void* attr)
+{
+    assert(name != NULL && symtab != NULL);
+
+    symbol_t rt;
+    rt = _symbol_find(symtab->table, name, type);
+    if(rt) {
+        /* identifier have been defined while find stack top table
+         * having identifier with same name and type.  */
+        return -1;
+    }
+
+    symbol_t new_symbol = symbol_new(name, type, attr);
+
+    symbol_t s = symtab->table[str_hash(name)];
+    if(s == NULL){ /* blank slot */
+        symtab->table[str_hash(name)] = new_symbol;
+    }else{ /* conflict */
+        while(s->next != NULL) {
+            s = s->next;
+		}
+        s->next = new_symbol;
+    }
+    return 0;
+}
+
+/**
+ * @brief create a symbol table root.
+ *
+ * @return return the symbol table.
+ */
+symtab_t symtab_create()
+{
+    return table_malloc();
+}
+
+/**
+ * @brief create a symbol table into the sibling.
+ *
+ * @param the current symbol table.
+ *
+ * @return return the symbol table.
+ */
+symtab_t symtab_insert_sibling(symtab_t symtab)
+{
+    assert(symtab != NULL);
+    symtab_t newtab = table_malloc();
+    symtab_t tmp = symtab;
+    while(tmp->sibling != NULL) {
+        tmp = tmp->sibling;
+    }
+    tmp->sibling = newtab;
+    newtab->parent = symtab->parent;
+
+    return newtab;
+}
+
+/**
+ * @brief create a symbol table into the child.
+ *
+ * @param the current symbol table.
+ *
+ * @return return the symbol table.
+ */
+symtab_t symtab_insert_child(symtab_t symtab)
+{
+    assert(symtab != NULL);
+    symtab_t tmp = symtab->child;
+    if(tmp) {
+        return symtab_insert_sibling(tmp);
+    }else{
+        symtab_t newtab = table_malloc();
+        symtab->child = newtab;
+        newtab->parent = symtab;
+        return newtab;
+    }
+}
+
+/**
+ * @brief free a symbol tree.
+ *
+ * @param root the tree root.
+ */
+void symtab_free(symtab_t root)
+{
+    assert(root != NULL);
+    symtab_t tmp;
+    while(root != NULL) {
+        symtab_free(root->child);
+        tmp = root;
+        root = root->sibling;
+        free(tmp);
+    }
+}
+
+/**
+ * @brief init a new symbol list undefined.
+ *
+ * @return return the symbol list head.
+ */
+symbol_t sym_undef_list_init()
+{
+    return symbol_new(NULL, 0, NULL);
+}
+
+/**
+ * @brief add a new symbol undefind node into list.
+ *
+ * @param head   the list head.
+ * @param symtab the symbol undefined on the symtab(symbol table).
+ * @param name   the name of the symbol undefined.
+ * @param type   the type of the symbol undefined.
+ *
+ * @return return the new node.
+ */
+symbol_t sym_undef_list_add(symbol_t head, symtab_t symtab, char *name, type_t type)
+{
+    assert(head != NULL && symtab != NULL);
+    symbol_t new_undef = symbol_new(name, type, symtab);
+    new_undef->next = head->next;
+    head->next = new_undef;
+    return new_undef;
+}
+
+/**
+ * @brief get a symbol undefined, and delete it from list.
+ *
+ * @param head the list head.
+ *
+ * @return return a symbol undefined.
+ */
+symbol_t sym_undef_list_pick(symbol_t head)
+{
+    assert(head != NULL);
+    symbol_t tmp = head->next;
+    if(tmp) {
+        head->next = tmp->next;
+    }
+    return tmp;
+}
+
+/**
+ * @brief free the list.
+ *
+ * @param head the list head.
+ */
+void sym_undef_list_free(symbol_t head)
+{
+    symbol_t tmp = head->next;
+    symbol_t pre;
+    while(tmp != NULL) {
+        pre = tmp;
+        tmp = tmp->next;
+        sym_undef_free(pre);
+    }
+    sym_undef_free(head);
+}
+
+/**
+ * @brief free the a symbol undefined node.
+ *
+ * @param node the symbol undefined node.
+ */
+void sym_undef_free(symbol_t node)
+{
+    assert(node != NULL);
+    free(node->name);
+    free(node);
+}
+
+#ifdef SYMBOL_DEBUG
+/* only for debug.  */
+static void tree_travel(symtab_t node)
+{
+    static int depth = 0;
+    depth++;
+    while(node != NULL) {
+        int i = 1;
+        while(depth > i++) {
+            printf("|   ");
+        }
+        printf("depth = %d\n", depth);
+        tree_travel(node->child);
+        node = node->sibling;
+    }
+    depth--;
+}
+
+static void list_travel(symbol_t head)
+{
+    symbol_t node = head->next;
+    while(node != NULL) {
+        printf("undef symbol: %s\n", node->name);
+    }
+}
+
+static void found(symbol_t node)
+{
+    if(node) {
+        printf("found: symbol->name: %s\n", node->name);
+    }else{
+        printf("not found.\n");
+    }
+}
+#endif

@@ -420,12 +420,16 @@ static void gen_device_type_info (device_attr_t * dev, FILE * f)
 
 void gen_qemu_code (node_t * root, char *name)
 {
-	symbol_t *sym = symbol_find ("DEVICE", DEVICE_TYPE);
+	//symbol_t *sym = symbol_find ("DEVICE", DEVICE_TYPE);
+	/* FIXME: there is some problem */
+	symbol_t *sym;
 	if (!sym) {
 		printf ("cannot find device tree\n");
 		exit (-1);
 	}
-	device_attr_t *dev = (device_attr_t *) sym->attr.device;
+	//device_attr_t *dev = (device_attr_t *) sym->attr.device;
+	/* FIXME: there is some problem */
+	device_attr_t *dev;
 #define PATH_SIZE 256
 	char tmp[PATH_SIZE];
 

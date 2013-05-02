@@ -205,6 +205,49 @@ typedef struct cdecl {
 	int is_typedef;
 } cdecl_attr_t;
 
+#define MAX_SYMBOLS 10000
+
+typedef struct symtab *symtab_t;
+
+/* store identifier name, type and pointer to attribute_node.  */
+typedef struct symbol {
+    char          *name;  /* identifier name.  */
+    type_t         type;  /* identifier type.  */
+    struct symbol *next;  /* the other symbol with the same hash value */
+    union {
+        void    *attr;   /* identifier declaration attribute.  */
+        symtab_t belong; /* for undefined symbol list.  */
+    };
+}*symbol_t;
+
+/* a hash table for storing symbols. it have a pointer to a brother,
+ * have a pointer to a child.  */
+struct symtab {
+    struct symtab *parent;
+    struct symtab *sibling;
+    struct symtab *child;
+    symbol_t table[MAX_SYMBOLS];
+};
+
+/* find and insert symbol from the symbol table.  */
+symbol_t symbol_find(symtab_t symtab, char* name, type_t type);
+int symbol_insert(symtab_t symtab, char* name, type_t type, void* attr);
+/* operate the symbol tables.  */
+symtab_t symtab_create();
+symtab_t symtab_insert_sibling(symtab_t symtab);
+symtab_t symtab_insert_child(symtab_t symtab);
+void symtab_free(symtab_t root);
+
+/* undefined symbol list.  */
+symbol_t sym_undef_list_init();
+symbol_t sym_undef_list_add (symbol_t head, symtab_t table,
+        char *name, type_t type);
+symbol_t sym_undef_list_pick(symbol_t head);
+void sym_undef_list_free(symbol_t head);
+void sym_undef_free(symbol_t node);
+
+
+#if 0
 typedef struct symbol
 {
 	const char *name;
@@ -220,4 +263,5 @@ typedef struct symbol
 
 symbol_t *symbol_find (char *name, int type);
 int symbol_insert (const char *name, int type, void *attr);
+#endif
 #endif

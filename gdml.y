@@ -167,7 +167,7 @@ begin_unit
 	: DML INTEGER_LITERAL ';' dml {
 		dml_attr_t* attr = (dml_attr_t*)malloc(sizeof(dml_attr_t));
 		attr->version = $2;
-		symbol_insert("dml", DML_TYPE, attr);
+		//symbol_insert("dml", DML_TYPE, attr);
 
 		if(*root_ptr != NULL) {
 			/* something wrong */
@@ -186,7 +186,7 @@ dml
 	: DEVICE objident ';' syntax_modifiers device_statements {
 		device_attr_t* attr = (device_attr_t*)malloc(sizeof(device_attr_t));
 		attr->name = $2->ident.str;
-		symbol_insert($2->ident.str, DEVICE_TYPE, attr);
+		//symbol_insert($2->ident.str, DEVICE_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("device", DEVICE_TYPE, sizeof(struct tree_device));
 		node->device.name = $2->ident.str;
@@ -248,7 +248,7 @@ syntax_modifier
 		bitorder_attr_t*  attr = (bitorder_attr_t*)malloc(sizeof(bitorder_attr_t));
 		memset(attr, 0, sizeof(bitorder_attr_t));
 		attr->endian= strdup($2->ident.str);
-		symbol_insert($2->ident.str, BITORDER_TYPE, attr);
+		//symbol_insert($2->ident.str, BITORDER_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("bitorder", BITORDER_TYPE, sizeof(struct tree_bitorder));
 		node->bitorder.endian = $2->ident.str;
@@ -302,7 +302,7 @@ object
 
 		bank_attr_t* attr = (bank_attr_t*)gdml_malloc(sizeof(bank_attr_t));
 		attr->name = $2->ident.str;
-		symbol_insert($2->ident.str, BANK_TYPE, attr);
+		//symbol_insert($2->ident.str, BANK_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("bank", BANK_TYPE, sizeof(struct tree_bank));
 		node->bank.name = $2->ident.str;
@@ -315,7 +315,7 @@ object
 		register_attr_t* attr = (register_attr_t*)gdml_malloc(sizeof(register_attr_t));
 		attr->name = $2->ident.str;
 		attr->is_array = 0;
-		symbol_insert($2->ident.str, REGISTER_TYPE, attr);
+		//symbol_insert($2->ident.str, REGISTER_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("register", REGISTER_TYPE, sizeof(struct tree_register));
 		node->reg.name = $2->ident.str;
@@ -331,7 +331,7 @@ object
 		register_attr_t* attr = (register_attr_t*)gdml_malloc(sizeof(register_attr_t));
 		attr->name = $2->ident.str;
 		attr->is_array = 1;
-		symbol_insert($2->ident.str, REGISTER_TYPE, attr);
+		//symbol_insert($2->ident.str, REGISTER_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("register", REGISTER_TYPE, sizeof(struct tree_register));
 		node->reg.name = $2->ident.str;
@@ -350,7 +350,7 @@ object
 		field_attr_t* attr = (field_attr_t*)gdml_malloc(sizeof(field_attr_t));
 		attr->name = $2->ident.str;
 		attr->is_range = 1;
-		symbol_insert($2->ident.str, FIELD_TYPE, attr);
+		//symbol_insert($2->ident.str, FIELD_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("field", FIELD_TYPE, sizeof(struct tree_field));
 		node->field.name = $2->ident.str;
@@ -367,7 +367,7 @@ object
 		field_attr_t* attr = (field_attr_t*)gdml_malloc(sizeof(field_attr_t));
 		attr->name = $2->ident.str;
 		attr->is_range = 0;
-		symbol_insert($2->ident.str, FIELD_TYPE, attr);
+		//symbol_insert($2->ident.str, FIELD_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("field", FIELD_TYPE, sizeof(struct tree_field));
 		node->field.name = $2->ident.str;
@@ -400,7 +400,7 @@ object
 		connect_attr_t* attr = (connect_attr_t*)gdml_malloc(sizeof(connect_attr_t));
 		attr->name = $2->ident.str;
 		attr->arraydef = 0;
-		symbol_insert($2->ident.str, CONNECT_TYPE, attr);
+		//symbol_insert($2->ident.str, CONNECT_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("connect", CONNECT_TYPE, sizeof(struct tree_connect));
 		node->connect.name = $2->ident.str;
@@ -417,7 +417,7 @@ object
 		}
 		interface_attr_t* attr = (interface_attr_t*)gdml_malloc(sizeof(interface_attr_t));
 		attr->name = $2->ident.str;
-		symbol_insert($2->ident.str, INTERFACE_TYPE, attr);
+		//symbol_insert($2->ident.str, INTERFACE_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("interface", INTERFACE_TYPE, sizeof(struct tree_interface));
 		node->interface.name = $2->ident.str;
@@ -447,7 +447,7 @@ object
 		debug_proc("Line : %d\n", __LINE__);
 		event_attr_t* attr = (event_attr_t*)gdml_malloc(sizeof(event_attr_t));
 		attr->name = $2->ident.str;
-		symbol_insert($2->ident.str, EVENT_TYPE, attr);
+		//symbol_insert($2->ident.str, EVENT_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("event", EVENT_TYPE, sizeof(struct tree_event));
 		node->event.name = $2->ident.str;
@@ -475,7 +475,7 @@ object
 		debug_proc("Line : %d\n", __LINE__);
 		implement_attr_t* attr = (implement_attr_t*)gdml_malloc(sizeof(implement_attr_t));
 		attr->name = $2->ident.str;
-		symbol_insert($2->ident.str, IMPLEMENT_TYPE, attr);
+		//symbol_insert($2->ident.str, IMPLEMENT_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("implement", IMPLEMENT_TYPE, sizeof(struct tree_implement));
 		node->implement.name = $2->ident.str;
@@ -512,7 +512,7 @@ object
 		connect_attr_t* attr = (connect_attr_t*)gdml_malloc(sizeof(connect_attr_t));
 		attr->name = $2->ident.str;
 		attr->arraydef = 1;
-		symbol_insert($2->ident.str, CONNECT_TYPE, attr);
+		//symbol_insert($2->ident.str, CONNECT_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("connect", CONNECT_TYPE, sizeof(struct tree_connect));
 		node->connect.name = $2->ident.str;
@@ -529,7 +529,7 @@ method
 		attr->name = $2->ident.str;
 		attr->is_extern = 0;
 		attr->is_default = 0;
-		symbol_insert($2->ident.str, METHOD_TYPE, attr);
+		//symbol_insert($2->ident.str, METHOD_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("method", METHOD_TYPE, sizeof(struct tree_method));
 		node->method.name = $2->ident.str;
@@ -545,7 +545,7 @@ method
 		attr->name = $2->ident.str;
 		attr->is_extern = 0;
 		attr->is_default = 1;
-		symbol_insert($2->ident.str, METHOD_TYPE, attr);
+		//symbol_insert($2->ident.str, METHOD_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("method", METHOD_TYPE, sizeof(struct tree_method));
 		node->method.name = $2->ident.str;
@@ -561,7 +561,7 @@ method
 		attr->name = $3->ident.str;
 		attr->is_extern = 1;
 		attr->is_default = 0;
-		symbol_insert($3->ident.str, METHOD_TYPE, attr);
+		//symbol_insert($3->ident.str, METHOD_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("method", METHOD_TYPE, sizeof(struct tree_method));
 		node->method.name = $3->ident.str;
@@ -577,7 +577,7 @@ method
 		attr->name = $3->ident.str;
 		attr->is_extern = 1;
 		attr->is_default = 1;
-		symbol_insert($3->ident.str, METHOD_TYPE, attr);
+		//symbol_insert($3->ident.str, METHOD_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("method", METHOD_TYPE, sizeof(struct tree_method));
 		node->method.name = $3->ident.str;
@@ -618,7 +618,7 @@ toplevel
 		DBG("in TEMPLATE %s\n", $2);
 		template_attr_t* attr = (template_attr_t*)gdml_malloc(sizeof(template_attr_t));
 		attr->name = $2->ident.str;
-		symbol_insert($2->ident.str, TEMPLATE_TYPE, attr);
+		//symbol_insert($2->ident.str, TEMPLATE_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("template", TEMPLATE_TYPE, sizeof(struct tree_template));
 		node->temp.name = $2->ident.str;
@@ -627,7 +627,7 @@ toplevel
 	}
 	| LOGGROUP ident ';' {
 		DBG("in LOGGROUP %s\n", $2);
-		symbol_insert($2->ident.str, LOGGROUP_TYPE, NULL);
+		//symbol_insert($2->ident.str, LOGGROUP_TYPE, NULL);
 
 		tree_t* node = (tree_t*)create_node("loggroup", LOGGROUP_TYPE, sizeof(struct tree_loggroup));
 		node->loggroup.name = $2->ident.str;
@@ -708,7 +708,7 @@ import
 		int filelen = strlen($2);
 
 		/* FIXME, should check if the same filename is imported already. */
-		symbol_insert($2, IMPORT_TYPE, NULL);
+		//symbol_insert($2, IMPORT_TYPE, NULL);
 		assert((dirlen + filelen) < 1024);
 		strncpy(&fullname[0], dir, dirlen);
 		if(*($2) == '"') {
@@ -860,7 +860,7 @@ parameter
 		}
 		parameter_attr_t* attr = (parameter_attr_t*)gdml_malloc(sizeof(parameter_attr_t));
 		attr->name = $2->ident.str;
-		symbol_insert($2->ident.str, PARAMETER_TYPE, attr);
+		//symbol_insert($2->ident.str, PARAMETER_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("parameter", PARAMETER_TYPE, sizeof(struct tree_param));
 		node->param.name = $2->ident.str;
