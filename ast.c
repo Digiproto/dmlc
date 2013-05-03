@@ -33,12 +33,33 @@
 
 #include "ast.h"
 #include "debug_color.h"
+#include "types.h"
 
 #ifdef AST_DEBUG
 #define DBG(fmt, ...) do { fprintf(stderr, fmt, ## __VA_ARGS__); } while (0)
 #else
 #define DBG(fmt, ...) do { } while (0)
 #endif
+
+/**
+ * @brief gdml_malloc : allocates size bytes and
+ * initialize it with 0, at last returns a pointer
+ * to the allocated memory
+ *
+ * @param size: allocates size
+ *
+ * @return : return a pointer to the allocated memory
+ */
+void* gdml_malloc(int size) {
+	void* ret = malloc(size);
+	if (ret == NULL) {
+		fprintf(stderr, "malloc failed!\n");
+		exit(-1);
+	}
+	memset(ret, 0, size);
+
+	return ret;
+}
 
 /**
  * @brief get_digits: get the digits from string
@@ -117,16 +138,22 @@ long int strtoi (char *str)
 	return value;
 }
 
-static node_t *find_tail (node_t * head)
+/**
+ * @brief find_tail : find the last node from list
+ *
+ * @param head : the head node about list
+ *
+ * @return : return the pointer to the last node
+ */
+static tree_t* find_tail (tree_t* head)
 {
-	node_t *it = head;
-	while (it->sibling != NULL) {
-		it = it->sibling;
+	tree_t* it = head;
+	while (it->common.sibling != NULL) {
+		it = it->common.sibling;
 		DEBUG_FIND_TAIL ("In %s, head=0x%x, it=0x%x\n", __FUNCTION__, head, it);
 	}
 	return it;
 }
-
 
 /**
  * @brief find_node: find the node with node type
@@ -157,48 +184,113 @@ node_t *find_node (node_t * node, int type)
 	}
 }
 
-void add_child (node_t * parent, node_t * child)
+/**
+ * @brief add_child : add a child node to parent
+ *
+ * @param parent : parent node
+ * @param child : child node
+ */
+void add_child (tree_t* parent, tree_t* child)
 {
 	assert (parent != NULL);
-	DEBUG_ADD_CHILD ("In %s, child->name=%s\n", __FUNCTION__, child->name);
-	parent->child = child;
+	DEBUG_ADD_CHILD ("In %s, child->name=%s\n", __FUNCTION__, child->common.name);
+	parent->common.child = child;
 }
 
 static int node_num = 0;
 
-node_t *create_node (char *name, int type)
+/**
+ * @brief create_node : create a tree node
+ *
+ * @param name : node name
+ * @param type : node type
+ * @param size : node size
+ *
+ * @return : return a pointer to created node
+ */
+tree_t* create_node (char *name, int type, int size)
 {
-	node_t *node = (node_t *) malloc (sizeof (node_t));
-	node->name = strdup (name);
-	node->sibling = NULL;
-	node->child = NULL;
-	DEBUG_CREATE_NODE ("In %s, name=%s, type = %d\n", __FUNCTION__, name, type);
-	node->type = type;
+	tree_t* node = (tree_t*)gdml_malloc(size) ;
+	node->common.name = strdup (name);
+	node->common.sibling = NULL;
+	node->common.child = NULL;
+	DEBUG_CREATE_NODE ("In %s, node: 0x%x, name=%s, type = %d\n", __FUNCTION__, node, name, type);
+	node->common.type = type;
 	node_num++;
+
 	return node;
+}
+
+/**
+ * @brief dml_keyword_node : make a node for dml keyword
+ *
+ * @param name: dml keyword
+ *
+ * @return : return a pointer to the node
+ */
+tree_t* dml_keyword_node(const char* name) {
+    tree_t* node = create_node("dml_keyword", DML_KEYWORD_TYPE, sizeof(struct tree_ident));
+    node->ident.str = strdup(name);
+    node->ident.len = strlen(name);
+
+    return node;
+}
+
+/**
+ * @brief c_keyword_node : make node for c language keyword
+ *
+ * @param name : c language keyword
+ *
+ * @return : return a pointer to node
+ */
+tree_t* c_keyword_node (const char* name) {
+    tree_t* node = create_node("c_keyword", C_KEYWORD_TYPE, sizeof(struct tree_ident));
+    node->ident.str = strdup(name);
+    node->ident.len = strlen(name);
+
+    return node;
 }
 
 /**
  * @brief concentrate the two node list
  *
- * @param root
- * @param new_node
+ * @param root : the head node
+ * @param new_node : the node will be insert
  *
- * @return
+ * @return : return a pointer to head node;
  */
-node_t *create_node_list (node_t * root, node_t * new_node)
+tree_t* create_node_list (tree_t* root, tree_t* new_node)
 {
 	if (root != NULL && new_node != NULL) {
 		DEBUG_CREATE_NODE_LIST ("In %s, root->name=%s, new_node->name=%s\n",
-								__FUNCTION__, root->name, new_node->name);
+								__FUNCTION__, root->common.name, new_node->common.name);
 	}
 	assert (new_node != NULL);
 	assert (root != NULL);
 
-	node_t *tail = find_tail (root);
-	assert (tail->sibling == NULL);
-	tail->sibling = new_node;
+	tree_t* tail = find_tail (root);
+	assert (tail->common.sibling == NULL);
+	tail->common.sibling = new_node;
 	return root;
+}
+
+/**
+ * @brief get_node_num : get the sum number about sibling node
+ *
+ * @param root : the first node
+ *
+ * @return : return the num about slibing node
+ */
+int get_node_num (tree_t* root) {
+	int num = 0;
+	tree_t* node = root;
+	assert (root != NULL);
+	while (node->common.sibling != NULL) {
+		num++;
+		node = node->common.sibling;
+	}
+	printf("In %s, node num: %d\n", __FUNCTION__, num);
+	return num;
 }
 
 /**

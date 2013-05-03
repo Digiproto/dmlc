@@ -56,7 +56,7 @@ const char *import_file_list[] = {
 *
 * @return the root node of ast
 */
-node_t *get_ast (char *filename)
+tree_t* get_ast (char *filename)
 {
 	FILE *file = fopen (filename, "r");
 	if (file == NULL) {
@@ -65,7 +65,7 @@ node_t *get_ast (char *filename)
 	}
 
 	yyscan_t scanner;
-	node_t *root = NULL;
+	tree_t* root = NULL;
 	yylex_init (&scanner);
 	yyrestart (file, scanner);
 	yyparse (scanner, &root);

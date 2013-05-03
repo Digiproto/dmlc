@@ -34,6 +34,7 @@
 #include <string.h>				/* for strcmp, strdup & friends */
 #include <assert.h>
 #include "symbol.h"
+#define SYMBOL_DEBUG
 #ifdef SYMBOL_DEBUG
 #define DBG(fmt, ...) do { fprintf(stderr, fmt, ## __VA_ARGS__); } while (0)
 #else
@@ -85,7 +86,7 @@ symbol_t *symbol_find (char *name, int type)
 	return symbol;
 }
 
-int symbol_insert (char *name, int type, void *attr)
+int symbol_insert (const char *name, int type, void *attr)
 {
 	assert (name != NULL);
 	symbol_t *s = symbol_table[str_hash (name)];

@@ -188,6 +188,8 @@ header_loop:
 "delete"		{ count(yyscanner); return(DELETE);}
 "is"			{ count(yyscanner); return(IS);}
 "defined"		{ count(yyscanner); return(DEFINED);}
+"undefined"		{ count(yyscanner); return(UNDEFINED);}
+"sizeoftype"	{ count(yyscanner); return(SIZEOFTYPE);}
 "bitorder"		{count(yyscanner); return(BITORDER);}
 "constant"		{count(yyscanner); return(CONSTANT);}
 "implement"		{count(yyscanner); return(IMPLEMENT);}
@@ -217,17 +219,41 @@ header_loop:
 								yylval_param->sval = (char *) strdup(yyget_text(yyscanner));
 								return(INTEGER_LITERAL);
 							}
-0{D}+{INTS}?				{ count(yyscanner); return(INTEGER_LITERAL); }
+
+0{D}+{INTS}?				{
+								count(yyscanner);
+								yylval_param->sval = (char *) strdup(yyget_text(yyscanner));
+								return(INTEGER_LITERAL);
+							}
+
 {D}+{INTS}?					{
 								count(yyscanner);
 								yylval_param->sval = (char *) strdup(yyget_text(yyscanner));
 								return(INTEGER_LITERAL);
 							}
 
-L?'(\\.|[^\\'])+'			{ count(yyscanner); return(INTEGER_LITERAL); }
-{D}+{E}{FS}?				{ count(yyscanner); return(INTEGER_LITERAL); }
-{D}*"."{D}+({E})?{FS}?		{ count(yyscanner); return(INTEGER_LITERAL); }
-{D}+"."{D}*({E})?{FS}?		{ count(yyscanner); return(INTEGER_LITERAL); }
+L?'(\\.|[^\\'])+'			{
+								count(yyscanner);
+								yylval_param->sval = (char *) strdup(yyget_text(yyscanner));
+								return(INTEGER_LITERAL);
+							}
+
+{D}+{E}{FS}?				{
+								count(yyscanner);
+								yylval_param->sval = (char *) strdup(yyget_text(yyscanner));
+								return(INTEGER_LITERAL);
+							}
+
+{D}*"."{D}+({E})?{FS}?		{
+								count(yyscanner);
+								yylval_param->sval = (char *) strdup(yyget_text(yyscanner));
+								return(INTEGER_LITERAL);
+							}
+{D}+"."{D}*({E})?{FS}?		{
+								count(yyscanner);
+								yylval_param->sval = (char *) strdup(yyget_text(yyscanner));
+								return(INTEGER_LITERAL);
+							}
       
 L?\"(\\.|[^\\"])*\"			{
 								count(yyscanner);

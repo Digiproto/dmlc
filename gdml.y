@@ -35,12 +35,16 @@ extern char* builtin_filename;
 
 %lex-param   { yyscan_t scanner }
 %parse-param { yyscan_t scanner }
-%parse-param { node_t** root_ptr }
+%parse-param { tree_t** root_ptr }
 
 %union  {
 	int ival;
 	char* sval;
 	node_t* nodeval;
+	int itype;
+	tree_t* tree_type;
+	//enum tree_code code;
+	location_t location;
 }
 
 %token DML IDENTIFIER INTEGER_LITERAL STRING_LITERAL SIZEOF
@@ -71,86 +75,108 @@ extern char* builtin_filename;
 %type	<sval> CONSTANT
 %type	<sval> SIGNED
 %type	<sval> HEADER
-%type	<sval> objident
-%type	<sval> maybe_objident
-%type	<sval> ident
+%type	<tree_type> objident
+%type	<tree_type> maybe_objident
+%type	<tree_type> ident
 %type	<sval> STRING_LITERAL
 %type	<sval> INTEGER_LITERAL
-%type	<sval> object_desc
-%type	<sval> typeident
-%type	<sval> local_keyword
-%type	<sval> const_opt
-%type	<nodeval> dml
-%type	<nodeval> syntax_modifiers
-%type	<nodeval> device_statements
-%type	<nodeval> device_statement
-%type	<nodeval> syntax_modifier
-%type	<nodeval> toplevel
-%type	<nodeval> import
-%type	<nodeval> parameter
-%type	<nodeval> offsetspec
-%type	<nodeval> object_statement
-%type	<nodeval> method
-%type	<nodeval> sizespec
-%type	<nodeval> object
-%type	<nodeval> object_spec
-%type	<nodeval> object_statements
-%type	<nodeval> istemplate_stmt
-%type	<nodeval> statement
-%type	<nodeval> compound_statement
-%type	<nodeval> objident_list
-%type	<nodeval> istemplate
-%type	<nodeval> arraydef
-%type	<nodeval> bitrange
-%type	<nodeval> paramspec
-%type	<nodeval> basetype
-%type	<nodeval> expression
-%type	<nodeval> comma_expression
-%type	<nodeval> expression_list
-%type	<nodeval> method_params
-%type	<nodeval> method_def
-%type	<nodeval> cdecl_or_ident_list
-%type	<nodeval> cdecl_or_ident_list2
-%type	<nodeval> cdecl
-%type	<nodeval> cdecl2
-%type	<nodeval> cdecl3
-%type	<nodeval> cdecl_list
-%type	<nodeval> cdecl_list2
-%type	<nodeval> local
-%type	<nodeval> typeof
-%type	<nodeval> cdecl_or_ident
-%type	<nodeval> statement_list
-%type	<nodeval> log_args
-%type	<nodeval> endianflag
-%type	<nodeval> struct
-%type	<nodeval> stars
-%type	<nodeval> struct_decls
-%type	<nodeval> returnargs
-%type	<nodeval> ctypedecl_ptr
-%type	<nodeval> ctypedecl
-%type	<nodeval> ctypedecl_array
-%type	<nodeval> ctypedecl_simple
-%type	<nodeval> object_if
-%type	<nodeval> layout
-%type	<nodeval> layout_decls
-%type	<nodeval> bitfields
-%type	<nodeval> bitfields_decls
-%type	<nodeval> typeoparg
-%type	<nodeval> expression_opt
-%type	<nodeval> comma_expression_opt
+%type	<tree_type> typeident
+%type	<tree_type> local_keyword
+%type	<tree_type> const_opt
+%type	<tree_type> dml
+%type	<tree_type> syntax_modifiers
+%type	<tree_type> device_statements
+%type	<tree_type> device_statement
+%type	<tree_type> statement
+%type	<tree_type> syntax_modifier
+%type	<tree_type> toplevel
+%type	<tree_type> import
+%type	<tree_type> parameter
+%type	<tree_type> offsetspec
+%type	<tree_type> object_desc
+%type	<tree_type> object_statement
+%type	<tree_type> method
+%type	<tree_type> sizespec
+%type	<tree_type> object
+%type	<tree_type> object_spec
+%type	<tree_type> object_statements
+%type	<tree_type> istemplate_stmt
+%type	<tree_type> istemplate
+%type	<tree_type> compound_statement
+%type	<tree_type> objident_list
+%type	<tree_type> arraydef
+%type	<tree_type> bitrange
+%type	<tree_type> paramspec
+%type	<tree_type> basetype
+%type	<tree_type> expression
+%type	<tree_type> comma_expression
+%type	<tree_type> comma_expression_opt
+%type	<tree_type> expression_list
+%type	<tree_type> method_params
+%type	<tree_type> cdecl_or_ident_list
+%type	<tree_type> cdecl_or_ident_list2
+%type	<tree_type> cdecl
+%type	<tree_type> cdecl2
+%type	<tree_type> cdecl3
+%type	<tree_type> cdecl_list
+%type	<tree_type> cdecl_list2
+%type	<tree_type> local
+%type	<tree_type> typeof
+%type	<tree_type> cdecl_or_ident
+%type	<tree_type> statement_list
+%type	<tree_type> log_args
+%type	<tree_type> endianflag
+%type	<tree_type> struct
+%type	<tree_type> stars
+%type	<tree_type> struct_decls
+%type	<tree_type> returnargs
+%type	<tree_type> ctypedecl_ptr
+%type	<tree_type> ctypedecl
+%type	<tree_type> ctypedecl_array
+%type	<tree_type> ctypedecl_simple
+%type	<tree_type> object_if
+%type	<tree_type> layout
+%type	<tree_type> layout_decls
+%type	<tree_type> bitfields
+%type	<tree_type> bitfields_decls
+%type	<tree_type> typeoparg
+%type	<tree_type> expression_opt
+
+/* Add precedence rules to solve dangling else s/r conflict */
+%nonassoc IF
+%nonassoc ELSE
+
+%right '=' RIGHT_ASSIGN LEFT_ASSIGN ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN AND_ASSIGN XOR_ASSIGN OR_ASSIGN
+%right '?' ':'
+%left OR_OP
+%left AND_OP
+%left '|'
+%left '^'
+%left '&'
+%left EQ_OP NE_OP
+%left '>' '<' GE_OP LE_OP
+%left LEFT_OP RIGHT_OP
+%left '+' '-'
+%left '*' '/' '%'
+%right UNARY INC_OP DEC_OP
+%left HYPERUNARY
+%left POINTSAT '.' '(' '['
 
 %%
 begin_unit
 	: DML INTEGER_LITERAL ';' dml {
 		dml_attr_t* attr = (dml_attr_t*)malloc(sizeof(dml_attr_t));
-		symbol_insert("DML", DML_TYPE, attr);
+		attr->version = $2;
+		symbol_insert("dml", DML_TYPE, attr);
 
 		if(*root_ptr != NULL) {
 			/* something wrong */
 			printf("root of ast already exists\n");
 			exit(-1);
 		}
-		*root_ptr = create_node("DML", DML_TYPE);
+		*root_ptr = (tree_t*)create_node("dml", DML_TYPE, sizeof(struct tree_dml));
+		printf("root_ptr: 0x%x, *root_ptr: 0x%x\n", root_ptr, *root_ptr);
+		(*root_ptr)->dml.version = $2;
 		if($4 != NULL)
 			add_child(*root_ptr, $4);
 	}
@@ -159,14 +185,18 @@ begin_unit
 dml
 	: DEVICE objident ';' syntax_modifiers device_statements {
 		device_attr_t* attr = (device_attr_t*)malloc(sizeof(device_attr_t));
-		attr->name = strdup($2);
-		symbol_insert("DEVICE", DEVICE_TYPE, attr);
-		node_t* node = create_node($2, DEVICE_TYPE);
-		node_t* import_ast = NULL;
+		attr->name = $2->ident.str;
+		symbol_insert($2->ident.str, DEVICE_TYPE, attr);
+
+		tree_t* node = (tree_t*)create_node("device", DEVICE_TYPE, sizeof(struct tree_device));
+		node->device.name = $2->ident.str;
+
+		printf("Line = %d, node name: %s, device name: %s\n", __LINE__, node->device.common.name, node->device.name);
+		tree_t* import_ast = NULL;
 		if(builtin_filename != NULL) {
-			import_ast = get_ast(builtin_filename);
-			if(import_ast->child != NULL)
-				create_node_list(node, import_ast->child);
+			import_ast = (tree_t*)get_ast(builtin_filename);
+			if(import_ast->common.child != NULL)
+				create_node_list(node, import_ast->common.child);
 		}
 
 		if($4 != NULL)	
@@ -189,7 +219,7 @@ dml
 			$$ = $1;
 		}
 		else {
-			printf("maybe something Wrong\n");
+			printf("Line = %d, maybe something Wrong\n", __LINE__);
 		}
 	}
 	;
@@ -204,7 +234,7 @@ syntax_modifiers
 			$$ = $2;
 		}
 		else if($1 != NULL && $2 != NULL) {
-			$$ = create_node_list($1, $2);
+			$$ = (tree_t*)create_node_list($1, $2);
 		}
 		else {
 			$$ = NULL;
@@ -214,15 +244,15 @@ syntax_modifiers
 
 syntax_modifier
 	: BITORDER ident ';' {
-		DBG("In BITORDER: %s\n", $2);
+		DBG("In BITORDER: %s\n", $2->ident.str);
 		bitorder_attr_t*  attr = (bitorder_attr_t*)malloc(sizeof(bitorder_attr_t));
 		memset(attr, 0, sizeof(bitorder_attr_t));
-		attr->name = strdup($2);
-		symbol_insert($2, BITORDER_TYPE, attr);
-		node_t* bitorder = create_node($2, BITORDER_TYPE);
-		node_t* semicolon = create_node(";", SEMICOLON_TYPE);
-		create_node_list(bitorder, semicolon);
-		$$ = bitorder;
+		attr->endian= strdup($2->ident.str);
+		symbol_insert($2->ident.str, BITORDER_TYPE, attr);
+
+		tree_t* node = (tree_t*)create_node("bitorder", BITORDER_TYPE, sizeof(struct tree_bitorder));
+		node->bitorder.endian = $2->ident.str;
+		$$ = node;
 	}
 	;
 
@@ -238,7 +268,7 @@ device_statements
 		else if($1 != NULL && $2 != NULL){
 			DBG("create_node_list, $1=0x%x, $2=0x%x. | device_statements device_statement\n",
 					(unsigned)$1, (unsigned)$2);
-			$$ = create_node_list($1, $2);
+			$$ = (tree_t*)create_node_list($1, $2);
 		}
 		else {
 			printf("maybe something wrong in device_statements\n");
@@ -257,6 +287,7 @@ device_statement
 	}
 	| import {
 		DBG("import In device_statement\n");
+		/* FIXME: there maybe some problems */
 		$$ = $1;
 	}
 	;
@@ -267,239 +298,305 @@ object
 			fprintf(stderr, "There must be objident.\n");
 			exit(-1);
 		}
-		DBG("BANK is %s\n", $2);
+		DBG("BANK is %s\n", $2->ident.str);
 
-		bank_attr_t* attr = (bank_attr_t*)malloc(sizeof(bank_attr_t));
-		attr->name = strdup($2);
-		symbol_insert($2, BANK_TYPE, attr);
+		bank_attr_t* attr = (bank_attr_t*)gdml_malloc(sizeof(bank_attr_t));
+		attr->name = $2->ident.str;
+		symbol_insert($2->ident.str, BANK_TYPE, attr);
 
-		node_t* bank = create_node($2, BANK_TYPE);
-		if (($3 == NULL) && ($4 != NULL)) {
-			add_child(bank, $4);
-		}
-		else if (($3 != NULL) && ($4 == NULL)) {
-			add_child(bank, $3);
-		}
-		if(($3 != NULL) && ($4 != NULL)) {
-			add_child(bank, $3);
-			create_node_list($3, $4);
-		}
-		$$ = bank;
+		tree_t* node = (tree_t*)create_node("bank", BANK_TYPE, sizeof(struct tree_bank));
+		node->bank.name = $2->ident.str;
+		node->bank.templates = $3;
+		node->bank.spec = $4;
+		$$ = node;
 	}
 	| REGISTER objident sizespec offsetspec istemplate object_spec {
-		DBG("register is %s\n", $2);
-		register_attr_t* attr = (register_attr_t*)malloc(sizeof(register_attr_t));
-		memset(attr, 0, sizeof(register_attr_t));
-		attr->name = strdup($2);
+		DBG("register is %s\n", $2->ident.str);
+		register_attr_t* attr = (register_attr_t*)gdml_malloc(sizeof(register_attr_t));
+		attr->name = $2->ident.str;
 		attr->is_array = 0;
-		if ($3 != NULL) {
-			node_t* size = find_node($3, INTEGER_TYPE);
-			if ((attr->size = (int)strtoi(size->name)) < 0) {
-				fprintf(stderr, "The sizespec maybe wrong: %s\n", size->name);
-				exit(-1);
-			}
-			DBG("sizespec: %s : %d\n", size->name, attr->size);
-		}
-		if ($4 != NULL) {
-			node_t* offset = find_node($4, INTEGER_TYPE);
-			if ((attr->offset = (int)strtoi(offset->name)) < 0) {
-				fprintf(stderr, "The offsetspec maybe wrong: %s\n", offset->name);
-				exit(-1);
-			}
-			DBG("offsetspec: %s : 0x%x\n", offset->name, attr->offset);
-		}
-		symbol_insert($2, REGISTER_TYPE, attr);
+		symbol_insert($2->ident.str, REGISTER_TYPE, attr);
 
-		node_t* reg = create_node($2, REGISTER_TYPE);
-		if(($5 != NULL) && ($6 == NULL)) {
-			DBG("add_child for register\n");
-			add_child(reg, $5);
-		}
-		else if (($5 == NULL) && ($6 != NULL)) {
-			DBG("add_child for register\n");
-			add_child(reg, $6);
-
-		}
-		else  if (($5 != NULL) && ($6 != NULL)) {
-			DBG("add_child for register\n");
-			add_child(reg, $5);
-			create_node_list($5, $6);
-		}
-		$$ = reg;
+		tree_t* node = (tree_t*)create_node("register", REGISTER_TYPE, sizeof(struct tree_register));
+		node->reg.name = $2->ident.str;
+		node->reg.sizespec = $3;
+		node->reg.offset = $4;
+		node->reg.templates = $5;
+		node->reg.spec = $6;
+		$$ = node;
 	}
 	| REGISTER objident '[' arraydef ']' sizespec offsetspec istemplate object_spec {
 		debug_proc("Line : %d\n", __LINE__);
-		DBG("Register is %s\n", $2);
-		register_attr_t* attr = (register_attr_t*)malloc(sizeof(register_attr_t));
-		memset(attr, 0, sizeof(register_attr_t));
-		attr->name = strdup($2);
+		DBG("Register is %s\n", $2->ident.str);
+		register_attr_t* attr = (register_attr_t*)gdml_malloc(sizeof(register_attr_t));
+		attr->name = $2->ident.str;
 		attr->is_array = 1;
-		if ($6 != NULL) {
-			node_t* size = find_node($6, INTEGER_TYPE);
-			if ((attr->size = (int)strtoi(size->name)) < 0) {
-				fprintf(stderr, "The sizespec maybe wrong: %s\n", size->name);
-				exit(-1);
-			}
-			DBG("sizespec: %s : %d\n", size->name, attr->size);
-		}
-		if ($7 != NULL) {
-			node_t* offset = find_node($7, INTEGER_TYPE);
-			if ((attr->offset = (int)strtoi(offset->name)) < 0) {
-				fprintf(stderr, "The offsetspec maybe wrong: %s\n", offset->name);
-				exit(-1);
-			}
-			DBG("offsetspec: %s : 0x%x\n", offset->name, attr->offset);
-		}
-		symbol_insert($2, REGISTER_TYPE, attr);
+		symbol_insert($2->ident.str, REGISTER_TYPE, attr);
 
-		node_t* reg = create_node($2, REGISTER_TYPE);
-		if ($4 == NULL) {
-			fprintf(stderr, "In range register, the arraydef is must!\n");
-			exit(-1);
-		}
-		DBG("add_child for register\n");
-		add_child(reg, $4);
-		if ($8 != NULL) {
-			create_node_list($4, $8);
-		}
-		if ($9 != NULL) {
-			create_node_list($4, $9);
-		}
-		$$ = reg;
+		tree_t* node = (tree_t*)create_node("register", REGISTER_TYPE, sizeof(struct tree_register));
+		node->reg.name = $2->ident.str;
+		node->reg.array = $4;
+		node->reg.sizespec = $6;
+		node->reg.offset = $7;
+		node->reg.templates = $8;
+		node->reg.spec = $9;
+		$$ = node;
 	}
 	| FIELD objident bitrange istemplate object_spec {
 		if ($2 == NULL) {
-			fprintf(stderr, "There must be objident\n");
+			fprintf(stderr, "need the identifier of field\n");
 			exit(-1);
 		}
-		field_attr_t* attr = (field_attr_t*)malloc(sizeof(field_attr_t));
-		memset(attr, 0, sizeof(field_attr_t));
-		attr->name = strdup($2);
+		field_attr_t* attr = (field_attr_t*)gdml_malloc(sizeof(field_attr_t));
+		attr->name = $2->ident.str;
 		attr->is_range = 1;
-		symbol_insert($2, FIELD_TYPE, attr);
+		symbol_insert($2->ident.str, FIELD_TYPE, attr);
 
-		node_t* field = create_node($2, FIELD_TYPE);
-		add_child(field, $3);
-		if ($4 != NULL) {
-			create_node_list($3, $4);
-		}
-		create_node_list($3, $5);
-		$$ = field;
+		tree_t* node = (tree_t*)create_node("field", FIELD_TYPE, sizeof(struct tree_field));
+		node->field.name = $2->ident.str;
+		node->field.bitrange = $3;
+		node->field.templates = $4;
+		node->field.spec = $5;
+		$$ = node;
 	}
 	| FIELD objident istemplate object_spec {
-		field_attr_t* attr = (field_attr_t*)malloc(sizeof(field_attr_t));
-		memset(attr, 0, sizeof(field_attr_t));
-		attr->name = strdup($2);
+		if ($2 == NULL) {
+			fprintf(stderr, "need the identifier of field\n");
+			exit(-1);
+		}
+		field_attr_t* attr = (field_attr_t*)gdml_malloc(sizeof(field_attr_t));
+		attr->name = $2->ident.str;
 		attr->is_range = 0;
-		symbol_insert($2, FIELD_TYPE, attr);
+		symbol_insert($2->ident.str, FIELD_TYPE, attr);
 
-		node_t* field = create_node($2, FIELD_TYPE);
-		if (($3 != NULL) && ($4 == NULL)) {
-			add_child(field, $3);
-		}
-		else if (($3 == NULL) && ($4 != NULL)) {
-			add_child(field, $4);
-		}
-		else if (($3 != NULL) && ($4 != NULL)) {
-			add_child(field, $3);
-			create_node_list($3, $4);
-		}
-		$$ = field;
+		tree_t* node = (tree_t*)create_node("field", FIELD_TYPE, sizeof(struct tree_field));
+		node->field.name = $2->ident.str;
+		node->field.bitrange = NULL;
+		node->field.templates = $3;
+		node->field.spec = $4;
+		$$ = node;
 	}
 	| DATA cdecl ';' {
-		node_t* node = find_node($2, INDENTIFIER_TYPE);
+		/* TODO: should find the identifier*/
+		#if 0
+		node_t* node = find_node($2, IDENT_TYPE);
 		data_attr_t* attr = malloc(sizeof(data_attr_t));
 		memset(attr, 0, sizeof(data_attr_t));
 		attr->name = strdup(node->name);
 		symbol_insert(node->name, DATA_TYPE, attr);
+		#endif
 
-		node_t* data = create_node(node->name, DATA_TYPE);
-		add_child(data, $2);
-		$$ = data;
+		tree_t* node = (tree_t*)create_node("cdecl", CDECL_TYPE, sizeof(struct tree_cdecl));
+		node->cdecl.state.is_data = 1;
+		node->cdecl.decl = $2;
+		$$ = node;
 	}
 	| CONNECT objident istemplate object_spec {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = create_node($2, CONNECT_TYPE);
-		DBG("CONNECT_TYPE: %s\n", $2);
+		if ($2 == NULL) {
+			fprintf(stderr, "need the identifier of field\n");
+			exit(-1);
+		}
+		connect_attr_t* attr = (connect_attr_t*)gdml_malloc(sizeof(connect_attr_t));
+		attr->name = $2->ident.str;
+		attr->arraydef = 0;
+		symbol_insert($2->ident.str, CONNECT_TYPE, attr);
+
+		tree_t* node = (tree_t*)create_node("connect", CONNECT_TYPE, sizeof(struct tree_connect));
+		node->connect.name = $2->ident.str;
+		node->connect.templates = $3;
+		node->connect.spec = $4;
+		DBG("CONNECT_TYPE: %s\n", $2->ident.str);
+		$$ = node;
 	}
 	| INTERFACE objident istemplate object_spec {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = create_node($2, INTERFACE_TYPE);
-		DBG("Interface_type: %s\n", $2);
+		if ($2 == NULL) {
+			fprintf(stderr, "need the identifier of field\n");
+			exit(-1);
+		}
+		interface_attr_t* attr = (interface_attr_t*)gdml_malloc(sizeof(interface_attr_t));
+		attr->name = $2->ident.str;
+		symbol_insert($2->ident.str, INTERFACE_TYPE, attr);
+
+		tree_t* node = (tree_t*)create_node("interface", INTERFACE_TYPE, sizeof(struct tree_interface));
+		node->interface.name = $2->ident.str;
+		node->interface.templates = $3;
+		node->interface.spec = $4;
+		DBG("Interface_type: %s\n", $2->ident.str);
+		$$ = node;
 	}
 	| ATTRIBUTE objident istemplate object_spec {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = create_node($2, ATTRIBUTE_TYPE);
-		DBG("Attribute: %s\n", $2);
+		if ($2 == NULL) {
+			fprintf(stderr, "need the identifier of field\n");
+			exit(-1);
+		}
+		attribute_attr_t* attr = (attribute_attr_t*)gdml_malloc(sizeof(attribute_attr_t));
+		attr->name = $2->ident.str;
+		attr->arraydef = 0;
+
+		tree_t* node = (tree_t*)create_node("attribute", ATTRIBUTE_TYPE, sizeof(struct tree_attribute));
+		node->attribute.name = $2->ident.str;
+		node->attribute.templates = $3;
+		node->attribute.spec = $4;
+		DBG("Attribute: %s\n", $2->ident.str);
+		$$ = node;
 	}
 	| EVENT objident istemplate object_spec {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		event_attr_t* attr = (event_attr_t*)gdml_malloc(sizeof(event_attr_t));
+		attr->name = $2->ident.str;
+		symbol_insert($2->ident.str, EVENT_TYPE, attr);
+
+		tree_t* node = (tree_t*)create_node("event", EVENT_TYPE, sizeof(struct tree_event));
+		node->event.name = $2->ident.str;
+		node->event.templates = $3;
+		node->event.spec = $4;
+		$$ = node;
 	}
 	| GROUP objident istemplate object_spec {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("group", GROUP_TYPE, sizeof(struct tree_group));
+		node->group.name = $2->ident.str;
+		node->group.templates = $3;
+		node->group.spec = $4;
+		$$ = node;
 	}
 	| PORT objident istemplate object_spec {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("port", PORT_TYPE, sizeof(struct tree_port));
+		node->port.name = $2->ident.str;
+		node->port.templates = $3;
+		node->port.spec = $4;
+		$$ = node;
 	}
 	| IMPLEMENT objident istemplate object_spec {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = create_node($2, IMPLEMENT_TYPE);
-		DBG("objident: %s\n", $2);
+		implement_attr_t* attr = (implement_attr_t*)gdml_malloc(sizeof(implement_attr_t));
+		attr->name = $2->ident.str;
+		symbol_insert($2->ident.str, IMPLEMENT_TYPE, attr);
+
+		tree_t* node = (tree_t*)create_node("implement", IMPLEMENT_TYPE, sizeof(struct tree_implement));
+		node->implement.name = $2->ident.str;
+		node->implement.templates = $3;
+		node->implement.spec = $4;
+		DBG("objident: %s\n", $2->ident.str);
+		$$ = node;
 	}
 	| ATTRIBUTE objident '[' arraydef ']' istemplate object_spec {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		attribute_attr_t* attr = (attribute_attr_t*)gdml_malloc(sizeof(attribute_attr_t));
+		attr->name = $2->ident.str;
+		attr->arraydef = 1;
+
+		tree_t* node = (tree_t*)create_node("attribute", ATTRIBUTE_TYPE, sizeof(struct tree_attribute));
+		node->attribute.name = $2->ident.str;
+		node->attribute.arraydef = $4;
+		node->attribute.templates = $6;
+		node->attribute.spec = $7;
+		$$ = node;
 	}
 	| GROUP objident '[' arraydef ']' istemplate object_spec {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("group", GROUP_TYPE, sizeof(struct tree_group));
+		node->group.name = $2->ident.str;
+		node->group.is_array = 1;
+		node->group.array = $4;
+		node->group.templates = $6;
+		node->group.spec = $7;
+		$$ = node;
 	}
 	| CONNECT objident '[' arraydef ']' istemplate object_spec {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		connect_attr_t* attr = (connect_attr_t*)gdml_malloc(sizeof(connect_attr_t));
+		attr->name = $2->ident.str;
+		attr->arraydef = 1;
+		symbol_insert($2->ident.str, CONNECT_TYPE, attr);
+
+		tree_t* node = (tree_t*)create_node("connect", CONNECT_TYPE, sizeof(struct tree_connect));
+		node->connect.name = $2->ident.str;
+		node->connect.arraydef = $4;
+		node->connect.templates = $6;
+		node->connect.spec = $7;
+		$$ = node;
 	}
 	;
 
 method
-	: METHOD objident method_params method_def {
-		method_attr_t* attr = (method_attr_t*)malloc(sizeof(method_attr_t));
-		memset(attr, 0, sizeof(method_attr_t));
-		attr->name = strdup($2);
-		symbol_insert($2, METHOD_TYPE, attr);
+	: METHOD objident method_params compound_statement {
+		method_attr_t* attr = (method_attr_t*)gdml_malloc(sizeof(method_attr_t));
+		attr->name = $2->ident.str;
+		attr->is_extern = 0;
+		attr->is_default = 0;
+		symbol_insert($2->ident.str, METHOD_TYPE, attr);
 
-		node_t* node = create_node($2, METHOD_TYPE);
-		if ($3 != NULL) {
-			add_child(node, $3);
-			create_node_list($3, $4);
-		}
-		else {
-			add_child(node, $4);
-		}
-		DBG("method is %s\n", $2);
+		tree_t* node = (tree_t*)create_node("method", METHOD_TYPE, sizeof(struct tree_method));
+		node->method.name = $2->ident.str;
+		node->method.is_extern = 0;
+		node->method.is_default = 0;
+		node->method.params = $3;
+		node->method.block = $4;
+		DBG("method is %s\n", $2->ident.str);
 		$$ = node;
 	}
-	| METHOD EXTERN objident method_params method_def {
-		node_t* node = create_node($3, METHOD_EXTERN_TYPE);
-		if ($4 != NULL) {
-			add_child(node, $4);
-			create_node_list($4, $5);
-		}
-		else {
-			add_child(node, $5);
-		}
-		DBG("method extern is %s\n", $3);
-		$$ = node;
+	| METHOD objident method_params DEFAULT compound_statement {
+		method_attr_t* attr = (method_attr_t*)gdml_malloc(sizeof(method_attr_t));
+		attr->name = $2->ident.str;
+		attr->is_extern = 0;
+		attr->is_default = 1;
+		symbol_insert($2->ident.str, METHOD_TYPE, attr);
 
+		tree_t* node = (tree_t*)create_node("method", METHOD_TYPE, sizeof(struct tree_method));
+		node->method.name = $2->ident.str;
+		node->method.is_extern = 0;
+		node->method.is_default = 1;
+		node->method.params = $3;
+		node->method.block = $5;
+		DBG("method is %s\n", $2->ident.str);
+		$$ = node;
+	}
+	| METHOD EXTERN objident method_params compound_statement {
+		method_attr_t* attr = (method_attr_t*)gdml_malloc(sizeof(method_attr_t));
+		attr->name = $3->ident.str;
+		attr->is_extern = 1;
+		attr->is_default = 0;
+		symbol_insert($3->ident.str, METHOD_TYPE, attr);
+
+		tree_t* node = (tree_t*)create_node("method", METHOD_TYPE, sizeof(struct tree_method));
+		node->method.name = $3->ident.str;
+		node->method.is_extern = 1;
+		node->method.is_default = 0;
+		node->method.params = $4;
+		node->method.block = $5;
+		DBG("method extern is %s\n", $3->ident.str);
+		$$ = node;
+	}
+	| METHOD EXTERN objident method_params DEFAULT compound_statement {
+		method_attr_t* attr = (method_attr_t*)gdml_malloc(sizeof(method_attr_t));
+		attr->name = $3->ident.str;
+		attr->is_extern = 1;
+		attr->is_default = 1;
+		symbol_insert($3->ident.str, METHOD_TYPE, attr);
+
+		tree_t* node = (tree_t*)create_node("method", METHOD_TYPE, sizeof(struct tree_method));
+		node->method.name = $3->ident.str;
+		node->method.is_extern = 1;
+		node->method.is_default = 1;
+		node->method.params = $4;
+		node->method.block = $6;
+		DBG("method extern is %s\n", $3->ident.str);
+		$$ = node;
 	}
 	;
 
 arraydef
 	: expression {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = $1;
+		tree_t* node = (tree_t*)create_node("array", ARRAY_TYPE, sizeof(struct tree_array));
+		node->array.is_fix = 1;
+		node->array.expr = $1;
+		$$ = node;
 	}
 	| ident IN expression RANGE_SIGN expression {
 		debug_proc("Line : %d\n", __LINE__);
@@ -507,9 +604,11 @@ arraydef
 			fprintf(stderr, "There must be identifier!\n");
 			exit(-1);
 		}
-		node_t* node = create_node($1, ARRAY_RANGE_TYPE);
-		add_child(node, $3);
-		create_node_list($3, $5);
+		tree_t* node = (tree_t*)create_node("array", ARRAY_TYPE, sizeof(struct tree_array));
+		node->array.is_fix = 0;
+		node->array.ident = $1;
+		node->array.expr = $3;
+		node->array.expr_end = $5;
 		$$ = node;
 	}
 	;
@@ -517,51 +616,57 @@ arraydef
 toplevel
 	: TEMPLATE objident object_spec {
 		DBG("in TEMPLATE %s\n", $2);
-		template_attr_t* attr = malloc(sizeof(template_attr_t));
-		memset(attr, 0, sizeof(template_attr_t));
-		attr->name = strdup($2);
-		symbol_insert($2, TEMPLATE_TYPE, attr);
+		template_attr_t* attr = (template_attr_t*)gdml_malloc(sizeof(template_attr_t));
+		attr->name = $2->ident.str;
+		symbol_insert($2->ident.str, TEMPLATE_TYPE, attr);
 
-		node_t* node = create_node($2, TEMPLATE_TYPE);
-		add_child(node, $3);
+		tree_t* node = (tree_t*)create_node("template", TEMPLATE_TYPE, sizeof(struct tree_template));
+		node->temp.name = $2->ident.str;
+		node->temp.spec = $3;
 		$$ = node;
 	}
 	| LOGGROUP ident ';' {
 		DBG("in LOGGROUP %s\n", $2);
-		symbol_insert($2, LOGGROUP_TYPE, NULL);
+		symbol_insert($2->ident.str, LOGGROUP_TYPE, NULL);
 
-		node_t* node = create_node($2, LOGGROUP_TYPE);
+		tree_t* node = (tree_t*)create_node("loggroup", LOGGROUP_TYPE, sizeof(struct tree_loggroup));
+		node->loggroup.name = $2->ident.str;
 		$$ = node;
 	}
 	| CONSTANT ident '=' expression ';' {
-		constant_attr_t* attr = malloc(sizeof(constant_attr_t));
-		memset(attr, 0, sizeof(attr));
-		/* FIXME, should provide a correct expression value */
-		attr->value = NULL;
-		symbol_insert($2, CONSTANT_TYPE, attr);
-		node_t* node = create_node($2, CONSTANT_TYPE);
-		node_t* assign = create_node("=", ASSIGN_TYPE);
-		create_node_list(node, assign);
-		add_child(assign, $4);
+		/* TODO: Find the symbol and insert it */
+		cdecl_attr_t* attr = (cdecl_attr_t*)gdml_malloc(sizeof(cdecl_attr_t));
+		attr->is_constant = 1;
+
+		tree_t* node = (tree_t*)create_node("assign", ASSIGN_TYPE, sizeof(struct tree_assign));
+		node->assign.is_constant = 1;
+		node->assign.decl = $2;
+		node->assign.expr = $4;
 		$$ = node;
 	}
 	| EXTERN cdecl_or_ident ';' {
-		/* FIXME: we should find the name of extern */
+		/* TODO: we should find the name of extern */
 		//symbol_t* symbol = symbol_find()
 		DBG("\nPay attention: we should find the name of extern\n\n");
-		node_t* extern_key = create_node("extern", EXTERN_KEY_TYPE);
-		add_child(extern_key, $2);
-		$$ = extern_key;
+		cdecl_attr_t* attr = (cdecl_attr_t*)gdml_malloc(sizeof(cdecl_attr_t));
+		attr->is_extern = 1;
+
+		tree_t* node = (tree_t*)create_node("cdecl", CDECL_TYPE, sizeof(struct tree_cdecl));
+		node->cdecl.state.is_extern = 1;
+		node->cdecl.decl = $2;
+		$$ = node;
 	}
 	| TYPEDEF cdecl ';' {
 		/* FIXME: we should find the name cdecl */
 		DBG("\nPay attention: we should find the name of typedef cdecl\n\n");
 		//$$ = create_node("UNIMP", TYPEDEF_TYPE);
-		node_t* typedef_key = create_node("typedef", TYPEDEF_TYPE);
-		node_t* semicolon = create_node(";", SEMICOLON_TYPE);
-		add_child(typedef_key, $2);
-		create_node_list($2, semicolon);
-		$$ = typedef_key;
+		cdecl_attr_t* attr = (cdecl_attr_t*)gdml_malloc(sizeof(cdecl_attr_t));
+		attr->is_typedef = 1;
+
+		tree_t* node = (tree_t*)create_node("cdecl", CDECL_TYPE, sizeof(struct tree_cdecl));
+		node->cdecl.state.is_typedef = 1;
+		node->cdecl.decl = $2;
+		$$ = node;
 	}
 	| EXTERN TYPEDEF cdecl ';' {
 		debug_proc("Line : %d\n", __LINE__);
@@ -573,27 +678,31 @@ toplevel
 	}
 	| HEADER {
 		/* FIXME: the header include much content */
-		$$ = create_node($1, HEADER_TYPE);
+		tree_t* node = (tree_t*)create_node("head", HEADER_TYPE, sizeof(struct tree_head));
+		node->head.str = $1;
+		/* TODO: should analyze the content of head */
+		//node->head.head = $1;
+		$$ = node;
 	}
 	;
 
 istemplate_stmt
 	: IS objident ';' {
 		DBG("In IS statement\n");
+		#if 0
 		symbol_t* symbol = symbol_find($2, TEMPLATE_TYPE);	
 		if(symbol == NULL){
 			fprintf(stderr, "Pay attention: No such template %s in IS statement\n", $2);
 		}
-		node_t* temp = create_node("is", ISTEMPLATE_TYPE);
-		node_t* temp_name = create_node($2, CONST_STRING_TYPE);
-		add_child(temp, temp_name);
-		$$ = temp;
+		#endif
+		$$ = $2;
 	}
 	;
 
 import
 	: IMPORT STRING_LITERAL ';' {
 		DBG("import file is %s\n", $2);
+		printf("import file is %s\n", $2);
 		char fullname[1024];
 		int dirlen = strlen(dir);
 		int filelen = strlen($2);
@@ -626,9 +735,9 @@ import
 		}
 
 		yyscan_t scanner;
-		node_t* root = create_node($2, IMPORT_TYPE);
+		tree_t* root = (tree_t*)create_node($2, IMPORT_TYPE);
 		DBG("Begin parse the import file %s\n", fullname);
-		node_t* ast = NULL;
+		tree_t* ast = NULL;
 		yylex_init(&scanner);
 		yyrestart(file, scanner);
 		yyparse(scanner, &ast);
@@ -636,13 +745,16 @@ import
 		fclose(file);
 		DBG("End of parse the import file %s\n", fullname);
 
-		$$ = ast->child;
+		$$ = ast->common.child;
 	}
 	;
 
 object_desc
 	: STRING_LITERAL {
-		$$ = $1;
+		tree_t* node = (tree_t*)create_node("const_string", CONST_STRING_TYPE, sizeof(struct tree_string));
+		node->string.pointer = $1;
+		node->string.length = strlen($1);
+		$$ = node;
 	}
 	| {
 		$$ = NULL;
@@ -652,43 +764,23 @@ object_desc
 object_spec
 	: object_desc ';' {
 		if ($1 == NULL) {
-			node_t* semicolon = create_node(";", SEMICOLON_TYPE);
-			$$ = semicolon;
+			$$ = NULL;
 		}
 		else {
-			node_t* node = create_node($1, CONST_STRING_TYPE);
-			node_t* semicolon = create_node(";", SEMICOLON_TYPE);
-			create_node_list(node, semicolon);
+			tree_t* node = (tree_t*)create_node("object_spec", SPEC_TYPE, sizeof(struct tree_object_spec));
+			node->spec.desc = $1;
+			node->spec.block = NULL;
 			$$ = node;
 		}
 	}
 	| object_desc '{' object_statements '}' {
 		DBG("object_statements for object_spec\n");
-		node_t* pre_braces = create_node("{", PRE_BRACES_TYPE);
-		node_t* aft_braces = create_node("}", AFTER_BRACES_TYPE);
-		if (($1 == NULL) && ($3 == NULL)) {
-			DBG("Pay attention: there should be object description!\n");
-			create_node_list(pre_braces, aft_braces);
-			$$ = pre_braces;
-		}
-		else if (($1 == NULL) && ($3 != NULL)) {
-			create_node_list(pre_braces, $3);
-			create_node_list(pre_braces, aft_braces);
-			$$ = pre_braces;
-		}
-		else if (($1 != NULL) && ($3 == NULL)) {
-			node_t* node = create_node($1, CONST_STRING_TYPE);
-			create_node_list(node, pre_braces);
-			create_node_list(node, aft_braces);
-			$$ = node;
-		}
-		else if (($1 != NULL) && ($3 != NULL)) {
-			node_t* node = create_node($1, CONST_STRING_TYPE);
-			create_node_list(node, pre_braces);
-			create_node_list(node, $3);
-			create_node_list(node, aft_braces);
-			$$ = node;
-		}
+		tree_t* node = (tree_t*)create_node("object_spec", SPEC_TYPE, sizeof(struct tree_object_spec));
+		node->spec.desc = $1;
+		tree_t* block = (tree_t*)create_node("block", BLOCK_TYPE, sizeof(struct tree_block));
+		block->block.statement = $3;
+		node->spec.block = block;
+		$$ = node;
 	}
 	;
 
@@ -699,7 +791,7 @@ object_statements
 			$$ = $2;
 		}
 		else if($1 != NULL && $2 != NULL) {
-			$$ = create_node_list($1, $2);
+			$$ = (tree_t*)create_node_list($1, $2);
 		}
 		else {
 			fprintf(stderr, "maybe something wrong in object_statements\n");
@@ -729,36 +821,50 @@ object_statement
 	| object_if {
 		debug_proc("Line : %d\n", __LINE__);
 		DBG("object_if in object_statement \n");
-		$$ = NULL;
+		$$ = $1;
 	}
 	;
 
 object_if
 	: IF '(' expression ')' '{' object_statements '}' {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node =  (tree_t*)create_node("if_else", IF_ELSE_TYPE, sizeof(struct tree_if_else));
+		node->if_else.cond = $3;
+		node->if_else.if_block = $6;
+		node->if_else.else_block = NULL;
+		$$ = node;
 	}
 	| IF '(' expression ')' '{' object_statements '}' ELSE '{' object_statements '}' {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node =  (tree_t*)create_node("if_else", IF_ELSE_TYPE, sizeof(struct tree_if_else));
+		node->if_else.cond = $3;
+		node->if_else.if_block = $6;
+		node->if_else.else_block = $10;
+		$$ = node;
 	}
 	| IF '(' expression ')' '{' object_statements '}' ELSE object_if {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node =  (tree_t*)create_node("if_else", IF_ELSE_TYPE, sizeof(struct tree_if_else));
+		node->if_else.cond = $3;
+		node->if_else.if_block = $6;
+		node->if_else.else_block = $9;
+		$$ = node;
 	}
 	;
 
 parameter
 	: PARAMETER objident paramspec {
-		parameter_attr_t* attr = malloc(sizeof(parameter_attr_t));
-		memset(attr, 0, sizeof(parameter_attr_t));
-		attr->name = strdup($2);
-		symbol_insert($2, PARAMETER_TYPE, attr);
-
-		node_t* node = create_node($2, PARAMETER_TYPE);
-		if ($3 != NULL) {
-			add_child(node, $3);
+		if ($2 == NULL) {
+			fprintf(stderr, "parameter should ojbidentifier!\n");
+			exit(-1);
 		}
+		parameter_attr_t* attr = (parameter_attr_t*)gdml_malloc(sizeof(parameter_attr_t));
+		attr->name = $2->ident.str;
+		symbol_insert($2->ident.str, PARAMETER_TYPE, attr);
+
+		tree_t* node = (tree_t*)create_node("parameter", PARAMETER_TYPE, sizeof(struct tree_param));
+		node->param.name = $2->ident.str;
+		node->param.paramspec = $3;
 		DBG("parameter name is %s\n", $2);
 		$$ = node;
 	}
@@ -766,104 +872,73 @@ parameter
 
 paramspec
 	: ';' {
-		node_t* node = create_node(";", SEMICOLON_TYPE);
-		$$ = node;
+		$$ = NULL;
 	}
 	| '=' expression ';' {
-		node_t* node = create_node("=", ASSIGN_TYPE);
-		add_child(node, $2);
+		tree_t* node = (tree_t*)create_node("paramspec", SPEC_TYPE, sizeof(struct tree_paramspec));
+		node->paramspec.expr = $2;
 		$$ = node;
 	}
 	| '=' STRING_LITERAL ';' {
-		node_t* node = create_node("=", ASSIGN_TYPE);
-		node_t* str = create_node($2, CONST_STRING_TYPE);
-		add_child(node, str);
+		tree_t* str = (tree_t*)create_node("const_string", CONST_STRING_TYPE, sizeof(struct tree_string));
+		str->string.pointer = $2;
+		str->string.length = strlen($2);
+
+		tree_t* node = (tree_t*)create_node("paramspec", SPEC_TYPE, sizeof(struct tree_paramspec));
+		node->paramspec.string = str;
 		DBG("paramspec: %s\n", $2);
 		$$ = node;
 	}
 	| DEFAULT expression ';' {
-		node_t* node = create_node("default", DEFAULT_TYPE);
-		add_child(node, $2);
+		tree_t* node = (tree_t*)create_node("paramspec", SPEC_TYPE, sizeof(struct tree_paramspec));
+		node->paramspec.is_default = 1;
+		node->paramspec.expr = $2;
 		$$ = node;
 	}
 	| AUTO ';' {
-		node_t* node = create_node("auto", AUTO_TYPE);
+		tree_t* node = (tree_t*)create_node("paramspec", SPEC_TYPE, sizeof(struct tree_paramspec));
+		node->paramspec.is_auto = 1;
 		$$ = node;
 	}
 	;
 
 method_params
 	:  {
-		DBG("Pay attention: the method parameters maybe some problems\n");
+		DBG("Waring: the method have no parameters \n");
 		$$ = NULL;
 	}
 	| '(' cdecl_or_ident_list ')' {
-		node_t* pre_brack = create_node("(", PRE_BRACKETS_TYPE);
-		node_t* aft_brack = create_node(")", AFTER_BRACKETS_TYPE);
-		if ($2 == NULL) {
-			create_node_list(pre_brack, aft_brack);
-		}
-		else {
-			create_node_list(pre_brack, $2);
-			create_node_list(pre_brack, aft_brack);
-		}
-		$$ = pre_brack;
+		tree_t* node = (tree_t*)create_node("method_params", PARM_TYPE, sizeof(struct tree_params));
+		node->params.have_in_param = 1;
+		/* TODO: maybe we should get the pararmeters' type */
+		node->params.in_argc = get_node_num($2);
+		node->params.in_params = $2;
+		node->params.have_ret_param = 0;
+		node->params.ret_params = NULL;
+		$$ = node;
 	}
 	| METHOD_RETURN '(' cdecl_or_ident_list ')' {
-		node_t* method_ret = create_node("->", METHOD_RETURN_TYPE);
-		node_t* pre_brack = create_node("(", PRE_BRACKETS_TYPE);
-		node_t* aft_brack = create_node(")", AFTER_BRACKETS_TYPE);
-		if ($3 == NULL) {
-			create_node_list(method_ret, pre_brack);
-			create_node_list(method_ret, aft_brack);
-		}
-		else {
-			create_node_list(method_ret, pre_brack);
-			create_node_list(method_ret, $3);
-			create_node_list(method_ret, aft_brack);
-		}
-		$$ = method_ret;
+		tree_t* node = (tree_t*)create_node("method_params", PARM_TYPE, sizeof(struct tree_params));
+		node->params.in_params = NULL;
+		node->params.have_in_param = 0;
+		node->params.have_ret_param = 1;
+		node->params.ret_argc = get_node_num($3);
+		/* TODO: maybe we should get the pararmeters' type */
+		node->params.ret_params = $3;
+		$$ = node;
 	}
 	| '(' cdecl_or_ident_list ')' METHOD_RETURN '(' cdecl_or_ident_list ')' {
-		node_t* method_ret = create_node("->", METHOD_RETURN_TYPE);
-		node_t* pre_brack_1 = create_node("(", PRE_BRACKETS_TYPE);
-		node_t* aft_brack_1 = create_node(")", AFTER_BRACKETS_TYPE);
-		node_t* pre_brack_2 = create_node("(", PRE_BRACKETS_TYPE);
-		node_t* aft_brack_2 = create_node(")", AFTER_BRACKETS_TYPE);
-
-		if (($2 == NULL) && ($6 == NULL)) {
-			create_node_list(pre_brack_1, aft_brack_1);
-			create_node_list(pre_brack_1, method_ret);
-			create_node_list(pre_brack_1, pre_brack_2);
-			create_node_list(pre_brack_1, aft_brack_2);
-			$$ = pre_brack_1;
-		}
-		else if (($2 == NULL) && ($6 != NULL)) {
-			create_node_list(pre_brack_1, aft_brack_1);
-			create_node_list(pre_brack_1, method_ret);
-			create_node_list(pre_brack_1, pre_brack_2);
-			create_node_list(pre_brack_1, $6);
-			create_node_list(pre_brack_1, aft_brack_2);
-			$$ = pre_brack_1;
-		}
-		else if (($2 != NULL) && ($6 == NULL)) {
-			create_node_list(pre_brack_1, $2);
-			create_node_list(pre_brack_1, aft_brack_1);
-			create_node_list(pre_brack_1, method_ret);
-			create_node_list(pre_brack_1, pre_brack_2);
-			create_node_list(pre_brack_1, aft_brack_2);
-			$$ = pre_brack_1;
-		}
-		else {
-			create_node_list(pre_brack_1, $2);
-			create_node_list(pre_brack_1, aft_brack_1);
-			create_node_list(pre_brack_1, method_ret);
-			create_node_list(pre_brack_1, pre_brack_2);
-			create_node_list(pre_brack_1, $6);
-			create_node_list(pre_brack_1, aft_brack_2);
-			$$ = pre_brack_1;
-		}
+		tree_t* node = (tree_t*)create_node("method_params", PARM_TYPE, sizeof(struct tree_params));
+		node->params.have_in_param = 1;
+		node->params.in_argc = get_node_num($2);
+		/* TODO: maybe we should get the pararmeters' type */
+		node->params.in_params = $2;
+		node->params.have_ret_param = 1;
+		node->params.ret_argc = get_node_num($6);
+		/* TODO: maybe we should get the pararmeters' type */
+		node->params.ret_params = $6;
 		DBG("with METHOD_RETURN in method_params\n");
+		$$ = node;
 	}
 	;
 
@@ -872,37 +947,14 @@ returnargs
 		$$ = NULL;
 	}
 	| METHOD_RETURN '(' expression_list ')' {
-		node_t* method_ret = create_node("->", METHOD_RETURN_TYPE);
-        node_t* pre_brack = create_node("(", PRE_BRACKETS_TYPE);
-        node_t* aft_brack = create_node(")", AFTER_BRACKETS_TYPE);
-
-		create_node_list(method_ret, pre_brack);
-		if ($3 != NULL) {
-			create_node_list(method_ret, $3);
-		}
-		create_node_list(method_ret, aft_brack);
-		$$ = method_ret;
-	}
-	;
-
-method_def
-	: compound_statement {
-		DBG("compound_statement in method_def\n");
-		$$ = $1;
-	}
-	| DEFAULT compound_statement {
-		node_t* node = create_node("default", DEFAULT_TYPE);
-		add_child(node, $2);
-		$$ = node;
+		$$ = $3;
 	}
 	;
 
 istemplate
 	: IS '(' objident_list ')' {
 		debug_proc("Line : %d\n", __LINE__);
-		node_t* node = create_node("istemplate", ISTEMPLATE_TYPE);
-		add_child(node, $3);
-		$$ = node;
+		$$ = $3;
 	}
 	| {
 		$$ = NULL;
@@ -923,9 +975,7 @@ sizespec
 
 offsetspec
 	: REG_OFFSET expression {
-		node_t* reg_offset = create_node("@", REG_OFFSET_TYPE);
-		add_child(reg_offset, $2);
-		$$ = reg_offset;
+		$$ = $2;
 	}
 	| {
 		debug_proc("Line : %d\n", __LINE__);
@@ -938,22 +988,18 @@ offsetspec
 bitrange
 	: '[' expression ']' {
 		debug_proc("Line : %d\n", __LINE__);
-		node_t* pre_mid_brace =  create_node("[", PRE_MID_BRACES_TYPE);
-		node_t* aft_mid_brace = create_node("]", AFTER_MID_BRACES_TYPE);
-		create_node_list(pre_mid_brace, $2);
-		create_node_list(pre_mid_brace, aft_mid_brace);
-		$$ = pre_mid_brace;
+		tree_t* node = (tree_t*)create_node("array", ARRAY_TYPE, sizeof(struct tree_array));
+		node->array.is_fix = 1;
+		node->array.expr = $2;
+		$$ = node;
 	}
 	| '[' expression ':' expression ']' {
 		debug_proc("Line : %d\n", __LINE__);
-		node_t* pre_mid_brace =  create_node("[", PRE_MID_BRACES_TYPE);
-		node_t* aft_mid_brace = create_node("]", AFTER_MID_BRACES_TYPE);
-		node_t* colon = create_node(":", COLON_TYPE);
-		create_node_list(pre_mid_brace, $2);
-		create_node_list(pre_mid_brace, colon);
-		create_node_list(pre_mid_brace, $4);
-		create_node_list(pre_mid_brace, aft_mid_brace);
-		$$ = pre_mid_brace;
+		tree_t* node = (tree_t*)create_node("array", ARRAY_TYPE, sizeof(struct tree_array));
+		node->array.is_fix = 0;
+		node->array.expr = $2;
+		node->array.expr_end = $4;
+		$$ = node;
 	}
 	;
 
@@ -965,28 +1011,24 @@ cdecl_or_ident
 
 cdecl
 	: basetype cdecl2 {
-		if ($2 == NULL) {
-			$1->type = INDENTIFIER_TYPE;
-			$$ = $1;
-		}
-		else {
-			create_node_list($1, $2);
-			$$ = $1;
-		}
+		tree_t* node = (tree_t*)create_node("cdecl", CDECL_TYPE, sizeof(struct tree_cdecl))	;
+		node->cdecl.basetype = $1;
+		node->cdecl.decl = $2;
+		$$ = node;
 	}
 	| CONST basetype cdecl2 {
-		node_t* const_key = create_node("const", CONST_KEY_TYPE);
-		add_child(const_key, $2);
-		create_node_list($2, $3);
-		$$ = const_key;
+		tree_t* node = (tree_t*)create_node("cdecl", CDECL_TYPE, sizeof(struct tree_cdecl))	;
+		node->cdecl.state.is_const = 1;
+		node->cdecl.basetype = $2;
+		node->cdecl.decl = $3;
+		$$ = node;
 	}
 	;
 
 basetype
 	: typeident {
-		DBG("typeident: %s\n", $1);
-		node_t* node = create_node($1, BASETYPE_TYPE);
-		$$ = node;
+		DBG("typeident: %s\n", $1->common.name);
+		$$ = $1;
 	}
 	| struct {
 		DBG("struct\n");
@@ -994,11 +1036,11 @@ basetype
 	}
 	| layout {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		$$ = $1;
 	}
 	| bitfields {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		$$ = $1;
 	}
 	| typeof {
 		$$ = $1;
@@ -1011,64 +1053,53 @@ cdecl2
 	}
 	| CONST cdecl2 {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("cdecl", CDECL_TYPE, sizeof(struct tree_cdecl));
+		node->cdecl.state.is_const = 1;
+		node->cdecl.decl = $2;
+		$$ = node;
 	}
 	| '*' cdecl2 {
-		node_t* node = create_node("*", POINT_TYPE);
-		add_child(node, $2);
+		tree_t* node = (tree_t*)create_node("cdecl", CDECL_TYPE, sizeof(struct tree_cdecl));
+		node->cdecl.state.is_point = 1;
+		node->cdecl.decl = $2;
 		$$ = node;
 	}
 	| VECT cdecl2 {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("cdecl", CDECL_TYPE, sizeof(struct tree_cdecl));
+		node->cdecl.state.is_vect = 1;
+		node->cdecl.decl = $2;
+		$$ = node;
 	}
 	;
 
 cdecl3
 	: typeident {
-		DBG("typeident: %s\n", $1);
-		node_t* typeid = create_node($1, INDENTIFIER_TYPE);
-		$$ = typeid;
+		DBG("typeident: %s\n", $1->common.name);
+		$$ = $1;
 	}
 	| {
 		$$ = NULL;
 	}
 	| cdecl3 '[' expression ']' {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("array_cdecl", ARRAY_TYPE, sizeof(struct tree_array));
+		node->array.is_fix = 1;
+		node->array.expr = $3;
+		node->array.decl = $1;
+		$$ = node;
 	}
 	| cdecl3 '(' cdecl_list ')' {
-		node_t* pre_brack = create_node("(", PRE_BRACKETS_TYPE);
-		node_t* aft_brack = create_node(")", AFTER_BRACKETS_TYPE);
-		if (($1 != NULL) && ($3 != NULL)) {
-			create_node_list($1, pre_brack);
-			create_node_list($1, $3);
-			create_node_list($1, aft_brack);
-			$$ = $1;
-		}
-		else if (($1 != NULL) && ($3 == NULL)) {
-			create_node_list($1, pre_brack);
-			create_node_list($1, aft_brack);
-			$$ = $1;
-		}
-		else if (($1 == NULL) && ($3 != NULL)) {
-			create_node_list(pre_brack, $3);
-			create_node_list(pre_brack, aft_brack);
-			$$ = pre_brack;
-		}
-		else {
-			create_node_list(pre_brack, aft_brack);
-			$$ = pre_brack;
-		}
+		tree_t* node = (tree_t*)create_node("cdecl_brack", CDECL_BRACK_TYPE, sizeof(struct tree_cdecl_brack));
+		node->cdecl_brack.cdecl = $1;
+		node->cdecl_brack.decl_list = $3;
+		$$ = node;
 	}
 	| '(' cdecl2 ')' {
-		node_t* pre_brack = create_node("(", PRE_BRACKETS_TYPE);
-		node_t*  aft_brack = create_node(")", AFTER_BRACKETS_TYPE);
-		if ($2 != NULL) {
-			create_node_list(pre_brack, $2);
-		}
-		create_node_list(pre_brack, aft_brack);
-		$$ = pre_brack;
+		tree_t* node = (tree_t*)create_node("cdecl_brack", CDECL_BRACK_TYPE, sizeof(struct tree_cdecl_brack));
+		node->cdecl_brack.cdecl = NULL;
+		node->cdecl_brack.decl_list = $2;
+		$$ = node;
 	}
 	;
 
@@ -1086,15 +1117,16 @@ cdecl_list2
 		$$ = $1;
 	}
 	| ELLIPSIS {
-		$$ = create_node("...", ELLIPSIS_TYPE);
+		tree_t* node = (tree_t*)create_node("...", ELLIPSIS_TYPE, sizeof(struct tree_common));
+		$$ = node;
 	}
 	| cdecl_list2 ',' cdecl {
 		create_node_list($1, $3);
 		$$ = $1;
 	}
 	| cdecl_list2 ',' ELLIPSIS {
-		node_t* ellipsis = create_node("...", ELLIPSIS_TYPE);
-		create_node_list($1, ellipsis);
+		tree_t* node = (tree_t*)create_node("...", ELLIPSIS_TYPE, sizeof(struct tree_common));
+		create_node_list($1, node);
 		$$ = $1;
 	}
 	;
@@ -1120,46 +1152,24 @@ cdecl_or_ident_list2
 
 typeof
 	: TYPEOF expression {
-		node_t* node = create_node("typeof", TYPEOF_TYPE);
-		add_child(node, $2);
+		tree_t* node = (tree_t*)create_node("typeof", TYPEOF_TYPE, sizeof(struct tree_struct));
+		node->typeof_tree.expr = $2;
 		$$ = node;
 	}
 	;
 
 struct
 	: STRUCT '{' struct_decls '}' {
-		node_t* node = create_node("struct", STRUCT_TYPE);
-		node_t* pre_braces = create_node("{", PRE_BRACES_TYPE);
-		node_t* aft_braces = create_node("}", AFTER_BRACES_TYPE);
-		create_node_list(node, pre_braces);
-		if ($3 != NULL) {
-			create_node_list(node, $3);
-		}
-		create_node_list(node, aft_braces);
+		tree_t* node = (tree_t*)create_node("struct", STRUCT_TYPE, sizeof(struct tree_struct));
+		node->struct_tree.block = $3;
 		$$ = node;
 	}
 	;
 
 struct_decls
 	: struct_decls cdecl ';' {
-		node_t* semicolon = create_node(";", SEMICOLON_TYPE);
-		if (($1 == NULL) && ($2 == NULL)) {
-			fprintf(stderr, "The struct have something wrong.\n");
-			exit(-1);
-		}
-		else if (($1 == NULL) && ($2 != NULL)) {
-			create_node_list($2, semicolon);
-			$$ = $2;
-		}
-		else if (($1 != NULL) && ($2 == NULL)) {
-			create_node_list($1, semicolon);
-			$$ = $1;
-		}
-		else {
-			create_node_list($1, $2);
-			create_node_list($1, semicolon);
-			$$ = $1;
-		}
+		create_node_list($1, $2);
+		$$ = $1;
 	}
 	| {
 		$$ = NULL;
@@ -1169,14 +1179,18 @@ struct_decls
 layout
 	:LAYOUT STRING_LITERAL '{' layout_decls '}' {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("layout", LAYOUT_TYPE, sizeof(struct tree_layout));
+		node->layout.name = $2;
+		node->layout.block = $4;
+		$$ = node;
 	}
 	;
 
 layout_decls
 	:layout_decls cdecl ';' {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		create_node_list($1, $2);
+		$$ = $1;
 	}
 	|  {
 		debug_proc("Line : %d\n", __LINE__);
@@ -1187,14 +1201,27 @@ layout_decls
 bitfields
 	: BITFIELDS INTEGER_LITERAL '{' bitfields_decls '}' {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("bitfields", BITFIELDS_TYPE, sizeof(struct tree_bitfields));
+		node->bitfields.name = $2;
+		node->bitfields.block = $4;
+		$$ = node;
 	}
 	;
 
 bitfields_decls
 	: bitfields_decls cdecl '@' '[' expression ':' expression ']' ';' {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("bitfields_decls", BITFIELDS_DECL_TYPE, sizeof(struct tree_bitfields_dec));
+		node->bitfields_dec.decl = $2;
+		node->bitfields_dec.start = $5;
+		node->bitfields_dec.end = $7;
+		if ($1 != NULL) {
+			create_node_list($1, node);
+			$$ = $1;
+		}
+		else {
+			$$ = node;
+		}
 	}
 	| {
 		debug_proc("Line : %d\n", __LINE__);
@@ -1204,46 +1231,20 @@ bitfields_decls
 
 ctypedecl
 	: const_opt basetype ctypedecl_ptr {
-		if ($2 == NULL) {
-			fprintf(stderr, "There must be indentifier or basetype.\n");
-			exit(-1);
-		}
-		else if (($1 != NULL) && ($3 != NULL)) {
-			node_t* node = create_node("const", CONST_KEY_TYPE);
-			create_node_list(node, $2);
-			create_node_list(node, $3);
-			$$ = node;
-		}
-		else if (($1 != NULL) && ($3 == NULL)) {
-			node_t* node = create_node("const", CONST_KEY_TYPE);
-			create_node_list(node, $2);
-			$$ = node;
-		}
-		else if (($1 == NULL) && ($3 != NULL)) {
-			create_node_list($2, $3);
-			$$ = $2;
-		}
-		else if (($1 == NULL) && ($3 == NULL)) {
-			$$ = $2;
-		}
+		tree_t* node = (tree_t*)create_node("ctypedecl", CTYPEDECL_TYPE, sizeof(sizeof(struct tree_ctypedecl)));
+		node->ctypedecl.const_opt = $1;
+		node->ctypedecl.basetype = $2;
+		node->ctypedecl.ctypedecl_ptr = $3;
+		$$ = node;
 	}
 	;
 
 ctypedecl_ptr
 	: stars ctypedecl_array {
-		if (($1 != NULL) && ($2 != NULL)) {
-			create_node_list($1, $2);
-			$$ = $1;
-		}
-		else if (($1 != NULL) && ($2 == NULL)) {
-			$$ = $1;
-		}
-		else if (($1 == NULL) && ($2 != NULL)) {
-			$$ = $2;
-		}
-		else {
-			$$ = NULL;
-		}
+		tree_t* node = (tree_t*)create_node("ctypedecl_ptr", CTYPEDECL_PTR_TYPE, sizeof(struct tree_ctypedecl_ptr));
+		node->ctypedecl_ptr.stars = $1;
+		node->ctypedecl_ptr.array = $2;
+		$$ = node;
 	}
 	;
 
@@ -1253,11 +1254,17 @@ stars
 	}
 	| '*' CONST stars {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("stars", STARS_TYPE, sizeof(struct tree_stars));
+		node->stars.is_const = 1;
+		node->stars.stars = $3;
+		$$ = node;
 	}
 	| '*' stars {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("stars", STARS_TYPE, sizeof(struct tree_stars));
+		node->stars.is_const = 0;
+		node->stars.stars = $2;
+		$$ = node;
 	}
 	;
 
@@ -1269,13 +1276,9 @@ ctypedecl_array
 
 ctypedecl_simple
 	: '(' ctypedecl_ptr ')' {
-		node_t* pre_brack = create_node("(", PRE_BRACKETS_TYPE);
-		node_t* aft_brack = create_node(")", AFTER_BRACKETS_TYPE);
-		if ($2 != NULL) {
-			create_node_list(pre_brack, $2);
-		}
-		create_node_list(pre_brack, aft_brack);
-		$$ = pre_brack;
+		tree_t* node = (tree_t*)create_node("ctypedecl_simple", CTYPEDECL_SIMPLE_TYPE, sizeof(struct tree_cdecl_brack));
+		node->cdecl_brack.decl_list = $2;
+		$$ = node;
 	}
 	| {
 		$$ = NULL;
@@ -1284,7 +1287,7 @@ ctypedecl_simple
 
 const_opt
 	: CONST  {
-		$$ = "const";
+		$$ = (tree_t*)c_keyword_node("const");
 	}
 	|  {
 		$$ = NULL;
@@ -1296,31 +1299,31 @@ typeident
 		$$ = $1;
 	}
 	| CHAR {
-		$$ = "char";
+		$$ = (tree_t*)c_keyword_node("char");
 	}
 	| DOUBLE {
-		$$ = "double";
+		$$ = (tree_t*)c_keyword_node("double");
 	}
 	| FLOAT {
-		$$ = "float";
+		$$ = (tree_t*)c_keyword_node("float");
 	}
 	| INT {
-		$$ = "int";
+		$$ = (tree_t*)c_keyword_node("int");
 	}
 	| LONG {
-		$$ = "long";
+		$$ = (tree_t*)c_keyword_node("long");
 	}
 	| SHORT  {
-		$$ = "short";
+		$$ = (tree_t*)c_keyword_node("short");
 	}
 	| SIGNED {
-		$$ = "signed";
+		$$ = (tree_t*)c_keyword_node("signed");
 	}
 	| UNSIGNED {
-		$$ = "unsigned";
+		$$ = (tree_t*)c_keyword_node("unsigned");
 	}
 	| VOID {
-		$$ = "void";
+		$$ = (tree_t*)c_keyword_node("void");
 	}
 	;
 
@@ -1338,362 +1341,436 @@ comma_expression
 
 expression
 	: expression '=' expression {
-		node_t* assign = create_node("=", ASSIGN_TYPE);
-		create_node_list($1, assign);
-		add_child(assign, $3);
-		$$ = $1;
+		tree_t* node = (tree_t*)create_node("assign", EXPR_ASSIGN_TYPE, sizeof(struct tree_expr_assign));
+		node->expr_assign.assign_symbol = strdup("=");
+		node->expr_assign.left = $1;
+		node->expr_assign.right = $3;
+		$$ = node;
 	}
 	| expression ADD_ASSIGN expression {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("add_assign", EXPR_ASSIGN_TYPE, sizeof(struct tree_expr_assign));
+		node->expr_assign.assign_symbol = strdup("+=");
+		node->expr_assign.left = $1;
+		node->expr_assign.right = $3;
+		$$ = node;
 	}
 	| expression SUB_ASSIGN expression {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("sub_assign", EXPR_ASSIGN_TYPE, sizeof(struct tree_expr_assign));
+		node->expr_assign.assign_symbol = strdup("-=");
+		node->expr_assign.left = $1;
+		node->expr_assign.right = $3;
+		$$ = node;
 	}
 	| expression MUL_ASSIGN expression {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("mul_assign", EXPR_ASSIGN_TYPE, sizeof(struct tree_expr_assign));
+		node->expr_assign.assign_symbol = strdup("*=");
+		node->expr_assign.left = $1;
+		node->expr_assign.right = $3;
+		$$ = node;
 	}
 	| expression DIV_ASSIGN expression {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("div_assign", EXPR_ASSIGN_TYPE, sizeof(struct tree_expr_assign));
+		node->expr_assign.assign_symbol = strdup("/=");
+		node->expr_assign.left = $1;
+		node->expr_assign.right = $3;
+		$$ = node;
 	}
 	| expression MOD_ASSIGN expression {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("mod_assign", EXPR_ASSIGN_TYPE, sizeof(struct tree_expr_assign));
+		node->expr_assign.assign_symbol = strdup("%=");
+		node->expr_assign.left = $1;
+		node->expr_assign.right = $3;
+		$$ = node;
 	}
 	| expression OR_ASSIGN expression {
-		node_t* or_assign = create_node("|=", OR_ASSIGN_TYPE);
-		create_node_list($1, or_assign);
-		add_child(or_assign, $3);
-		$$ = $1;
+		tree_t* node = (tree_t*)create_node("or_assign", EXPR_ASSIGN_TYPE, sizeof(struct tree_expr_assign));
+		node->expr_assign.assign_symbol = strdup("|=");
+		node->expr_assign.left = $1;
+		node->expr_assign.right = $3;
+		$$ = node;
 	}
 	| expression AND_ASSIGN expression {
-		node_t* and_assign = create_node("&=", AND_ASSIGN_TYPE);
-		create_node_list($1, and_assign);
-		add_child(and_assign, $3);
-		$$ = $1;
+		tree_t* node = (tree_t*)create_node("and_assign", EXPR_ASSIGN_TYPE, sizeof(struct tree_expr_assign));
+		node->expr_assign.assign_symbol = strdup("&=");
+		node->expr_assign.left = $1;
+		node->expr_assign.right = $3;
+		$$ = node;
 	}
 	| expression XOR_ASSIGN expression {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("xor_assign", EXPR_ASSIGN_TYPE, sizeof(struct tree_expr_assign));
+		node->expr_assign.assign_symbol = strdup("^=");
+		node->expr_assign.left = $1;
+		node->expr_assign.right = $3;
+		$$ = node;
 	}
 	| expression LEFT_ASSIGN expression {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("left_assign", EXPR_ASSIGN_TYPE, sizeof(struct tree_expr_assign));
+		node->expr_assign.assign_symbol = strdup("<<=");
+		node->expr_assign.left = $1;
+		node->expr_assign.right = $3;
+		$$ = node;
 	}
 	| expression RIGHT_ASSIGN expression {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("right_assign", EXPR_ASSIGN_TYPE, sizeof(struct tree_expr_assign));
+		node->expr_assign.assign_symbol = strdup(">>=");
+		node->expr_assign.left = $1;
+		node->expr_assign.right = $3;
+		$$ = node;
 	}
 	| expression '?' expression ':' expression {
-		node_t* quest_mark = create_node("?", QUEST_MARK_TYPE);
-		node_t* colon = create_node(":", COLON_TYPE);
-		create_node_list($1, quest_mark);
-		create_node_list($1, $3);
-		create_node_list($1, colon);
-		create_node_list($1, $5);
-		$$ = $1;
+		tree_t* node = (tree_t*)create_node("ternary", TERNARY_TYPE, sizeof(struct tree_ternary));
+		node->ternary.cond = $1;
+		node->ternary.expr_true = $3;
+		node->ternary.expr_false = $5;
+		$$ = node;
 	}
 	| expression '+' expression {
-		node_t* node = create_node("+", ADD_TYPE);
-		create_node_list($1, node);
-		add_child(node, $3);
-		$$ = $1;
+		tree_t* node = (tree_t*)create_node("add", BINARY_TYPE, sizeof(struct tree_binary));
+		node->binary.operat = strdup("+");
+		node->binary.left = $1;
+		node->binary.right = $3;
+		$$ = node;
 	}
 	| expression '-' expression {
-		node_t* minus = create_node("-", MINUS_TYPE);
-		create_node_list($1, minus);
-		add_child(minus, $3);
-		$$ = $1;
+		tree_t* node = (tree_t*)create_node("sub", BINARY_TYPE, sizeof(struct tree_binary));
+		node->binary.operat = strdup("-");
+		node->binary.left = $1;
+		node->binary.right = $3;
+		$$ = node;
 	}
 	| expression '*' expression {
-		node_t* node = create_node("*", MUL_TYPE);
-		create_node_list($1, node);
-		add_child(node, $3);
-		$$ = $1;
+		tree_t* node = (tree_t*)create_node("mul", BINARY_TYPE, sizeof(struct tree_binary));
+		node->binary.operat = strdup("*");
+		node->binary.left = $1;
+		node->binary.right = $3;
+		$$ = node;
 	}
 	| expression '/' expression {
-		node_t* node = create_node("/", DIV_TYPE);
-		create_node_list($1, node);
-		add_child(node, $3);
-		$$ = $1;
+		tree_t* node = (tree_t*)create_node("div", BINARY_TYPE, sizeof(struct tree_binary));
+		node->binary.operat = strdup("/");
+		node->binary.left = $1;
+		node->binary.right = $3;
+		$$ = node;
 	}
 	| expression '%' expression {
-		node_t* node = create_node("%", REMAIN_TYPE);
-		create_node_list($1, node);
-		add_child(node, $3);
-		$$ = $1;
+		tree_t* node = (tree_t*)create_node("mod", BINARY_TYPE, sizeof(struct tree_binary));
+		node->binary.operat = strdup("%");
+		node->binary.left = $1;
+		node->binary.right = $3;
+		$$ = node;
 	}
 	| expression LEFT_OP expression {
-		node_t* node = create_node("<<", LEFT_OP_TYPE);
-		create_node_list($1, node);
-		add_child(node, $3);
-		$$ = $1;
+		tree_t* node = (tree_t*)create_node("left_op", BINARY_TYPE, sizeof(struct tree_binary));
+		node->binary.operat = strdup("<<");
+		node->binary.left = $1;
+		node->binary.right = $3;
+		$$ = node;
 	}
 	| expression RIGHT_OP expression {
-		node_t* node = create_node(">>", RIGHT_OP_TYPE);
-		create_node_list($1, node);
-		add_child(node, $3);
-		$$ = $1;
+		tree_t* node = (tree_t*)create_node("right_op", BINARY_TYPE, sizeof(struct tree_binary));
+		node->binary.operat = strdup(">>");
+		node->binary.left = $1;
+		node->binary.right = $3;
+		$$ = node;
 	}
 	| expression EQ_OP expression {
-		node_t* node = create_node("==", EQ_OP_TYPE);
-		create_node_list($1, node);
-		add_child(node, $3);
-		$$ = $1;
+		tree_t* node = (tree_t*)create_node("eq_op", BINARY_TYPE, sizeof(struct tree_binary));
+		node->binary.operat = strdup("==");
+		node->binary.left = $1;
+		node->binary.right = $3;
+		$$ = node;
 	}
 	| expression NE_OP expression {
-		node_t* en_op = create_node("!=", EN_OP_TYPE);
-		create_node_list($1, en_op);
-		add_child(en_op, $3);
-		$$ = $1;
+		tree_t* node = (tree_t*)create_node("ne_op", BINARY_TYPE, sizeof(struct tree_binary));
+		node->binary.operat = strdup("!=");
+		node->binary.left = $1;
+		node->binary.right = $3;
+		$$ = node;
 	}
 	| expression '<' expression {
-		node_t* node = create_node("<", LESS_TYPE);
-		create_node_list($1, node);
-		add_child(node, $3);
-		$$ = $1;
+		tree_t* node = (tree_t*)create_node("less", BINARY_TYPE, sizeof(struct tree_binary));
+		node->binary.operat = strdup("<");
+		node->binary.left = $1;
+		node->binary.right = $3;
+		$$ = node;
 	}
 	| expression '>' expression {
-		node_t* node = create_node(">", GREATER_TYPE);
-		create_node_list($1, node);
-		add_child(node, $3);
-		$$ = $1;
+		tree_t* node = (tree_t*)create_node("great", BINARY_TYPE, sizeof(struct tree_binary));
+		node->binary.operat = strdup(">");
+		node->binary.left = $1;
+		node->binary.right = $3;
+		$$ = node;
 	}
 	| expression LE_OP expression {
-		node_t* node = create_node("<=", LE_OP_TYPE);
-		create_node_list($1, node);
-		add_child(node, $3);
-		$$ = $1;
+		tree_t* node = (tree_t*)create_node("less_eq", BINARY_TYPE, sizeof(struct tree_binary));
+		node->binary.operat = strdup("<=");
+		node->binary.left = $1;
+		node->binary.right = $3;
+		$$ = node;
 	}
 	| expression GE_OP expression {
-		node_t* node = create_node(">=", GE_OP_TYPE);
-		create_node_list($1, node);
-		add_child(node, $3);
-		$$ = $1;
+		tree_t* node = (tree_t*)create_node("great_eq", BINARY_TYPE, sizeof(struct tree_binary));
+		node->binary.operat = strdup(">=");
+		node->binary.left = $1;
+		node->binary.right = $3;
+		$$ = node;
 	}
 	| expression OR_OP expression {
-		node_t* or_op = create_node("||", OR_OP_TYPE);
-		create_node_list($1, or_op);
-		add_child(or_op, $3);
-		$$ = $1;
+		tree_t* node = (tree_t*)create_node("or_op", BINARY_TYPE, sizeof(struct tree_binary));
+		node->binary.operat = strdup("||");
+		node->binary.left = $1;
+		node->binary.right = $3;
+		$$ = node;
 	}
 	| expression AND_OP expression {
-		node_t* and_op = create_node("&&", AND_OP_TYPE);
-		create_node_list($1, and_op);
-		add_child(and_op, $3);
-		$$ = $1;
+		tree_t* node = (tree_t*)create_node("and_op", BINARY_TYPE, sizeof(struct tree_binary));
+		node->binary.operat = strdup("&&");
+		node->binary.left = $1;
+		node->binary.right = $3;
+		$$ = node;
 	}
 	| expression '|' expression {
-		node_t* node = create_node("|", OR_TYPE);
-		create_node_list($1, node);
-		add_child(node, $3);
-		$$ = $1;
+		tree_t* node = (tree_t*)create_node("or", BINARY_TYPE, sizeof(struct tree_binary));
+		node->binary.operat = strdup("|");
+		node->binary.left = $1;
+		node->binary.right = $3;
+		$$ = node;
 	}
 	| expression '^' expression {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("xor", BINARY_TYPE, sizeof(struct tree_binary));
+		node->binary.operat = strdup("^");
+		node->binary.left = $1;
+		node->binary.right = $3;
+		$$ = node;
 	}
 	| expression '&' expression {
-		node_t* node = create_node("&", AND_TYPE);
-		create_node_list($1, node);
-		add_child(node, $3);
-		$$ = $1;
+		tree_t* node = (tree_t*)create_node("and", BINARY_TYPE, sizeof(struct tree_binary));
+		node->binary.operat = strdup("&");
+		node->binary.left = $1;
+		node->binary.right = $3;
+		$$ = node;
 	}
 	| CAST '(' expression ',' ctypedecl ')' {
-		node_t* node = create_node("cast", CAST_TYPE);
-		node_t* pre_brack = create_node("(", PRE_BRACKETS_TYPE);
-		node_t* aft_brack = create_node(")", AFTER_BRACKETS_TYPE);
-		if ($5 == NULL) {
-			fprintf(stderr, "There must be something wrong.\n");
-			exit(-1);
-		}
-		create_node_list(node, pre_brack);
-		create_node_list(node, $3);
-		create_node_list(node, $5);
-		create_node_list(node, aft_brack);
+		tree_t* node = (tree_t*)create_node("cast", CAST_TYPE, sizeof(struct tree_cast));
+		node->cast.expr = $3;
+		node->cast.ctype = $5;
 		$$ = node;
 	}
 	| SIZEOF expression {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("sizeof", SIZEOF_TYPE, sizeof(struct tree_sizeof));
+		node->sizeof_tree.expr = $2;
+		$$ = node;
 	}
 	| '-' expression {
-		node_t* node = create_node("-", NEGAT_TYPE);
-		add_child(node, $2);
+		tree_t* node = (tree_t*)create_node("negative", UNARY_TYPE, sizeof(struct tree_unary));
+		node->unary.operat = strdup("-");
+		node->unary.expr = $2;
 		$$ = node;
 	}
 	| '+' expression {
-		node_t* node = create_node("+", POSIT_TYPE);
-		add_child(node, $2);
+		tree_t* node = (tree_t*)create_node("convert", UNARY_TYPE, sizeof(struct tree_unary));
+		node->unary.operat = strdup("+");
+		node->unary.expr = $2;
 		$$ = node;
 	}
 	| '!' expression {
-		node_t* node = create_node("!", EXCLAM_TYPE);
-		add_child(node, $2);
+		tree_t* node = (tree_t*)create_node("non_op", UNARY_TYPE, sizeof(struct tree_unary));
+		node->unary.operat = strdup("!");
+		node->unary.expr = $2;
 		$$ = node;
 	}
 	| '~' expression {
-		node_t* node = create_node("~", NON_TYPE);
-		add_child(node, $2);
+		tree_t* node = (tree_t*)create_node("bit_non", UNARY_TYPE, sizeof(struct tree_unary));
+		node->unary.operat = strdup("~");
+		node->unary.expr = $2;
 		$$ = node;
 	}
 	| '&' expression {
-		node_t* node = create_node("&", ADDRESS_TYPE);
-		add_child(node, $2);
+		tree_t* node = (tree_t*)create_node("addr", UNARY_TYPE, sizeof(struct tree_unary));
+		node->unary.operat = strdup("&");
+		node->unary.expr = $2;
 		$$ = node;
 	}
 	| '*' expression {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("pointer", UNARY_TYPE, sizeof(struct tree_unary));
+		node->unary.operat = strdup("*");
+		node->unary.expr = $2;
+		$$ = node;
 	}
 	| DEFINED expression {
-		node_t* node = create_node("defined", DEFINED_TYPE);
-		add_child(node, $2);
+		tree_t* node = (tree_t*)create_node("defined", UNARY_TYPE, sizeof(struct tree_unary));
+		node->unary.operat = strdup("defined");
+		node->unary.expr = $2;
 		$$ = node;
 	}
 	| '#' expression {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("translates", UNARY_TYPE, sizeof(struct tree_unary));
+		node->unary.operat = strdup("#");
+		node->unary.expr = $2;
+		$$ = node;
 	}
 	| INC_OP expression {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("pre_inc_op", UNARY_TYPE, sizeof(struct tree_unary));
+		node->unary.operat = strdup("pre_inc");
+		node->unary.expr = $2;
+		$$ = node;
 	}
 	| DEC_OP expression {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("pre_dec_op", UNARY_TYPE, sizeof(struct tree_unary));
+		node->unary.operat = strdup("pre_dec");
+		node->unary.expr = $2;
+		$$ = node;
 	}
 	| expression INC_OP {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("aft_inc_op", UNARY_TYPE, sizeof(struct tree_unary));
+		node->unary.operat = strdup("aft_inc");
+		node->unary.expr = $1;
+		$$ = node;
 	}
 	| expression DEC_OP {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("aft_dec_op", UNARY_TYPE, sizeof(struct tree_unary));
+		node->unary.operat = strdup("aft_dec");
+		node->unary.expr = $1;
+		$$ = node;
 	}
 	| expression '(' expression_list ')' {
-		node_t* pre_brackets = create_node("(", PRE_BRACKETS_TYPE);
-		node_t* aft_brackets = create_node(")", AFTER_BRACKETS_TYPE);
-		create_node_list($1, pre_brackets);
-		if ($3 != NULL) {
-			create_node_list($1, $3);
-		}
-		create_node_list($1, aft_brackets);
-		$$ = $1;
+		tree_t* node  = (tree_t*)create_node("expr_brack", EXPR_BRACK_TYPE, sizeof(struct tree_expr_brack));
+		node->expr_brack.expr = $1;
+		node->expr_brack.expr_in_brack = $3;
+		$$ = node;
 	}
 	| INTEGER_LITERAL {
 		DBG("Integer_literal: %s\n", $1);
-		node_t* integer = create_node($1, INTEGER_TYPE);
-		$$= integer;
+		tree_t* node = (tree_t*)create_node("integer_literal", INTEGER_TYPE, sizeof(struct tree_int_cst));
+		node->int_cst.int_str = $1;
+		node->int_cst.value = (int)strtoi($1);
+		$$= node;
 	}
 	| STRING_LITERAL{
 		DBG("String_literal: %s\n", $1);
-		node_t* node = create_node($1, CONST_STRING_TYPE);
+		tree_t* node = (tree_t*)create_node("string_literal", CONST_STRING_TYPE, sizeof(struct tree_string));
+		node->string.length = strlen($1);
+		node->string.pointer = $1;
 		$$=node;
 	}
 	| UNDEFINED {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("undefined", UNDEFINED_TYPE, sizeof(struct tree_common));
+		$$ = node;
 	}
 	| '$' objident {
-		node_t* node = create_node("$", QUOTE_TYPE);
-		node_t* ident = create_node($2, CONST_STRING_TYPE);
-		create_node_list(node, ident);
 		DBG("In $objident: %s\n", $2);
+		tree_t* node = (tree_t*)create_node("quote", QUOTE_TYPE, sizeof(struct tree_quote));
+		node->quote.ident = $2;
 		$$ = node;
 	}
 	| ident {
 		DBG("ident: %s\n", $1);
-		node_t* node = create_node($1, IDENTIFER_TYPE);
-		$$ = node;
+		$$ = $1;
 	}
 	| expression '.' objident {
-		node_t* period = create_node(".", PERIOD_TYPE);
-		node_t* objident = create_node($3, INDENTIFIER_TYPE);
-		create_node_list($1, period);
-		add_child(period, objident);
-		$$ = $1;
+		tree_t* node = (tree_t*)create_node("dot", COMPONENT_TYPE, sizeof(struct tree_component));
+		node->component.comp = strdup(".");
+		node->component.expr = $1;
+		node->component.ident = $3;
+		$$ = node;
 	}
 	| expression METHOD_RETURN objident {
-		node_t* method_ret = create_node("->", METHOD_RETURN_TYPE);
-		node_t* objident = create_node($3, INDENTIFIER_TYPE);
-		create_node_list($1, method_ret);
-		create_node_list($1, objident);
-		$$ = $1;
+		tree_t* node = (tree_t*)create_node("pointer", COMPONENT_TYPE, sizeof(struct tree_component));
+		node->component.comp = strdup("->");
+		node->component.expr = $1;
+		node->component.ident = $3;
+		$$ = node;
 	}
 	| SIZEOFTYPE typeoparg {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("sizeoftype", SIZEOFTYPE_TYPE, sizeof(struct tree_sizeoftype));
+		node->sizeoftype.typeoparg = $2;
+		$$ = node;
 	}
 	;
 
 typeoparg
 	: ctypedecl {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("ctypedecl", TYPEOPARG_TYPE, sizeof(struct tree_sizeoftype));
+		node->typeoparg.decl.ctypedecl = $1;
+		$$ = node;
 	}
 	| '(' ctypedecl ')' {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("ctypedecl_brack", TYPEOPARG_TYPE, sizeof(struct tree_sizeoftype));
+		node->typeoparg.decl.ctypedecl_brack = $2;
+		$$ = node;
 	}
 	;
 
 expression
 	: NEW ctypedecl {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("new", NEW_TYPE, sizeof(struct tree_new));
+		node->new_tree.type = $2;
+		$$ = node;
 	}
 	| NEW ctypedecl '[' expression ']' {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("new", NEW_TYPE, sizeof(struct tree_new));
+		node->new_tree.type = $2;
+		node->new_tree.count = $4;
+		$$ = node;
 	}
 	| '(' expression ')' {
-		node_t* pre_brackets = create_node("(", PRE_BRACKETS_TYPE);
-		node_t* aft_brackets = create_node(")", AFTER_BRACKETS_TYPE);
-		create_node_list(pre_brackets, $2);
-		create_node_list(pre_brackets, aft_brackets);
-		$$ = pre_brackets;
+		tree_t* node = (tree_t*)create_node("expr_brack", EXPR_BRACK_TYPE, sizeof(struct tree_expr_brack));
+		 node->expr_brack.expr = NULL;
+		 node->expr_brack.expr_in_brack = $2;
+		 $$ = node;
+
 	}
 	| '[' expression_list ']' {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("expr_array", ARRAY_TYPE, sizeof(struct tree_array));
+		node->array.expr = $2;
+		$$ = node;
 	}
 	| expression '[' expression endianflag ']' {
-		node_t* pre_mid_brace = create_node("[", PRE_MID_BRACES_TYPE);
-		node_t* aft_mid_brace = create_node("]", AFTER_MID_BRACES_TYPE);
-		create_node_list($1, pre_mid_brace);
-		create_node_list($1, $3);
-		if ($4 != NULL) {
-			create_node_list($1, $4);
-		}
-		create_node_list($1, aft_mid_brace);
-		$$ = $1;
+		tree_t* node = (tree_t*)create_node("bit_slicing_expr", BIT_SLIC_EXPR_TYPE, sizeof(struct tree_bit_slic));
+		node->bit_slic.expr = $1;
+		node->bit_slic.bit = $3;
+		node->bit_slic.endian = $4;
+		$$ = node;
 	}
 	| expression '[' expression ':' expression endianflag ']' {
-		node_t* pre_mid_brace = create_node("[", PRE_MID_BRACES_TYPE);
-		node_t* aft_mid_brace = create_node("]", AFTER_MID_BRACES_TYPE);
-		node_t* colon = create_node(":", COLON_TYPE);
-		create_node_list($1, pre_mid_brace);
-		create_node_list($1, $3);
-		create_node_list($1, colon);
-		create_node_list($1, $5);
-		if ($6 != NULL) {
-			create_node_list($1, $6);
-		}
-		create_node_list($1, aft_mid_brace);
-		$$ = $1;
+		tree_t* node = (tree_t*)create_node("bit_slicing_expr", BIT_SLIC_EXPR_TYPE, sizeof(struct tree_bit_slic));
+		node->bit_slic.expr = $1;
+		node->bit_slic.bit = $3;
+		node->bit_slic.bit_end = $5;
+		node->bit_slic.endian = $6;
+		$$ = node;
 	}
 	;
 
 endianflag
 	: ',' IDENTIFIER {
-		node_t* comma = create_node(",", COMMA_TYPE);
-		node_t* indent = create_node($2, INDENTIFIER_TYPE);
-		create_node_list(comma, indent);
-		$$ = comma;
+		tree_t* node = (tree_t*)create_node("endianflag", IDENT_TYPE, sizeof(struct tree_ident));
+		node->ident.str = $2;
+		node->ident.len = strlen($2);
+		$$ = node;
 	}
 	| {
 		$$ = NULL;
@@ -1703,7 +1780,7 @@ endianflag
 expression_opt
 	: expression {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		$$ = $1;
 	}
 	| {
 		debug_proc("Line : %d\n", __LINE__);
@@ -1714,7 +1791,7 @@ expression_opt
 comma_expression_opt
 	: comma_expression {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		$$ = $1;
 	}
 	| {
 		debug_proc("Line : %d\n", __LINE__);
@@ -1750,149 +1827,142 @@ statement
 	}
 	| expression ';'{
 		DBG("expression in statement\n");
-		node_t* semicolon = create_node(";", SEMICOLON_TYPE);
-		create_node_list($1, semicolon);
 		$$ =  $1;
 	}
 	| IF '(' expression ')' statement {
-		node_t* if_node = create_node("if", IF_TYPE);
-		node_t* pre_brack = create_node("(", PRE_BRACKETS_TYPE);
-		node_t* aft_brack = create_node(")", AFTER_BRACKETS_TYPE);
-		add_child(if_node, pre_brack);
-		create_node_list(pre_brack, $3);
-		create_node_list(pre_brack, aft_brack);
-		create_node_list(pre_brack, $5);
-		$$ = if_node;
+		tree_t* node = (tree_t*)create_node("if_else", IF_ELSE_TYPE, sizeof(struct tree_if_else));
+		node->if_else.cond = $3;
+		node->if_else.if_block = $5;
+		$$ = node;
 	}
 	| IF '(' expression ')' statement ELSE statement {
-		node_t* if_node = create_node("if", IF_TYPE);
-		node_t* pre_brack = create_node("(", PRE_BRACKETS_TYPE);
-		node_t* aft_brack = create_node(")", AFTER_BRACKETS_TYPE);
-		node_t* else_node = create_node("else", ELSE_TYPE);
-		add_child(if_node, pre_brack);
-		create_node_list(pre_brack, $3);
-		create_node_list(pre_brack, aft_brack);
-		create_node_list(pre_brack, $5);
-		create_node_list(if_node, else_node);
-		add_child(else_node, $7);
-		$$ = if_node;
+		tree_t* node = (tree_t*)create_node("if_else", IF_ELSE_TYPE, sizeof(struct tree_if_else));
+		node->if_else.cond = $3;
+		node->if_else.if_block = $5;
+		node->if_else.else_block = $7;
+		$$ = node;
 	}
 	| WHILE '(' expression ')' statement {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("do_while", DO_WHILE_TYPE, sizeof(struct tree_do_while));
+		node->do_while.cond = $3;
+		node->do_while.block = $5;
+		$$ = node;
 	}
 	| DO statement WHILE '(' expression ')' ';' {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("do_while", DO_WHILE_TYPE, sizeof(struct tree_do_while));
+		node->do_while.have_do = 1;
+		node->do_while.cond = $5;
+		node->do_while.block = $2;
+		$$ = node;
 	}
 	| FOR '(' comma_expression_opt ';' expression_opt ';' comma_expression_opt ')' statement {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("for", FOR_TYPE, sizeof(struct tree_for));
+		node->for_tree.init = $3;
+		node->for_tree.cond = $5;
+		node->for_tree.update = $7;
+		node->for_tree.block = $9;
+		$$ = node;
 	}
 	| SWITCH '(' expression ')' statement {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("switch", SWITCH_TYPE, sizeof(struct tree_switch));
+		node->switch_tree.cond = $3;
+		node->switch_tree.block = $5;
+		$$ = node;
 	}
 	| DELETE expression ';' {
 		debug_proc("Line : %d\n", __LINE__);
+		tree_t* node = (tree_t*)create_node("delete", DELETE_TYPE, sizeof(struct tree_delete));
+		node->delete_tree.expr = $2;
 		$$ = NULL;
 	}
 	| TRY statement CATCH statement {
-		node_t* try_node = create_node("try", TRY_TYPE);
-		node_t* catch_node = create_node("catch", CATCH_TYPE);
-		add_child(try_node, $2);
-		create_node_list(try_node, catch_node);
-		add_child(catch_node, $4);
+		tree_t* node = (tree_t*)create_node("try_catch", TRY_CATCH_TYPE, sizeof(struct tree_try_catch));
+		node->try_catch.try_block = $2;
+		node->try_catch.catch_block = $4;
 		DBG(" try catch in statement\n");
-		$$ = try_node;
+		$$ = node;
 	}
 	| AFTER '(' expression ')' CALL expression ';' {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = create_node("AFTER", AFTER_TYPE);
+		tree_t* node = (tree_t*)create_node("after_call", AFTER_CALL_TYPE, sizeof(struct tree_after_call));
+		node->after_call.cond = $3;
+		node->after_call.call_expr = $6;
 		DBG("AFTER CALL statement\n");
+		$$ = node;
 	}
 	| CALL expression returnargs ';' {
-		node_t* node = create_node("call", CALL_TYPE);
-		node_t* semicolon = create_node(";", SEMICOLON_TYPE);
-		add_child(node, $2);
-		if ($3 != NULL) {
-			create_node_list($2, $3);
-		}
-		create_node_list($2, semicolon);
+		tree_t* node = (tree_t*)create_node("call", CALL_TYPE, sizeof(struct tree_call_inline));
+		node->call_inline.expr = $2;
+		node->call_inline.ret_args = $3;
 		DBG("CALL statement\n");
 		$$ = node;
 	}
 	| INLINE expression returnargs ';' {
-		node_t* node = create_node("inline", INLINE_TYPE);
-		add_child(node, $2);
-		if ($3 != NULL) {
-			create_node_list($2, $3);
-		}
+		tree_t* node = (tree_t*)create_node("inline", INLINE_TYPE, sizeof(struct tree_call_inline));
+		node->call_inline.expr = $2;
+		node->call_inline.ret_args = $3;
+		DBG("inline statement\n");
 		$$ = node;
 	}
 	| ASSERT expression ';' {
 		/* TODO: we should find the identifier from symbol table */
-		node_t* node = create_node("assert", ASSERT_TYPE);
-		add_child(node, $2);
+		tree_t* node = (tree_t*)create_node("assert", ASSERT_TYPE, sizeof(struct tree_assert));
+		node->assert_tree.expr = $2;
 		$$ = node;
 	}
 	| LOG STRING_LITERAL ',' expression ',' expression ':' STRING_LITERAL ',' log_args ';' {
 		DBG("In LOG statement: %s\n", $8);
-		node_t* node = create_node("log", LOG_KYE_TYPE);
-		node_t* log_type = create_node($2, LOG_TYPE);
-		node_t* colon = create_node(":", COLON_TYPE);
-		node_t* format_str = create_node($8, CONST_STRING_TYPE);
-		node_t* semicolon = create_node(";", SEMICOLON_TYPE);
-		add_child(node, log_type);
-		create_node_list(log_type, $4);
-		create_node_list(log_type, $6);
-		create_node_list(log_type, colon);
-		create_node_list(log_type, format_str);
-		if ($10 != NULL) {
-			create_node_list(log_type, $10);
-		}
-		create_node_list(log_type, semicolon);
+		tree_t* node = (tree_t*)create_node("log", LOG_TYPE, sizeof(struct tree_log));
+		node->log.log_type = $2;
+		node->log.level = $4;
+		node->log.group = $6;
+		node->log.format = $8;
+		/* TODO: step1: charge the print arg type and num in format */
+		/* TODO: step2: get the actual arg type and num */
+		/* TODO: step3: charge the args */
+		node->log.argc = get_node_num($10);
+		node->log.args = $10;
+
 		$$ = node;
 	}
 	| LOG STRING_LITERAL ',' expression ':' STRING_LITERAL log_args ';' {
-		node_t* node = create_node("log", LOG_KYE_TYPE);
-		node_t* log_type = create_node($2, LOG_TYPE);
-		node_t* colon = create_node(":", COLON_TYPE);
-		node_t* format_str = create_node($6, CONST_STRING_TYPE);
-		add_child(node, log_type);
-		create_node_list(log_type, $4);
-		create_node_list(log_type, colon);
-		create_node_list(log_type, format_str);
-		if ($7 != NULL) {
-			create_node_list(log_type, $7);
-		}
+		tree_t* node = (tree_t*)create_node("log", LOG_TYPE, sizeof(struct tree_log));
+		node->log.log_type = $2;
+		node->log.level = $4;
+		node->log.format = $6;
+		node->log.argc = get_node_num($7);
+		node->log.args = $7;
+
 		$$ = node;
 	}
 	| LOG STRING_LITERAL ':' STRING_LITERAL log_args ';' {
-		node_t* node = create_node("log", LOG_KYE_TYPE);
-		node_t* log_type = create_node($2, LOG_TYPE);
-		node_t* colon = create_node(":", COLON_TYPE);
-		node_t* format_str = create_node($4, CONST_STRING_TYPE);
-		add_child(node, log_type);
-		create_node_list(log_type, colon);
-		create_node_list(log_type, format_str);
-		if ($5 != NULL) {
-			create_node_list(log_type, $5);
-		}
+		tree_t* node = (tree_t*)create_node("log", LOG_TYPE, sizeof(struct tree_log));
+		node->log.log_type = $2;
+		node->log.format = $4;
+		node->log.argc = get_node_num($5);
+		node->log.args = $5;
+
 		$$ = node;
 	}
 	| SELECT ident IN '(' expression ')' WHERE '(' expression ')' statement ELSE statement {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("select", SELECT_TYPE, sizeof(struct tree_select));
+		node->select.ident = $2;
+		node->select.in_expr = $5;
+		node->select.cond = $9;
+		node->select.where_block = $11;
+		node->select.else_block = $13;
+		$$ = node;
 	}
 	| FOREACH ident IN '(' expression ')' statement {
-		node_t* node = create_node($2, FOREACH_TYPE);
-		node_t* pre_brack = create_node("(", PRE_BRACKETS_TYPE);
-		node_t* aft_brack = create_node(")", AFTER_BRACKETS_TYPE);
-		add_child(node, pre_brack);
-		create_node_list(pre_brack, $5);
-		create_node_list(pre_brack, aft_brack);
-		create_node_list(pre_brack, $7);
+		tree_t* node = (tree_t*)create_node("foreach", FOREACH_TYPE, sizeof(struct tree_foreach));
+		node->foreach.ident = $2;
+		node->foreach.in_expr = $5;
+		node->foreach.block = $7;
 		DBG("FOREACH in statement\n");
 		$$ = node;
 	}
@@ -1902,41 +1972,50 @@ statement
 	}
 	| CASE expression ':' statement {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("case", CASE_TYPE, sizeof(struct tree_case));
+		/* TODO: charge the break */
+		node->case_tree.expr = $2;
+		node->case_tree.block = $4;
+		$$ = node;
 	}
 	| DEFAULT ':' statement {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("default", DEFAULT_TYPE, sizeof(struct tree_default));
+		node->default_tree.block = $3;
+		$$ = node;
 	}
 	| GOTO ident ';' {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("goto", GOTO_TYPE, sizeof(struct tree_goto));
+		node->goto_tree.label = $2;
+		$$ = node;
 	}
 	| BREAK ';' {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("break", BREAK_TYPE, sizeof(struct tree_common));
+		$$ = node;
 	}
 	| CONTINUE ';' {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("continue", CONTINUE_TYPE, sizeof(struct tree_common));
+		$$ = node;
 	}
 	| THROW ';' {
-		node_t* node = create_node("throw", THROW_TYPE);
-		node_t* semicolon = create_node(";", SEMICOLON_TYPE);
-		create_node_list(node, semicolon);
+		tree_t* node = (tree_t*)create_node("throw", THROW_TYPE, sizeof(struct tree_common));
 		$$ = node;
 	}
 	| RETURN ';' {
-		$$ = create_node("return", RETURN_TYPE);
+		tree_t* node = (tree_t*)create_node("return", RETURN_TYPE, sizeof(struct tree_common));
+		$$ = node;
 	}
 	| ERROR ';' {
-		node_t* node = create_node("error", ERROR_TYPE);
+		tree_t* node = (tree_t*)create_node("error", ERROR_TYPE, sizeof(struct tree_error));
+		node->error.str = NULL;
 		$$ = node;
 	}
 	| ERROR STRING_LITERAL ';' {
-		node_t* node = create_node("error", ERROR_TYPE);
-		node_t* str = create_node($2, CONST_STRING_TYPE);
-		add_child(node, str);
+		tree_t* node = (tree_t*)create_node("error", ERROR_TYPE, sizeof(struct tree_error));
+		node->error.str = $2;
 		$$ = node;
 	}
 	;
@@ -1946,13 +2025,8 @@ log_args
 		$$ = NULL;
 	}
 	| log_args ',' expression {
-		if ($1 != NULL) {
-			create_node_list($1, $3);
-			$$ = $1;
-		}
-		else {
-			$$ = $3;
-		}
+		create_node_list($1, $3);
+		$$ = $1;
 	}
 	| expression {
 		$$ = $1;
@@ -1961,17 +2035,14 @@ log_args
 
 compound_statement
 	: '{' statement_list '}' {
-		node_t* pre_braces = create_node("{", PRE_BRACES_TYPE);
-		node_t* aft_braces = create_node("}", AFTER_BRACES_TYPE);
-		create_node_list(pre_braces, $2);
-		create_node_list(pre_braces, aft_braces);
-		$$ = pre_braces;
+		tree_t* node = (tree_t*)create_node("block", BLOCK_TYPE, sizeof(struct tree_block));
+		node->block.statement = $2;
+		$$ = node;
 	}
 	| '{' '}' {
-		node_t* pre_braces = create_node("{", PRE_BRACES_TYPE);
-		node_t* aft_braces = create_node("}", AFTER_BRACES_TYPE);
-		create_node_list(pre_braces, aft_braces);
-		$$ = pre_braces;
+		tree_t* node = (tree_t*)create_node("block", BLOCK_TYPE, sizeof(struct tree_block));
+		node->block.statement = NULL;
+		$$ = NULL;
 	}
 	;
 
@@ -1987,39 +2058,45 @@ statement_list
 
 local_keyword
 	: LOCAL {
-		$$ = "local";
+		tree_t* node = (tree_t*)create_node("local_keyword", LOCAL_KEYWORD_TYPE, sizeof(struct tree_local_keyword));
+		node->local_keyword.name = strdup("local");
+		$$ = node;
 	}
 	| AUTO {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("local_keyword", LOCAL_KEYWORD_TYPE, sizeof(struct tree_local_keyword));
+		node->local_keyword.name = strdup("local");
+		$$ = node;
 	}
 	;
 
 local
 	: local_keyword cdecl ';' {
-		node_t* node = create_node($1, LOCAL_KEYWORD_TYPE);
-		add_child(node, $2);
+		tree_t* node = (tree_t*)create_node("local", LOCAL_TYPE, sizeof(struct tree_local));
+		node->local_tree.local_keyword = $1;
+		node->local_tree.cdecl = $2;
 		$$ = node;
 	}
 	| STATIC cdecl ';' {
 		debug_proc("Line : %d\n", __LINE__);
 		DBG("In STATIC \n");
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("local", LOCAL_TYPE, sizeof(struct tree_local));
+		node->local_tree.is_static = 1;
+		node->local_tree.cdecl = $2;
+		$$ = node;
 	}
 	| local_keyword cdecl '=' expression ';' {
-		node_t* node = create_node($1, LOCAL_KEYWORD_TYPE);
-		node_t* assign = create_node("=", ASSIGN_TYPE);
-		add_child(node, $2);
-		create_node_list($2, assign);
-		add_child(assign, $4);
+		tree_t* node = (tree_t*)create_node("local", LOCAL_TYPE, sizeof(struct tree_local));
+		node->local_tree.local_keyword = $1;
+		node->local_tree.cdecl = $2;
+		node->local_tree.expr = $4;
 		$$ = node;
 	}
 	| STATIC cdecl '=' expression ';' {
-		node_t* node = create_node("static", KEY_WORD_TYPE);
-		node_t* assign = create_node("=", ASSIGN_TYPE);
-		add_child(node, $2);
-		create_node_list($2, assign);
-		add_child(assign, $4);
+		tree_t* node = (tree_t*)create_node("local", LOCAL_TYPE, sizeof(struct tree_local));
+		node->local_tree.is_static = 1;
+		node->local_tree.cdecl = $2;
+		node->local_tree.expr = $4;
 		$$ = node;
 	}
 	;
@@ -2027,19 +2104,11 @@ local
 objident_list
 	: objident {
 		debug_proc("Line : %d\n", __LINE__);
-		ident_attr_t* attr = malloc(sizeof(ident_attr_t));
-		memset(attr, 0, sizeof(ident_attr_t));
-		attr->name = strdup($1);
-		symbol_insert($1, IDENTIFER_TYPE, attr);
-
-		node_t* node = create_node($1, IDENTIFER_TYPE);
-		$$ = node;
+		$$ = $1;
 	}
 	| objident_list ',' objident {
 		debug_proc("Line : %d\n", __LINE__);
-		if ($1 != NULL) {
-			create_node_list($1, $3);
-		}
+		create_node_list($1, $3);
 		$$ = $1;
 	}
 	;
@@ -2059,109 +2128,112 @@ objident
 		$$ = $1;
 	}
 	| THIS {
-		$$ = "this";
+		$$ = (tree_t*)dml_keyword_node("this");
 	}
 	| REGISTER {
-		$$ ="register";
+		$$ = (tree_t*)dml_keyword_node("register");
 	}
 	| SIGNED {
-		$$ = "signed";
+		$$ = (tree_t*)c_keyword_node("signed");
 	}
 	| UNSIGNED {
-		$$ = "unsigned";
+		$$ = (tree_t*)c_keyword_node("unsigned");
 	}
 	;
 
 ident
 	: IDENTIFIER {
-		$$ = $1;
+		tree_t* ident = (tree_t*)create_node("identifier", IDENT_TYPE, sizeof(struct tree_ident));
+		ident->ident.str = $1;
+		ident->ident.len = strlen($1);
+		$$ = ident;
 	}
 	| ATTRIBUTE {
-		$$ = "attribute";
+		$$ = (tree_t*)dml_keyword_node("attribute");
 	}
 	| BANK {
-		$$ = "bank";
+		$$ = (tree_t*)dml_keyword_node("bank");
 	}
 	| BITORDER {
-		$$ = "bitorder";
+		$$ = (tree_t*)dml_keyword_node("bitorder");
 	}
 	| CONNECT {
-		$$ = "connect";
+		$$ = (tree_t*)dml_keyword_node("connect");
 	}
 	| CONSTANT {
-		$$ = "constant";
+		$$ = (tree_t*)dml_keyword_node("constant");
 	}
 	| DATA {
-		$$ = "data";
+		$$ = (tree_t*)dml_keyword_node("data");
 	}
 	| DEVICE {
-		$$ = "device";
+		$$ = (tree_t*)dml_keyword_node("device");
 	}
 	| EVENT {
-		$$ = "event";
+		$$ = (tree_t*)dml_keyword_node("event");
 	}
 	| FIELD {
-		$$ = "field";
+		$$ = (tree_t*)dml_keyword_node("field");
 	}
 	| FOOTER {
-		$$ = "footer";
+		$$ = (tree_t*)dml_keyword_node("footer");
 	}
 	| GROUP {
-		$$ = "group";
+		$$ = (tree_t*)dml_keyword_node("group");
 	}
 	| IMPLEMENT {
-		$$ = "implement";
+		$$ = (tree_t*)dml_keyword_node("implement");
 	}
 	| IMPORT {
-		$$ = "import";
+		$$ = (tree_t*)dml_keyword_node("import");
 	}
 	| INTERFACE {
-		$$ = "interface";
+		$$ = (tree_t*)dml_keyword_node("interface");
 	}
 	| LOGGROUP {
-		$$ = "loggroup";
+		$$ = (tree_t*)dml_keyword_node("loggroup");
 	}
 	| METHOD {
-		$$ = "method";
+		$$ = (tree_t*)dml_keyword_node("method");
 	}
 	| PORT {
-		$$ = "port";
+		$$ = (tree_t*)dml_keyword_node("port");
 	}
 	| SIZE {
-		$$ = "size";
+		$$ = (tree_t*)dml_keyword_node("size");
 	}
 	| CLASS {
-		$$ = "class";
+		$$ = (tree_t*)dml_keyword_node("class");
 	}
 	| ENUM {
-		$$ = "enum";
+		$$ = (tree_t*)dml_keyword_node("enum");
 	}
 	| NAMESPACE {
-		$$ = "namespace";
+		$$ = (tree_t*)dml_keyword_node("namespace");
 	}
 	| PRIVATE {
-		$$ = "private";
+		$$ = (tree_t*)dml_keyword_node("private");
 	}
 	| PROTECTED {
-		$$ = "protected";
+		$$ = (tree_t*)dml_keyword_node("protected");
 	}
 	| PUBLIC {
-		$$ = "public";
+		$$ = (tree_t*)dml_keyword_node("public");
 	}
 	| RESTRICT {
-		$$ = "register";
+		$$ = (tree_t*)dml_keyword_node("register");
 	}
 	| UNION {
-		$$ = "union";
+		$$ = (tree_t*)dml_keyword_node("union");
 	}
 	| USING {
-		$$ = "using";
+		$$ = (tree_t*)dml_keyword_node("using");
 	}
 	| VIRTUAL {
-		$$ = "virtual";
+		$$ = (tree_t*)dml_keyword_node("virtual");
 	}
 	| VOLATILE {
-		$$ = "volatile";
+		$$ = (tree_t*)dml_keyword_node("volatile");
 	}
 	;
 

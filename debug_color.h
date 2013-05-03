@@ -68,7 +68,7 @@ int debug_add_child (char *format, ...);
 int debug_create_node (char *format, ...);
 int debug_create_node_list (char *format, ...);
 
-//#define DEBUG_CODE_COLOR
+#define DEBUG_CODE_COLOR
 
 #ifdef	DEBUG_CODE_COLOR
 #define DEBUG_COLOR				debug_color

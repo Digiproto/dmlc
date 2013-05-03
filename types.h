@@ -28,151 +28,112 @@
 #define __TYPES_H__
 typedef enum
 {
+	/* dml */
 	DML_TYPE = 1,
+	/* device */
 	DEVICE_TYPE,
+	/* parameter */
 	PARAMETER_TYPE,
+	/* method */
 	METHOD_TYPE,
+	/* bank */
 	BANK_TYPE,
+	/* register */
 	REGISTER_TYPE,
+	/* group */
+	GROUP_TYPE,
+	/* port */
+	PORT_TYPE,
+	/* import */
 	IMPORT_TYPE,
+	/* template */
 	TEMPLATE_TYPE,
-	IS_TYPE,
+	/* bitorder */
 	BITORDER_TYPE,
+	/* loggroup */
 	LOGGROUP_TYPE,
-	TYPEDEF_TYPE,
-	CONSTANT_TYPE,
+	/* header */
 	HEADER_TYPE,
+	/* foreach */
 	FOREACH_TYPE,
+	/* call  */
 	CALL_TYPE,
-	EXPRESSION_TYPE,
+	/* data */
 	DATA_TYPE,
-	EXTERN_TYPE,
+	/* implement */
 	IMPLEMENT_TYPE,
+	/* field */
 	FIELD_TYPE,
-	AFTER_TYPE,
+	/* attribute */
 	ATTRIBUTE_TYPE,
+	/* connect */
 	CONNECT_TYPE,
+	/* interface */
 	INTERFACE_TYPE,
-	IDENTIFER_TYPE,
+	/* event */
+	EVENT_TYPE,
+	/* identifier */
+	IDENT_TYPE,
+	/* method param */
+	PARM_TYPE,
 	/* constant string */
 	CONST_STRING_TYPE,
-	/* variable string */
-	VAR_STRING_TYPE,
-	/* indentifier type */
-	INDENTIFIER_TYPE,
-	/* the array with a fix length eg: arr[10] */
-	ARRAY_FIX_TYPE,
-	/* array like [i int 0..15] */
-	ARRAY_RANGE_TYPE,
-	/* array minist index */
-	ARRAY_START_TYPE,
-	/* array max index */
-	ARRAY_END_TYPE,
-	/* ; */
-	SEMICOLON_TYPE,
+	/* array type [10] | [i in ...] */
+	ARRAY_TYPE,
 	/* ... */
 	ELLIPSIS_TYPE,
 	/* assign type */
 	ASSIGN_TYPE,
+	/* exprssion = exprssion */
+	EXPR_ASSIGN_TYPE,
+	/* exprssion with brackets */
+	EXPR_BRACK_TYPE,
+	/* unary operator */
+	UNARY_TYPE,
+	/* binary operator */
+	BINARY_TYPE,
+	/* ternary operator */
+	TERNARY_TYPE,
 	/* default */
 	DEFAULT_TYPE,
 	/* auto */
 	AUTO_TYPE,
-	/* istemplate */
-	ISTEMPLATE_TYPE,
-	/* == */
-	EQ_OP_TYPE,
 	/* $ */
 	QUOTE_TYPE,
-	/* - */
-	MINUS_TYPE,
-	/* ( */
-	PRE_BRACKETS_TYPE,
-	/* ) */
-	AFTER_BRACKETS_TYPE,
-	/* { */
-	PRE_BRACES_TYPE,
-	/* } */
-	AFTER_BRACES_TYPE,
-	/* [ */
-	PRE_MID_BRACES_TYPE,
-	/* ] */
-	AFTER_MID_BRACES_TYPE,
-	/* ? */
-	QUEST_MARK_TYPE,
-	/* : */
-	COLON_TYPE,
-	/* , */
-	COMMA_TYPE,
-	/* @ */
-	REG_OFFSET_TYPE,
-	/* basic type */
-	BASETYPE_TYPE,
-	/* -> */
-	METHOD_RETURN_TYPE,
 	/* int data */
 	INTEGER_TYPE,
 	/* type identify : int8 int16 */
 	TYPEIDENT_TYPE,
-	/* keyword type : static */
-	KEY_WORD_TYPE,
-	/* IF_TYPE */
-	IF_TYPE,
-	/* else */
-	ELSE_TYPE,
-	/* > */
-	GREATER_TYPE,
-	/* || */
-	OR_OP_TYPE,
-	/* && */
-	AND_OP_TYPE,
-	/* != */
-	EN_OP_TYPE,
-	/* ! */
-	EXCLAM_TYPE,
+	/* dml keyword */
+	DML_KEYWORD_TYPE,
+	/* c keyword */
+	C_KEYWORD_TYPE,
+	/* ( decl_list )*/
+	CDECL_BRACK_TYPE,
+	/* ctypedecl */
+	CTYPEDECL_TYPE,
+	/* ctypedecl_ptr */
+	CTYPEDECL_PTR_TYPE,
+	/* ctypedecl_simple */
+	CTYPEDECL_SIMPLE_TYPE,
+	/* typeoparg */
+	TYPEOPARG_TYPE,
+	/* stars */
+	STARS_TYPE,
+	/* new */
+	NEW_TYPE,
+	/* bit slicing exprssion */
+	BIT_SLIC_EXPR_TYPE,
+	/* if... else ...*/
+	IF_ELSE_TYPE,
 	/* log */
-	LOG_KYE_TYPE,
 	LOG_TYPE,
-	/* | */
-	OR_TYPE,
-	/* & */
-	AND_TYPE,
-	/* ~ */
-	NON_TYPE,
-	/* |= */
-	OR_ASSIGN_TYPE,
-	/* . */
-	PERIOD_TYPE,
-	/* * */
-	POINT_TYPE,
-	/* & */
-	ADDRESS_TYPE,
-	/* + */
-	ADD_TYPE,
-	/* * */
-	MUL_TYPE,
-	/* / */
-	DIV_TYPE,
-	/* % */
-	REMAIN_TYPE,
-	/* - */
-	NEGAT_TYPE,
-	/* + */
-	POSIT_TYPE,
-	/* < */
-	LESS_TYPE,
-	/* <= */
-	LE_OP_TYPE,
-	/* >= */
-	GE_OP_TYPE,
-	/* << */
-	LEFT_OP_TYPE,
-	/* << */
-	RIGHT_OP_TYPE,
-	/* &= */
-	AND_ASSIGN_TYPE,
+	/* . | ->*/
+	COMPONENT_TYPE,
 	/* defined */
 	DEFINED_TYPE,
+	/* undefined */
+	UNDEFINED_TYPE,
 	/* throw */
 	THROW_TYPE,
 	/* const */
@@ -183,24 +144,60 @@ typedef enum
 	STRUCT_TYPE,
 	/* method extern  */
 	METHOD_EXTERN_TYPE,
+	/* goto */
+	GOTO_TYPE,
+	/* break */
+	BREAK_TYPE,
+	/* continue */
+	CONTINUE_TYPE,
 	/* inline */
 	INLINE_TYPE,
-	/* try */
-	TRY_TYPE,
-	/* catch */
-	CATCH_TYPE,
+	/* do while */
+	DO_WHILE_TYPE,
+	/* for */
+	FOR_TYPE,
+	/* switch */
+	SWITCH_TYPE,
+	/* delete */
+	DELETE_TYPE,
+	/* try catch */
+	TRY_CATCH_TYPE,
 	/* local_keyword */
 	LOCAL_KEYWORD_TYPE,
+	/* after call */
+	AFTER_CALL_TYPE,
 	/* error */
 	ERROR_TYPE,
+	/* select */
+	SELECT_TYPE,
 	/* typeof */
 	TYPEOF_TYPE,
 	/* return */
 	RETURN_TYPE,
 	/* cast */
 	CAST_TYPE,
+	/* case */
+	CASE_TYPE,
 	/* assert */
-	ASSERT_TYPE
+	ASSERT_TYPE,
+	/* sizeof */
+	SIZEOF_TYPE,
+	/* local */
+	LOCAL_TYPE,
+	/* sizeoftype */
+	SIZEOFTYPE_TYPE,
+	/* spec of boject */
+	SPEC_TYPE,
+	/* block  */
+	BLOCK_TYPE,
+	/* cdecl  */
+	CDECL_TYPE,
+	/* bitfields */
+	BITFIELDS_TYPE,
+	/* bitfields decl */
+	BITFIELDS_DECL_TYPE,
+	/* layout */
+	LAYOUT_TYPE
 } ident_type_t;
 
 typedef struct obj_variable
