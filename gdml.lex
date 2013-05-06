@@ -247,12 +247,12 @@ L?'(\\.|[^\\'])+'			{
 {D}*"."{D}+({E})?{FS}?		{
 								count(yyscanner);
 								yylval_param->sval = (char *) strdup(yyget_text(yyscanner));
-								return(INTEGER_LITERAL);
+								return(FLOAT_LITERAL);
 							}
 {D}+"."{D}*({E})?{FS}?		{
 								count(yyscanner);
 								yylval_param->sval = (char *) strdup(yyget_text(yyscanner));
-								return(INTEGER_LITERAL);
+								return(FLOAT_LITERAL);
 							}
       
 L?\"(\\.|[^\\"])*\"			{

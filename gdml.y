@@ -51,7 +51,7 @@ static long int current_table_num = 0;
 	location_t location;
 }
 
-%token DML IDENTIFIER INTEGER_LITERAL STRING_LITERAL SIZEOF
+%token DML IDENTIFIER INTEGER_LITERAL FLOAT_LITERAL STRING_LITERAL SIZEOF
 %token INC_OP DEC_OP LEFT_OP RIGHT_OP LE_OP GE_OP EQ_OP NE_OP
 %token AND_OP OR_OP MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN ADD_ASSIGN
 %token SUB_ASSIGN LEFT_ASSIGN RIGHT_ASSIGN AND_ASSIGN
@@ -84,6 +84,7 @@ static long int current_table_num = 0;
 %type	<tree_type> ident
 %type	<sval> STRING_LITERAL
 %type	<sval> INTEGER_LITERAL
+%type	<sval> FLOAT_LITERAL
 %type	<tree_type> typeident
 %type	<tree_type> local_keyword
 %type	<tree_type> const_opt
@@ -168,7 +169,7 @@ static long int current_table_num = 0;
 
 %%
 begin_unit
-	: DML INTEGER_LITERAL ';' dml {
+	: DML FLOAT_LITERAL';' dml {
 		dml_attr_t* attr = (dml_attr_t*)malloc(sizeof(dml_attr_t));
 		attr->version = $2;
 		//symbol_insert("dml", DML_TYPE, attr);
@@ -190,10 +191,12 @@ dml
 	: DEVICE objident ';' syntax_modifiers device_statements {
 		device_attr_t* attr = (device_attr_t*)malloc(sizeof(device_attr_t));
 		attr->name = $2->ident.str;
+		#if 0
 		if (symbol_insert(root_table, $2->ident.str, DEVICE_TYPE, attr) == -1) {
 			fprintf(stderr, "redefined\n");
 		}
 		current_table = root_table;
+		#endif
 
 		tree_t* node = (tree_t*)create_node("device", DEVICE_TYPE, sizeof(struct tree_device));
 		node->device.name = $2->ident.str;
@@ -211,7 +214,7 @@ dml
 		if($5 != NULL)
 			create_node_list(node, $5);
 
-		DBG("Device type is %s\n", $2);
+		DBG("Device type is %s\n", $2->ident.str);
 		$$ = node;
 	}
 	| syntax_modifiers device_statements {
@@ -254,9 +257,11 @@ syntax_modifier
 		DBG("In BITORDER: %s\n", $2->ident.str);
 		bitorder_attr_t*  attr = (bitorder_attr_t*)gdml_malloc(sizeof(bitorder_attr_t));
 		attr->endian= $2->ident.str;
+		#if 0
 		if (symbol_insert(current_table, $2->ident.str, BITORDER_TYPE, attr) == -1) {
 			fprintf(stderr, "redefined\n");
 		}
+		#endif
 
 		tree_t* node = (tree_t*)create_node("bitorder", BITORDER_TYPE, sizeof(struct tree_bitorder));
 		node->bitorder.endian = $2->ident.str;
@@ -626,10 +631,12 @@ toplevel
 		DBG("in TEMPLATE %s\n", $2->ident.str);
 		template_attr_t* attr = (template_attr_t*)gdml_malloc(sizeof(template_attr_t));
 		attr->name = $2->ident.str;
+		#if 0
 		if (symbol_insert(current_table, $2->ident.str, TEMPLATE_TYPE, attr) == -1) {
 			fprintf(stderr, "redefined\n");
 		}
 		//symbol_insert($2->ident.str, TEMPLATE_TYPE, attr);
+		#endif
 
 		tree_t* node = (tree_t*)create_node("template", TEMPLATE_TYPE, sizeof(struct tree_template));
 		node->temp.name = $2->ident.str;
@@ -922,7 +929,7 @@ method_params
 		tree_t* node = (tree_t*)create_node("method_params", PARM_TYPE, sizeof(struct tree_params));
 		node->params.have_in_param = 1;
 		/* TODO: maybe we should get the pararmeters' type */
-		node->params.in_argc = get_node_num($2);
+		//node->params.in_argc = get_node_num($2);
 		node->params.in_params = $2;
 		node->params.have_ret_param = 0;
 		node->params.ret_params = NULL;
@@ -933,7 +940,7 @@ method_params
 		node->params.in_params = NULL;
 		node->params.have_in_param = 0;
 		node->params.have_ret_param = 1;
-		node->params.ret_argc = get_node_num($3);
+		//node->params.ret_argc = get_node_num($3);
 		/* TODO: maybe we should get the pararmeters' type */
 		node->params.ret_params = $3;
 		$$ = node;
@@ -941,11 +948,11 @@ method_params
 	| '(' cdecl_or_ident_list ')' METHOD_RETURN '(' cdecl_or_ident_list ')' {
 		tree_t* node = (tree_t*)create_node("method_params", PARM_TYPE, sizeof(struct tree_params));
 		node->params.have_in_param = 1;
-		node->params.in_argc = get_node_num($2);
+		//node->params.in_argc = get_node_num($2);
 		/* TODO: maybe we should get the pararmeters' type */
 		node->params.in_params = $2;
 		node->params.have_ret_param = 1;
-		node->params.ret_argc = get_node_num($6);
+		//node->params.ret_argc = get_node_num($6);
 		/* TODO: maybe we should get the pararmeters' type */
 		node->params.ret_params = $6;
 		DBG("with METHOD_RETURN in method_params\n");
@@ -1132,12 +1139,22 @@ cdecl_list2
 		$$ = node;
 	}
 	| cdecl_list2 ',' cdecl {
-		create_node_list($1, $3);
+		if ($1 == NULL) {
+			$$ = $3;
+		}
+		else {
+			create_node_list($1, $3);
+		}
 		$$ = $1;
 	}
 	| cdecl_list2 ',' ELLIPSIS {
 		tree_t* node = (tree_t*)create_node("...", ELLIPSIS_TYPE, sizeof(struct tree_common));
-		create_node_list($1, node);
+		if ($1 == NULL) {
+			$$ = node;
+		}
+		else {
+			create_node_list($1, node);
+		}
 		$$ = $1;
 	}
 	;
@@ -1156,8 +1173,21 @@ cdecl_or_ident_list2
 		$$ = $1;
 	}
 	| cdecl_or_ident_list2 ',' cdecl_or_ident {
-		create_node_list($1, $3);
-		$$ = $1;
+		if (($1 == NULL) && ($3 == NULL)) {
+			fprintf(stderr, "The cdecl maybe wrong!\n");
+			$$ = NULL;
+		}
+		else if (($1 == NULL) && ($3 != NULL)) {
+			$$ = $3;
+		}
+		else if (($1 != NULL) && ($3 == NULL)) {
+			fprintf(stderr, "There cdecl maybe wrong!\n");
+			$$ = $1;
+		}
+		else {
+			create_node_list($1, $3);
+			$$ = $1;
+		}
 	}
 	;
 
@@ -1179,7 +1209,12 @@ struct
 
 struct_decls
 	: struct_decls cdecl ';' {
-		create_node_list($1, $2);
+		if ($1 == NULL) {
+			$$ = $2;
+		}
+		else {
+			create_node_list($1, $2);
+		}
 		$$ = $1;
 	}
 	| {
@@ -1583,6 +1618,7 @@ expression
 		$$ = node;
 	}
 	| '-' expression {
+		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("negative", UNARY_TYPE, sizeof(struct tree_unary));
 		node->unary.operat = strdup("-");
 		node->unary.expr = $2;
@@ -1670,10 +1706,22 @@ expression
 		DBG("Integer_literal: %s\n", $1);
 		tree_t* node = (tree_t*)create_node("integer_literal", INTEGER_TYPE, sizeof(struct tree_int_cst));
 		node->int_cst.int_str = $1;
-		node->int_cst.value = (int)strtoi($1);
+		if (strlen($1) <= 10) {
+			node->int_cst.value = strtoi($1);
+		}
+		else {
+			node->int_cst.out_64bit = 1;
+		}
 		$$= node;
 	}
-	| STRING_LITERAL{
+	| FLOAT_LITERAL {
+		DBG("Float_literal: %s\n", $1);
+		tree_t* node = (tree_t*)create_node("float_literal", FLOAT_TYPE, sizeof(struct tree_float_cst));
+		node->float_cst.float_str = $1;
+		node->float_cst.value = atof($1);
+		$$= node;
+	}
+	| STRING_LITERAL {
 		DBG("String_literal: %s\n", $1);
 		tree_t* node = (tree_t*)create_node("string_literal", CONST_STRING_TYPE, sizeof(struct tree_string));
 		node->string.length = strlen($1);
@@ -1681,7 +1729,6 @@ expression
 		$$=node;
 	}
 	| UNDEFINED {
-		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("undefined", UNDEFINED_TYPE, sizeof(struct tree_common));
 		$$ = node;
 	}
@@ -1935,7 +1982,7 @@ statement
 		/* TODO: step1: charge the print arg type and num in format */
 		/* TODO: step2: get the actual arg type and num */
 		/* TODO: step3: charge the args */
-		node->log.argc = get_node_num($10);
+		//node->log.argc = get_node_num($10);
 		node->log.args = $10;
 
 		$$ = node;
@@ -1945,7 +1992,7 @@ statement
 		node->log.log_type = $2;
 		node->log.level = $4;
 		node->log.format = $6;
-		node->log.argc = get_node_num($7);
+		//node->log.argc = get_node_num($7);
 		node->log.args = $7;
 
 		$$ = node;
@@ -1954,7 +2001,7 @@ statement
 		tree_t* node = (tree_t*)create_node("log", LOG_TYPE, sizeof(struct tree_log));
 		node->log.log_type = $2;
 		node->log.format = $4;
-		node->log.argc = get_node_num($5);
+		//node->log.argc = get_node_num($5);
 		node->log.args = $5;
 
 		$$ = node;
@@ -2036,8 +2083,13 @@ log_args
 		$$ = NULL;
 	}
 	| log_args ',' expression {
-		create_node_list($1, $3);
-		$$ = $1;
+		if ($1 == NULL) {
+			$$ = $3;
+		}
+		else {
+			create_node_list($1, $3);
+			$$ = $1;
+		}
 	}
 	| expression {
 		$$ = $1;
@@ -2062,8 +2114,13 @@ statement_list
 		$$ = $1;
 	}
 	| statement_list statement {
-		create_node_list($1, $2);
-		$$ = $1;
+		if (($1 == NULL)) {
+			$$ = $2;
+		}
+		else {
+			create_node_list($1, $2);
+			$$ = $1;
+		}
 	}
 	;
 

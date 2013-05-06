@@ -721,7 +721,19 @@ struct tree_expr_brack {
 struct tree_int_cst {
 	struct tree_common common;
 	const char* int_str;				// the int value formed with string
-	int value;					// the int value that tanslate from string
+	long long value;					// the int value that tanslate from string,
+										// attention: some parameter's value is int64
+	int out_64bit;						// pay attention: some parameter's value is out of int64
+										// we should store it with string;
+};
+
+/**
+ * @brief : tree node about float constant
+ */
+struct tree_float_cst {
+	struct tree_common common;
+	const char* float_str;				// the int value formed with string
+	double value;					// the int value that tanslate from string,
 };
 
 /**
@@ -845,6 +857,7 @@ union tree_node
 	struct tree_expr_brack expr_brack;
 	struct tree_case case_tree;
 	struct tree_int_cst  int_cst;
+	struct tree_float_cst float_cst;
 	struct tree_string string;
 	struct tree_register reg;
 	struct tree_quote quote;

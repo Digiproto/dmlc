@@ -69,20 +69,20 @@ void* gdml_malloc(int size) {
  *
  * @return: the integer of digits
  */
-long get_digits (char *str, int base)
+long long get_digits (char *str, int base)
 {
 	char *endptr = NULL;
-	long value = 0;
+	long long value = 0;
 
 	/* To distinguish success/failure after call */
 	errno = 0;
 
-	value = strtol (str, &endptr, base);
+	value = strtoll (str, &endptr, base);
 
 	/* Check for various possible errors */
 	if ((errno == ERANGE && (value == LONG_MAX || value == LONG_MIN))
 		|| (errno != 0 && value == 0)) {
-		perror ("strtol");
+		perror ("strtoll");
 		exit (EXIT_FAILURE);
 	}
 
@@ -107,11 +107,11 @@ long get_digits (char *str, int base)
  *
  * @return: the data of decimal
  */
-long int strtoi (char *str)
+long long strtoi (char *str)
 {
 	char *stop = NULL;
 	char *first_pos = NULL;
-	long int value = 0;
+	long long value = 0;
 	int length = 0;
 
 	if (str == NULL) {

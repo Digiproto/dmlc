@@ -99,13 +99,13 @@ int main (int argc, char *argv[])
 
 	/* main ast */
 	char *filename = argv[1];
-	node_t *ast = get_ast (filename);
+	tree_t* ast = get_ast (filename);
 	assert (ast != NULL);
-	print_ast (ast);
+	//print_ast (ast);
 #if QEMU
 	gen_qemu_code (ast, "./output/");
 #else
-	generate_simics_code (ast, "./output/");
+	//generate_simics_code (ast, "./output/");
 #endif
 
 	return 0;

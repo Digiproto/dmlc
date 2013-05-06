@@ -102,6 +102,8 @@ typedef enum
 	QUOTE_TYPE,
 	/* int data */
 	INTEGER_TYPE,
+	/* float data */
+	FLOAT_TYPE,
 	/* type identify : int8 int16 */
 	TYPEIDENT_TYPE,
 	/* dml keyword */
