@@ -34,6 +34,7 @@
 #include <string.h>				/* for strcmp, strdup & friends */
 #include <assert.h>
 #include "symbol.h"
+#define SYMBOL_DEBUG
 #ifdef SYMBOL_DEBUG
 #define DBG(fmt, ...) do { fprintf(stderr, fmt, ## __VA_ARGS__); } while (0)
 #else
@@ -157,7 +158,7 @@ symbol_t symbol_find(symtab_t symtab, char *name, type_t type)
  *
  * @return return 0 or !0 on error.
  */
-int symbol_insert(symtab_t symtab, char* name, type_t type, void* attr)
+int symbol_insert(symtab_t symtab, const char* name, type_t type, void* attr)
 {
     assert(name != NULL && symtab != NULL);
 
@@ -171,6 +172,8 @@ int symbol_insert(symtab_t symtab, char* name, type_t type, void* attr)
 
     symbol_t new_symbol = symbol_new(name, type, attr);
 
+	DBG ("In %s, name = %s, type = %d, hash value = %d\n", __FUNCTION__, name, type,
+			str_hash (name));
     symbol_t s = symtab->table[str_hash(name)];
     if(s == NULL){ /* blank slot */
         symtab->table[str_hash(name)] = new_symbol;

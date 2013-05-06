@@ -182,3 +182,17 @@ int debug_proc (char *format, ...)
 	_debug_in_light_red ("\t%s", buf);
 	return 0;
 }
+
+int debug_black (char *format, ...)
+{
+	char buf[MAX_LENGTH];
+	memset (buf, '\0', MAX_LENGTH);
+	va_list args;
+	va_start (args, format);
+	vsprintf (buf, format, args);
+	out_bounds (buf);
+	va_end (args);
+
+	_debug_in_black ("%s", buf);
+	return 0;
+}

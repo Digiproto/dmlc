@@ -8,9 +8,10 @@
 #define YYDEBUG 1
 const char* dir = "/opt/virtutech/simics-4.0/simics-model-builder-4.0.16/amd64-linux/bin/dml/1.0/";
 
-//#define PARSE_DEBUG
+#define PARSE_DEBUG
 #ifdef PARSE_DEBUG
-#define DBG(fmt, ...) do { fprintf(stderr, fmt, ## __VA_ARGS__); } while (0)
+#define DBG debug_black
+//#define DBG(fmt, ...) do { fprintf(stderr, fmt, ## __VA_ARGS__); } while (0)
 #else
 #define DBG(fmt, ...) do { } while (0)
 #endif
@@ -26,6 +27,9 @@ typedef struct YYLTYPE
 
 extern int  yylex(YYSTYPE *yylval_param, yyscan_t yyscanner);
 extern char* builtin_filename;
+extern symtab_t root_table;
+static symtab_t current_table = NULL;
+static long int current_table_num = 0;
 %}
 
 %output  "Parser.c"
@@ -186,7 +190,10 @@ dml
 	: DEVICE objident ';' syntax_modifiers device_statements {
 		device_attr_t* attr = (device_attr_t*)malloc(sizeof(device_attr_t));
 		attr->name = $2->ident.str;
-		//symbol_insert($2->ident.str, DEVICE_TYPE, attr);
+		if (symbol_insert(root_table, $2->ident.str, DEVICE_TYPE, attr) == -1) {
+			fprintf(stderr, "redefined\n");
+		}
+		current_table = root_table;
 
 		tree_t* node = (tree_t*)create_node("device", DEVICE_TYPE, sizeof(struct tree_device));
 		node->device.name = $2->ident.str;
@@ -245,10 +252,11 @@ syntax_modifiers
 syntax_modifier
 	: BITORDER ident ';' {
 		DBG("In BITORDER: %s\n", $2->ident.str);
-		bitorder_attr_t*  attr = (bitorder_attr_t*)malloc(sizeof(bitorder_attr_t));
-		memset(attr, 0, sizeof(bitorder_attr_t));
-		attr->endian= strdup($2->ident.str);
-		//symbol_insert($2->ident.str, BITORDER_TYPE, attr);
+		bitorder_attr_t*  attr = (bitorder_attr_t*)gdml_malloc(sizeof(bitorder_attr_t));
+		attr->endian= $2->ident.str;
+		if (symbol_insert(current_table, $2->ident.str, BITORDER_TYPE, attr) == -1) {
+			fprintf(stderr, "redefined\n");
+		}
 
 		tree_t* node = (tree_t*)create_node("bitorder", BITORDER_TYPE, sizeof(struct tree_bitorder));
 		node->bitorder.endian = $2->ident.str;
@@ -615,9 +623,12 @@ arraydef
 
 toplevel
 	: TEMPLATE objident object_spec {
-		DBG("in TEMPLATE %s\n", $2);
+		DBG("in TEMPLATE %s\n", $2->ident.str);
 		template_attr_t* attr = (template_attr_t*)gdml_malloc(sizeof(template_attr_t));
 		attr->name = $2->ident.str;
+		if (symbol_insert(current_table, $2->ident.str, TEMPLATE_TYPE, attr) == -1) {
+			fprintf(stderr, "redefined\n");
+		}
 		//symbol_insert($2->ident.str, TEMPLATE_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("template", TEMPLATE_TYPE, sizeof(struct tree_template));
@@ -865,7 +876,7 @@ parameter
 		tree_t* node = (tree_t*)create_node("parameter", PARAMETER_TYPE, sizeof(struct tree_param));
 		node->param.name = $2->ident.str;
 		node->param.paramspec = $3;
-		DBG("parameter name is %s\n", $2);
+		DBG("parameter name is %s\n", $2->ident.str);
 		$$ = node;
 	}
 	;
@@ -1675,13 +1686,13 @@ expression
 		$$ = node;
 	}
 	| '$' objident {
-		DBG("In $objident: %s\n", $2);
+		DBG("In $objident: %s\n", $2->ident.str);
 		tree_t* node = (tree_t*)create_node("quote", QUOTE_TYPE, sizeof(struct tree_quote));
 		node->quote.ident = $2;
 		$$ = node;
 	}
 	| ident {
-		DBG("ident: %s\n", $1);
+		DBG("ident: %s\n", $1->ident.str);
 		$$ = $1;
 	}
 	| expression '.' objident {
@@ -2124,7 +2135,7 @@ maybe_objident
 
 objident
 	:ident {
-		DBG("ident: %s\n", $1);
+		DBG("ident: %s\n", $1->ident.str);
 		$$ = $1;
 	}
 	| THIS {

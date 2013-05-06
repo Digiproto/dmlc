@@ -31,6 +31,7 @@
 #include "ast.h"
 #include "Parser.h"
 #include "Lexer.h"
+#include "symbol.h"
 
 #define DEBUG_AST 1
 #define QEMU 0
@@ -79,6 +80,7 @@ tree_t* get_ast (char *filename)
 }
 
 char *builtin_filename = NULL;
+symtab_t root_table = NULL;
 int main (int argc, char *argv[])
 {
 	if (argc != 2) {
@@ -89,6 +91,7 @@ int main (int argc, char *argv[])
 	char tmp[256];
 	snprintf (tmp, 256, "%s/%s", simics_dml_dir, import_file_list[0]);
 	builtin_filename = tmp;
+	root_table = symtab_create();
 	//printf("In %s, builtin_filename=%s\n", __FUNCTION__, builtin_filename);
 	//sleep(1);
 	/* dml-builtins.dml */

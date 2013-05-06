@@ -231,7 +231,7 @@ struct symtab {
 
 /* find and insert symbol from the symbol table.  */
 symbol_t symbol_find(symtab_t symtab, char* name, type_t type);
-int symbol_insert(symtab_t symtab, char* name, type_t type, void* attr);
+int symbol_insert(symtab_t symtab, const char* name, type_t type, void* attr);
 /* operate the symbol tables.  */
 symtab_t symtab_create();
 symtab_t symtab_insert_sibling(symtab_t symtab);
