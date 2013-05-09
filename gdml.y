@@ -527,6 +527,7 @@ object
 		node->attribute.arraydef = $4;
 		node->attribute.templates = $6;
 		node->attribute.spec = $7;
+		node->common.print_node = print_attribute;
 		$$ = node;
 	}
 	| GROUP objident '[' arraydef ']' istemplate object_spec {
@@ -537,6 +538,7 @@ object
 		node->group.array = $4;
 		node->group.templates = $6;
 		node->group.spec = $7;
+		node->common.print_node = print_group;
 		$$ = node;
 	}
 	| CONNECT objident '[' arraydef ']' istemplate object_spec {
@@ -551,6 +553,8 @@ object
 		node->connect.arraydef = $4;
 		node->connect.templates = $6;
 		node->connect.spec = $7;
+		node->common.print_node = print_connect;
+
 		$$ = node;
 	}
 	;
@@ -718,7 +722,12 @@ toplevel
 	}
 	| EXTERN TYPEDEF cdecl ';' {
 		debug_proc("Line : %d\n", __LINE__);
-		$$ = NULL;
+		tree_t* node = (tree_t*)create_node("cdecl", CDECL_TYPE, sizeof(struct tree_cdecl));
+		node->cdecl.is_extern = 1;
+		node->cdecl.is_typedef = 1;
+		node->cdecl.decl = $3;
+		node->common.print_node = print_cdecl;
+		$$ = node;
 	}
 	| STRUCT ident '{' struct_decls '}' {
 		debug_proc("Line : %d\n", __LINE__);
@@ -890,6 +899,7 @@ object_if
 		node->if_else.cond = $3;
 		node->if_else.if_block = $6;
 		node->if_else.else_block = NULL;
+		node->common.print_node = print_if_else;
 		$$ = node;
 	}
 	| IF '(' expression ')' '{' object_statements '}' ELSE '{' object_statements '}' {
@@ -898,6 +908,7 @@ object_if
 		node->if_else.cond = $3;
 		node->if_else.if_block = $6;
 		node->if_else.else_block = $10;
+		node->common.print_node = print_if_else;
 		$$ = node;
 	}
 	| IF '(' expression ')' '{' object_statements '}' ELSE object_if {
@@ -906,6 +917,7 @@ object_if
 		node->if_else.cond = $3;
 		node->if_else.if_block = $6;
 		node->if_else.else_block = $9;
+		node->common.print_node = print_if_else;
 		$$ = node;
 	}
 	;
@@ -1121,6 +1133,7 @@ cdecl2
 		tree_t* node = (tree_t*)create_node("cdecl", CDECL_TYPE, sizeof(struct tree_cdecl));
 		node->cdecl.is_const = 1;
 		node->cdecl.decl = $2;
+		node->common.print_node = print_cdecl;
 		$$ = node;
 	}
 	| '*' cdecl2 {
@@ -1135,6 +1148,7 @@ cdecl2
 		tree_t* node = (tree_t*)create_node("cdecl", CDECL_TYPE, sizeof(struct tree_cdecl));
 		node->cdecl.is_vect = 1;
 		node->cdecl.decl = $2;
+		node->common.print_node = print_cdecl;
 		$$ = node;
 	}
 	;
@@ -1282,6 +1296,7 @@ layout
 		tree_t* node = (tree_t*)create_node("layout", LAYOUT_TYPE, sizeof(struct tree_layout));
 		node->layout.name = $2;
 		node->layout.block = $4;
+		node->common.print_node = print_layout;
 		$$ = node;
 	}
 	;
@@ -1304,6 +1319,7 @@ bitfields
 		tree_t* node = (tree_t*)create_node("bitfields", BITFIELDS_TYPE, sizeof(struct tree_bitfields));
 		node->bitfields.name = $2;
 		node->bitfields.block = $4;
+		node->common.print_node = print_bitfields;
 		$$ = node;
 	}
 	;
@@ -1315,6 +1331,7 @@ bitfields_decls
 		node->bitfields_dec.decl = $2;
 		node->bitfields_dec.start = $5;
 		node->bitfields_dec.end = $7;
+		node->common.print_node = print_bitfields_decls;
 		if ($1 != NULL) {
 			create_node_list($1, node);
 			$$ = $1;
@@ -1702,6 +1719,7 @@ expression
 		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("sizeof", SIZEOF_TYPE, sizeof(struct tree_sizeof));
 		node->sizeof_tree.expr = $2;
+		node->common.print_node = print_sizeof;
 		$$ = node;
 	}
 	| '-' expression {
@@ -1866,6 +1884,7 @@ expression
 		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("sizeoftype", SIZEOFTYPE_TYPE, sizeof(struct tree_sizeoftype));
 		node->sizeoftype.typeoparg = $2;
+		node->common.print_node = print_sizeoftype;
 		$$ = node;
 	}
 	;
@@ -1875,12 +1894,14 @@ typeoparg
 		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("typeoparg", TYPEOPARG_TYPE, sizeof(struct tree_typeoparg));
 		node->typeoparg.ctypedecl = $1;
+		node->common.print_node = print_typeoparg;
 		$$ = node;
 	}
 	| '(' ctypedecl ')' {
 		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("typeoparg_brack", TYPEOPARG_TYPE, sizeof(struct tree_typeoparg));
 		node->typeoparg.ctypedecl_brack = $2;
+		node->common.print_node = print_typeoparg;
 		$$ = node;
 	}
 	;
@@ -1890,6 +1911,7 @@ expression
 		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("new", NEW_TYPE, sizeof(struct tree_new));
 		node->new_tree.type = $2;
+		node->common.print_node = print_new;
 		$$ = node;
 	}
 	| NEW ctypedecl '[' expression ']' {
@@ -1897,6 +1919,7 @@ expression
 		tree_t* node = (tree_t*)create_node("new", NEW_TYPE, sizeof(struct tree_new));
 		node->new_tree.type = $2;
 		node->new_tree.count = $4;
+		node->common.print_node = print_new;
 		$$ = node;
 	}
 	| '(' expression ')' {
@@ -1911,6 +1934,7 @@ expression
 		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("expr_array", ARRAY_TYPE, sizeof(struct tree_array));
 		node->array.expr = $2;
+		node->common.print_node = print_array;
 		$$ = node;
 	}
 	| expression '[' expression endianflag ']' {
@@ -1937,6 +1961,7 @@ endianflag
 		tree_t* node = (tree_t*)create_node("endianflag", IDENT_TYPE, sizeof(struct tree_ident));
 		node->ident.str = $2;
 		node->ident.len = strlen($2);
+		node->common.print_node = print_ident;
 		$$ = node;
 	}
 	| {
@@ -2033,6 +2058,7 @@ statement
 		node->for_tree.cond = $5;
 		node->for_tree.update = $7;
 		node->for_tree.block = $9;
+		node->common.print_node = print_for;
 		$$ = node;
 	}
 	| SWITCH '(' expression ')' statement {
@@ -2040,12 +2066,14 @@ statement
 		tree_t* node = (tree_t*)create_node("switch", SWITCH_TYPE, sizeof(struct tree_switch));
 		node->switch_tree.cond = $3;
 		node->switch_tree.block = $5;
+		node->common.print_node = print_switch;
 		$$ = node;
 	}
 	| DELETE expression ';' {
 		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("delete", DELETE_TYPE, sizeof(struct tree_delete));
 		node->delete_tree.expr = $2;
+		node->common.print_node = print_delete;
 		$$ = node;
 	}
 	| TRY statement CATCH statement {
@@ -2159,12 +2187,14 @@ statement
 		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("default", DEFAULT_TYPE, sizeof(struct tree_default));
 		node->default_tree.block = $3;
+		node->common.print_node = print_default;
 		$$ = node;
 	}
 	| GOTO ident ';' {
 		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("goto", GOTO_TYPE, sizeof(struct tree_goto));
 		node->goto_tree.label = $2;
+		node->common.print_node = print_goto;
 		$$ = node;
 	}
 	| BREAK ';' {

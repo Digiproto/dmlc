@@ -553,6 +553,77 @@ void print_after_call(tree_t* node, int pos) {
 	return;
 }
 
+void print_new(tree_t* node, int pos) {
+	print_pos(pos);
+	printf("[%s : %s : %d]\n",
+			node->common.name, "new", pos);
+
+	if (node->new_tree.type) {
+		tree_t* type = node->new_tree.type;
+		type->common.print_node(type, pos);
+	}
+
+	if (node->new_tree.count) {
+		tree_t* count = node->new_tree.count;
+		count->common.print_node(count, pos);
+	}
+
+	print_sibling(node, pos);
+
+	return;
+}
+
+void print_typeoparg(tree_t* node, int pos) {
+	print_pos(pos);
+	if (node->typeoparg.ctypedecl) {
+		printf("[%s : %s : %d]\n",
+				node->common.name, "typeoparg", pos);
+		tree_t* ctypedecl = node->typeoparg.ctypedecl;
+		ctypedecl->common.print_node(ctypedecl, pos);
+	}
+
+	if (node->typeoparg.ctypedecl_brack) {
+		printf("[%s : %s : %d]\n",
+				node->common.name, "typeoparg_brack", pos);
+		tree_t* ctypedecl_brack = node->typeoparg.ctypedecl_brack;
+		ctypedecl_brack->common.print_node(ctypedecl_brack, pos);
+	}
+
+	print_sibling(node, pos);
+
+	return;
+}
+
+void print_sizeoftype (tree_t* node, int pos) {
+	print_pos(pos);
+	printf("[%s : %s : %d]\n",
+			node->common.name, "sizeoftype", pos);
+
+	if (node->sizeoftype.typeoparg) {
+		tree_t* typeoparg = node->sizeoftype.typeoparg;
+		typeoparg->common.print_node(typeoparg, pos);
+	}
+
+	print_sibling(node, pos);
+
+	return;
+}
+
+void print_sizeof(tree_t* node, int pos) {
+	print_pos(pos);
+	printf("[%s : %s : %d]\n",
+			node->common.name, "sizeof", pos);
+
+	if (node->sizeof_tree.expr) {
+		tree_t* expr = node->sizeof_tree.expr;
+		expr->common.print_node(expr, pos);
+	}
+
+	print_sibling(node, pos);
+
+	return;
+}
+
 void print_cast(tree_t* node, int pos) {
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
@@ -728,6 +799,11 @@ void print_connect(tree_t* node, int pos) {
 	printf("[%s : %s : %d]\n",
 			node->common.name, node->connect.name, pos);
 
+	if (node->connect.arraydef) {
+		tree_t* arraydef = node->connect.arraydef;
+		arraydef->common.print_node(arraydef, pos);
+	}
+
 	if (node->connect.templates) {
 		tree_t* templates = node->connect.templates;
 		templates->common.print_node(templates, pos);
@@ -768,6 +844,10 @@ void print_attribute(tree_t* node, int pos) {
 	printf("[%s : %s : %d]\n",
 			node->common.name, node->attribute.name, pos);
 
+	if (node->attribute.arraydef) {
+		tree_t* arraydef = node->attribute.arraydef;
+		arraydef->common.print_node(arraydef, pos);
+	}
 	if (node->attribute.templates) {
 		tree_t* templates = node->attribute.templates;
 		templates->common.print_node(templates, pos);
@@ -927,6 +1007,46 @@ void print_arraydef(tree_t* node, int pos) {
 			tree_t* expr_end = node->array.expr_end;
 			expr_end->common.print_node(expr_end, pos);
 		}
+	}
+
+	print_sibling(node, pos);
+
+	return;
+}
+
+void print_bitfields_decls(tree_t* node, int pos) {
+	if (node->bitfields_dec.decl) {
+		tree_t* decl = node->bitfields_dec.decl;
+		decl->common.print_node(decl, pos);
+	}
+
+	print_pos(pos);
+	printf("[%s : %s : %d]\n",
+			node->common.name, "@", pos);
+
+	if (node->bitfields_dec.start) {
+		tree_t* start = node->bitfields_dec.start;
+		start->common.print_node(start, pos);
+	}
+
+	if (node->bitfields_dec.end) {
+		tree_t* end = node->bitfields_dec.end;
+		end->common.print_node(end, pos);
+	}
+
+	print_sibling(node, pos);
+
+	return;
+}
+
+void print_bitfields(tree_t* node, int pos) {
+	print_pos(pos);
+	printf("[%s : %s : %d]\n",
+			node->common.name, node->bitfields.name, pos);
+
+	if (node->bitfields.block) {
+		tree_t* block = node->bitfields.block;
+		block->common.print_node(block, (pos - 1));
 	}
 
 	print_sibling(node, pos);
@@ -1196,6 +1316,115 @@ void print_while(tree_t* node, int pos) {
 	return;
 }
 
+void print_delete(tree_t* node, int pos) {
+	print_pos(pos);
+	printf("[%s : %s : %d]\n",
+			node->common.name, "delete", pos);
+
+	if (node->delete_tree.expr) {
+		tree_t* expr = node->delete_tree.expr;
+		expr->common.print_node(expr, pos);
+	}
+
+	print_sibling(node, pos);
+
+	return;
+}
+
+void print_goto(tree_t* node, int pos) {
+	tree_t* label = node->goto_tree.label;
+
+	print_pos(pos);
+	printf("[%s : %s : %d]\n",
+			node->common.name, label->ident.str, pos);
+
+	print_sibling(node, pos);
+
+	return;
+}
+
+void print_default(tree_t* node, int pos) {
+	print_pos(pos);
+	printf("[%s : %s : %d]\n",
+			node->common.name, "default:", pos);
+	if (node->default_tree.block) {
+		tree_t* block = node->default_tree.block;
+		if ((block->common.type) == BLOCK_TYPE) {
+			tree_t* statement = block->block.statement;
+			statement->common.print_node(statement, pos);
+		}
+		else{
+			block->common.print_node(block, pos);
+		}
+	}
+
+	print_sibling(node, pos);
+
+	return;
+}
+
+void print_switch(tree_t* node, int pos) {
+	print_pos(pos);
+	printf("[%s : %s : %d]\n",
+			node->common.name, "switch", pos);
+
+	if (node->switch_tree.cond) {
+		tree_t* cond = node->switch_tree.cond;
+		cond->common.print_node(cond, pos);
+	}
+
+	if (node->switch_tree.block) {
+		tree_t* block = node->switch_tree.block;
+		if ((block->common.type) == BLOCK_TYPE) {
+			tree_t* statement = block->block.statement;
+			statement->common.print_node(statement, pos);
+		}
+		else {
+			block->common.print_node(block, pos);
+		}
+	}
+
+	print_sibling(node, pos);
+
+	return;
+}
+
+void print_for(tree_t* node, int pos) {
+	print_pos(pos);
+	printf("[%s : %s : %d]\n",
+			node->common.name, "for", pos);
+
+	if (node->for_tree.init) {
+		tree_t* init = node->for_tree.init;
+		init->common.print_node(init, pos);
+	}
+
+	if (node->for_tree.cond) {
+		tree_t* cond = node->for_tree.cond;
+		cond->common.print_node(cond, pos);
+	}
+
+	if (node->for_tree.update) {
+		tree_t* update = node->for_tree.update;
+		update->common.print_node(update, pos);
+	}
+
+	if (node->for_tree.block) {
+		tree_t* block = node->for_tree.block;
+		if ((block->common.type) == BLOCK_TYPE) {
+			tree_t* statement = block->block.statement;
+			statement->common.print_node(statement, pos);
+		}
+		else {
+			block->common.print_node(block, pos);
+		}
+	}
+
+	print_sibling(node, pos);
+
+	return;
+}
+
 void print_do_while(tree_t* node, int pos) {
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
@@ -1218,6 +1447,26 @@ void print_do_while(tree_t* node, int pos) {
 	if (node->do_while.cond) {
 		tree_t* cond = node->do_while.cond;
 		cond->common.print_node(cond, pos);
+	}
+
+	print_sibling(node, pos);
+
+	return;
+}
+
+void print_layout(tree_t* node, int pos) {
+	print_pos(pos);
+	printf("[%s : %s : %d]\n",
+			node->common.name, node->layout.name, pos);
+	if (node->layout.block) {
+		tree_t* block = node->layout.block;
+		if ((block->common.type) == BLOCK_TYPE) {
+			tree_t* layout_decl = block->block.statement;
+			layout_decl->common.print_node(layout_decl, (pos - 1));
+		}
+		else {
+			block->common.print_node(block, (pos - 1));
+		}
 	}
 
 	print_sibling(node, pos);

@@ -88,5 +88,17 @@ void print_array(tree_t* node, int pos);
 void print_after_call(tree_t* node, int pos);
 void print_while(tree_t* node, int pos);
 void print_do_while(tree_t* node, int pos);
+void print_layout(tree_t* node, int pos);
+void print_sizeof(tree_t* node, int pos);
+void print_sizeoftype (tree_t* node, int pos);
+void print_typeoparg(tree_t* node, int pos);
+void print_for(tree_t* node, int pos);
+void print_switch(tree_t* node, int pos);
+void print_delete(tree_t* node, int pos);
+void print_default(tree_t* node, int pos);
+void print_new(tree_t* node, int pos);
+void print_bitfields_decls(tree_t* node, int pos);
+void print_bitfields(tree_t* node, int pos);
+void print_goto(tree_t* node, int pos);
 
 #endif
