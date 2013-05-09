@@ -38,7 +38,7 @@ typedef struct location_s location_t;
 
 union tree_node;
 typedef union tree_node tree_t;
-
+typedef void (*print_node_t)(tree_t*, int);
 
 /**
  * @brief : the common part about tree node
@@ -48,6 +48,7 @@ struct tree_common
 	tree_t* child;
 	tree_t* sibling;
 	tree_t* chain;
+	print_node_t print_node;
 	int type;
 	const char* name;
 };
@@ -311,16 +312,13 @@ struct tree_assign {
  */
 struct tree_cdecl {
 	struct tree_common common;
-	union modify {
-		int is_data;			// the decl is data?
-		int is_extern;			// the decl is extern?
-		int is_typedef;			// the decl is typedef?
-		int is_struct;			// the decl is struct?
-		int is_const;			// the decl is const?
-		int is_point;			// the decl is pointer(*)?
-		int is_point_access;	// the decl is point access(->)?
-		int is_vect;			// the decl is vect?
-	}state;
+	int is_data;			// the decl is data?
+	int is_extern;			// the decl is extern?
+	int is_typedef;			// the decl is typedef?
+	int is_const;			// the decl is const?
+	int is_point;			// the decl is pointer(*)?
+	int is_point_access;	// the decl is point access(->)?
+	int is_vect;			// the decl is vect?
 	tree_t* basetype;			// the basetype about cdecl, like int, char
 	tree_t* decl;				// the body about decl
 };
@@ -544,6 +542,7 @@ struct tree_error {
  */
 struct tree_struct {
 	struct tree_common common;
+	tree_t* ident;
 	tree_t* block;
 };
 
@@ -672,10 +671,8 @@ struct tree_sizeoftype {
  */
 struct tree_typeoparg {
 	struct tree_common common;
-	union {
-		tree_t* ctypedecl;
-		tree_t* ctypedecl_brack;
-	}decl;
+	tree_t* ctypedecl;
+	tree_t* ctypedecl_brack;
 };
 
 /**

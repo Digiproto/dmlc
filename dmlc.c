@@ -101,7 +101,8 @@ int main (int argc, char *argv[])
 	char *filename = argv[1];
 	tree_t* ast = get_ast (filename);
 	assert (ast != NULL);
-	//print_ast (ast);
+	printf("node name: %s\n", ast->common.name);
+	print_ast (ast);
 #if QEMU
 	gen_qemu_code (ast, "./output/");
 #else
