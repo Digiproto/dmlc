@@ -198,7 +198,6 @@ void add_child (tree_t* parent, tree_t* child)
 }
 
 static int node_num = 0;
-
 /**
  * @brief create_node : create a tree node
  *
@@ -296,80 +295,113 @@ int get_node_num (tree_t* root) {
 }
 
 /**
- * @brief
+ * @brief print_pos : print the node position int syntax tree
  *
- * @param node
+ * @param i: the node position
  */
 void print_pos (int i)
 {
 	while ((i--) > 0) {
-		printf ("|    ");
+		printf ("|   ");
 	}
 }
 
-int init_pos = 20;
-#if 0
-void print_node (tree_t* node, int pos)
-{
-	if (node->child != NULL) {
-		pos--;
-		//printf("pos=%d, father is %s, child is %s\n", pos, node->name, node->child->name);
-		print_node (node->child, pos);
-		pos++;
-		//printf("after pos=%d, father is %s, child is %s\n", pos, node->name, node->child->name);
-	}
-	print_pos (pos);
-	printf ("[%s, %d, pos=%d]\n", node->name, node->type, pos);
-	tree_t* sibling = node->sibling;
-	if (sibling) {
-		//printf("the first child is %s, current sibling=%s\n", node->name, sibling->name);
-		print_node (sibling, pos);
-		sibling = sibling->sibling;
-	}
-}
-#endif
-
+/**
+ * @brief print_sibling : print the sibling tree node information
+ *
+ * @param node : the tree node
+ * @param pos : tree node position
+ */
 void print_sibling(tree_t* node, int pos) {
 	if (node->common.sibling) {
 		tree_t* sibling = node->common.sibling;
-		//debug_proc("Line: %d, name: %s\n", __LINE__, sibling->common.name);
+		DEBUG_BLACK("Line: %d, name: %s\n", __LINE__, sibling->common.name);
 		sibling->common.print_node(sibling, pos);
 	}
 
 	return;
 }
 
+/**
+ * @brief print_bitorder : print the bitorder tree node
+ *
+ * @param node : pointer of bitorder tree node
+ * @param pos : tree node position
+ */
 void print_bitorder(tree_t* node, int pos) {
+	/* Grammar : BITORDER ident */
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 			node->common.name, node->bitorder.endian, pos);
+
+	/* print sibling tree node information  */
 	print_sibling(node, pos);
+
+	return;
 }
 
+/**
+ * @brief print_string : print string tree node
+ *
+ * @param node : pointer to string
+ * @param pos : tree node position
+ */
 void print_string(tree_t* node, int pos) {
+	/*
+	 * Grammar :
+	 *		'=' STRING_LITERAL ';'
+	 *		| STRING_LITERAL
+	 */
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 			node->common.name, node->string.pointer, pos);
 
+	print_sibling(node, pos);
+
 	return;
 }
 
+/**
+ * @brief print_interger : print integer literal tree node
+ *
+ * @param node : pointer to tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_interger(tree_t* node, int pos) {
+	/* Grammar : INTEGER_LITERAL */
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 			node->common.name, node->int_cst.int_str, pos);
 
+	print_sibling(node, pos);
+
 	return;
 }
 
+/**
+ * @brief print_quote : print quote tree node information
+ *
+ * @param node : pointer to quote tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_quote(tree_t* node, int pos) {
+	/* Grammar: '$' objident */
 	tree_t* objident = node->quote.ident;
 	print_pos(pos);
 	printf("[%s : $%s : %d]\n",
 			node->common.name, objident->ident.str, pos);
+
+	print_sibling(node, pos);
 }
 
+/**
+ * @brief print_ternary : print ternary tree node information
+ *
+ * @param node : pointer to ternary tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_ternary(tree_t* node, int pos) {
+	/*ternary grammar : condition '?' expression ':' expression */
 	if (node->ternary.cond) {
 		tree_t* cond = node->ternary.cond;
 		cond->common.print_node(cond, pos);
@@ -380,6 +412,7 @@ void print_ternary(tree_t* node, int pos) {
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 			node->common.name, "?", pos);
+
 	if (node->ternary.expr_true) {
 		tree_t* true_expr = node->ternary.expr_true;
 		true_expr->common.print_node(true_expr, pos);
@@ -387,9 +420,11 @@ void print_ternary(tree_t* node, int pos) {
 	else {
 		printf("Ternary operation need the true expression\n");
 	}
+
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 			node->common.name, ":", pos);
+
 	if (node->ternary.expr_false) {
 		tree_t* false_expr = node->ternary.expr_false;
 		false_expr->common.print_node(false_expr, pos);
@@ -397,9 +432,20 @@ void print_ternary(tree_t* node, int pos) {
 	else {
 		printf("Ternary operation need the false expression\n");
 	}
+
+	print_sibling(node, pos);
+
+	return;
 }
 
+/**
+ * @brief print_binary : print binary tree node information
+ *
+ * @param node : pointer to binary tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_binary(tree_t* node, int pos) {
+	/* binary grammar: expression operator expression */
 	if (node->binary.left) {
 		tree_t* left =  node->binary.left;
 		left->common.print_node(left, pos);
@@ -408,6 +454,7 @@ void print_binary(tree_t* node, int pos) {
 		printf("The binary(%s) need left expression\n",
 				node->binary.operat);
 	}
+
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 			node->common.name, node->binary.operat, pos);
@@ -421,21 +468,26 @@ void print_binary(tree_t* node, int pos) {
 				node->binary.operat);
 	}
 
-	if (node->common.sibling) {
-		tree_t* sibling = node->common.sibling;
-		sibling->common.print_node(sibling, pos);
-	}
+	print_sibling(node, pos);
 
+	return;
 }
 
+/**
+ * @brief print_unary : print unary tree node information
+ *
+ * @param node : pointer to unary tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_unary(tree_t* node, int pos) {
+	/* grammar: operator(~) expression */
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 			node->common.name, node->unary.operat, pos);
 
 	if (node->unary.expr) {
 		tree_t* expr = node->unary.expr;
-		//debug_proc("Line = %d, name: %s\n", __LINE__, expr->common.name);
+		DEBUG_BLACK("Line = %d, name: %s\n", __LINE__, expr->common.name);
 		expr->common.print_node(expr, pos);
 	}
 
@@ -444,24 +496,14 @@ void print_unary(tree_t* node, int pos) {
 	return;
 }
 
-void print_non_op(tree_t* node, int pos) {
-	print_pos(pos);
-	printf("[%s : %s : %d]\n",
-			node->common.name, node->unary.operat, pos);
-	if (node->unary.expr) {
-		tree_t* expr = node->unary.expr;
-		expr->common.print_node(expr, pos);
-	}
-
-	if (node->common.sibling) {
-		tree_t* sibling = node->common.sibling;
-		sibling->common.print_node(sibling, pos);
-	}
-
-	return;
-}
-
+/**
+ * @brief print_ctypedecl_simple  : print tree node ctypedecl_simple
+ *
+ * @param node : pointer to ctypedecl_simple tree node
+ * @param pos : tree node position
+ */
 void print_ctypedecl_simple(tree_t* node, int pos) {
+	   /* Grammar : '(' ctypedecl_ptr ')' | NULL */
 	if (node->cdecl_brack.decl_list) {
 		tree_t* list_head = node->cdecl_brack.decl_list;
 		list_head->common.print_node(list_head, pos);
@@ -472,7 +514,19 @@ void print_ctypedecl_simple(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_stars : print stars tree node information
+ *
+ * @param node : pointer to stars tree node
+ * @param pos : tree node position int syntax tree
+ */
 void print_stars(tree_t* node, int pos) {
+	/*
+	 * Grammar :
+	 *		'*' CONST stars
+	 *		| '*' stars
+	 *		| NULL
+	 */
 	if (node->stars.is_const) {
 		print_pos(pos);
 		printf("[%s : %s : %d]\n",
@@ -494,7 +548,14 @@ void print_stars(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_ctypedecl_ptr : print ctypedecl_ptr information
+ *
+ * @param node : pointer to ctypedecl_ptr tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_ctypedecl_ptr(tree_t* node, int pos) {
+	/* Grammar : stars ctypedecl_array */
 	if (node->ctypedecl_ptr.stars) {
 		tree_t* stars = node->ctypedecl_ptr.stars;
 		stars->common.print_node(stars, pos);
@@ -510,7 +571,14 @@ void print_ctypedecl_ptr(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_ctypedecl : print ctypedecl tree node information
+ *
+ * @param node : pointer to ctypedecl tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_ctypedecl(tree_t* node, int pos) {
+	/* Grammar : const_opt basetype ctypedecl_ptr  */
 	if (node->ctypedecl.const_opt) {
 		tree_t* const_opt = node->ctypedecl.const_opt;
 		const_opt->common.print_node(const_opt, pos);
@@ -529,7 +597,14 @@ void print_ctypedecl(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_after_call : print after_call tree node information
+ *
+ * @param node : pointer to after_call tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_after_call(tree_t* node, int pos) {
+	/* Grammar : AFTER '(' expression ')' CALL expression  */
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 			node->common.name, "after(", pos);
@@ -553,7 +628,18 @@ void print_after_call(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_new : print new tree node information
+ *
+ * @param node : pointer to new tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_new(tree_t* node, int pos) {
+	/*
+	 * Grammar :
+	 *		NEW ctypedecl
+	 *		| NEW ctypedecl '[' expression ']'
+	 */
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 			node->common.name, "new", pos);
@@ -573,7 +659,18 @@ void print_new(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_typeoparg : print typeoparg tree node information
+ *
+ * @param node : pointer to typeoparg tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_typeoparg(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		ctypedecl
+	 *		| '(' ctypedecl ')'
+	 */
 	print_pos(pos);
 	if (node->typeoparg.ctypedecl) {
 		printf("[%s : %s : %d]\n",
@@ -594,7 +691,14 @@ void print_typeoparg(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_sizeoftype : print sizeoftype tree node information
+ *
+ * @param node : pointer to sizeoftype tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_sizeoftype (tree_t* node, int pos) {
+	/* Grammar: SIZEOFTYPE typeoparg */
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 			node->common.name, "sizeoftype", pos);
@@ -609,7 +713,14 @@ void print_sizeoftype (tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_sizeof : print sizeof tree node information
+ *
+ * @param node : pointer to sizeof tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_sizeof(tree_t* node, int pos) {
+	/* Grammar: SIZEOF expression */
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 			node->common.name, "sizeof", pos);
@@ -624,7 +735,14 @@ void print_sizeof(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_cast : print cast tree node information
+ *
+ * @param node : pointer to cast tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_cast(tree_t* node, int pos) {
+	/* Grammar: CAST '(' expression ',' ctypedecl ')' */
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 			node->common.name, "cast(", pos);
@@ -634,7 +752,7 @@ void print_cast(tree_t* node, int pos) {
 	}
 	if (node->cast.ctype) {
 		tree_t* ctype = node->cast.ctype;
-		//debug_proc("Line = %d, name: %s\n", __LINE__, ctype->common.name);
+		DEBUG_BLACK("Line = %d, name: %s\n", __LINE__, ctype->common.name);
 		ctype->common.print_node(ctype, pos);
 	}
 
@@ -643,7 +761,14 @@ void print_cast(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_float_literal : print float_literal tree node information
+ *
+ * @param node : pointer to float_literal tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_float_literal(tree_t* node, int pos) {
+	/* Grammar: FLOAT_LITERAL */
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 			node->common.name, node->float_cst.float_str, pos);
@@ -653,7 +778,18 @@ void print_float_literal(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_expr_brack : print expression with brackets tree node information
+ *
+ * @param node : pointer to expression tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_expr_brack(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		'(' expression ')'
+	 *		| expression '(' expression_list ')'
+	 */
 	tree_t* expr = NULL;
 	if (node->expr_brack.expr) {
 		expr = node->expr_brack.expr;
@@ -661,7 +797,7 @@ void print_expr_brack(tree_t* node, int pos) {
 	}
 	if (node->expr_brack.expr_in_brack) {
 		expr = node->expr_brack.expr_in_brack;
-		//debug_proc("Line = %d, name: %s\n", __LINE__, expr->common.name);
+		DEBUG_BLACK("Line = %d, name: %s\n", __LINE__, expr->common.name);
 		expr->common.print_node(expr, pos);
 	}
 
@@ -670,7 +806,14 @@ void print_expr_brack(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_undefined : print undefined tree node information
+ *
+ * @param node : pointer to undefined tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_undefined(tree_t* node, int pos) {
+	/* Grammar: UNDEFINED */
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 		node->common.name, "undefined", pos);
@@ -680,7 +823,18 @@ void print_undefined(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_component : print component tree node information
+ *
+ * @param node : pointer to component tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_component(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		expression '.' objident
+	 *		| expression METHOD_RETURN objident
+	 */
 	if (node->component.expr) {
 		tree_t* expr = node->component.expr;
 		expr->common.print_node(expr, pos);
@@ -707,15 +861,25 @@ void print_component(tree_t* node, int pos) {
 		fprintf(stderr, "The component need identifier\n");
 	}
 
-	if (node->common.sibling) {
-		tree_t* sibling = node->common.sibling;
-		sibling->common.print_node(sibling, pos);
-	}
+	print_sibling(node, pos);
 
 	return;
 }
 
+/**
+ * @brief print_paramspec : print paramspec tree node information
+ *
+ * @param node : pointer to paramspec tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_paramspec(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		';'
+	 *		| '=' expression ';'
+	 *		| '=' STRING_LITERAL ';'
+	 *		| DEFAULT expression ';'
+	 *		| AUTO ';' */
 	tree_t* spec = NULL;
 	if ((node->paramspec.string) != NULL) {
 		spec = node->paramspec.string;
@@ -741,9 +905,23 @@ void print_paramspec(tree_t* node, int pos) {
 	else {
 		printf("something wrong!\n");
 	}
+
+	print_sibling(node, pos);
+
+	return;
 }
 
+/**
+ * @brief print_select: print select tree node information
+ *
+ * @param node : pointer to select tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_select(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		SELECT ident IN '(' expression ')' WHERE '(' expression ')' statement ELSE statement
+	 */
 	tree_t* ident = node->select.ident;
 	print_pos(pos);
 	printf("[%s : %s IN : %d]\n",
@@ -794,7 +972,17 @@ void print_select(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_connect : print select tree node information
+ *
+ * @param node : pointer to connect tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_connect(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		CONNECT objident istemplate object_spec
+	 */
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 			node->common.name, node->connect.name, pos);
@@ -819,7 +1007,17 @@ void print_connect(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_interface : print select tree node information
+ *
+ * @param node : pointer to interface tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_interface(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		INTERFACE objident istemplate object_spec
+	 */
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 			node->common.name, node->interface.name, pos);
@@ -839,7 +1037,18 @@ void print_interface(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_attribute : print attribute tree node information
+ *
+ * @param node : pointer to attribute tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_attribute(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		ATTRIBUTE objident istemplate object_spec
+	 *		| ATTRIBUTE objident '[' arraydef ']' istemplate object_spec
+	 */
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 			node->common.name, node->attribute.name, pos);
@@ -863,7 +1072,17 @@ void print_attribute(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_event : print event tree node information
+ *
+ * @param node : pointer to event tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_event(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		EVENT objident istemplate object_spec
+	 */
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 			node->common.name, node->event.name, pos);
@@ -883,7 +1102,18 @@ void print_event(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_group : print group tree node information
+ *
+ * @param node : pointer to group tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_group(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		GROUP objident istemplate object_spec
+	 *		| GROUP objident '[' arraydef ']' istemplate object_spec
+	 */
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 			node->common.name, node->group.name, pos);
@@ -907,7 +1137,17 @@ void print_group(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_port : print port tree node information
+ *
+ * @param node : pointer to port tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_port(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		PORT objident istemplate object_spec
+	 */
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 			node->common.name, node->port.name, pos);
@@ -927,7 +1167,17 @@ void print_port(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_implement : print implement tree node information
+ *
+ * @param node : pointer to implement tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_implement(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		IMPLEMENT objident istemplate object_spec
+	 */
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 			node->common.name, node->implement.name, pos);
@@ -947,7 +1197,17 @@ void print_implement(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_parameter : print parameter tree node information
+ *
+ * @param node : pointer to parameter tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_parameter(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		PARAMETER objident paramspec
+	 */
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 			node->common.name, node->param.name, pos);
@@ -956,14 +1216,26 @@ void print_parameter(tree_t* node, int pos) {
 		spec = node->param.paramspec;
 		spec->common.print_node(spec, pos);
 	}
-	if (node->common.sibling) {
-		tree_t* head = node->common.sibling;
-		//debug_proc("Line: %d, name: %s\n", __LINE__, head->common.name);
-		head->common.print_node(head, pos);
-	}
+
+	print_sibling(node, pos);
+
+	return 0;
 }
 
+/**
+ * @brief print_array : print array tree node information
+ *
+ * @param node : pointer to array tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_array(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		'[' expression ']'
+	 *		| '[' expression ':' expression ']'
+	 *		| cdecl3 '[' expression ']'
+	 *		| '[' expression_list ']'
+	 */
 	if (node->array.decl) {
 		tree_t* decl = node->array.decl;
 		decl->common.print_node(decl, pos);
@@ -984,7 +1256,18 @@ void print_array(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_arraydef : print arraydef tree node information
+ *
+ * @param node : pointer to arraydef tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_arraydef(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		| expression
+	 *		| ident IN expression RANGE_SIGN expression
+	 */
 	if (node->array.is_fix) {
 		tree_t* expr = node->array.expr;
 		expr->common.print_node(expr, pos);
@@ -1014,7 +1297,17 @@ void print_arraydef(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_bitfields_decls : print bitfields_decls tree node information
+ *
+ * @param node : pointer to bitfields_decls tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_bitfields_decls(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		bitfields_decls cdecl '@' '[' expression ':' expression ']' ';'
+	 */
 	if (node->bitfields_dec.decl) {
 		tree_t* decl = node->bitfields_dec.decl;
 		decl->common.print_node(decl, pos);
@@ -1039,7 +1332,17 @@ void print_bitfields_decls(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_bitfields : print bitfields tree node information
+ *
+ * @param node : pointer to bitfields tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_bitfields(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		BITFIELDS INTEGER_LITERAL '{' bitfields_decls '}'
+	 */
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 			node->common.name, node->bitfields.name, pos);
@@ -1054,7 +1357,17 @@ void print_bitfields(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_register : print register tree node information
+ *
+ * @param node : pointer to register tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_register(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		REGISTER objident sizespec offsetspec istemplate object_spec
+	 */
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 			node->common.name, node->reg.name, pos);
@@ -1090,7 +1403,17 @@ void print_register(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_bank : print bank tree node information
+ *
+ * @param node : pointer to bank tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_bank(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		BANK maybe_objident istemplate object_spec
+	 */
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 			node->common.name, node->bank.name, pos);
@@ -1108,7 +1431,17 @@ void print_bank(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_try_catch : print try_catch tree node information
+ *
+ * @param node : pointer to try_catch tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_try_catch(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		TRY statement CATCH statement
+	 */
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 			node->common.name, "try", pos);
@@ -1140,9 +1473,22 @@ void print_try_catch(tree_t* node, int pos) {
 	}
 
 	print_sibling(node, pos);
+
+	return;
 }
 
+/**
+ * @brief print_bit_slic : print bit_slic tree node information
+ *
+ * @param node : pointer to bit_slic tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_bit_slic(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		'[' expression_list ']'
+	 *		| expression '[' expression endianflag ']'
+	 */
 	if (node->bit_slic.expr) {
 		tree_t* expr = node->bit_slic.expr;
 		expr->common.print_node(expr, pos);
@@ -1179,7 +1525,17 @@ void print_bit_slic(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_expr_assign : print expr_assign tree node information
+ *
+ * @param node : pointer to expr_assign tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_expr_assign(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		expression '=' expression
+	 */
 	if (node->expr_assign.left) {
 		tree_t* left = node->expr_assign.left;
 		left->common.print_node(left, pos);
@@ -1196,9 +1552,20 @@ void print_expr_assign(tree_t* node, int pos) {
 
 	print_sibling(node, pos);
 
+	return;
 }
 
+/**
+ * @brief print_assign : print assign tree node information
+ *
+ * @param node : pointer to assign tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_assign(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		CONSTANT ident '=' expression ';'
+	 */
 	if (node->assign.is_constant) {
 		print_pos(pos);
 		printf("[%s : %s : %d]\n",
@@ -1233,26 +1600,40 @@ void print_assign(tree_t* node, int pos) {
 		expr_right->common.print_node(expr_right, pos);
 	}
 
-	if (node->common.sibling) {
-		tree_t* sibling = node->common.sibling;
-		sibling->common.print_node(sibling, pos);
-	}
+	print_sibling(node, pos);
+
+	return;
 }
 
+/**
+ * @brief print_ident : print identifier tree node information
+ *
+ * @param node : pointer to identifier tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_ident(tree_t* node, int pos) {
+	/* Grammar: IDENTIFIER */
 	print_pos(pos);
 	printf("[%s : %s: %d]\n",
 			node->common.name, node->ident.str, pos);
 
-	if (node->common.sibling) {
-		tree_t* sibling = node->common.sibling;
-		sibling->common.print_node(sibling, pos);
-	}
+	print_sibling(node, pos);
 
 	return ;
 }
 
+/**
+ * @brief print_cdecl_brak : print cdecl_brack tree node information
+ *
+ * @param node : pointer to cdecl_brack tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_cdecl_brak(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		'(' cdecl2 ')'
+	 *		 | cdecl3 '(' cdecl_list ')'
+	 */
 	if (node->cdecl_brack.cdecl) {
 		tree_t* cdecl = node->cdecl_brack.cdecl;
 		cdecl->common.print_node(cdecl, pos);
@@ -1262,36 +1643,60 @@ void print_cdecl_brak(tree_t* node, int pos) {
 		cdecl->common.print_node(cdecl, pos);
 	}
 
-	if (node->common.sibling) {
-		tree_t* sibling = node->common.sibling;
-		sibling->common.print_node(sibling, pos);
-	}
+	print_sibling(node, pos);
 
 	return 0;
 }
 
+/**
+ * @brief print_ellipsis : print ellipsis tree node information
+ *
+ * @param node : pointer to ellipsis tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_ellipsis(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		ELLIPSIS
+	 *		| cdecl_list2 ',' ELLIPSIS
+	 */
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 			node->common.name, "...", pos);
 
+	print_sibling(node, pos);
+
 	return;
 }
 
+/**
+ * @brief print_header : print head tree node information
+ *
+ * @param node : pointer to head tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_header(tree_t* node, int pos) {
+	/* Grammar: HEADER */
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 			node->common.name, node->head.str, pos);
 
-	if (node->common.sibling) {
-		tree_t* sibling = node->common.sibling;
-		sibling->common.print_node(sibling, pos);
-	}
+	print_sibling(node, pos);
 
 	return;
 }
 
+/**
+ * @brief print_while : print while tree node information
+ *
+ * @param node : pointer to while tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_while(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		WHILE '(' expression ')' statement
+	 */
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 			node->common.name, "while", pos);
@@ -1316,7 +1721,17 @@ void print_while(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_delete : print while tree node information
+ *
+ * @param node : pointer to delete tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_delete(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		DELETE expression ';'
+	 */
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 			node->common.name, "delete", pos);
@@ -1331,7 +1746,14 @@ void print_delete(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_goto : print while tree node information
+ *
+ * @param node : pointer to goto tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_goto(tree_t* node, int pos) {
+	/* Grammar: GOTO ident ';' */
 	tree_t* label = node->goto_tree.label;
 
 	print_pos(pos);
@@ -1343,7 +1765,14 @@ void print_goto(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_default : print default tree node information
+ *
+ * @param node : pointer to default tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_default(tree_t* node, int pos) {
+	/* Grammar: DEFAULT ':' statement */
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 			node->common.name, "default:", pos);
@@ -1363,7 +1792,14 @@ void print_default(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_switch : print switch tree node information
+ *
+ * @param node : pointer to switch tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_switch(tree_t* node, int pos) {
+	/* Grammar: SWITCH '(' expression ')' statement */
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 			node->common.name, "switch", pos);
@@ -1389,7 +1825,17 @@ void print_switch(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_for : print for tree node information
+ *
+ * @param node : pointer to for tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_for(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		FOR '(' comma_expression_opt ';' expression_opt ';' comma_expression_opt ')' statement
+	 */
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 			node->common.name, "for", pos);
@@ -1425,7 +1871,17 @@ void print_for(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_do_while : print do ... while ... tree node information
+ *
+ * @param node : pointer to do... while... tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_do_while(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		DO statement WHILE '(' expression ')' ';'
+	 */
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 			node->common.name, "do", pos);
@@ -1454,7 +1910,17 @@ void print_do_while(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_layout : print layout  tree node information
+ *
+ * @param node : pointer to layout tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_layout(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		LAYOUT STRING_LITERAL '{' layout_decls '}'
+	 */
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 			node->common.name, node->layout.name, pos);
@@ -1474,7 +1940,17 @@ void print_layout(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_typeof : print typeof tree node information
+ *
+ * @param node : pointer to typeof tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_typeof(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		TYPEOF expression
+	 */
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 			node->common.name, "typeof", pos);
@@ -1483,15 +1959,19 @@ void print_typeof(tree_t* node, int pos) {
 		expr->common.print_node(expr, pos);
 	}
 
-	if(node->common.sibling) {
-		tree_t* sibling = node->common.sibling;
-		sibling->common.print_node(sibling, pos);
-	}
+	print_sibling(node, pos);
 
 	return;
 }
 
+/**
+ * @brief print_assert : print assert tree node information
+ *
+ * @param node : pointer to assert tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_assert(tree_t* node, int pos) {
+	/* Grammar: ASSERT expression ';' */
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 			node->common.name, "data", pos);
@@ -1505,7 +1985,24 @@ void print_assert(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_cdecl : print cdecl tree node information
+ *
+ * @param node : pointer to cdecl tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_cdecl(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		DATA cdecl ';'
+	 *		| TYPEDEF cdecl ';'
+	 *		| EXTERN TYPEDEF cdecl ';'
+	 *		| basetype cdecl2
+	 *		| CONST basetype cdecl2
+	 *		| CONST cdecl2
+	 *		| '*' cdecl2
+	 *		| VECT cdecl2
+	 */
 	if (node->cdecl.is_data) {
 		print_pos(pos);
 		printf("[%s : %s : %d]\n",
@@ -1544,7 +2041,7 @@ void print_cdecl(tree_t* node, int pos) {
 
 	if (node->cdecl.basetype) {
 		tree_t* basetype = node->cdecl.basetype;
-		//debug_proc("Line: %d, name: %s\n", __LINE__, basetype->common.name);
+		DEBUG_BLACK("Line: %d, name: %s\n", __LINE__, basetype->common.name);
 		basetype->common.print_node(basetype, pos);
 	}
 	if (node->cdecl.decl) {
@@ -1553,20 +2050,27 @@ void print_cdecl(tree_t* node, int pos) {
 		decl->common.print_node(decl, pos);
 	}
 
-	if (node->common.sibling) {
-		tree_t* sibling = node->common.sibling;
-		//debug_black("Line : %d, name: %s\n", __LINE__, sibling->common.name);
-		sibling->common.print_node(sibling, pos);
-	}
+	print_sibling(node, pos);
 
 	return;
 }
 
+/**
+ * @brief print_method_params : print method params tree node information
+ *
+ * @param node : pointer to method params tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_method_params(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		'(' cdecl_or_ident_list ')'
+	 *		| METHOD_RETURN '(' cdecl_or_ident_list ')'
+	 *		| '(' cdecl_or_ident_list ')' METHOD_RETURN '(' cdecl_or_ident_list ')'
+	 */
 	if(node->params.in_params) {
 		tree_t* in_params = node->params.in_params;
 		in_params->common.print_node(in_params, pos);
-		/* FIXME: print the params list*/
 	}
 
 	if (node->params.ret_params) {
@@ -1577,24 +2081,61 @@ void print_method_params(tree_t* node, int pos) {
 		ret_params->common.print_node(ret_params, pos);
 	}
 
+	print_sibling(node, pos);
+
 	return;
 }
 
+/**
+ * @brief print_throw : print throw tree node information
+ *
+ * @param node : pointer to throw tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_throw(tree_t* node, int pos) {
+	/* Grammar: THROW ';' */
 	print_pos(pos);
 	printf("[%s : %s: %d]\n",
 			node->common.name, "throw", pos);
+
+	print_sibling(node, pos);
 }
 
+/**
+ * @brief print_local_keyword : print local keyword tree node information
+ *
+ * @param node : pointer to local keyword tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_local_keyword(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		LOCAL
+	 *		| AUTO
+	 */
 	print_pos(pos);
 	printf("[%s : %s: %d]\n",
 		node->common.name, node->local_keyword.name, pos);
 
+	print_sibling(node, pos);
+
 	return;
 }
 
+/**
+ * @brief print_local : print local tree node information
+ *
+ * @param node : pointer to local tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_local(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		local_keyword cdecl
+	 *		|  STATIC cdecl ';'
+	 *		| local_keyword cdecl '=' expression ';'
+	 *		| STATIC cdecl '=' expression ';'
+	 */
 	if (node->local_tree.local_keyword) {
 		tree_t* local_keyword = node->local_tree.local_keyword;
 		local_keyword->common.print_node(local_keyword, pos);
@@ -1621,7 +2162,21 @@ void print_local(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_if_else : print if... else... tree node information
+ *
+ * @param node : pointer to if...else... tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_if_else(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		IF '(' expression ')' '{' object_statements '}'
+	 *		| IF '(' expression ')' '{' object_statements '}' ELSE '{' object_statements '}'
+	 *		| IF '(' expression ')' '{' object_statements '}' ELSE object_if
+	 *		| IF '(' expression ')' statement
+	 *		| IF '(' expression ')' statement ELSE statement
+	 */
 	print_pos(pos);
 	printf("[%s : %s: %d]\n",
 			node->common.name, "if", pos);
@@ -1658,14 +2213,25 @@ void print_if_else(tree_t* node, int pos) {
 		}
 	}
 
-	if (node->common.sibling) {
-		tree_t* sibling = node->common.sibling;
-		sibling->common.print_node(sibling, pos);
-	}
+	print_sibling(node, pos);
 
+	return;
 }
 
+/**
+ * @brief print_method : print method tree node information
+ *
+ * @param node : pointer to method tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_method (tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		METHOD objident method_params compound_statement
+	 *		| METHOD objident method_params DEFAULT compound_statement
+	 *		| METHOD EXTERN objident method_params compound_statement
+	 *		| METHOD EXTERN objident method_params DEFAULT compound_statement
+	 */
 	int is_extern = node->method.is_extern;
 	int is_default = node->method.is_default;
 	print_pos(pos);
@@ -1683,37 +2249,61 @@ void print_method (tree_t* node, int pos) {
 		statement->common.print_node(statement, --pos);
 	}
 
-	if (node->common.sibling) {
-		tree_t* sibling = node->common.sibling;
-		//printf("In %s, line = %d, name: %s\n", __FUNCTION__, __LINE__, sibling->common.name);
-		sibling->common.print_node(sibling, ++pos);
-	}
-}
-
-void print_loggroup(tree_t* node, int pos) {
-	print_pos(pos);
-	printf("[%s : %s : %d]\n",
-			node->common.name, node->loggroup.name, pos);
-	if (node->common.sibling) {
-		tree_t* sibling = node->common.sibling;
-		sibling->common.print_node(sibling, pos);
-	}
-}
-
-void print_device(tree_t* node, int pos) {
-	print_pos(pos);
-	printf("[%s : %s : %d]\n",
-			node->common.name, node->device.name, pos);
-	if (node->common.sibling) {
-		tree_t* head = node->common.sibling;
-		//print_list(head, pos);
-		head->common.print_node(head, pos);
-	}
+	print_sibling(node, pos);
 
 	return;
 }
 
+/**
+ * @brief print_loggroup : print loggroup tree node information
+ *
+ * @param node : pointer to loggroup tree node
+ * @param pos : tree node position in syntax tree
+ */
+void print_loggroup(tree_t* node, int pos) {
+	/* Grammar: LOGGROUP ident ';' */
+	print_pos(pos);
+	printf("[%s : %s : %d]\n",
+			node->common.name, node->loggroup.name, pos);
+
+	print_sibling(node, pos);
+
+	return;
+}
+
+/**
+ * @brief print_device : print device tree node information
+ *
+ * @param node : pointer to device tree node
+ * @param pos : tree node position in syntax tree
+ */
+void print_device(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		DEVICE objident ';' syntax_modifiers device_statements
+	 */
+	print_pos(pos);
+	printf("[%s : %s : %d]\n",
+			node->common.name, node->device.name, pos);
+
+	print_sibling(node, pos);
+
+	return;
+}
+
+/**
+ * @brief print_log : print log tree node information
+ *
+ * @param node : pointer to log tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_log(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		LOG STRING_LITERAL ',' expression ',' expression ':' STRING_LITERAL ',' log_args ';'
+	 *		| LOG STRING_LITERAL ',' expression ':' STRING_LITERAL log_args ';'
+	 *		| LOG STRING_LITERAL ':' STRING_LITERAL log_args ';'
+	 */
 	print_pos(pos);
 	if (node->log.log_type) {
 		printf("[%s : %s : %s : %d]\n",
@@ -1749,7 +2339,14 @@ void print_log(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_break : print break tree node information
+ *
+ * @param node : pointer to break tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_break(tree_t* node, int pos) {
+	/* Grammar: BREAK ';' */
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 		node->common.name, "break", pos);
@@ -1759,7 +2356,14 @@ void print_break(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_continue : print continue tree node information
+ *
+ * @param node : pointer to continue tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_continue(tree_t* node, int pos) {
+	/* Grammar: CONTINUE ';' */
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 		node->common.name, "continue", pos);
@@ -1769,7 +2373,14 @@ void print_continue(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_return : print return tree node information
+ *
+ * @param node : pointer to return tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_return(tree_t* node, int pos) {
+	/* Grammar: RETURN ';' */
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 		node->common.name, "return", pos);
@@ -1779,7 +2390,18 @@ void print_return(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_error: print error tree node information
+ *
+ * @param node : pointer to error tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_error(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		ERROR ';'
+	 *		| ERROR STRING_LITERAL ';'
+	 */
 	print_pos(pos);
 	if (node->error.str) {
 		printf("[%s : %s : %d]\n",
@@ -1795,7 +2417,18 @@ void print_error(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_call_inline : print call_inline tree node information
+ *
+ * @param node : pointer to call_inline tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_call_inline(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		CALL expression returnargs ';'
+	 *		| INLINE expression returnargs ';'
+	 */
 	if (node->common.type == CALL_TYPE) {
 		print_pos(pos);
 		printf("[%s : %s : %d]\n",
@@ -1819,15 +2452,22 @@ void print_call_inline(tree_t* node, int pos) {
 		ret_args->common.print_node(ret_args, pos);
 	}
 
-	if (node->common.sibling) {
-		tree_t* sibling = node->common.sibling;
-		sibling->common.print_node(sibling, pos);
-	}
+	print_sibling(node, pos);
 
 	return;
 }
 
+/**
+ * @brief print_foreach : print foreach tree node information
+ *
+ * @param node : pointer to foreach tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_foreach(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		FOREACH ident IN '(' expression ')' statement
+	 */
 	if (node->foreach.ident) {
 		tree_t* ident = node->foreach.ident;
 		print_pos(pos);
@@ -1854,32 +2494,48 @@ void print_foreach(tree_t* node, int pos) {
 		}
 	}
 
-	if (node->common.sibling) {
-		tree_t* sibling = node->common.sibling;
-		sibling->common.print_node(sibling, pos);
-	}
+	print_sibling(node, pos);
+
+	return;
 }
 
+/**
+ * @brief print_list : print all list node information from list second node
+ *
+ * @param head : the list head node
+ * @param pos : node's position in syntax tree
+ */
 void print_list(tree_t* head, int pos) {
 	tree_t* node = head;
 	node->common.print_node(node, pos);
 	while (node->common.sibling != NULL) {
 		node = node->common.sibling;
-		//debug_black("IN %s, line = %d, name: %s, pos: %d\n", __FUNCTION__, __LINE__, node->common.name, pos);
+		DEBUG_BLACK("IN %s, line = %d, name: %s, pos: %d\n", __FUNCTION__, __LINE__, node->common.name, pos);
 		node->common.print_node(node, pos);
 	}
 
 	return;
 }
 
+/**
+ * @brief print_field : print field tree node information
+ *
+ * @param node : pointer to field tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_field(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		FIELD objident bitrange istemplate object_spec
+	 *		| FIELD objident istemplate object_spec
+	 */
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 			node->common.name, node->field.name, pos);
 
 	if (node->field.bitrange) {
 		tree_t* bitrange = node->field.bitrange;
-		//debug_proc("Line: %d, name: %s\n", __LINE__, bitrange->common.name);
+		DEBUG_BLACK("Line: %d, name: %s\n", __LINE__, bitrange->common.name);
 		bitrange->common.print_node(bitrange, pos);
 	}
 
@@ -1898,7 +2554,17 @@ void print_field(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_obj_block : print obj_block tree node information
+ *
+ * @param node : pointer to obj_block tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_obj_block(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		object_desc '{' object_statements '}'
+	 */
 	if (node->block.statement != NULL) {
 		tree_t* statement = node->block.statement;
 		statement->common.print_node(statement, --pos);
@@ -1909,7 +2575,17 @@ void print_obj_block(tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_object_desc : print object_desc tree node information
+ *
+ * @param node : pointer to object_desc tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_object_desc (tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		object_desc '{' object_statements '}'
+	 */
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 			node->common.name, node->string.pointer, pos);
@@ -1919,7 +2595,18 @@ void print_object_desc (tree_t* node, int pos) {
 	return;
 }
 
+/**
+ * @brief print_object_spec : print object_spec tree node information
+ *
+ * @param node : pointer to object_spec tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_object_spec(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		object_desc ';
+	 *		| object_desc '{' object_statements '}'
+	 */
 	if (node->spec.desc != NULL) {
 		tree_t* desc = node->spec.desc;
 		desc->common.print_node(desc, pos);
@@ -1929,32 +2616,45 @@ void print_object_spec(tree_t* node, int pos) {
 		block->common.print_node(block, pos);
 	}
 
-	if (node->common.sibling) {
-		tree_t* sibling = node->common.sibling;
-		printf("In %s, line = %d, name: %s sibling\n", __FUNCTION__, __LINE__, sibling->common.name);
-	}
+	print_sibling(node, pos);
 
 	return;
 }
 
+/**
+ * @brief print_template : print template tree node information
+ *
+ * @param node : pointer to template tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_template(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		TEMPLATE objident object_spec
+	 */
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 			node->common.name, node->temp.name, pos);
 	tree_t* temp_spec = node->temp.spec;
 	temp_spec->common.print_node(temp_spec, pos);
 
-	if (node->common.sibling) {
-		tree_t* sibling = node->common.sibling;
-		//debug_black("In %s, line = %d, name: %s\n", __FUNCTION__, __LINE__, sibling->common.name);
-		sibling->common.print_node(sibling, pos);
-
-	}
+	print_sibling(node, pos);
 
 	return;
 }
 
+/**
+ * @brief print_struct : print struct tree node information
+ *
+ * @param node : pointer to struct tree node
+ * @param pos : tree node position in syntax tree
+ */
 void print_struct(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		STRUCT '{' struct_decls '}'
+	 *		|  STRUCT ident '{' struct_decls '}'
+	 */
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 			node->common.name, "struct", pos);
@@ -1962,44 +2662,51 @@ void print_struct(tree_t* node, int pos) {
 		tree_t* ident = node->struct_tree.ident;
 		ident->common.print_node(ident, pos);
 	}
-	else {
-		fprintf(stderr, "The struct need identifier\n");
-	}
 
 	if (node->struct_tree.block) {
 		tree_t* block = node->struct_tree.block;
 		block->common.print_node(block, --pos);
 	}
 
-	if (node->common.sibling) {
-		tree_t* sibling = node->common.sibling;
-		sibling->common.print_node(sibling, pos);
-	}
-}
-
-void print_dml(tree_t* node, int pos) {
-	print_pos(pos);
-	printf("[%s : %s : %d]\n",
-			node->common.name, node->dml.version, pos);
-	if (node->common.child) {
-		tree_t* child = node->common.child;
-		debug_black("In %s, line = %d, dml child name: %s\n",
-				__FUNCTION__, __LINE__, child->common.name);
-		child->common.print_node(child, pos);
-	}
-	if (node->common.sibling) {
-		tree_t* sibling = node->common.sibling;
-		sibling->common.print_node(sibling, pos);
-	}
+	print_sibling(node, pos);
 
 	return;
 }
 
 /**
- * @brief print the whole ast for debug purpose
+ * @brief print_dml : print dml tree node information
+ *
+ * @param node : pointer to dml tree node
+ * @param pos : tree node position in syntax tree
+ */
+void print_dml(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		DML FLOAT_LITERAL';' dml
+	 */
+	print_pos(pos);
+	printf("[%s : %s : %d]\n",
+			node->common.name, node->dml.version, pos);
+	if (node->common.child) {
+		tree_t* child = node->common.child;
+		DEBUG_BLACK("In %s, line = %d, dml child name: %s\n",
+				__FUNCTION__, __LINE__, child->common.name);
+		child->common.print_node(child, pos);
+	}
+
+	print_sibling(node, pos);
+
+	return;
+}
+
+/**
+ * @brief print_ast : print the syntax tree information
+ *
+ * @param root : the root of syntax tree
  */
 void print_ast (tree_t* root)
 {
+	int init_pos = 25;
 	tree_t* it = root;
 	tree_t* child = NULL;
 	printf ("begin print the ast(total node num is %d):\n", node_num);

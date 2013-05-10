@@ -74,12 +74,14 @@ int debug_black (char *format, ...);
 
 #ifdef	DEBUG_CODE_COLOR
 #define DEBUG_COLOR				debug_color
+#define DEBUG_BLACK				debug_black
 #define DEBUG_FIND_TAIL			debug_find_tail
 #define DEBUG_ADD_CHILD			debug_add_child
 #define DEBUG_CREATE_NODE		debug_create_node
 #define DEBUG_CREATE_NODE_LIST	debug_create_node_list
 #else
 #define DEBUG_COLOR
+#define DEBUG_BLACK
 #define DEBUG_FIND_TAIL
 #define DEBUG_ADD_CHILD
 #define DEBUG_CREATE_NODE
