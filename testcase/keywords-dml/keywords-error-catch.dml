@@ -1,0 +1,76 @@
+// This module is used to testing error catch key-words.
+// Author: eJim Lee
+// Email:  lyjforjob@gmail.com
+// Date:   2013-04-24
+
+dml 1.2;
+
+// This device is named as keywords.
+device keywords_error_catch;
+
+///////////////////////
+// Object Parameters //
+///////////////////////
+
+parameter desc          = "device for keywords";
+parameter documentation = "This modules is used to testing a part of key-words";
+parameter limitations   = ("This module only be used for test");
+
+import "utility.dml";
+
+/////////////////////
+// Global template //
+/////////////////////
+
+template tmpl {
+	method test4trythrow(int x) {
+		assert(x > -10);
+		if(x > 0) {
+			throw;
+		}
+	}
+	method test4dmlsyntax() {
+		try
+			call $test4trythrow(3);
+		catch
+			log "info": "catch a throw successful.";
+
+		try{
+			call $test4trythrow(-1);
+		}catch{
+			log "info": "a error catch.";
+		}
+	}
+}
+
+//////////////////////
+// Bank declaration //
+//////////////////////
+
+bank regs {
+	register r_method size 4 @ 0x0 {
+		is tmpl;
+	}
+}
+
+////////////////////
+// Bank implement //
+////////////////////
+
+bank regs {
+	// test for global method or virable.
+	register r_method {
+		method get() -> (value) {
+			call $test4dmlsyntax();
+		}
+	}
+}
+
+///////////////////
+// Device Method //
+///////////////////
+
+method init() {
+	log "info": "the device init method is running.";
+}
+

@@ -1,0 +1,63 @@
+// This module is used to testing c code key-words.
+// Author: eJim Lee
+// Email:  lyjforjob@gmail.com
+// Date:   2013-04-24
+
+dml 1.2;
+
+// This device is named as keywords.
+device keywords_c_code;
+
+///////////////////////
+// Object Parameters //
+///////////////////////
+
+parameter desc          = "device for keywords";
+parameter documentation = "This modules is used to testing a part of key-words";
+parameter limitations   = ("This module only be used for test");
+
+/////////////
+// Imports //
+/////////////
+
+import "utility.dml";
+
+/////////////////
+// Global data //
+/////////////////
+
+header %{
+#include <stdio.h>
+extern void prnt_str(char *buf);
+%}
+footer %{
+void prnt_str(char *buf)
+{
+	sprintf(buf, "Hello world in C code.");
+}
+%}
+
+extern void prnt_str(char *buf);
+
+//////////////////////
+// Bank declaration //
+//////////////////////
+
+bank regs {
+	register r_method size 4 @ 0x30 {
+		method get() -> (value) {
+			local char buf[100];
+			prnt_str(buf);
+			log "info": "the buf have a string: \"%s\"", buf;
+		}
+	}
+}
+
+///////////////////
+// Device Method //
+///////////////////
+
+method init() {
+	log "info": "the device init method is running.";
+}
+

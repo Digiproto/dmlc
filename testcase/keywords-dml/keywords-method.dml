@@ -1,0 +1,73 @@
+// This module is used to testing method key-words.
+// Author: eJim Lee
+// Email:  lyjforjob@gmail.com
+// Date:   2013-04-24
+
+dml 1.2;
+
+// This device is named as keywords.
+device keywords_method;
+
+///////////////////////
+// Object Parameters //
+///////////////////////
+
+parameter desc          = "device for keywords";
+parameter documentation = "This modules is used to testing a part of key-words";
+parameter limitations   = ("This module only be used for test");
+
+/////////////
+// Imports //
+/////////////
+
+import "utility.dml";
+
+///////////////////
+// Global method //
+///////////////////
+
+method global_method_nothing() {
+	log "info": "The global_method_nothing is running.";
+}
+
+method global_method_multi_para(int a, int b) -> (int c, int d) {
+	log "info": "The global_method_multi_para is running.";
+	c = a + b;
+	d = a - b;
+}
+
+method global_method_macros(a, b) -> (c) {
+	log "info": "The global_method_macros is running.";
+	c = a * b;
+}
+
+//////////////////////
+// Bank declaration //
+//////////////////////
+
+bank regs {
+	register r_global size 4 @ 0x30 {
+		method get() -> (value) {
+			local int a;
+			local int b;
+			local int c;
+			local int d;
+			a = 13;
+			b = 17;
+			call $global_method_nothing();
+			call $global_method_multi_para(a, b) -> (c, d);
+			log "info": "c = %d(30), d = %d(-4)", c, d;
+			inline $global_method_macros(a, b) -> (c);
+			log "info": "c = %d(221)", c;
+		}
+	}
+}
+
+///////////////////
+// Device Method //
+///////////////////
+
+method init() {
+	log "info": "the device init method is running.";
+}
+

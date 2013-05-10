@@ -1,0 +1,91 @@
+// This module is used to testing variable key-words.
+// Author: eJim Lee
+// Email:  lyjforjob@gmail.com
+// Date:   2013-04-24
+
+dml 1.2;
+
+device keywords_variable;
+
+///////////////////////
+// Object Parameters //
+///////////////////////
+
+parameter desc          = "device for keywords";
+parameter documentation = "This modules is used to testing a part of key-words";
+parameter limitations   = ("This module only be used for test");
+
+/////////////
+// Imports //
+/////////////
+
+import "utility.dml";
+
+/////////////////
+// Global data //
+/////////////////
+
+data     char     global_str[32];
+typedef  int      new_int;
+struct new_struct {
+	int x;
+	int y;
+}
+
+////////////////////
+// Bank implement //
+////////////////////
+
+bank regs {
+	register r_method size 4 @ 0x0 {
+		method test4global() {
+			log "info": "The global_str is %s", $global_str;
+		}
+		method test4identifier() {
+			local new_int     x       = 23;
+			local int         new_int = 29;
+			local new_struct  place;
+
+			log "info": "new_int x = %d, int new_int = %d", x, new_int;
+			place.x = 71;
+			place.y = 73;
+			log "info": "place.x = %d, place.y = %d", place.x, place.y;
+		}
+		method test4type() {
+			local int            a = 67;
+			local uint32         b = 71;
+			local double         c = 73;
+			local float          d = 79;
+			local int           *g = &a;
+			local uint32        *h = &b;
+			local double        *i = &c;
+			local float         *j = &d;
+			local void          *k = &d;
+			log "info": "int *g = %d, uint32 *h = %u", *g, *h;
+			log "info": "double *i = %f, float *j = %f", *i, *j;
+		}
+		method get() -> (value) {
+			value = $this;
+			call $test4identifier();
+			call $test4global();
+			call $test4type();
+		}
+	}
+}
+
+///////////////////
+// Device Method //
+///////////////////
+
+method init() {
+	local int i;
+
+	// Initialize the global variable
+	for(i = 0; i < 16; i++) {
+		$global_str[i] = 97 + i;
+	}
+	$global_str[i] = 0;
+
+	log "info": "the device init method is running.";
+}
+

@@ -1,0 +1,56 @@
+// This module is used to testing connect key-words.
+// Author: eJim Lee
+// Email:  lyjforjob@gmail.com
+// Date:   2013-04-24
+
+dml 1.2;
+
+// This device is named as keywords.
+device keywords_connect;
+
+///////////////////////
+// Object Parameters //
+///////////////////////
+
+parameter desc          = "device for keywords";
+parameter documentation = "This modules is used to testing a part of key-words";
+parameter limitations   = ("This module only be used for test");
+
+/////////////
+// Imports //
+/////////////
+
+import "utility.dml";
+import "serial-device.dml";
+
+//////////
+// Bank //
+//////////
+
+bank regs {
+	parameter register_size = 4;
+
+	register r_method @ 0x0 {
+		method set(value) {
+			local int n = $cnct.serial_device.write(value);
+		}
+	}
+}
+
+/////////////
+// Connect //
+/////////////
+
+connect cnct {
+	parameter configuration = "optional";
+	interface serial_device;
+}
+
+///////////////////
+// Device Method //
+///////////////////
+
+method init() {
+	log "info": "the device init method is running.";
+}
+

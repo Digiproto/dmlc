@@ -1,0 +1,91 @@
+// This module is used to testing overload key-words.
+// Author: eJim Lee
+// Email:  lyjforjob@gmail.com
+// Date:   2013-04-24
+
+dml 1.2;
+
+device keywords_overload;
+
+///////////////////////
+// Object Parameters //
+///////////////////////
+
+parameter desc          = "device for keywords";
+parameter documentation = "This modules is used to testing a part of key-words";
+parameter limitations   = ("This module only be used for test");
+
+/////////////
+// Imports //
+/////////////
+
+import "utility.dml";
+
+/////////////////////////
+// Overload identifier //
+/////////////////////////
+
+parameter overload_para = 3;
+data int overload_var;
+typedef int new_int;
+
+//////////////////////
+// Bank declaration //
+//////////////////////
+
+bank regs {
+	parameter overload_para = 11;
+
+	register r_method size 4 @ 0x0 {
+		parameter overload_para = 17;
+
+		field status [15:0] {
+			parameter overload_para = 19;
+		}
+	}
+}
+
+////////////////////
+// Bank implement //
+////////////////////
+
+bank regs {
+	register r_method {
+		field status {
+			method get() -> (value) {
+				value = $this;
+				log "info": "in %s get overload_para = %d(19)", $this.objtype, $overload_para;
+			}
+		}
+		method get() -> (value) {
+			local typeof($this) tmp;
+			inline $this.status.get() -> (tmp);
+			value = tmp;
+			call $test4varpara();
+			call $test4overtype();
+		}
+		method test4varpara() {
+			local int overload_var = 13;
+			log "info": "in %s get overload_para = %d(17)", $this.objtype, $overload_para;
+			log "info": "in %s get overload_var = %d(13)", $this.objtype, overload_var;
+			log "info": "in %s get $overload_var = %d(7)", $this.objtype, $overload_var;
+		}
+		method test4overtype() {
+			local new_int a = 31;
+			local double new_int = 37.37;
+			log "info": "new_int a = %d, double new_int = %f", a, new_int;
+		}
+	}
+}
+
+///////////////////
+// Device Method //
+///////////////////
+
+method init() {
+	$overload_var = 7;
+	log "info": "set overload_var = 7";
+	log "info": "in %s get overload_para = %d(3)", $this.objtype, $overload_para;
+	log "info": "the device init method is running.";
+}
+

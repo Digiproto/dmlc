@@ -1,0 +1,36 @@
+// This module is used to testing implement key-words.
+// Author: eJim Lee
+// Email:  lyjforjob@gmail.com
+// Date:   2013-04-24
+
+dml 1.2;
+
+// This device is named as keywords.
+device keywords_implemet;
+
+///////////////////////
+// Object Parameters //
+///////////////////////
+
+parameter desc          = "device for keywords";
+parameter documentation = "This modules is used to testing a part of key-words";
+parameter limitations   = ("This module only be used for test");
+
+/////////////
+// Imports //
+/////////////
+
+import "utility.dml";
+import "serial-device.dml";
+
+///////////////
+// Implement //
+///////////////
+
+implement serial_device {
+	method write(int value) -> (int result) {
+		log "info": "get char is %c", value;
+		result = 1;
+	}
+}
+

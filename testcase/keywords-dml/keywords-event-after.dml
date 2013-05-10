@@ -1,0 +1,73 @@
+// This module is used to testing event after key-words.
+// Author: eJim Lee
+// Email:  lyjforjob@gmail.com
+// Date:   2013-04-24
+
+dml 1.2;
+
+// This device is named as keywords.
+device keywords_event_after;
+
+///////////////////////
+// Object Parameters //
+///////////////////////
+
+parameter desc          = "device for keywords";
+parameter documentation = "This modules is used to testing a part of key-words";
+parameter limitations   = ("This module only be used for test");
+
+/////////////
+// Imports //
+/////////////
+
+import "utility.dml";
+
+data int delay;
+data int counter;
+
+//////////
+// Bank //
+//////////
+
+bank regs {
+	register r_method size 4 @ 0x0 {
+		method get() -> (value) {
+			$delay = 100;
+			inline $evn.post($delay, &($counter));
+		}
+	}
+	register r_method2 size 4 @ 0x4 {
+		method get() -> (value) {
+			after (1000) call $my_nothing;
+		}
+		method my_nothing() {
+			log "info": "run after statement successfully.";
+		}
+	}
+}
+
+///////////
+// Event //
+///////////
+
+event evn {
+	parameter timebase = "seconds";
+
+	method event(void *data) {
+		local int n = cast(data, int);
+		log "info": "event arrived with data (%d).", n;
+		inline $this.post($delay, cast($counter, void*));
+		$counter += 1;
+	}
+}
+
+///////////////////
+// Device Method //
+///////////////////
+
+method init() {
+	$delay = 0;
+	$counter = 0;
+	log "info": "the device init method is running.";
+}
+

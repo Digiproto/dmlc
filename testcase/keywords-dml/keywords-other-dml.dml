@@ -1,0 +1,91 @@
+// This module is used to testing other dml key-words.
+// Author: eJim Lee
+// Email:  lyjforjob@gmail.com
+// Date:   2013-04-24
+
+dml 1.2;
+
+// This device is named as keywords.
+device keywords_other_dml;
+
+///////////////////////
+// Object Parameters //
+///////////////////////
+
+parameter desc          = "device for keywords";
+parameter documentation = "This modules is used to testing a part of key-words";
+parameter limitations   = ("This module only be used for test");
+
+/////////////
+// Imports //
+/////////////
+
+import "utility.dml";
+
+/////////////////
+// Global data //
+/////////////////
+
+loggroup my_group;
+constant my_false = (1 == 0);
+
+method test4log_constant() {
+	if(my_false != true) {
+		log "info", 2, my_group: "my_false = false";
+	}else{
+		log "error", 2, my_group: "my_false = true";
+	}
+}
+
+method test4new_del() {
+	local int* a;
+	a = new int;
+	*a = 17;
+	log "info": "*a = %d", *a;
+	delete a;
+}
+
+method test4sizeoftype() {
+	log "info": "sizeoftype(int64) = %d", sizeoftype int64;
+}
+
+
+//////////////////////
+// Bank declaration //
+//////////////////////
+
+bank regs {
+	register r_method size 4 @ 0x0 {
+		field b0 [7:0];
+		field b1 [15:8];
+		field b2 [23:16];
+		field b3 [31:24];
+
+		method test4select() {
+			if(defined $fields) {
+				select one in ($fields) where (one.name == "b1") {
+					log "info": "found filed b1 in fields.";
+				}else{
+					log "info": "found nothing in fields.";
+				}
+			}else{
+				log "info": "there is not fields.";
+			}
+		}
+		method get() -> (value) {
+			call $test4log_constant();
+			call $test4new_del();
+			call $test4sizeoftype();
+			call $test4select();
+		}
+	}
+}
+
+///////////////////
+// Device Method //
+///////////////////
+
+method init() {
+	log "info": "the device init method is running.";
+}
+

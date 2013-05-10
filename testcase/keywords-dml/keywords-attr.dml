@@ -1,0 +1,65 @@
+// This module is used to testing attribute key-words.
+// Author: eJim Lee
+// Email:  lyjforjob@gmail.com
+// Date:   2013-04-24
+
+dml 1.2;
+
+device keywords_attr;
+
+///////////////////////
+// Object Parameters //
+///////////////////////
+
+parameter desc          = "device for keywords";
+parameter documentation = "This modules is used to testing a part of key-words";
+parameter limitations   = ("This module only be used for test");
+parameter obj_num       = 2;
+
+/////////////
+// Imports //
+/////////////
+
+import "utility.dml";
+
+///////////////
+// Attribute //
+///////////////
+
+template attr_tmpl {
+	parameter allocate_type = "int32";
+	parameter attr_tmpl_var;
+
+	method attr_method() {
+		log "info": "the template (in %s[%d]) method is funning.", $name, $index;
+	}
+}
+
+attribute attrs[$obj_num] is (attr_tmpl) {
+	parameter attr_tmpl_var = 17;
+
+	method get() -> (attr_value_t value) {
+		value = SIM_make_attr_uint64($this);
+		call $attr_method();
+		log "info": "The attrs get method running.";
+	}
+}
+
+//////////////////////
+// Bank declaration //
+//////////////////////
+
+bank regs {
+	parameter register_size    = 2;
+
+	register r_global size 4 @ 0x0;
+}
+
+///////////////////
+// Device Method //
+///////////////////
+
+method init() {
+	log "info": "the device init method is running.";
+}
+
