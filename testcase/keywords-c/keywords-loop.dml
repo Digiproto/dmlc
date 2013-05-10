@@ -1,0 +1,128 @@
+// This module is used to testing loop key-words.
+// Author: eJim Lee
+// Email:  lyjforjob@gmail.com
+// Date:   2013-04-24
+
+dml 1.2;
+
+// This device is named as keywords.
+device keywords_loop;
+
+///////////////////////
+// Object Parameters //
+///////////////////////
+
+parameter desc          = "device for keywords";
+parameter documentation = "This modules is used to testing a part of key-words";
+parameter limitations   = ("This module only be used for test");
+
+/////////////
+// Imports //
+/////////////
+
+import "utility.dml";
+
+////////////
+// Method //
+////////////
+
+method test4loop {
+	local int i;
+	local int s;
+	for(i = s = 0; i < 5; i++) {
+		s += i;
+	}
+	log "info": "(1): 0 + 1 + 2 + 3 + 4 = %d(10)", s;
+
+	for(i = s = 0; i < 11; i++) {
+		if(i >= 5) {
+			break;
+		}
+		s += i;
+	}
+	log "info": "(2): 0 + 1 + 2 + 3 + 4 = %d(10)", s;
+
+	for(i = s = 0; i < 11; i++) {
+		if(i >= 5) {
+			continue;
+		}
+		s += i;
+		log "info": "(3): this info can only be displayed 5 times.";
+	}
+	log "info": "(3): 0 + 1 + 2 + 3 + 4 = %d(10)", s;
+
+	i = s = 0;
+	while(i < 5) {
+		s += i;
+		i++;
+	}
+	log "info": "(4): 0 + 1 + 2 + 3 + 4 = %d(10)", s;
+
+	i = s = 0;
+	while(i < 11) {
+		if(i >= 5) {
+			break;
+		}
+		s += i;
+		i++;
+	}
+	log "info": "(5): 0 + 1 + 2 + 3 + 4 = %d(10)", s;
+
+	i = s = 0;
+	while(i < 13) {
+		if(i >= 5) {
+			i++;
+			continue;
+		}
+		s += i;
+		log "info": "(6): this info can only be displayed 5 times.";
+		i++;
+	}
+	log "info": "(6): 0 + 1 + 2 + 3 + 4 = %d(10)", s;
+
+	i = 17;
+	s = 0;
+	do{
+		s += i;
+	}while(i < 17);
+	log "info": "(7): s = %d(17)", s;
+
+	i = s = 0;
+	do{
+		if(i >= 5) {
+			break;
+		}
+		s += i;
+		i++;
+	}while(i < 13);
+	log "info": "(8): 0 + 1 + 2 + 3 + 4 = %d(10)", s;
+
+	i = s = 0;
+	do{
+		if(i >= 5) {
+			i++;
+			continue;
+		}
+		s += i;
+		log "info": "(9): this info can only be displayed 5 times.";
+		i++;
+	}while(i < 13);
+	log "info": "(9): 0 + 1 + 2 + 3 + 4 = %d(10)", s;
+}
+
+//////////////////////
+// Bank declaration //
+//////////////////////
+
+bank regs {
+	register r_method size 4 @ 0x0 {
+		method get() -> (value) {
+			call $test4loop();
+		}
+	}
+}
+
+method init() {
+	log "info": "the device init method is running.";
+}
+
