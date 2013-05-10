@@ -42,7 +42,7 @@
 #endif
 
 /**
- * @brief gdml_malloc : allocates size bytes and
+ * @brief gdml_zmalloc : allocates size bytes and
  * initialize it with 0, at last returns a pointer
  * to the allocated memory
  *
@@ -50,7 +50,7 @@
  *
  * @return : return a pointer to the allocated memory
  */
-void* gdml_malloc(int size) {
+void* gdml_zmalloc(int size) {
 	void* ret = malloc(size);
 	if (ret == NULL) {
 		fprintf(stderr, "malloc failed!\n");
@@ -209,7 +209,7 @@ static int node_num = 0;
  */
 tree_t* create_node (char *name, int type, int size)
 {
-	tree_t* node = (tree_t*)gdml_malloc(size) ;
+	tree_t* node = (tree_t*)gdml_zmalloc(size) ;
 	node->common.name = strdup (name);
 	node->common.sibling = NULL;
 	node->common.child = NULL;

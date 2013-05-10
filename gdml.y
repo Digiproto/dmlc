@@ -264,7 +264,7 @@ syntax_modifiers
 syntax_modifier
 	: BITORDER ident ';' {
 		DBG("In BITORDER: %s\n", $2->ident.str);
-		bitorder_attr_t*  attr = (bitorder_attr_t*)gdml_malloc(sizeof(bitorder_attr_t));
+		bitorder_attr_t*  attr = (bitorder_attr_t*)gdml_zmalloc(sizeof(bitorder_attr_t));
 		attr->endian= $2->ident.str;
 		#if 0
 		if (symbol_insert(current_table, $2->ident.str, BITORDER_TYPE, attr) == -1) {
@@ -323,7 +323,7 @@ object
 		}
 		DBG("BANK is %s\n", $2->ident.str);
 
-		bank_attr_t* attr = (bank_attr_t*)gdml_malloc(sizeof(bank_attr_t));
+		bank_attr_t* attr = (bank_attr_t*)gdml_zmalloc(sizeof(bank_attr_t));
 		attr->name = $2->ident.str;
 		//symbol_insert($2->ident.str, BANK_TYPE, attr);
 
@@ -336,7 +336,7 @@ object
 	}
 	| REGISTER objident sizespec offsetspec istemplate object_spec {
 		DBG("register is %s\n", $2->ident.str);
-		register_attr_t* attr = (register_attr_t*)gdml_malloc(sizeof(register_attr_t));
+		register_attr_t* attr = (register_attr_t*)gdml_zmalloc(sizeof(register_attr_t));
 		attr->name = $2->ident.str;
 		attr->is_array = 0;
 		//symbol_insert($2->ident.str, REGISTER_TYPE, attr);
@@ -353,7 +353,7 @@ object
 	| REGISTER objident '[' arraydef ']' sizespec offsetspec istemplate object_spec {
 		debug_proc("Line : %d\n", __LINE__);
 		DBG("Register is %s\n", $2->ident.str);
-		register_attr_t* attr = (register_attr_t*)gdml_malloc(sizeof(register_attr_t));
+		register_attr_t* attr = (register_attr_t*)gdml_zmalloc(sizeof(register_attr_t));
 		attr->name = $2->ident.str;
 		attr->is_array = 1;
 		//symbol_insert($2->ident.str, REGISTER_TYPE, attr);
@@ -373,7 +373,7 @@ object
 			fprintf(stderr, "need the identifier of field\n");
 			exit(-1);
 		}
-		field_attr_t* attr = (field_attr_t*)gdml_malloc(sizeof(field_attr_t));
+		field_attr_t* attr = (field_attr_t*)gdml_zmalloc(sizeof(field_attr_t));
 		attr->name = $2->ident.str;
 		attr->is_range = 1;
 		//symbol_insert($2->ident.str, FIELD_TYPE, attr);
@@ -391,7 +391,7 @@ object
 			fprintf(stderr, "need the identifier of field\n");
 			exit(-1);
 		}
-		field_attr_t* attr = (field_attr_t*)gdml_malloc(sizeof(field_attr_t));
+		field_attr_t* attr = (field_attr_t*)gdml_zmalloc(sizeof(field_attr_t));
 		attr->name = $2->ident.str;
 		attr->is_range = 0;
 		//symbol_insert($2->ident.str, FIELD_TYPE, attr);
@@ -425,7 +425,7 @@ object
 			fprintf(stderr, "need the identifier of field\n");
 			exit(-1);
 		}
-		connect_attr_t* attr = (connect_attr_t*)gdml_malloc(sizeof(connect_attr_t));
+		connect_attr_t* attr = (connect_attr_t*)gdml_zmalloc(sizeof(connect_attr_t));
 		attr->name = $2->ident.str;
 		attr->arraydef = 0;
 		//symbol_insert($2->ident.str, CONNECT_TYPE, attr);
@@ -443,7 +443,7 @@ object
 			fprintf(stderr, "need the identifier of field\n");
 			exit(-1);
 		}
-		interface_attr_t* attr = (interface_attr_t*)gdml_malloc(sizeof(interface_attr_t));
+		interface_attr_t* attr = (interface_attr_t*)gdml_zmalloc(sizeof(interface_attr_t));
 		attr->name = $2->ident.str;
 		//symbol_insert($2->ident.str, INTERFACE_TYPE, attr);
 
@@ -460,7 +460,7 @@ object
 			fprintf(stderr, "need the identifier of field\n");
 			exit(-1);
 		}
-		attribute_attr_t* attr = (attribute_attr_t*)gdml_malloc(sizeof(attribute_attr_t));
+		attribute_attr_t* attr = (attribute_attr_t*)gdml_zmalloc(sizeof(attribute_attr_t));
 		attr->name = $2->ident.str;
 		attr->arraydef = 0;
 
@@ -474,7 +474,7 @@ object
 	}
 	| EVENT objident istemplate object_spec {
 		debug_proc("Line : %d\n", __LINE__);
-		event_attr_t* attr = (event_attr_t*)gdml_malloc(sizeof(event_attr_t));
+		event_attr_t* attr = (event_attr_t*)gdml_zmalloc(sizeof(event_attr_t));
 		attr->name = $2->ident.str;
 		//symbol_insert($2->ident.str, EVENT_TYPE, attr);
 
@@ -504,7 +504,7 @@ object
 		$$ = node;
 	}
 	| IMPLEMENT objident istemplate object_spec {
-		implement_attr_t* attr = (implement_attr_t*)gdml_malloc(sizeof(implement_attr_t));
+		implement_attr_t* attr = (implement_attr_t*)gdml_zmalloc(sizeof(implement_attr_t));
 		attr->name = $2->ident.str;
 		//symbol_insert($2->ident.str, IMPLEMENT_TYPE, attr);
 
@@ -518,7 +518,7 @@ object
 	}
 	| ATTRIBUTE objident '[' arraydef ']' istemplate object_spec {
 		debug_proc("Line : %d\n", __LINE__);
-		attribute_attr_t* attr = (attribute_attr_t*)gdml_malloc(sizeof(attribute_attr_t));
+		attribute_attr_t* attr = (attribute_attr_t*)gdml_zmalloc(sizeof(attribute_attr_t));
 		attr->name = $2->ident.str;
 		attr->arraydef = 1;
 
@@ -543,7 +543,7 @@ object
 	}
 	| CONNECT objident '[' arraydef ']' istemplate object_spec {
 		debug_proc("Line : %d\n", __LINE__);
-		connect_attr_t* attr = (connect_attr_t*)gdml_malloc(sizeof(connect_attr_t));
+		connect_attr_t* attr = (connect_attr_t*)gdml_zmalloc(sizeof(connect_attr_t));
 		attr->name = $2->ident.str;
 		attr->arraydef = 1;
 		//symbol_insert($2->ident.str, CONNECT_TYPE, attr);
@@ -561,7 +561,7 @@ object
 
 method
 	: METHOD objident method_params compound_statement {
-		method_attr_t* attr = (method_attr_t*)gdml_malloc(sizeof(method_attr_t));
+		method_attr_t* attr = (method_attr_t*)gdml_zmalloc(sizeof(method_attr_t));
 		attr->name = $2->ident.str;
 		attr->is_extern = 0;
 		attr->is_default = 0;
@@ -578,7 +578,7 @@ method
 		$$ = node;
 	}
 	| METHOD objident method_params DEFAULT compound_statement {
-		method_attr_t* attr = (method_attr_t*)gdml_malloc(sizeof(method_attr_t));
+		method_attr_t* attr = (method_attr_t*)gdml_zmalloc(sizeof(method_attr_t));
 		attr->name = $2->ident.str;
 		attr->is_extern = 0;
 		attr->is_default = 1;
@@ -595,7 +595,7 @@ method
 		$$ = node;
 	}
 	| METHOD EXTERN objident method_params compound_statement {
-		method_attr_t* attr = (method_attr_t*)gdml_malloc(sizeof(method_attr_t));
+		method_attr_t* attr = (method_attr_t*)gdml_zmalloc(sizeof(method_attr_t));
 		attr->name = $3->ident.str;
 		attr->is_extern = 1;
 		attr->is_default = 0;
@@ -612,7 +612,7 @@ method
 		$$ = node;
 	}
 	| METHOD EXTERN objident method_params DEFAULT compound_statement {
-		method_attr_t* attr = (method_attr_t*)gdml_malloc(sizeof(method_attr_t));
+		method_attr_t* attr = (method_attr_t*)gdml_zmalloc(sizeof(method_attr_t));
 		attr->name = $3->ident.str;
 		attr->is_extern = 1;
 		attr->is_default = 1;
@@ -658,7 +658,7 @@ arraydef
 toplevel
 	: TEMPLATE objident object_spec {
 		DBG("in TEMPLATE %s\n", $2->ident.str);
-		template_attr_t* attr = (template_attr_t*)gdml_malloc(sizeof(template_attr_t));
+		template_attr_t* attr = (template_attr_t*)gdml_zmalloc(sizeof(template_attr_t));
 		attr->name = $2->ident.str;
 		#if 0
 		if (symbol_insert(current_table, $2->ident.str, TEMPLATE_TYPE, attr) == -1) {
@@ -684,7 +684,7 @@ toplevel
 	}
 	| CONSTANT ident '=' expression ';' {
 		/* TODO: Find the symbol and insert it */
-		cdecl_attr_t* attr = (cdecl_attr_t*)gdml_malloc(sizeof(cdecl_attr_t));
+		cdecl_attr_t* attr = (cdecl_attr_t*)gdml_zmalloc(sizeof(cdecl_attr_t));
 		attr->is_constant = 1;
 
 		tree_t* node = (tree_t*)create_node("assign", ASSIGN_TYPE, sizeof(struct tree_assign));
@@ -698,7 +698,7 @@ toplevel
 		/* TODO: we should find the name of extern */
 		//symbol_t* symbol = symbol_find()
 		DBG("\nPay attention: we should find the name of extern\n\n");
-		cdecl_attr_t* attr = (cdecl_attr_t*)gdml_malloc(sizeof(cdecl_attr_t));
+		cdecl_attr_t* attr = (cdecl_attr_t*)gdml_zmalloc(sizeof(cdecl_attr_t));
 		attr->is_extern = 1;
 
 		tree_t* node = (tree_t*)create_node("cdecl", CDECL_TYPE, sizeof(struct tree_cdecl));
@@ -711,7 +711,7 @@ toplevel
 		/* FIXME: we should find the name cdecl */
 		DBG("\nPay attention: we should find the name of typedef cdecl\n\n");
 		//$$ = create_node("UNIMP", TYPEDEF_TYPE);
-		cdecl_attr_t* attr = (cdecl_attr_t*)gdml_malloc(sizeof(cdecl_attr_t));
+		cdecl_attr_t* attr = (cdecl_attr_t*)gdml_zmalloc(sizeof(cdecl_attr_t));
 		attr->is_typedef = 1;
 
 		tree_t* node = (tree_t*)create_node("cdecl", CDECL_TYPE, sizeof(struct tree_cdecl));
@@ -928,7 +928,7 @@ parameter
 			fprintf(stderr, "parameter should ojbidentifier!\n");
 			exit(-1);
 		}
-		parameter_attr_t* attr = (parameter_attr_t*)gdml_malloc(sizeof(parameter_attr_t));
+		parameter_attr_t* attr = (parameter_attr_t*)gdml_zmalloc(sizeof(parameter_attr_t));
 		attr->name = $2->ident.str;
 		//symbol_insert($2->ident.str, PARAMETER_TYPE, attr);
 

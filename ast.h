@@ -17,6 +17,7 @@ typedef struct level
 
 } level_t;
 
+void* gdml_zmalloc(int size);
 void print_dml(tree_t* node, int pos);
 void print_device(tree_t* node, int pos);
 void print_bitorder(tree_t* node, int pos);
