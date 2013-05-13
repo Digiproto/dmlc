@@ -1,0 +1,65 @@
+// This module is used to testing recursion key-words.
+// Author: eJim Lee
+// Email:  lyjforjob@gmail.com
+// Date:   2013-04-24
+
+dml 1.2;
+
+// This device is named as keywords.
+device keywords_recursion;
+
+///////////////////////
+// Object Parameters //
+///////////////////////
+
+parameter desc          = "device for keywords";
+parameter documentation = "This modules is used to testing a part of key-words";
+parameter limitations   = ("This module only be used for test");
+
+/////////////
+// Imports //
+/////////////
+
+import "utility.dml";
+
+////////////
+// Method //
+////////////
+
+method fibonacci(int num) -> (int y) {
+	local int t1;
+	local int t2;
+	if(num == 1) {
+		y = 1;
+	}else{
+		if(num == 2) {
+			y = 1;
+		}else{
+			call $fibonacci(num - 2) -> (t1);
+			call $fibonacci(num - 1) -> (t2);
+			y = t1 + t2;
+		}
+	}
+}
+
+//////////////////////
+// Bank declaration //
+//////////////////////
+
+bank regs {
+	register r_method size 4 @ 0x0 {
+		method set(value) {
+			call $fibonacci(value) -> ($this);
+			log "info": "faionacci no %d is %d", value, $this;
+		}
+	}
+}
+
+///////////////////
+// Device Method //
+///////////////////
+
+method init() {
+	log "info": "the device init method is running.";
+}
+

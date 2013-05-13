@@ -1,0 +1,100 @@
+// This module is used to testing eight queens key-words.
+// Author: eJim Lee
+// Email:  lyjforjob@gmail.com
+// Date:   2013-04-24
+
+dml 1.2;
+
+// This device is named as keywords.
+device keywords-eight-queens;
+
+///////////////////////
+// Object Parameters //
+///////////////////////
+
+parameter desc          = "device for keywords";
+parameter documentation = "This modules is used to testing a part of key-words";
+parameter limitations   = ("This module only be used for test");
+
+/////////////
+// Imports //
+/////////////
+
+import "utility.dml";
+
+////////////
+// Method //
+////////////
+
+method showchessboard(int *scheme) {
+	log "info": "question: %d, %d, %d, %d, %d, %d, %d, %d", scheme[0], scheme[1], scheme[2], scheme[3], scheme[4], scheme[5], scheme[6], scheme[7];
+}
+
+method check(int *scheme, int n) -> (bool result) {
+	local int i;
+	local int t;
+	for(i = 0; i < n; i++) {
+		t = scheme[i] - scheme[n];
+		if(scheme[i] == scheme[n] || t == (n - i) || t == (i - n)) {
+			break;
+		}
+	}
+	if(i < n) {
+		result = false;
+	}else{
+		result = true;
+	}
+}
+
+method solve() {
+	local int *state;
+	local int place;
+	local int i;
+	local bool r;
+
+	state = new int[8];
+	for(i = 0; i < 8; i++) {
+		state[i] = -1;
+	}
+
+	for(place = 0; place >= 0; place = place) {
+		if(place >= 8) {
+			call $showchessboard(state);
+			place--;
+		}else{
+			do{
+				state[place]++;
+				if(state[place] >= 8)
+					break;
+				call $check(state, place) -> (r);
+			}while(r == false);
+			if(state[place] >= 8) {
+				state[place] = -1;
+				place--;
+			}else{
+				place++;
+			}
+		}
+	}
+}
+
+//////////////////////
+// Bank declaration //
+//////////////////////
+
+bank regs {
+	register r_method size 4 @ 0x0 {
+		method get() -> (value) {
+			call $solve();
+		}
+	}
+}
+
+///////////////////
+// Device Method //
+///////////////////
+
+method init() {
+	log "info": "the device init method is running.";
+}
+
