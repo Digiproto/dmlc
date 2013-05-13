@@ -6,7 +6,7 @@
 dml 1.2;
 
 // This device is named as keywords.
-device keywords_implemet;
+device keywords_implement;
 
 ///////////////////////
 // Object Parameters //
@@ -27,10 +27,21 @@ import "serial-device.dml";
 // Implement //
 ///////////////
 
-implement serial_device {
-	method write(int value) -> (int result) {
-		log "info": "get char is %c", value;
-		result = 1;
+port p1 {
+	implement serial_device {
+		method write(int value) -> (int result) {
+			log "info": "[p1]get char is %c", value;
+			result = 1;
+		}
+	}
+}
+
+port p2 {
+	implement serial_device {
+		method write(int value) -> (int result) {
+			log "info": "[p2]get char is %c", value;
+			result = 1;
+		}
 	}
 }
 
