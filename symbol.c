@@ -26,7 +26,7 @@
 * @brief 
 * @author Michael.Kang blackfin.kang@gmail.com
 * @version 7849
-* @date 2012-11-30
+* @date 2013-05-13
 */
 
 #include <stdio.h>				/* for (f)printf(), std{out,int} */
@@ -34,7 +34,6 @@
 #include <string.h>				/* for strcmp, strdup & friends */
 #include <assert.h>
 #include "symbol.h"
-#define SYMBOL_DEBUG
 #ifdef SYMBOL_DEBUG
 #define DBG(fmt, ...) do { fprintf(stderr, fmt, ## __VA_ARGS__); } while (0)
 #else
@@ -65,6 +64,30 @@ static int str_hash (const char *str)
 }
 
 /**
+ * @brief find information of the symbol with same name and type on the hash table.
+ *
+ * @param symbol_table the hash table finding from.
+ * @param name         the identifier name.
+ * @param type         the symbol type
+ *
+ * @return return symbol structure pointer or NULL on error.
+ */
+static symbol_t _symbol_find(symbol_t* symbol_table, const char* name, type_t type) {
+    symbol_t symbol = symbol_table[str_hash(name)];
+	if (symbol) {
+		/* hash conflict */
+		while (((strcmp(symbol->name, name) != 0) || (symbol->type != type)) 
+				&& (symbol != NULL)) {
+			symbol = symbol->next;
+		}
+		if(symbol != NULL) {
+			return symbol;
+		}
+	}
+    return NULL;
+}
+
+/**
  * @brief find information of the symbol with same name on the hash table.
  *
  * @param symbol_table the hash table finding from.
@@ -72,19 +95,16 @@ static int str_hash (const char *str)
  *
  * @return return symbol structure pointer or NULL on error.
  */
-static symbol_t _symbol_find(symbol_t* symbol_table, char* name, type_t type) {
+static symbol_t _symbol_find_notype(symbol_t* symbol_table, const char* name) {
     symbol_t symbol = symbol_table[str_hash(name)];
-	if (symbol == NULL) {
-		/* can not find symbol */
-		printf("Can not find the symbol %s(type: %d)\n", name, (int)type);
-	}
-	else if (symbol->type == type) {
-		return symbol;
-	}
-	else {
+	if (symbol) {
 		/* hash conflict */
-		while ((symbol->type != type) && (symbol != NULL)) {
+		while ((strcmp(symbol->name, name) != 0) 
+				&& (symbol != NULL)) {
 			symbol = symbol->next;
+		}
+		if(symbol != NULL) {
+			return symbol;
 		}
 	}
     return NULL;
@@ -112,7 +132,7 @@ static symtab_t table_malloc()
  *
  * @return return the table pointer.
  */
-static symbol_t symbol_new(char *name, type_t type, void *attr)
+static symbol_t symbol_new(const char *name, type_t type, void *attr)
 {
     symbol_t new_undef = (symbol_t) malloc(sizeof(struct symbol));
     assert(new_undef != NULL);
@@ -122,6 +142,9 @@ static symbol_t symbol_new(char *name, type_t type, void *attr)
     new_undef->type = type;
     new_undef->attr = attr;
     new_undef->next = NULL;
+#ifdef SYMBOL_DEBUG
+	new_undef->lnext = NULL;
+#endif
     return new_undef;
 }
 
@@ -163,7 +186,7 @@ int symbol_insert(symtab_t symtab, const char* name, type_t type, void* attr)
     assert(name != NULL && symtab != NULL);
 
     symbol_t rt;
-    rt = _symbol_find(symtab->table, name, type);
+    rt = _symbol_find_notype(symtab->table, name);
     if(rt) {
         /* identifier have been defined while find stack top table
          * having identifier with same name and type.  */
@@ -174,15 +197,20 @@ int symbol_insert(symtab_t symtab, const char* name, type_t type, void* attr)
 
 	DBG ("In %s, name = %s, type = %d, hash value = %d\n", __FUNCTION__, name, type,
 			str_hash (name));
-    symbol_t s = symtab->table[str_hash(name)];
+	int new_index = str_hash(name);
+    symbol_t s = symtab->table[new_index];
     if(s == NULL){ /* blank slot */
-        symtab->table[str_hash(name)] = new_symbol;
+        symtab->table[new_index] = new_symbol;
     }else{ /* conflict */
         while(s->next != NULL) {
             s = s->next;
 		}
         s->next = new_symbol;
     }
+#ifdef SYMBOL_DEBUG
+	new_symbol->lnext = symtab->list;
+	symtab->list = new_symbol;
+#endif
     return 0;
 }
 
@@ -254,6 +282,17 @@ void symtab_free(symtab_t root)
         free(tmp);
     }
 }
+
+#ifdef SYMBOL_DEBUG
+void get_all_symbol(symtab_t symtab, symbol_callback func_callback)
+{
+	symbol_t node = symtab->list;
+	while(node != NULL) {
+		func_callback(node);
+		node = node->lnext;
+	}
+}
+#endif
 
 /**
  * @brief init a new symbol list undefined.
@@ -363,5 +402,10 @@ static void found(symbol_t node)
     }else{
         printf("not found.\n");
     }
+}
+
+static void callback_implement(symbol_t symbol)
+{
+	printf("symbol: name = %s, type = %d\n", symbol->name, symbol->type);
 }
 #endif

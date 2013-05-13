@@ -206,6 +206,7 @@ typedef struct cdecl {
 } cdecl_attr_t;
 
 #define MAX_SYMBOLS 10000
+#define SYMBOL_DEBUG
 
 typedef struct symtab *symtab_t;
 
@@ -214,6 +215,9 @@ typedef struct symbol {
     char          *name;  /* identifier name.  */
     type_t         type;  /* identifier type.  */
     struct symbol *next;  /* the other symbol with the same hash value */
+#ifdef SYMBOL_DEBUG
+	struct symbol *lnext; /* the symbol list for output. */
+#endif
     union {
         void    *attr;   /* identifier declaration attribute.  */
         symtab_t belong; /* for undefined symbol list.  */
@@ -226,6 +230,9 @@ struct symtab {
     struct symtab *parent;
     struct symtab *sibling;
     struct symtab *child;
+#ifdef SYMBOL_DEBUG
+	symbol_t list;
+#endif
     symbol_t table[MAX_SYMBOLS];
 };
 
@@ -237,6 +244,10 @@ symtab_t symtab_create();
 symtab_t symtab_insert_sibling(symtab_t symtab);
 symtab_t symtab_insert_child(symtab_t symtab);
 void symtab_free(symtab_t root);
+#ifdef SYMBOL_DEBUG
+typedef void (*symbol_callback)(symbol_t symbol);
+void get_all_symbol(symtab_t symtab, symbol_callback f);
+#endif
 
 /* undefined symbol list.  */
 symbol_t sym_undef_list_init();
