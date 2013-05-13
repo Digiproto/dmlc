@@ -230,14 +230,16 @@ struct symtab {
     struct symtab *parent;
     struct symtab *sibling;
     struct symtab *child;
-#ifdef SYMBOL_DEBUG
 	symbol_t list;
-#endif
     symbol_t table[MAX_SYMBOLS];
 };
 
 /* find and insert symbol from the symbol table.  */
 symbol_t symbol_find(symtab_t symtab, char* name, type_t type);
+symbol_t symbol_find_curr(symtab_t symtab, char* name, type_t type);
+symbol_t symbol_find_notype(symtab_t symtab, char* name);
+symbol_t symbol_find_curr_notype(symtab_t symtab, char* name);
+int symbol_find_type_curr(symtab_t symtab, type_t type, symbol_t **result);
 int symbol_insert(symtab_t symtab, const char* name, type_t type, void* attr);
 /* operate the symbol tables.  */
 symtab_t symtab_create();

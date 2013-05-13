@@ -76,8 +76,8 @@ static symbol_t _symbol_find(symbol_t* symbol_table, const char* name, type_t ty
     symbol_t symbol = symbol_table[str_hash(name)];
 	if (symbol) {
 		/* hash conflict */
-		while (((strcmp(symbol->name, name) != 0) || (symbol->type != type)) 
-				&& (symbol != NULL)) {
+		while ((symbol != NULL) && 
+				((strcmp(symbol->name, name) != 0) || (symbol->type != type))) {
 			symbol = symbol->next;
 		}
 		if(symbol != NULL) {
@@ -99,8 +99,7 @@ static symbol_t _symbol_find_notype(symbol_t* symbol_table, const char* name) {
     symbol_t symbol = symbol_table[str_hash(name)];
 	if (symbol) {
 		/* hash conflict */
-		while ((strcmp(symbol->name, name) != 0) 
-				&& (symbol != NULL)) {
+		while ((symbol != NULL) && (strcmp(symbol->name, name) != 0)) {
 			symbol = symbol->next;
 		}
 		if(symbol != NULL) {
@@ -142,17 +141,16 @@ static symbol_t symbol_new(const char *name, type_t type, void *attr)
     new_undef->type = type;
     new_undef->attr = attr;
     new_undef->next = NULL;
-#ifdef SYMBOL_DEBUG
 	new_undef->lnext = NULL;
-#endif
     return new_undef;
 }
 
 /**
- * @brief find the symbol with same name from the current symbol table or parent.
+ * @brief find the symbol with same name and type from the current symbol table or parent.
  *
  * @param symtab the current symbol table.
  * @param name   the symbol name found.
+ * @param type   the symbol type found.
  *
  * @return the pointer of the symbol with information.
  */
@@ -169,6 +167,89 @@ symbol_t symbol_find(symtab_t symtab, char *name, type_t type)
         tmp = tmp->parent;
     }
     return NULL;
+}
+
+/**
+ * @brief find the symbol with same name and type from the current symbol table.
+ *
+ * @param symtab the current symbol table.
+ * @param name   the symbol name found.
+ * @param type   the symbol type found.
+ *
+ * @return the pointer of the symbol with information.
+ */
+symbol_t symbol_find_curr(symtab_t symtab, char *name, type_t type)
+{
+    assert(symtab != NULL && name != NULL);
+    return _symbol_find(symtab->table, name, type);
+}
+
+/**
+ * @brief find the symbol with same name from the current symbol table or parent.
+ *
+ * @param symtab the current symbol table.
+ * @param name   the symbol name found.
+ *
+ * @return the pointer of the symbol with information.
+ */
+symbol_t symbol_find_notype(symtab_t symtab, char *name)
+{
+    assert(symtab != NULL && name != NULL);
+    symtab_t tmp = symtab;
+    symbol_t rt;
+    while(tmp != NULL) {
+        rt = _symbol_find_notype(tmp->table, name);
+        if(rt) {
+            return rt;
+        }
+        tmp = tmp->parent;
+    }
+    return NULL;
+}
+
+/**
+ * @brief find the symbol with same name from the current symbol table.
+ *
+ * @param symtab the current symbol table.
+ * @param name   the symbol name found.
+ *
+ * @return the pointer of the symbol with information.
+ */
+symbol_t symbol_find_curr_notype(symtab_t symtab, char *name)
+{
+    assert(symtab != NULL && name != NULL);
+    return _symbol_find_notype(symtab->table, name);
+}
+
+/**
+ * @brief symbol_find_type_curr : find the symbol with same type from the current symbol table
+ *
+ * @param symtab : the current symbol table.
+ * @param type : the symbol type found.
+ * @param result : the pointer to result list.
+ *
+ * @return : the number of result
+ */
+int symbol_find_type_curr(symtab_t symtab, type_t type, symbol_t **result)
+{
+    assert(symtab != NULL);
+	symbol_t node = symtab->list;
+	symbol_t new_symbol;
+	symbol_t *list = NULL, *t;
+	int num = 0;
+
+	while(node != NULL) {
+		if(node->type == type) {
+			num++;
+			t = realloc(list, sizeof(symbol_t) * num);
+			assert(t != NULL);
+			list = t;
+			list[num - 1] = node;
+		}
+		node = node->lnext;
+	}
+	*result = list;
+	return num;
 }
 
 /**
@@ -207,10 +288,8 @@ int symbol_insert(symtab_t symtab, const char* name, type_t type, void* attr)
 		}
         s->next = new_symbol;
     }
-#ifdef SYMBOL_DEBUG
 	new_symbol->lnext = symtab->list;
 	symtab->list = new_symbol;
-#endif
     return 0;
 }
 
@@ -404,8 +483,4 @@ static void found(symbol_t node)
     }
 }
 
-static void callback_implement(symbol_t symbol)
-{
-	printf("symbol: name = %s, type = %d\n", symbol->name, symbol->type);
-}
 #endif
