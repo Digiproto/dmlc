@@ -51,12 +51,15 @@ default_log:
 }
 
 method test4switch(int x, int y) {
+	local int t;
+	local int h = 65;
 	switch(y) {
 	case(0):
 	case(1):
 	case(2):
 	case(3):
-		log "info": "x(%d) belong to %c domain.", x, 65 + y;
+		t = x < 50 ? h : h + 32;
+		log "info": "x(%d) belong to %c domain.", x, t + y;
 		break;
 	default:
 		log "info": "x(%d) belong to other domain.", x;

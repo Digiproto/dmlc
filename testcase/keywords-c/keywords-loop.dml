@@ -52,11 +52,20 @@ method test4loop {
 	log "info": "(3): 0 + 1 + 2 + 3 + 4 = %d(10)", s;
 
 	i = s = 0;
+	for( ; ; ) {
+		s += i;
+		if(i >= 4)
+			break;
+		i++;
+	}
+	log "info": "(4): 0 + 1 + 2 + 3 + 4 = %d(10)", s;
+
+	i = s = 0;
 	while(i < 5) {
 		s += i;
 		i++;
 	}
-	log "info": "(4): 0 + 1 + 2 + 3 + 4 = %d(10)", s;
+	log "info": "(5): 0 + 1 + 2 + 3 + 4 = %d(10)", s;
 
 	i = s = 0;
 	while(i < 11) {
@@ -66,7 +75,7 @@ method test4loop {
 		s += i;
 		i++;
 	}
-	log "info": "(5): 0 + 1 + 2 + 3 + 4 = %d(10)", s;
+	log "info": "(6): 0 + 1 + 2 + 3 + 4 = %d(10)", s;
 
 	i = s = 0;
 	while(i < 13) {
@@ -75,17 +84,27 @@ method test4loop {
 			continue;
 		}
 		s += i;
-		log "info": "(6): this info can only be displayed 5 times.";
+		log "info": "(7): this info can only be displayed 5 times.";
 		i++;
 	}
-	log "info": "(6): 0 + 1 + 2 + 3 + 4 = %d(10)", s;
+	log "info": "(7): 0 + 1 + 2 + 3 + 4 = %d(10)", s;
+
+	i = s = 0;
+	while(1) {
+		s += i;
+		if(i >= 4) {
+			break;
+		}
+		i++;
+	}
+	log "info": "(8): 0 + 1 + 2 + 3 + 4 = %d(10)", s;
 
 	i = 17;
 	s = 0;
 	do{
 		s += i;
 	}while(i < 17);
-	log "info": "(7): s = %d(17)", s;
+	log "info": "(9): s = %d(17)", s;
 
 	i = s = 0;
 	do{
@@ -95,7 +114,7 @@ method test4loop {
 		s += i;
 		i++;
 	}while(i < 13);
-	log "info": "(8): 0 + 1 + 2 + 3 + 4 = %d(10)", s;
+	log "info": "(10): 0 + 1 + 2 + 3 + 4 = %d(10)", s;
 
 	i = s = 0;
 	do{
@@ -104,10 +123,10 @@ method test4loop {
 			continue;
 		}
 		s += i;
-		log "info": "(9): this info can only be displayed 5 times.";
+		log "info": "(11): this info can only be displayed 5 times.";
 		i++;
 	}while(i < 13);
-	log "info": "(9): 0 + 1 + 2 + 3 + 4 = %d(10)", s;
+	log "info": "(11): 0 + 1 + 2 + 3 + 4 = %d(10)", s;
 }
 
 //////////////////////

@@ -1,0 +1,164 @@
+// This module is used to testing operator key-words.
+// Author: eJim Lee
+// Email:  lyjforjob@gmail.com
+// Date:   2013-04-24
+
+dml 1.2;
+
+// This device is named as keywords.
+device keywords_operator;
+
+///////////////////////
+// Object Parameters //
+///////////////////////
+
+parameter desc          = "device for keywords";
+parameter documentation = "This modules is used to testing a part of key-words";
+parameter limitations   = ("This module only be used for test");
+
+/////////////
+// Imports //
+/////////////
+
+import "utility.dml";
+
+////////////
+// Globol //
+////////////
+
+struct new_struct {
+	int i;
+	int j;
+}
+
+////////////
+// Method //
+////////////
+
+method trans_bit(uint32 x) -> (uint32 y) {
+	local uint32 t;
+	local uint32 t1 = 0x000000cc;
+	local uint32 t2 = 0xaa000000;
+
+	t = t1 << 24;
+	t1 <<= 24;
+	if(t == t1) {
+		x = (x & 0x00ffffff) + t1;
+	}
+	t = t2 >> 8;
+	t2 >>= 8;
+	if(t == t2) {
+		x = (x & 0xff00ffff) + t2;
+	}
+	t1 = x;
+	t2 = 0x00004400;
+	t = t1 ^ t2;
+	t1 ^= t2;
+	if(t == t1) {
+		x = x ^ t2;
+	}
+	t1 = x;
+	t2 = 0x000000ff;
+	t = t1 | t2;
+	t1 |= t2;
+	if(t == t1) {
+		x = x | t2;
+	}
+	y = ~x;
+}
+
+method trans_com(int x, int y) -> (int z) {
+	z = 1;
+	z *= x * y;
+	z /= x / y;
+	z %= x % y;
+	z += x + y;
+	z -= x - y;
+	z = z++;
+	z = ++z;
+	z = z--;
+	z = --z;
+	z = -z;
+	z = +z;
+}
+
+method logic(int x) -> (int y) {
+	y = 0;
+	if(x >= 0) {
+		y++;
+	}
+	if(x <= 0) {
+		y++;
+	}
+	if(x > 10) {
+		y++;
+	}
+	if(x < 10) {
+		y++;
+	}
+	if(x == 7) {
+		y++;
+	}
+	if(!(x != 13)) {
+		y++;
+	}
+	if((x > 6 && x < 8) || (x > 12) && (x < 14)) {
+		y++;
+	}
+}
+
+method pointer() {
+	local new_struct x;
+	local new_struct *p;
+	p = &x;
+	x.i = 3;
+	p->j = 7;
+	(*p).i = x.i * x.j;
+	(&x)->j = x.i / x.j;
+	log "info": "x.i = %d, x.j = %d", x.i, x.j;
+}
+
+//////////////////////
+// Bank declaration //
+//////////////////////
+
+bank regs {
+	register r_method size 4 @ 0x0 {
+		method get() -> (value) {
+			local uint16 a;
+			local uint32 b;
+			a = 0xff00;
+			call $trans_bit(a) -> (b);
+			log "info": "uint16(0xff00) -> uint32(0x%08x)", b;
+
+			local int c = 13;
+			local int d = 5;
+			local int e;
+			call $trans_com(c, d) -> (e);
+			log "info": "trans_com(5, 13) -> %d(-12)", e;
+			c = -1;
+			call $logic(c) -> (e);
+			log "info": "logic(-1) -> %d(2)", e;
+			c = 0;
+			call $logic(c) -> (e);
+			log "info": "logic(0) -> %d(3)", e;
+			c = 7;
+			call $logic(c) -> (e);
+			log "info": "logic(0) -> %d(4)", e;
+			c = 13;
+			call $logic(c) -> (e);
+			log "info": "logic(0) -> %d(4)", e;
+
+			call $pointer();
+		}
+	}
+}
+
+///////////////////
+// Device Method //
+///////////////////
+
+method init() {
+	log "info": "the device init method is running.";
+}
+

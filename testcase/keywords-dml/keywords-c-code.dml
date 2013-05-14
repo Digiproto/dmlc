@@ -28,16 +28,23 @@ import "utility.dml";
 
 header %{
 #include <stdio.h>
-extern void prnt_str(char *buf);
+#include <string.h>
+extern unsigned int prnt_str(char *buf, unsigned int x);
 %}
 footer %{
-void prnt_str(char *buf)
+unsigned int prnt_str(char *buf, unsigned int x)
 {
-	sprintf(buf, "Hello world in C code.");
+	if(x == 0xffffffff) {
+		sprintf(buf, "Hello world in C code.");
+	}else{
+		sprintf(buf, "Hello world in C code. But x is wrong.");
+	}
+	return (x ^ 0xf0f0f0f0);
 }
 %}
 
-extern void prnt_str(char *buf);
+extern uint32 prnt_str(char *buf, uint32 x);
+extern char *strcpy(char *dest, const char *src);
 
 //////////////////////
 // Bank declaration //
@@ -47,8 +54,13 @@ bank regs {
 	register r_method size 4 @ 0x30 {
 		method get() -> (value) {
 			local char buf[100];
-			prnt_str(buf);
-			log "info": "the buf have a string: \"%s\"", buf;
+			local char buf2[100];
+			local uint32 x = 0xffffffff;
+			local uint32 y;
+			y = prnt_str(buf, x);
+			strcpy(buf2, buf);
+			log "info": "the buf2 have a string: \"%s\"", buf2;
+			log "info": "C function return 0x%08x.", y;
 		}
 	}
 }
