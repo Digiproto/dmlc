@@ -33,6 +33,9 @@ method test4type() {
 	local  int    i = 7;
 	static int    a = 0;
 	auto   int    b = 11;
+	local  const char *s = "new const char*";
+	local  char  *n;
+
 	a++;
 	log "info": "c = %c, d = %f, f = %f, i = %d, a = %d, b = %d", c, d, f, i, a, b;
 	log "info": "sizeof(c) = %d, sizeof(d) = %d", sizeof(c), sizeof(d);
@@ -40,6 +43,27 @@ method test4type() {
 	d = f = 17;
 	c = 98.98;
 	log "info": "c = %c, d = %f, f = %f, i = %d, a = %d, b = %d", c, d, f, i, a, b;
+	log "info": "char s = %s", s;
+	call $strcpy(s) -> (n);
+	log "info": "char n = %s", n;
+	delete(n);
+}
+
+method strcpy(const char *str) -> (char *dest)
+{
+	local const char *p;
+	local char *buf;
+	local char *pd;
+	local int i;
+
+	for(i = 0, p = str; *p != 0; p++, i++);
+	buf = new char[i + 1];
+
+	for(p = str, pd = buf; *p != 0; p++, pd++) {
+		*pd = *p;
+	}
+	*pd = 0;
+	dest = buf;
 }
 
 //////////////////////

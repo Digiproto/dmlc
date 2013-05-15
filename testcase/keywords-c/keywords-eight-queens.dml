@@ -6,7 +6,7 @@
 dml 1.2;
 
 // This device is named as keywords.
-device keywords-eight-queens;
+device keywords_eight_queens;
 
 ///////////////////////
 // Object Parameters //
@@ -26,8 +26,8 @@ import "utility.dml";
 // Method //
 ////////////
 
-method showchessboard(int *scheme) {
-	log "info": "question: %d, %d, %d, %d, %d, %d, %d, %d", scheme[0], scheme[1], scheme[2], scheme[3], scheme[4], scheme[5], scheme[6], scheme[7];
+method showchessboard(int *scheme, int n) {
+	log "info": "[%d]question: %d, %d, %d, %d, %d, %d, %d, %d", n, scheme[0], scheme[1], scheme[2], scheme[3], scheme[4], scheme[5], scheme[6], scheme[7];
 }
 
 method check(int *scheme, int n) -> (bool result) {
@@ -57,9 +57,10 @@ method solve() {
 		state[i] = -1;
 	}
 
-	for(place = 0; place >= 0; place = place) {
+	for(place = 0, i = 0; place >= 0; place = place) {
 		if(place >= 8) {
-			call $showchessboard(state);
+			call $showchessboard(state, i);
+			i++;
 			place--;
 		}else{
 			do{

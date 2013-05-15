@@ -1,0 +1,60 @@
+// This module is used to testing endian key-words.
+// Author: eJim Lee
+// Email:  lyjforjob@gmail.com
+// Date:   2013-04-24
+
+dml 1.2;
+
+// This device is named as keywords.
+device keywords_endian;
+bitorder be;
+
+///////////////////////
+// Object Parameters //
+///////////////////////
+
+parameter desc          = "device for keywords";
+parameter documentation = "This modules is used to testing a part of key-words";
+parameter limitations   = ("This module only be used for test");
+
+/////////////
+// Imports //
+/////////////
+
+import "utility.dml";
+
+//////////////////////
+// Bank declaration //
+//////////////////////
+
+bank regs {
+	register r_method size 4 @ 0x0 {
+		method get() -> (value) {
+			log "info": "le.r_test.f = %d", $regs_test_le.r_test.f;
+			log "info": "re.r_test.f = %d", $regs_test_be.r_test.f;
+		}
+	}
+}
+
+bank regs_test_le {
+	parameter byte_order = "little-endian";
+	register r_test size 4 @ 0x0 {
+		field f [0:7];
+	}
+}
+
+bank regs_test_be {
+	parameter byte_order = "big-endian";
+	register r_test size 4 @ 0x0 {
+		field f [0:7];
+	}
+}
+
+///////////////////
+// Device Method //
+///////////////////
+
+method init() {
+	log "info": "the device init method is running.";
+}
+

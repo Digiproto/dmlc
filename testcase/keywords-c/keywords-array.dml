@@ -1,0 +1,98 @@
+// This module is used to testing array key-words.
+// Author: eJim Lee
+// Email:  lyjforjob@gmail.com
+// Date:   2013-04-24
+
+dml 1.2;
+
+// This device is named as keywords.
+device keywords_array;
+
+///////////////////////
+// Object Parameters //
+///////////////////////
+
+parameter desc          = "device for keywords";
+parameter documentation = "This modules is used to testing a part of key-words";
+parameter limitations   = ("This module only be used for test");
+
+/////////////
+// Imports //
+/////////////
+
+import "utility.dml";
+
+////////////
+// Method //
+////////////
+
+method test4array() {
+	local int a[2][3];
+	local int **b;
+	local int *c;
+	local int i;
+	local int j;
+
+	log "info": "sizeof(a[2][3]) = %d(%d * 2 * 3)", sizeof(a), sizeoftype(int);
+	for(i = 0; i < 2; i++) {
+		for(j = 0; j < 3; j++) {
+			a[i][j] = i * 3 + j;
+		}
+	}
+	b = new int*[2];
+	for(i = 0; i < 2; i++) {
+		b[i] = new int[3];
+	}
+	for(i = 0; i < 2; i++) {
+		c = b[i];
+		for(j = 0; j < 3; j++) {
+			c[j] = a[i][j];
+		}
+	}
+	for(i = 0; i < 2; i++) {
+		for(j = 0; j < 3; j++) {
+			log "info": "b[%d][%d] = %d", i, j, b[i][j];
+		}
+	}
+	for(i = 0; i < 2; i++) {
+		delete b[i];
+	}
+	delete b;
+}
+
+method test4array2() {
+	local const char *str = "hello world";
+	local const char *p;
+	local char buf[20];
+	local char *pb;
+	for(p = str, pb = buf; *p != 0; p++, pb++) {
+		if(*p != 32) {
+			*pb = *p - 32;
+		}else{
+			*pb = *p;
+		}
+	}
+	log "info": "str after transfor: %s", buf;
+}
+
+//////////////////////
+// Bank declaration //
+//////////////////////
+
+bank regs {
+	register r_method size 4 @ 0x0 {
+		method get() -> (value) {
+			call $test4array();
+			call $test4array2();
+		}
+	}
+}
+
+///////////////////
+// Device Method //
+///////////////////
+
+method init() {
+	log "info": "the device init method is running.";
+}
+
