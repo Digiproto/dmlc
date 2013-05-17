@@ -36,9 +36,7 @@ typedef struct symbol {
     char          *name;  /* identifier name.  */
     type_t         type;  /* identifier type.  */
     struct symbol *next;  /* the other symbol with the same hash value */
-#ifdef SYMBOL_DEBUG
 	struct symbol *lnext; /* the symbol list for output. */
-#endif
     union {
         void    *attr;   /* identifier declaration attribute.  */
         symtab_t belong; /* for undefined symbol list.  */

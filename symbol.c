@@ -288,8 +288,25 @@ int symbol_insert(symtab_t symtab, const char* name, type_t type, void* attr)
 		}
         s->next = new_symbol;
     }
-	new_symbol->lnext = symtab->list;
-	symtab->list = new_symbol;
+
+#if 1
+   symbol_t tmp_symbol;
+   // insert into the front of link list
+   if(symtab->list == NULL) {
+      symtab->list = new_symbol;
+   }else{
+       tmp_symbol = symtab->list;
+       while(tmp_symbol->lnext != NULL) {
+           tmp_symbol = tmp_symbol->lnext;
+       }
+       tmp_symbol->lnext = new_symbol;
+   }
+#else
+   // insert into the last of link list
+    new_symbol->lnext = symtab->list;
+    symtab->list = new_symbol;
+#endif
+
     return 0;
 }
 
