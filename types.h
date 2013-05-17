@@ -78,6 +78,8 @@ typedef enum
 	PARM_TYPE,
 	/* constant string */
 	CONST_STRING_TYPE,
+	/* constant */
+	CONSTANT_TYPE,
 	/* array type [10] | [i in ...] */
 	ARRAY_TYPE,
 	/* ... */

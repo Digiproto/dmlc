@@ -2,6 +2,7 @@
 #define __AST_H__
 
 #include "tree.h"
+#include "symbol.h"
 
 typedef struct node
 {
@@ -18,6 +19,10 @@ typedef struct level
 } level_t;
 
 void* gdml_zmalloc(int size);
+char** get_templates(tree_t* head);
+int get_list_num (tree_t* root);
+symtab_t get_obj_block_table(tree_t* spec);
+arraydef_attr_t* get_arraydef(tree_t* node);
 void print_dml(tree_t* node, int pos);
 void print_device(tree_t* node, int pos);
 void print_bitorder(tree_t* node, int pos);

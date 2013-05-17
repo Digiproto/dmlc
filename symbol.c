@@ -276,8 +276,8 @@ int symbol_insert(symtab_t symtab, const char* name, type_t type, void* attr)
 
     symbol_t new_symbol = symbol_new(name, type, attr);
 
-	DBG ("In %s, name = %s, type = %d, hash value = %d\n", __FUNCTION__, name, type,
-			str_hash (name));
+	DBG ("In %s, name = %s, type = %d, hash value = %d, table num: %d\n", __FUNCTION__, name, type,
+			str_hash (name), symtab->table_num);
 	int new_index = str_hash(name);
     symbol_t s = symtab->table[new_index];
     if(s == NULL){ /* blank slot */
@@ -303,6 +303,32 @@ symtab_t symtab_create()
     return table_malloc();
 }
 
+void sibling_table_free(symtab_t symtab, int table_num) {
+	symtab_t tmp = symtab;
+	while (tmp->sibling) {
+		if ((tmp->sibling->table_num) == table_num) {
+			free(tmp->sibling);
+			tmp->sibling = NULL;
+			return;
+		}
+		tmp = tmp->sibling;
+	}
+
+	return;
+}
+
+void symtab_free(symtab_t symtab, int table_num) {
+	if ((symtab->child->table_num) == table_num) {
+		free(symtab->child);
+		symtab->child = NULL;
+	}
+	else {
+		sibling_table_free(symtab->child, table_num);
+	}
+
+	return;
+}
+
 /**
  * @brief create a symbol table into the sibling.
  *
@@ -310,14 +336,16 @@ symtab_t symtab_create()
  *
  * @return return the symbol table.
  */
-symtab_t symtab_insert_sibling(symtab_t symtab)
+symtab_t symtab_insert_sibling(symtab_t symtab, symtab_t newtab)
 {
     assert(symtab != NULL);
-    symtab_t newtab = table_malloc();
+    assert(newtab != NULL);
     symtab_t tmp = symtab;
     while(tmp->sibling != NULL) {
         tmp = tmp->sibling;
     }
+	//printf("In %s, line = %d, old sibling table_num: %d, young sibling table_num: %d\n",
+	//	__func__, __LINE__, tmp->table_num, newtab->table_num);
     tmp->sibling = newtab;
     newtab->parent = symtab->parent;
 
@@ -331,14 +359,16 @@ symtab_t symtab_insert_sibling(symtab_t symtab)
  *
  * @return return the symbol table.
  */
-symtab_t symtab_insert_child(symtab_t symtab)
+symtab_t symtab_insert_child(symtab_t symtab, symtab_t newtab)
 {
+	//printf("In %s, line = %d, parent table_num: %d, child table_num: %d\n",
+	//		__func__, __LINE__, symtab->table_num, newtab->table_num);
     assert(symtab != NULL);
+    assert(newtab != NULL);
     symtab_t tmp = symtab->child;
     if(tmp) {
-        return symtab_insert_sibling(tmp);
+        return symtab_insert_sibling(tmp, newtab);
     }else{
-        symtab_t newtab = table_malloc();
         symtab->child = newtab;
         newtab->parent = symtab;
         return newtab;
@@ -350,12 +380,12 @@ symtab_t symtab_insert_child(symtab_t symtab)
  *
  * @param root the tree root.
  */
-void symtab_free(symtab_t root)
+void symtab_free_all(symtab_t root)
 {
     assert(root != NULL);
     symtab_t tmp;
     while(root != NULL) {
-        symtab_free(root->child);
+        symtab_free_all(root->child);
         tmp = root;
         root = root->sibling;
         free(tmp);
@@ -446,6 +476,30 @@ void sym_undef_free(symbol_t node)
     assert(node != NULL);
     free(node->name);
     free(node);
+}
+
+void params_insert_table(symtab_t table, method_params_t* method_params) {
+	assert(table != NULL);
+	if (method_params == NULL) {
+		return NULL;
+	}
+	int i = 0;
+	int in_argc = method_params->in_argc;
+	int ret_argc = method_params->ret_argc;
+	params_t** in_list = method_params->in_list;
+	params_t** ret_list = method_params->ret_list;
+
+	for (i = 0; i < in_argc; i++) {
+		/* FIXME: should parsing the params attribute */
+		//symbol_insert(table, in_list[i]->variable, IDENT_TYPE, NULL);
+	}
+
+	for (i = 0; i < ret_argc; i++) {
+		/* FIXME: should parsing the params attribute */
+		//symbol_insert(table, ret_list[i]->variable, IDENT_TYPE, NULL);
+	}
+
+	return;
 }
 
 #ifdef SYMBOL_DEBUG

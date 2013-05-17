@@ -34,6 +34,7 @@
 #include "ast.h"
 #include "debug_color.h"
 #include "types.h"
+#include "symbol.h"
 
 #ifdef AST_DEBUG
 #define DBG(fmt, ...) do { fprintf(stderr, fmt, ## __VA_ARGS__); } while (0)
@@ -282,16 +283,277 @@ tree_t* create_node_list (tree_t* root, tree_t* new_node)
  *
  * @return : return the num about silbing node
  */
-int get_node_num (tree_t* root) {
+int get_list_num (tree_t* root) {
+	if (root == NULL) {
+		return -1;
+	}
+
 	int num = 0;
 	tree_t* node = root;
-	assert (root != NULL);
-	while (node->common.sibling != NULL) {
+	while (node != NULL) {
 		num++;
+		printf("name: %s, type: %d\n", node->common.name, node->common.type);
 		node = node->common.sibling;
 	}
-	printf("In %s, node num: %d\n", __FUNCTION__, num);
 	return num;
+}
+
+char* get_obj_desc(tree_t* spec) {
+	if (spec == NULL) {
+		return NULL;
+	}
+	if (spec->spec.desc) {
+		tree_t* tmp = spec->spec.desc;
+		printf("In %s, line = %d, obj_desc: %s\n",
+				__FUNCTION__, __LINE__, tmp->string.pointer);
+		return (char*)(tmp->string.pointer);
+	}
+	else {
+		return NULL;
+	}
+}
+
+int get_int_value(tree_t* node) {
+	if (node == NULL) {
+		return -1;
+	}
+	if (node->common.type == INTEGER_TYPE) {
+		return node->int_cst.value;
+	}
+	else {
+		fprintf(stderr, "In %s, line = %d, other node expression, name: %s, type: %d\n",
+				__FUNCTION__, __LINE__, node->common.name, node->common.type);
+		exit(-1);
+	}
+}
+
+arraydef_attr_t* get_range_arraydef(tree_t* node, arraydef_attr_t* array) {
+	if (node == NULL) {
+		return NULL;
+	}
+	if (node->array.ident) {
+		tree_t* ident = node->array.ident;
+		if (ident->common.type == IDENT_TYPE) {
+			array->ident = ident->ident.str;
+		}
+		else {
+			fprintf(stderr, "The array identifier type: %d, name: %s\n",
+					ident->common.type, ident->common.name);
+			exit(-1);
+		}
+	}
+	else {
+		fprintf(stderr, "The array need identifier\n");
+		exit(-1);
+	}
+	if (node->array.expr) {
+		array->low = get_int_value(node->array.expr);
+	}
+	else {
+		fprintf(stderr, "The array need start array number\n");
+		exit(-1);
+	}
+	if (node->array.expr_end) {
+		array->high = get_int_value(node->array.expr_end);
+	}
+	else {
+		fprintf(stderr, "The array need end array number\n");
+		exit(-1);
+	}
+
+	return array;
+}
+
+arraydef_attr_t* get_arraydef(tree_t* node) {
+	if (node == NULL) {
+		return NULL;
+	}
+	arraydef_attr_t* arraydef = (arraydef_attr_t*)gdml_zmalloc(sizeof(arraydef_attr_t));
+	if ((node->array.is_fix) == 1) {
+		arraydef->fix_array = get_int_value(node->array.expr);
+	}
+	else {
+		arraydef = get_range_arraydef(node, arraydef);
+	}
+
+	return arraydef;
+};
+
+symtab_t get_obj_block_table(tree_t* spec) {
+	if (spec == NULL) {
+		return NULL;
+	}
+	if (spec->spec.block) {
+		tree_t* block = spec->spec.block;
+		return (block->block.table);
+	}
+	else {
+		return NULL;
+	}
+}
+
+char* get_const_string(tree_t* node) {
+	if (node == NULL) {
+		return NULL;
+	}
+
+	printf("In %s, line = %d, str: %s\n",
+			__func__, __LINE__, node->string.pointer);
+
+	return node->string.pointer;
+}
+
+int get_param_num(tree_t* node) {
+	assert(node != NULL);
+	int num = 0;
+	tree_t* tmp = node;
+	while (tmp != NULL) {
+		num++;
+		tmp = tmp->common.sibling;
+	}
+
+	printf("In %s, line = %d, param num: %d\n",
+			__func__, __LINE__, num);
+	return num;
+}
+
+char* get_basetype(tree_t* node) {
+	printf("\n\tPay attention: should parsing the basetype\n\n");
+	return NULL;
+}
+
+char* get_variable(tree_t* node) {
+	printf("\n\tPay attention: should parsing the variable\n\n");
+	return NULL;
+}
+
+params_t* get_param_decl(tree_t* node) {
+	assert(node != NULL);
+	if (node->common.type != CDECL_TYPE) {
+		printf("params type is : %s\n", node->common.name);
+		exit(-1);
+	}
+	tree_t* basetype = node->cdecl.basetype;
+	tree_t* decl = node->cdecl.decl;
+	params_t* param = (params_t*)gdml_zmalloc(sizeof(params_t));
+	if ((basetype->common.type) == IDENT_TYPE) {
+		param->variable = basetype->ident.str;
+	}
+	else {
+		printf("param type: %s\n", node->common.name);
+		param->basetype = get_basetype(basetype);
+		param->variable = get_variable(decl);
+	}
+
+	return param;
+}
+
+params_t** get_param_list(tree_t* node, int param_num) {
+	assert(node != NULL);
+	params_t** list = gdml_zmalloc(param_num * (sizeof(params_t*)));
+	tree_t* tmp = node;
+	int i = 0;
+	while (tmp != NULL) {
+		/* FIXME: parsing the param */
+		list[i] = get_param_decl(tmp);
+		i++;
+		tmp = tmp->common.sibling;
+	}
+	return list;
+}
+
+method_params_t* get_method_params(tree_t* node) {
+	if (node == NULL) {
+		return NULL;
+	}
+	method_params_t* params = (method_params_t*)gdml_zmalloc(sizeof(method_params_t));
+	if (node->params.in_params) {
+		params->in_argc = get_param_num(node->params.in_params);
+		params->in_list = get_param_list(node->params.in_params, (params->in_argc));
+	}
+
+	if (node->params.ret_params) {
+		params->ret_argc = get_param_num(node->params.ret_params);
+		params->ret_list = get_param_list(node->params.ret_params, (params->ret_argc));
+	}
+
+	return params;
+}
+
+paramspec_t* get_paramspec(tree_t* node) {
+	if (node == NULL) {
+		return NULL;
+	}
+	paramspec_t* spec = (paramspec_t*)gdml_zmalloc(sizeof(paramspec_t));
+	spec->is_default = node->paramspec.is_default;
+	spec->is_auto = node->paramspec.is_auto;
+	if (node->paramspec.string) {
+		spec->str = get_const_string(node->paramspec.string);
+	}
+	if (node->paramspec.expr) {
+		/* FIXME: should write a function to get value of expression */
+		printf("\nNeed to parse the expression!\n\n");
+		//exit(-1);
+	}
+
+	return spec;
+}
+
+int get_size(tree_t* node) {
+	if (node == NULL) {
+		return -1;
+	}
+	if (node->common.type == INTEGER_TYPE) {
+		int size = node->int_cst.value;
+		if ((size > 0) && (size <= 8)) {
+			return size;
+		}
+		else {
+			fprintf(stderr, "the size(%d) out\n", size);
+		}
+	}
+	else {
+		printf("The size is another type expression - node type: %d, name: %s\n", node->common.type, node->common.name);
+		exit(-1);
+	}
+}
+
+int get_offset(tree_t* node) {
+	if (node == NULL) {
+		return -1;
+	}
+	if (node->common.type == INTEGER_TYPE) {
+		int offset = node->int_cst.value;
+		return offset;
+	}
+	else {
+		printf("The size is another type expression - node type: %d, name: %s\n", node->common.type, node->common.name);
+		exit(-1);
+	}
+}
+
+char** get_templates(tree_t* head) {
+	if (head == NULL) {
+		return NULL;
+	}
+	int num = get_list_num(head);
+	char** templates = gdml_zmalloc(num * sizeof(char*));
+	tree_t* node = head;
+	int i = 0;
+	while (node != NULL) {
+		if (((node->common.type) == DML_KEYWORD_TYPE) ||
+				((node->common.type) == IDENT_TYPE)) {
+			templates[i++] = node->ident.str;
+			printf("identifier:  %s : %s\n", node->ident.str, templates[i - 1]);
+		}
+		else {
+			fprintf(stderr, "The templates'type is(%d) : %s: %s\n",
+					node->common.type, node->common.name, node->ident.str);
+		}
+		node = node->common.sibling;
+	}
+
+	return templates;
 }
 
 /**

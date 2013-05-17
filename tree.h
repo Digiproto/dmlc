@@ -24,6 +24,8 @@
 #ifndef __TREE_H__
 #define __TREE_H__
 
+#include "symbol-common.h"
+
 /**
  * @brief : location of token in file
  */
@@ -40,6 +42,11 @@ union tree_node;
 typedef union tree_node tree_t;
 typedef void (*print_node_t)(tree_t*, int);
 
+struct indentifier {
+	char* str;
+	struct indentifier* next;
+};
+
 /**
  * @brief : the common part about tree node
  */
@@ -49,6 +56,7 @@ struct tree_common
 	tree_t* sibling;
 	tree_t* chain;
 	print_node_t print_node;
+	void* attr;
 	int type;
 	const char* name;
 };
@@ -159,7 +167,7 @@ struct tree_register {
 	const char* name;
 	tree_t* sizespec;			// register size
 	tree_t* offset;				// offset about register start
-	tree_t* templates;			// templates that register inherits
+	char** templates;			// templates that register inherits
 	tree_t* spec;				// spec about register
 	tree_t* array;				// the array about registers that are the same type
 };
@@ -348,6 +356,7 @@ struct tree_head {
 struct tree_block {
 	struct tree_common common;
 	tree_t* statement;			// the content in block({})
+	symtab_t table;
 };
 
 #if 0

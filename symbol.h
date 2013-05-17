@@ -27,30 +27,41 @@
 
 #ifndef	SYMBOL_H
 #define	SYMBOL_H
-#include "types.h"
+#include "tree.h"
+
+struct symbol_common {
+   tree_t* node;
+   int table_num;
+};
 
 typedef struct dml_attr
 {
 	const char* version;
+	struct symbol_common common;
 } dml_attr_t;
 
 
 typedef struct bitorder_attr
 {
 	const char* endian;
+	struct symbol_common common;
 } bitorder_attr_t;
 
 typedef struct import_attr
 {
 	const char *filename;
 } import_attr_t;
+
 typedef struct template_attr
 {
+	struct symbol_common common;
 	const char *name;
 	const char *desc;
+	symtab_t table;
 } template_attr_t;
 typedef struct loggroup_attr
 {
+	struct symbol_common common;
 } loggroup_attr_t;
 
 typedef struct typedef_attr
@@ -59,6 +70,7 @@ typedef struct typedef_attr
 typedef struct constant_attr
 {
 	const char *name;
+	struct symbol_common common;
 	expression_t *value;
 } constant_attr_t;
 typedef struct struct_attr
@@ -67,39 +79,74 @@ typedef struct struct_attr
 typedef struct object_stmt_node
 {
 } stmt_attr_t;
+
+typedef struct paramspec {
+	int is_default;
+	int is_auto;
+	const char* str;
+	expression_t *exp;
+}paramspec_t;
+
 typedef struct parameter_attr
 {
 	const char *name;
-	int is_default;
-	int is_auto;
-	union
-	{
-		const char *str;
-		expression_t *exp;
-	} value;
+	struct paramspec_t* spec;
 } parameter_attr_t;
+
+typedef struct params {
+	char* basetype;
+	char* variable;
+}params_t;
+
+typedef struct method_params {
+	int in_argc;
+	params_t** in_list;
+	int ret_argc;
+	params_t** ret_list;
+}method_params_t;
 
 typedef struct method_attr
 {
+	struct symbol_common common;
 	const char *name;
 	int is_extern;
 	int is_default;
 	int is_static;
 	int is_inline;
 	int is_template;
-	int argc;
-	void *arg_list;
+	method_params_t* method_params;
+	symtab_t table;
 } method_attr_t;
 
 struct bank_attr;
 
+typedef struct arraydef_attr {
+	int fix_array;
+	const char* ident;
+	int low;
+	int high;
+}arraydef_attr_t;
+
+typedef struct foreach_attr {
+	struct symbol_common common;
+	char* ident;
+	expression_t* expression;
+	symtab_t table;
+}foreach_attr_t;
+
 typedef struct register_attr
 {
+	struct symbol_common common;
 	const char *name;
 	int is_array;
 	int size;
 	int offset;
+	char** templates;
+	int templates_num;
+	char* desc;
+	arraydef_attr_t* arraydef;
 	struct bank_attr *bank;
+	symtab_t table;
 } register_attr_t;
 
 typedef struct register_list_node
@@ -110,30 +157,59 @@ typedef struct register_list_node
 
 typedef struct bank_attr
 {
-	const char *template_name;
+	struct symbol_common common;
+	const char** template_name;
 	const char *name;
+	const char* desc;
+	int template_num;
 	int register_size;
 	int size;
+	symtab_t table;
 	register_list_node_t *registers;
 } bank_attr_t;
+
+typedef struct try_catch_attr {
+	struct symbol_common common;
+	symtab_t try_table;
+	symtab_t catch_table;
+}try_catch_attr_t;
 
 typedef struct register_array_attr
 {
 } register_array_attr_t;
 
+typedef struct bitrange_attr{
+	int is_fix;
+	expression_t expr;
+	expression_t expr_end;
+}bitrange_attr_t;
+
 typedef struct field_attr
 {
+	struct symbol_common common;
 	const char *name;
+	const char** templates;
+	const char* desc;
+	int template_num;
 	int is_range;
+	bitrange_attr_t* bitrange;
+	symtab_t table;
 } field_attr_t;
+
 typedef struct data_attr
 {
 	const char *name;
 } data_attr_t;
 typedef struct connect_attr
 {
+	struct symbol_common common;
 	const char* name;
-	int arraydef;
+	const char** templates;
+	const char* desc;
+	int template_num;
+	int is_array;
+	arraydef_attr_t* arraydef;
+	symtab_t table;
 } connect_attr_t;
 
 typedef struct connect_array_attr
@@ -142,13 +218,24 @@ typedef struct connect_array_attr
 
 typedef struct interface_attr
 {
+	struct symbol_common common;
 	const char* name;
+	const char** templates;
+	const char* desc;
+	int template_num;
+	symtab_t table;
 } interface_attr_t;
 
 typedef struct attribute_attr
 {
+	struct symbol_common common;
 	const char* name;
-	int arraydef;
+	const char** templates;
+	const char* desc;
+	int is_array;
+	int template_num;
+	arraydef_attr_t* arraydef;
+	symtab_t table;
 } attribute_attr_t;
 typedef struct attribute_array_attr
 {
@@ -156,21 +243,47 @@ typedef struct attribute_array_attr
 
 typedef struct event_attr_t
 {
+	struct symbol_common common;
 	const char* name;
+	const char** templates;
+	const char* desc;
+	int template_num;
+	symtab_t table;
 } event_attr_t;
+
 typedef struct group_attr
 {
+	struct symbol_common common;
+	const char* name;
+	const char** templates;
+	const char* desc;
+	int template_num;
+	int is_array;
+	arraydef_attr_t* arraydef;
+	symtab_t table;
 } group_attr_t;
+
 typedef struct group_array_attr
 {
 } group_array_attr_t;
 
 typedef struct port_attr
 {
+	struct symbol_common common;
+	const char* name;
+	const char** templates;
+	const char* desc;
+	int template_num;
+	symtab_t table;
 } port_attr_t;
 typedef struct implement_attr
 {
+	struct symbol_common common;
 	const char* name;
+	const char** templates;
+	const char* desc;
+	int template_num;
+	symtab_t table;
 } implement_attr_t;
 
 typedef struct bank_list_node
@@ -181,9 +294,11 @@ typedef struct bank_list_node
 
 typedef struct device_attr
 {
+	struct symbol_common common;
 	const char *name;
 	int endian;
 	bank_list_node_t *banks;
+	tree_t* node;
 } device_attr_t;
 
 typedef struct ident_attr
@@ -204,61 +319,6 @@ typedef struct cdecl {
 	int is_extern;
 	int is_typedef;
 } cdecl_attr_t;
-
-#define MAX_SYMBOLS 10000
-#define SYMBOL_DEBUG
-
-typedef struct symtab *symtab_t;
-
-/* store identifier name, type and pointer to attribute_node.  */
-typedef struct symbol {
-    char          *name;  /* identifier name.  */
-    type_t         type;  /* identifier type.  */
-    struct symbol *next;  /* the other symbol with the same hash value */
-#ifdef SYMBOL_DEBUG
-	struct symbol *lnext; /* the symbol list for output. */
-#endif
-    union {
-        void    *attr;   /* identifier declaration attribute.  */
-        symtab_t belong; /* for undefined symbol list.  */
-    };
-}*symbol_t;
-
-/* a hash table for storing symbols. it have a pointer to a brother,
- * have a pointer to a child.  */
-struct symtab {
-    struct symtab *parent;
-    struct symtab *sibling;
-    struct symtab *child;
-	symbol_t list;
-    symbol_t table[MAX_SYMBOLS];
-};
-
-/* find and insert symbol from the symbol table.  */
-symbol_t symbol_find(symtab_t symtab, char* name, type_t type);
-symbol_t symbol_find_curr(symtab_t symtab, char* name, type_t type);
-symbol_t symbol_find_notype(symtab_t symtab, char* name);
-symbol_t symbol_find_curr_notype(symtab_t symtab, char* name);
-int symbol_find_type_curr(symtab_t symtab, type_t type, symbol_t **result);
-int symbol_insert(symtab_t symtab, const char* name, type_t type, void* attr);
-/* operate the symbol tables.  */
-symtab_t symtab_create();
-symtab_t symtab_insert_sibling(symtab_t symtab);
-symtab_t symtab_insert_child(symtab_t symtab);
-void symtab_free(symtab_t root);
-#ifdef SYMBOL_DEBUG
-typedef void (*symbol_callback)(symbol_t symbol);
-void get_all_symbol(symtab_t symtab, symbol_callback f);
-#endif
-
-/* undefined symbol list.  */
-symbol_t sym_undef_list_init();
-symbol_t sym_undef_list_add (symbol_t head, symtab_t table,
-        char *name, type_t type);
-symbol_t sym_undef_list_pick(symbol_t head);
-void sym_undef_list_free(symbol_t head);
-void sym_undef_free(symbol_t node);
-
 
 #if 0
 typedef struct symbol

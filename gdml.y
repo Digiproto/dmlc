@@ -3,6 +3,7 @@
 #include <assert.h>
 #include "types.h"
 #include "symbol.h"
+#include "stack.h"
 #include "ast.h"
 #include "Parser.h"
 #define YYDEBUG 1
@@ -27,8 +28,10 @@ typedef struct YYLTYPE
 
 extern int  yylex(YYSTYPE *yylval_param, yyscan_t yyscanner);
 extern char* builtin_filename;
-extern symtab_t root_table;
+symtab_t root_table;
+stack_t* table_stack;
 static symtab_t current_table = NULL;
+static symtab_t prefix_table = NULL;
 static long int current_table_num = 0;
 %}
 
@@ -170,7 +173,7 @@ static long int current_table_num = 0;
 %%
 begin_unit
 	: DML FLOAT_LITERAL';' dml {
-		dml_attr_t* attr = (dml_attr_t*)malloc(sizeof(dml_attr_t));
+		dml_attr_t* attr = (dml_attr_t*)gdml_zmalloc(sizeof(dml_attr_t));
 		attr->version = $2;
 		//symbol_insert("dml", DML_TYPE, attr);
 
@@ -189,42 +192,52 @@ begin_unit
 	;
 
 dml
-	: DEVICE objident ';' syntax_modifiers device_statements {
+	: DEVICE objident ';' {
+		root_table = symtab_create();
+		current_table = root_table;
+		current_table->table_num = ++current_table_num;
+		table_stack = initstack();
+		push(table_stack, current_table);
+		printf("current_table_num: %d\n", current_table_num);
 		device_attr_t* attr = (device_attr_t*)malloc(sizeof(device_attr_t));
 		attr->name = $2->ident.str;
-		#if 0
 		if (symbol_insert(root_table, $2->ident.str, DEVICE_TYPE, attr) == -1) {
 			fprintf(stderr, "redefined\n");
 		}
-		current_table = root_table;
-		#endif
+		/* FIXME: have any other device */
 
 		tree_t* node = (tree_t*)create_node("device", DEVICE_TYPE, sizeof(struct tree_device));
 		node->device.name = $2->ident.str;
 		node->device.common.print_node = print_device;
+		attr->common.node = node;
+		node->common.attr = attr;
 
-		printf("Line = %d, node name: %s, device name: %s\n", __LINE__, node->device.common.name, node->device.name);
+		printf("Line = %d, node name: %s, device name: %s\n",
+		__LINE__, node->device.common.name, node->device.name);
+		$<tree_type>$ = node;
+	}
+	syntax_modifiers device_statements {
 		tree_t* import_ast = NULL;
 		if(builtin_filename != NULL) {
 			import_ast = (tree_t*)get_ast(builtin_filename);
 			printf("builtin_filename: %s\n", builtin_filename);
 			if(import_ast->common.child != NULL) {
-				create_node_list(node, import_ast->common.child);
+				create_node_list($<tree_type>4, import_ast->common.child);
 				//create_node_list(node, import_ast);
 			}
 		}
 
-		if($4 != NULL)	{
-			printf("\ndevice list: name: %s\n\n", $4->common.name);
-			create_node_list(node, $4);
-		}
-		if($5 != NULL) {
+		if($5 != NULL)	{
 			printf("\ndevice list: name: %s\n\n", $5->common.name);
-			create_node_list(node, $5);
+			create_node_list($<tree_type>4, $5);
+		}
+		if($6 != NULL) {
+			printf("\ndevice list: name: %s\n\n", $6->common.name);
+			create_node_list($<tree_type>4, $6);
 		}
 
 		DBG("Device type is %s\n", $2->ident.str);
-		$$ = node;
+		$$ = $<tree_type>4;
 	}
 	| syntax_modifiers device_statements {
 		if($1 == NULL && $2 != NULL) {
@@ -265,16 +278,17 @@ syntax_modifier
 	: BITORDER ident ';' {
 		DBG("In BITORDER: %s\n", $2->ident.str);
 		bitorder_attr_t*  attr = (bitorder_attr_t*)gdml_zmalloc(sizeof(bitorder_attr_t));
-		attr->endian= $2->ident.str;
-		#if 0
+		attr->endian = $2->ident.str;
+		attr->common.table_num = current_table->table_num;
 		if (symbol_insert(current_table, $2->ident.str, BITORDER_TYPE, attr) == -1) {
 			fprintf(stderr, "redefined\n");
 		}
-		#endif
 
 		tree_t* node = (tree_t*)create_node("bitorder", BITORDER_TYPE, sizeof(struct tree_bitorder));
 		node->bitorder.endian = $2->ident.str;
 		node->common.print_node = print_bitorder;
+		node->common.attr = attr;
+		attr->common.node = node;
 		$$ = node;
 	}
 	;
@@ -316,7 +330,7 @@ device_statement
 	;
 
 object
-	: BANK maybe_objident istemplate object_spec {
+	: BANK maybe_objident istemplate {
 		if ($2 == NULL) {
 			fprintf(stderr, "There must be objident.\n");
 			exit(-1);
@@ -325,38 +339,70 @@ object
 
 		bank_attr_t* attr = (bank_attr_t*)gdml_zmalloc(sizeof(bank_attr_t));
 		attr->name = $2->ident.str;
-		//symbol_insert($2->ident.str, BANK_TYPE, attr);
+		attr->common.table_num = current_table->table_num;
+		attr->template_name = get_templates($3);
+		attr->template_num = get_list_num($3);
 
 		tree_t* node = (tree_t*)create_node("bank", BANK_TYPE, sizeof(struct tree_bank));
 		node->bank.name = $2->ident.str;
 		node->bank.templates = $3;
-		node->bank.spec = $4;
-		node->common.print_node = print_bank;
-		$$ = node;
+		node->common.attr = attr;
+
+		attr->common.node = node;
+
+		symbol_insert(current_table, $2->ident.str, BANK_TYPE, attr);
+
+		$<tree_type>$ = node;
 	}
-	| REGISTER objident sizespec offsetspec istemplate object_spec {
+	object_spec {
+		$<tree_type>4->bank.spec = $5;
+		$<tree_type>4->common.print_node = print_bank;
+		bank_attr_t* attr = (bank_attr_t*)($<tree_type>4->common.attr);
+		attr->desc = get_obj_desc($5);
+		attr->table = get_obj_block_table($5);
+		$$ = $<tree_type>4;
+	}
+	| REGISTER objident sizespec offsetspec istemplate {
 		DBG("register is %s\n", $2->ident.str);
 		register_attr_t* attr = (register_attr_t*)gdml_zmalloc(sizeof(register_attr_t));
 		attr->name = $2->ident.str;
 		attr->is_array = 0;
-		//symbol_insert($2->ident.str, REGISTER_TYPE, attr);
+		attr->size = get_size($3);
+		attr->offset = get_offset($4);
+		attr->templates = get_templates($3);
+		attr->templates_num = get_list_num($3);
+		symbol_insert(current_table, $2->ident.str, REGISTER_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("register", REGISTER_TYPE, sizeof(struct tree_register));
 		node->reg.name = $2->ident.str;
 		node->reg.sizespec = $3;
 		node->reg.offset = $4;
 		node->reg.templates = $5;
-		node->reg.spec = $6;
 		node->common.print_node = print_register;
+		node->common.attr = attr;
+
+		attr->common.node = node;
+		$<tree_type>$ = node;
+	}
+	object_spec {
+		tree_t* node = $<tree_type>6;
+		register_attr_t* attr = (register_attr_t*)(node->common.attr);
+		attr->desc = get_obj_desc($7);
+		attr->table = get_obj_block_table($7);
+		node->reg.spec = $7;
 		$$ = node;
 	}
-	| REGISTER objident '[' arraydef ']' sizespec offsetspec istemplate object_spec {
-		debug_proc("Line : %d\n", __LINE__);
+	| REGISTER objident '[' arraydef ']' sizespec offsetspec istemplate {
 		DBG("Register is %s\n", $2->ident.str);
 		register_attr_t* attr = (register_attr_t*)gdml_zmalloc(sizeof(register_attr_t));
 		attr->name = $2->ident.str;
 		attr->is_array = 1;
-		//symbol_insert($2->ident.str, REGISTER_TYPE, attr);
+		attr->size = get_size($6);
+		attr->offset = get_offset($7);
+		attr->arraydef = get_arraydef($4);
+		attr->templates = get_templates($8);
+		attr->templates_num = get_list_num($8);
+		symbol_insert(current_table, $2->ident.str, REGISTER_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("register", REGISTER_TYPE, sizeof(struct tree_register));
 		node->reg.name = $2->ident.str;
@@ -364,11 +410,21 @@ object
 		node->reg.sizespec = $6;
 		node->reg.offset = $7;
 		node->reg.templates = $8;
-		node->reg.spec = $9;
 		node->common.print_node = print_register;
+		node->common.attr = attr;
+
+		attr->common.node = node;
+		$<tree_type>$ = node;
+	}
+	object_spec {
+		tree_t* node = $<tree_type>9;
+		register_attr_t* attr = (register_attr_t*)(node->common.attr);
+		node->reg.spec = $10;
+		attr->desc = get_obj_desc($10);
+		attr->table = get_obj_block_table($10);
 		$$ = node;
 	}
-	| FIELD objident bitrange istemplate object_spec {
+	| FIELD objident bitrange istemplate {
 		if ($2 == NULL) {
 			fprintf(stderr, "need the identifier of field\n");
 			exit(-1);
@@ -376,17 +432,32 @@ object
 		field_attr_t* attr = (field_attr_t*)gdml_zmalloc(sizeof(field_attr_t));
 		attr->name = $2->ident.str;
 		attr->is_range = 1;
-		//symbol_insert($2->ident.str, FIELD_TYPE, attr);
+		attr->templates = get_templates($4);
+		attr->template_num = get_list_num($4);
+		/* FIXME: should parsing bitrange */
+		attr->bitrange = $3->common.attr;
+		symbol_insert(current_table, $2->ident.str, FIELD_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("field", FIELD_TYPE, sizeof(struct tree_field));
 		node->field.name = $2->ident.str;
 		node->field.bitrange = $3;
 		node->field.templates = $4;
-		node->field.spec = $5;
 		node->common.print_node = print_field;
+		node->common.attr = attr;
+
+		attr->common.node = node;
+
+		$<tree_type>$ = node;
+	}
+	object_spec {
+		tree_t* node = $<tree_type>5;
+		field_attr_t* attr = (field_attr_t*)(node->common.attr);
+		node->field.spec = $6;
+		attr->desc = get_obj_desc($6);
+		attr->table = get_obj_block_table($6);
 		$$ = node;
 	}
-	| FIELD objident istemplate object_spec {
+	| FIELD objident istemplate {
 		if ($2 == NULL) {
 			fprintf(stderr, "need the identifier of field\n");
 			exit(-1);
@@ -394,14 +465,26 @@ object
 		field_attr_t* attr = (field_attr_t*)gdml_zmalloc(sizeof(field_attr_t));
 		attr->name = $2->ident.str;
 		attr->is_range = 0;
-		//symbol_insert($2->ident.str, FIELD_TYPE, attr);
+		attr->templates = get_templates($3);
+		attr->template_num = get_list_num($3);
+		symbol_insert(current_table, $2->ident.str, FIELD_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("field", FIELD_TYPE, sizeof(struct tree_field));
 		node->field.name = $2->ident.str;
 		node->field.bitrange = NULL;
 		node->field.templates = $3;
-		node->field.spec = $4;
 		node->common.print_node = print_field;
+		node->common.attr = attr;
+
+		attr->common.node = node;
+		$<tree_type>$ = node;
+	}
+	object_spec {
+		tree_t* node = $<tree_type>4;
+		field_attr_t* attr = (field_attr_t*)(node->common.attr);
+		node->field.spec = $5;
+		attr->desc = get_obj_desc($5);
+		attr->table = get_obj_block_table($5);
 		$$ = node;
 	}
 	| DATA cdecl ';' {
@@ -420,42 +503,66 @@ object
 		node->common.print_node = print_cdecl;
 		$$ = node;
 	}
-	| CONNECT objident istemplate object_spec {
+	| CONNECT objident istemplate {
 		if ($2 == NULL) {
 			fprintf(stderr, "need the identifier of field\n");
 			exit(-1);
 		}
 		connect_attr_t* attr = (connect_attr_t*)gdml_zmalloc(sizeof(connect_attr_t));
 		attr->name = $2->ident.str;
-		attr->arraydef = 0;
-		//symbol_insert($2->ident.str, CONNECT_TYPE, attr);
+		attr->is_array = 0;
+		attr->templates = get_templates($3);
+		attr->template_num = get_list_num($3);
+		symbol_insert(current_table, $2->ident.str, CONNECT_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("connect", CONNECT_TYPE, sizeof(struct tree_connect));
 		node->connect.name = $2->ident.str;
 		node->connect.templates = $3;
-		node->connect.spec = $4;
 		node->common.print_node = print_connect;
+		node->common.attr = attr;
+
+		attr->common.node = node;
 		DBG("CONNECT_TYPE: %s\n", $2->ident.str);
+		$<tree_type>$ = node;
+	}
+	object_spec {
+		tree_t* node = $<tree_type>4;
+		connect_attr_t* attr = (connect_attr_t*)(node->common.attr);
+		node->connect.spec = $5;
+		attr->desc = get_obj_desc($5);
+		attr->table = get_obj_block_table($5);
 		$$ = node;
 	}
-	| INTERFACE objident istemplate object_spec {
+	| INTERFACE objident istemplate {
 		if ($2 == NULL) {
 			fprintf(stderr, "need the identifier of field\n");
 			exit(-1);
 		}
 		interface_attr_t* attr = (interface_attr_t*)gdml_zmalloc(sizeof(interface_attr_t));
 		attr->name = $2->ident.str;
-		//symbol_insert($2->ident.str, INTERFACE_TYPE, attr);
+		attr->templates = get_templates($3);
+		attr->template_num = get_list_num($3);
+		symbol_insert(current_table, $2->ident.str, INTERFACE_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("interface", INTERFACE_TYPE, sizeof(struct tree_interface));
 		node->interface.name = $2->ident.str;
 		node->interface.templates = $3;
-		node->interface.spec = $4;
 		node->common.print_node = print_interface;
+		node->common.attr =attr;
+
+		attr->common.node = node;
 		DBG("Interface_type: %s\n", $2->ident.str);
+		$<tree_type>$ = node;
+	}
+	object_spec {
+		tree_t* node = $<tree_type>4;
+		interface_attr_t* attr = (interface_attr_t*)(node->common.attr);
+		node->interface.spec = $5;
+		attr->desc = get_obj_desc($5);
+		attr->table = get_obj_block_table($5);
 		$$ = node;
 	}
-	| ATTRIBUTE objident istemplate object_spec {
+	| ATTRIBUTE objident istemplate {
 		if ($2 == NULL) {
 			fprintf(stderr, "need the identifier of field\n");
 			exit(-1);
@@ -463,176 +570,362 @@ object
 		attribute_attr_t* attr = (attribute_attr_t*)gdml_zmalloc(sizeof(attribute_attr_t));
 		attr->name = $2->ident.str;
 		attr->arraydef = 0;
+		attr->templates =  get_templates($3);
+		attr->template_num = get_list_num($3);
+		symbol_insert(current_table, $2->ident.str, ATTRIBUTE_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("attribute", ATTRIBUTE_TYPE, sizeof(struct tree_attribute));
 		node->attribute.name = $2->ident.str;
 		node->attribute.templates = $3;
-		node->attribute.spec = $4;
 		node->common.print_node = print_attribute;
+		node->common.attr = attr;
+
+		attr->common.node = node;
 		DBG("Attribute: %s\n", $2->ident.str);
+		$<tree_type>$ = node;
+	}
+	object_spec {
+		tree_t* node = $<tree_type>4;
+		attribute_attr_t* attr = (attribute_attr_t*)(node->common.attr);
+		node->attribute.spec = $5;
+		attr->desc = get_obj_desc($5);
+		attr->table = get_obj_block_table($5);
 		$$ = node;
 	}
-	| EVENT objident istemplate object_spec {
-		debug_proc("Line : %d\n", __LINE__);
+	| EVENT objident istemplate {
 		event_attr_t* attr = (event_attr_t*)gdml_zmalloc(sizeof(event_attr_t));
 		attr->name = $2->ident.str;
-		//symbol_insert($2->ident.str, EVENT_TYPE, attr);
+		attr->templates = get_templates($3);
+		attr->template_num = get_list_num($3);
+		symbol_insert(current_table, $2->ident.str, EVENT_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("event", EVENT_TYPE, sizeof(struct tree_event));
 		node->event.name = $2->ident.str;
 		node->event.templates = $3;
-		node->event.spec = $4;
 		node->common.print_node = print_event;
+		node->common.attr = attr;
+
+		attr->common.node = node;
+		$<tree_type>$ = node;
+	}
+	object_spec {
+		tree_t* node = $<tree_type>4;
+		event_attr_t* attr = (event_attr_t*)(node->common.attr);
+		node->event.spec = $5;
+		attr->desc = get_obj_desc($5);
+		attr->table = get_obj_block_table($5);
 		$$ = node;
 	}
-	| GROUP objident istemplate object_spec {
-		debug_proc("Line : %d\n", __LINE__);
+	| GROUP objident istemplate {
+		group_attr_t* attr = (group_attr_t*)gdml_zmalloc(sizeof(group_attr_t));
+		attr->name = $2->ident.str;
+		attr->templates = get_templates($3);
+		attr->template_num = get_list_num($3);
+		symbol_insert(current_table, $2->ident.str, GROUP_TYPE, attr);
+
 		tree_t* node = (tree_t*)create_node("group", GROUP_TYPE, sizeof(struct tree_group));
 		node->group.name = $2->ident.str;
 		node->group.templates = $3;
-		node->group.spec = $4;
 		node->common.print_node = print_group;
+		node->common.attr = attr;
+
+		attr->common.node = node;
+		$<tree_type>$ = node;
+	}
+	object_spec {
+		tree_t* node = $<tree_type>4;
+		group_attr_t* attr = (group_attr_t*)(node->common.attr);
+		node->group.spec = $5;
+		attr->desc = get_obj_desc($5);
+		attr->table = get_obj_block_table($5);
 		$$ = node;
 	}
-	| PORT objident istemplate object_spec {
-		debug_proc("Line : %d\n", __LINE__);
+	| PORT objident istemplate {
+		port_attr_t* attr = (port_attr_t*)gdml_zmalloc(sizeof(port_attr_t));
+		attr->name = $2->ident.str;
+		attr->templates = get_templates($3);
+		attr->template_num = get_list_num($3);
+		symbol_insert(current_table, $2->ident.str, IMPLEMENT_TYPE, attr);
+
 		tree_t* node = (tree_t*)create_node("port", PORT_TYPE, sizeof(struct tree_port));
 		node->port.name = $2->ident.str;
 		node->port.templates = $3;
-		node->port.spec = $4;
 		node->common.print_node = print_port;
+		node->common.attr = attr;
+
+		attr->common.node = node;
+		$<tree_type>$ = node;
+	}
+	object_spec {
+		tree_t* node = $<tree_type>4;
+		port_attr_t* attr = (port_attr_t*)(node->common.attr);
+		node->port.spec = $5;
+		attr->desc = get_obj_desc($5);
+		attr->table = get_obj_block_table($5);
 		$$ = node;
 	}
-	| IMPLEMENT objident istemplate object_spec {
+	| IMPLEMENT objident istemplate {
 		implement_attr_t* attr = (implement_attr_t*)gdml_zmalloc(sizeof(implement_attr_t));
 		attr->name = $2->ident.str;
-		//symbol_insert($2->ident.str, IMPLEMENT_TYPE, attr);
+		attr->templates = get_templates($3);
+		attr->template_num = get_list_num($3);
+		symbol_insert(current_table, $2->ident.str, IMPLEMENT_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("implement", IMPLEMENT_TYPE, sizeof(struct tree_implement));
 		node->implement.name = $2->ident.str;
 		node->implement.templates = $3;
-		node->implement.spec = $4;
 		node->common.print_node = print_implement;
+		node->common.attr = attr;
+
+		attr->common.node = node;
 		DBG("objident: %s\n", $2->ident.str);
+		$<tree_type>$ = node;
+	}
+	object_spec {
+		tree_t* node = $<tree_type>4;
+		implement_attr_t* attr = (implement_attr_t*)(node->common.attr);
+		node->implement.spec = $5;
+		attr->desc = get_obj_desc($5);
+		attr->table = get_obj_block_table($5);
 		$$ = node;
 	}
-	| ATTRIBUTE objident '[' arraydef ']' istemplate object_spec {
-		debug_proc("Line : %d\n", __LINE__);
+	| ATTRIBUTE objident '[' arraydef ']' istemplate {
 		attribute_attr_t* attr = (attribute_attr_t*)gdml_zmalloc(sizeof(attribute_attr_t));
 		attr->name = $2->ident.str;
 		attr->arraydef = 1;
+		attr->arraydef = get_arraydef($4);
+		attr->templates =  get_templates($6);
+		attr->template_num = get_list_num($6);
+		symbol_insert(current_table, $2->ident.str, ATTRIBUTE_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("attribute", ATTRIBUTE_TYPE, sizeof(struct tree_attribute));
 		node->attribute.name = $2->ident.str;
 		node->attribute.arraydef = $4;
 		node->attribute.templates = $6;
-		node->attribute.spec = $7;
 		node->common.print_node = print_attribute;
+		node->common.attr = attr;
+
+		attr->common.node = node;
+
+		$<tree_type>$ = node;
+	}
+	object_spec {
+		tree_t* node = $<tree_type>7;
+		attribute_attr_t* attr = (attribute_attr_t*)(node->common.attr);
+		node->attribute.spec = $8;
+		attr->desc = get_obj_desc($8);
+		attr->table = get_obj_block_table($8);
 		$$ = node;
 	}
-	| GROUP objident '[' arraydef ']' istemplate object_spec {
-		debug_proc("Line : %d\n", __LINE__);
+	| GROUP objident '[' arraydef ']' istemplate {
+		group_attr_t* attr = (group_attr_t*)gdml_zmalloc(sizeof(group_attr_t));
+		attr->name = $2->ident.str;
+		attr->is_array = 1;
+		attr->arraydef = get_arraydef($4);
+		attr->templates = get_templates($6);
+		attr->template_num = get_list_num($6);
+
 		tree_t* node = (tree_t*)create_node("group", GROUP_TYPE, sizeof(struct tree_group));
 		node->group.name = $2->ident.str;
 		node->group.is_array = 1;
 		node->group.array = $4;
 		node->group.templates = $6;
-		node->group.spec = $7;
 		node->common.print_node = print_group;
+		node->common.attr = attr;
+
+		attr->common.node = node;
+		$<tree_type>$ = node;
+	}
+	object_spec {
+		tree_t* node = $<tree_type>7;
+		group_attr_t* attr = (group_attr_t*)(node->common.attr);
+		node->group.spec = $8;
+		attr->desc = get_obj_desc($8);
+		attr->table = get_obj_block_table($8);
 		$$ = node;
 	}
-	| CONNECT objident '[' arraydef ']' istemplate object_spec {
-		debug_proc("Line : %d\n", __LINE__);
+	| CONNECT objident '[' arraydef ']' istemplate {
 		connect_attr_t* attr = (connect_attr_t*)gdml_zmalloc(sizeof(connect_attr_t));
 		attr->name = $2->ident.str;
-		attr->arraydef = 1;
-		//symbol_insert($2->ident.str, CONNECT_TYPE, attr);
+		attr->is_array = 1;
+		attr->arraydef = get_arraydef($4);
+		attr->templates = get_templates($6);
+		attr->template_num = get_list_num($6);
+		symbol_insert(current_table, $2->ident.str, CONNECT_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("connect", CONNECT_TYPE, sizeof(struct tree_connect));
 		node->connect.name = $2->ident.str;
 		node->connect.arraydef = $4;
 		node->connect.templates = $6;
-		node->connect.spec = $7;
 		node->common.print_node = print_connect;
+		node->common.attr = attr;
 
+		attr->common.node = node;
+
+		$<tree_type>$ = node;
+	}
+	object_spec {
+		tree_t* node = $<tree_type>7;
+		connect_attr_t* attr = (connect_attr_t*)(node->common.attr);
+		node->connect.spec = $8;
+		attr->desc = get_obj_desc($8);
+		attr->table = get_obj_block_table($8);
 		$$ = node;
 	}
 	;
 
 method
-	: METHOD objident method_params compound_statement {
+	: METHOD objident method_params {
 		method_attr_t* attr = (method_attr_t*)gdml_zmalloc(sizeof(method_attr_t));
 		attr->name = $2->ident.str;
 		attr->is_extern = 0;
 		attr->is_default = 0;
-		//symbol_insert($2->ident.str, METHOD_TYPE, attr);
+		attr->method_params = get_method_params($3);
+		symbol_insert(current_table, $2->ident.str, METHOD_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("method", METHOD_TYPE, sizeof(struct tree_method));
 		node->method.name = $2->ident.str;
 		node->method.is_extern = 0;
 		node->method.is_default = 0;
 		node->method.params = $3;
-		node->method.block = $4;
 		node->common.print_node = print_method;
+		node->common.attr = attr;
+
+		attr->common.node = node;
 		DBG("method is %s\n", $2->ident.str);
+
+		symtab_t table = symtab_create();
+		table->table_num = ++current_table_num;
+		attr->table = symtab_insert_child(current_table, table);
+
+		//prefix_table = current_table;
+		push(table_stack, current_table);
+		current_table = table;
+		/* insert the parameters of method into table */
+		params_insert_table(table, attr->method_params);
+		$<tree_type>$ = node;
+	}
+	compound_statement {
+		tree_t* node = $<tree_type>4;
+		node->method.block = $5;
+		//current_table = prefix_table;
+		current_table = pop(table_stack);
 		$$ = node;
 	}
-	| METHOD objident method_params DEFAULT compound_statement {
+	| METHOD objident method_params DEFAULT {
 		method_attr_t* attr = (method_attr_t*)gdml_zmalloc(sizeof(method_attr_t));
 		attr->name = $2->ident.str;
 		attr->is_extern = 0;
 		attr->is_default = 1;
-		//symbol_insert($2->ident.str, METHOD_TYPE, attr);
+		attr->method_params = get_method_params($3);
+		symbol_insert(current_table, $2->ident.str, METHOD_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("method", METHOD_TYPE, sizeof(struct tree_method));
 		node->method.name = $2->ident.str;
 		node->method.is_extern = 0;
 		node->method.is_default = 1;
 		node->method.params = $3;
-		node->method.block = $5;
 		node->common.print_node = print_method;
+		node->common.attr = attr;
+
+		attr->common.node = node;
 		DBG("method is %s\n", $2->ident.str);
-		$$ = node;
-	}
-	| METHOD EXTERN objident method_params compound_statement {
-		method_attr_t* attr = (method_attr_t*)gdml_zmalloc(sizeof(method_attr_t));
-		attr->name = $3->ident.str;
-		attr->is_extern = 1;
-		attr->is_default = 0;
-		//symbol_insert($3->ident.str, METHOD_TYPE, attr);
 
-		tree_t* node = (tree_t*)create_node("method", METHOD_TYPE, sizeof(struct tree_method));
-		node->method.name = $3->ident.str;
-		node->method.is_extern = 1;
-		node->method.is_default = 0;
-		node->method.params = $4;
-		node->method.block = $5;
-		node->common.print_node = print_method;
-		DBG("method extern is %s\n", $3->ident.str);
-		$$ = node;
-	}
-	| METHOD EXTERN objident method_params DEFAULT compound_statement {
-		method_attr_t* attr = (method_attr_t*)gdml_zmalloc(sizeof(method_attr_t));
-		attr->name = $3->ident.str;
-		attr->is_extern = 1;
-		attr->is_default = 1;
-		//symbol_insert($3->ident.str, METHOD_TYPE, attr);
+		symtab_t table = symtab_create();
+		table->table_num = ++current_table_num;
+		attr->table = symtab_insert_child(current_table, table);
 
-		tree_t* node = (tree_t*)create_node("method", METHOD_TYPE, sizeof(struct tree_method));
-		node->method.name = $3->ident.str;
-		node->method.is_extern = 1;
-		node->method.is_default = 1;
-		node->method.params = $4;
+		//prefix_table = current_table;
+		push(table_stack, current_table);
+		current_table = table;
+		/* insert the parameters of method into table */
+		params_insert_table(table, attr->method_params);
+		$<tree_type>$ = node;
+	}
+	compound_statement {
+		tree_t* node = $<tree_type>5;
 		node->method.block = $6;
+		current_table = pop(table_stack);
+		$$ = node;
+	}
+	| METHOD EXTERN objident method_params {
+		method_attr_t* attr = (method_attr_t*)gdml_zmalloc(sizeof(method_attr_t));
+		attr->name = $3->ident.str;
+		attr->is_extern = 1;
+		attr->is_default = 0;
+		attr->method_params = get_method_params($4);
+		symbol_insert(current_table, $3->ident.str, METHOD_TYPE, attr);
+
+		tree_t* node = (tree_t*)create_node("method", METHOD_TYPE, sizeof(struct tree_method));
+		node->method.name = $3->ident.str;
+		node->method.is_extern = 1;
+		node->method.is_default = 0;
+		node->method.params = $4;
 		node->common.print_node = print_method;
+		node->common.attr = attr;
+
+		attr->common.node = node;
 		DBG("method extern is %s\n", $3->ident.str);
+
+		symtab_t table = symtab_create();
+        table->table_num = ++current_table_num;
+        attr->table = symtab_insert_child(current_table, table);
+
+        //prefix_table = current_table;
+		push(table_stack, current_table);
+        current_table = table;
+        /* insert the parameters of method into table */
+        params_insert_table(table, attr->method_params);
+		$<tree_type>$ = node;
+	}
+	compound_statement {
+		tree_t* node = $<tree_type>5;
+		node->method.block = $6;
+		//current_table = prefix_table;
+		current_table = pop(table_stack);
+		$$ = node;
+	}
+	| METHOD EXTERN objident method_params DEFAULT {
+		method_attr_t* attr = (method_attr_t*)gdml_zmalloc(sizeof(method_attr_t));
+		attr->name = $3->ident.str;
+		attr->is_extern = 1;
+		attr->is_default = 1;
+		attr->method_params = get_method_params($4);
+		symbol_insert(current_table, $3->ident.str, METHOD_TYPE, attr);
+
+		tree_t* node = (tree_t*)create_node("method", METHOD_TYPE, sizeof(struct tree_method));
+		node->method.name = $3->ident.str;
+		node->method.is_extern = 1;
+		node->method.is_default = 1;
+		node->method.params = $4;
+		node->common.print_node = print_method;
+		node->common.attr = attr;
+
+		attr->common.node = node;
+		DBG("method extern is %s\n", $3->ident.str);
+
+		symtab_t table = symtab_create();
+        table->table_num = ++current_table_num;
+        attr->table = symtab_insert_child(current_table, table);
+
+        //prefix_table = current_table;
+		push(table_stack, current_table);
+        current_table = table;
+        /* insert the parameters of method into table */
+        params_insert_table(table, attr->method_params);
+        $<tree_type>$ = node;
+	}
+	compound_statement {
+        tree_t* node = $<tree_type>6;
+        node->method.block = $7;
+        //current_table = prefix_table;
+        current_table = pop(table_stack);
 		$$ = node;
 	}
 	;
 
 arraydef
 	: expression {
-		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("array", ARRAY_TYPE, sizeof(struct tree_array));
 		node->array.is_fix = 1;
 		node->array.expr = $1;
@@ -640,7 +933,6 @@ arraydef
 		$$ = node;
 	}
 	| ident IN expression RANGE_SIGN expression {
-		debug_proc("Line : %d\n", __LINE__);
 		if ($1 == NULL) {
 			fprintf(stderr, "There must be identifier!\n");
 			exit(-1);
@@ -656,26 +948,38 @@ arraydef
 	;
 
 toplevel
-	: TEMPLATE objident object_spec {
+	: TEMPLATE objident {
 		DBG("in TEMPLATE %s\n", $2->ident.str);
 		template_attr_t* attr = (template_attr_t*)gdml_zmalloc(sizeof(template_attr_t));
 		attr->name = $2->ident.str;
-		#if 0
 		if (symbol_insert(current_table, $2->ident.str, TEMPLATE_TYPE, attr) == -1) {
 			fprintf(stderr, "redefined\n");
 		}
-		//symbol_insert($2->ident.str, TEMPLATE_TYPE, attr);
-		#endif
 
 		tree_t* node = (tree_t*)create_node("template", TEMPLATE_TYPE, sizeof(struct tree_template));
 		node->temp.name = $2->ident.str;
-		node->temp.spec = $3;
 		node->common.print_node = print_template;
+		node->common.attr = attr;
+
+		attr->common.node = node;
+		$<tree_type>$ = node;
+	}
+	object_spec {
+		tree_t* node = $<tree_type>3;
+		template_attr_t* attr = (template_attr_t*)(node->common.attr);
+		node->temp.spec = $4;
+		attr->desc = get_obj_desc($4);
+		attr->table = get_obj_block_table($4);
 		$$ = node;
 	}
 	| LOGGROUP ident ';' {
-		DBG("in LOGGROUP %s\n", $2);
-		//symbol_insert($2->ident.str, LOGGROUP_TYPE, NULL);
+		DBG("in LOGGROUP %s\n", $2->ident.str);
+		if (current_table->table_num == 1) {
+			symbol_insert(current_table, $2->ident.str, LOGGROUP_TYPE, NULL);
+		}
+		else {
+			fprintf(stderr, "loggroup %s should the topest level\n", $2->ident.str);
+		}
 
 		tree_t* node = (tree_t*)create_node("loggroup", LOGGROUP_TYPE, sizeof(struct tree_loggroup));
 		node->loggroup.name = $2->ident.str;
@@ -683,15 +987,24 @@ toplevel
 		$$ = node;
 	}
 	| CONSTANT ident '=' expression ';' {
-		/* TODO: Find the symbol and insert it */
-		cdecl_attr_t* attr = (cdecl_attr_t*)gdml_zmalloc(sizeof(cdecl_attr_t));
-		attr->is_constant = 1;
+		if ((current_table->table_num) != 1) {
+			fprintf(stderr, "constant %s should the topest level\n", $2->ident.str);
+			exit(-1);
+		}
+		constant_attr_t* attr = (constant_attr_t*)gdml_zmalloc(sizeof(constant_attr_t));
+		attr->name = $2->ident.str;
+		attr->common.table_num = current_table->table_num;
+		/*FIXME: should calulate the exprssion value */
+		symbol_insert(current_table, $2->ident.str, CONSTANT_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("assign", ASSIGN_TYPE, sizeof(struct tree_assign));
 		node->assign.is_constant = 1;
 		node->assign.decl = $2;
 		node->assign.expr = $4;
 		node->common.print_node = print_assign;
+		//node->common.attr = attr;
+
+		attr->common.node = node;
 		$$ = node;
 	}
 	| EXTERN cdecl_or_ident ';' {
@@ -721,7 +1034,6 @@ toplevel
 		$$ = node;
 	}
 	| EXTERN TYPEDEF cdecl ';' {
-		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("cdecl", CDECL_TYPE, sizeof(struct tree_cdecl));
 		node->cdecl.is_extern = 1;
 		node->cdecl.is_typedef = 1;
@@ -730,7 +1042,6 @@ toplevel
 		$$ = node;
 	}
 	| STRUCT ident '{' struct_decls '}' {
-		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("struct", STRUCT_TYPE, sizeof(struct tree_struct));
 		node->struct_tree.ident = $2;
 		node->struct_tree.block = $4;
@@ -838,15 +1149,36 @@ object_spec
 			$$ = node;
 		}
 	}
-	| object_desc '{' object_statements '}' {
+	| object_desc '{' {
 		DBG("object_statements for object_spec\n");
 		tree_t* node = (tree_t*)create_node("object_spec", SPEC_TYPE, sizeof(struct tree_object_spec));
 		node->spec.desc = $1;
+
 		tree_t* block = (tree_t*)create_node("block", BLOCK_TYPE, sizeof(struct tree_block));
-		block->block.statement = $3;
-		block->common.print_node = print_obj_block;
+		symtab_t table = symtab_create();
+		table->table_num = ++current_table_num;
+		block->block.table = symtab_insert_child(current_table, table);
+
 		node->spec.block = block;
 		node->common.print_node = print_object_spec;
+
+		//prefix_table = current_table;
+		push(table_stack, current_table);
+		current_table = block->block.table;
+		$<tree_type>$ = node;
+	}
+	object_statements '}' {
+		tree_t* node = $<tree_type>3;
+		tree_t* block = node->spec.block;
+		block->block.statement = $4;
+		block->common.print_node = print_obj_block;
+		if ($4 == NULL) {
+			stack_node_t* node = get_top(table_stack);
+			symtab_free(node->data, current_table_num);
+			block->block.table = NULL;
+			current_table_num--;
+		}
+		current_table = pop(table_stack);
 		$$ = node;
 	}
 	;
@@ -886,7 +1218,6 @@ object_statement
 		$$ = $1;
 	}
 	| object_if {
-		debug_proc("Line : %d\n", __LINE__);
 		DBG("object_if in object_statement \n");
 		$$ = $1;
 	}
@@ -894,7 +1225,6 @@ object_statement
 
 object_if
 	: IF '(' expression ')' '{' object_statements '}' {
-		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node =  (tree_t*)create_node("if_else", IF_ELSE_TYPE, sizeof(struct tree_if_else));
 		node->if_else.cond = $3;
 		node->if_else.if_block = $6;
@@ -903,7 +1233,6 @@ object_if
 		$$ = node;
 	}
 	| IF '(' expression ')' '{' object_statements '}' ELSE '{' object_statements '}' {
-		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node =  (tree_t*)create_node("if_else", IF_ELSE_TYPE, sizeof(struct tree_if_else));
 		node->if_else.cond = $3;
 		node->if_else.if_block = $6;
@@ -912,7 +1241,6 @@ object_if
 		$$ = node;
 	}
 	| IF '(' expression ')' '{' object_statements '}' ELSE object_if {
-		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node =  (tree_t*)create_node("if_else", IF_ELSE_TYPE, sizeof(struct tree_if_else));
 		node->if_else.cond = $3;
 		node->if_else.if_block = $6;
@@ -930,7 +1258,8 @@ parameter
 		}
 		parameter_attr_t* attr = (parameter_attr_t*)gdml_zmalloc(sizeof(parameter_attr_t));
 		attr->name = $2->ident.str;
-		//symbol_insert($2->ident.str, PARAMETER_TYPE, attr);
+		attr->spec = get_paramspec($3);
+		symbol_insert(current_table, $2->ident.str, PARAMETER_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("parameter", PARAMETER_TYPE, sizeof(struct tree_param));
 		node->param.name = $2->ident.str;
@@ -1112,11 +1441,9 @@ basetype
 		$$ = $1;
 	}
 	| layout {
-		debug_proc("Line : %d\n", __LINE__);
 		$$ = $1;
 	}
 	| bitfields {
-		debug_proc("Line : %d\n", __LINE__);
 		$$ = $1;
 	}
 	| typeof {
@@ -1129,7 +1456,6 @@ cdecl2
 		$$ = $1;
 	}
 	| CONST cdecl2 {
-		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("cdecl", CDECL_TYPE, sizeof(struct tree_cdecl));
 		node->cdecl.is_const = 1;
 		node->cdecl.decl = $2;
@@ -1144,7 +1470,6 @@ cdecl2
 		$$ = node;
 	}
 	| VECT cdecl2 {
-		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("cdecl", CDECL_TYPE, sizeof(struct tree_cdecl));
 		node->cdecl.is_vect = 1;
 		node->cdecl.decl = $2;
@@ -1292,7 +1617,6 @@ struct_decls
 
 layout
 	:LAYOUT STRING_LITERAL '{' layout_decls '}' {
-		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("layout", LAYOUT_TYPE, sizeof(struct tree_layout));
 		node->layout.name = $2;
 		node->layout.block = $4;
@@ -1303,19 +1627,16 @@ layout
 
 layout_decls
 	:layout_decls cdecl ';' {
-		debug_proc("Line : %d\n", __LINE__);
 		create_node_list($1, $2);
 		$$ = $1;
 	}
 	|  {
-		debug_proc("Line : %d\n", __LINE__);
 		$$ = NULL;
 	}
 	;
 
 bitfields
 	: BITFIELDS INTEGER_LITERAL '{' bitfields_decls '}' {
-		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("bitfields", BITFIELDS_TYPE, sizeof(struct tree_bitfields));
 		node->bitfields.name = $2;
 		node->bitfields.block = $4;
@@ -1326,7 +1647,6 @@ bitfields
 
 bitfields_decls
 	: bitfields_decls cdecl '@' '[' expression ':' expression ']' ';' {
-		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("bitfields_decls", BITFIELDS_DECL_TYPE, sizeof(struct tree_bitfields_dec));
 		node->bitfields_dec.decl = $2;
 		node->bitfields_dec.start = $5;
@@ -1341,7 +1661,6 @@ bitfields_decls
 		}
 	}
 	| {
-		debug_proc("Line : %d\n", __LINE__);
 		$$ = NULL;
 	}
 	;
@@ -1373,7 +1692,6 @@ stars
 		$$ = NULL;
 	}
 	| '*' CONST stars {
-		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("stars", STARS_TYPE, sizeof(struct tree_stars));
 		node->stars.is_const = 1;
 		node->stars.stars = $3;
@@ -1381,7 +1699,6 @@ stars
 		$$ = node;
 	}
 	| '*' stars {
-		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("stars", STARS_TYPE, sizeof(struct tree_stars));
 		node->stars.is_const = 0;
 		node->stars.stars = $2;
@@ -1504,7 +1821,6 @@ expression
 		$$ = node;
 	}
 	| expression MOD_ASSIGN expression {
-		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("mod_assign", EXPR_ASSIGN_TYPE, sizeof(struct tree_expr_assign));
 		node->expr_assign.assign_symbol = strdup("%=");
 		node->expr_assign.left = $1;
@@ -1529,7 +1845,6 @@ expression
 		$$ = node;
 	}
 	| expression XOR_ASSIGN expression {
-		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("xor_assign", EXPR_ASSIGN_TYPE, sizeof(struct tree_expr_assign));
 		node->expr_assign.assign_symbol = strdup("^=");
 		node->expr_assign.left = $1;
@@ -1538,7 +1853,6 @@ expression
 		$$ = node;
 	}
 	| expression LEFT_ASSIGN expression {
-		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("left_assign", EXPR_ASSIGN_TYPE, sizeof(struct tree_expr_assign));
 		node->expr_assign.assign_symbol = strdup("<<=");
 		node->expr_assign.left = $1;
@@ -1547,7 +1861,6 @@ expression
 		$$ = node;
 	}
 	| expression RIGHT_ASSIGN expression {
-		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("right_assign", EXPR_ASSIGN_TYPE, sizeof(struct tree_expr_assign));
 		node->expr_assign.assign_symbol = strdup(">>=");
 		node->expr_assign.left = $1;
@@ -1692,7 +2005,6 @@ expression
 		$$ = node;
 	}
 	| expression '^' expression {
-		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("xor", BINARY_TYPE, sizeof(struct tree_binary));
 		node->binary.operat = strdup("^");
 		node->binary.left = $1;
@@ -1716,7 +2028,6 @@ expression
 		$$ = node;
 	}
 	| SIZEOF expression {
-		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("sizeof", SIZEOF_TYPE, sizeof(struct tree_sizeof));
 		node->sizeof_tree.expr = $2;
 		node->common.print_node = print_sizeof;
@@ -1758,7 +2069,6 @@ expression
 		$$ = node;
 	}
 	| '*' expression {
-		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("pointer", UNARY_TYPE, sizeof(struct tree_unary));
 		node->unary.operat = strdup("*");
 		node->unary.expr = $2;
@@ -1773,7 +2083,6 @@ expression
 		$$ = node;
 	}
 	| '#' expression {
-		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("translates", UNARY_TYPE, sizeof(struct tree_unary));
 		node->unary.operat = strdup("#");
 		node->unary.expr = $2;
@@ -1781,7 +2090,6 @@ expression
 		$$ = node;
 	}
 	| INC_OP expression {
-		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("pre_inc_op", UNARY_TYPE, sizeof(struct tree_unary));
 		node->unary.operat = strdup("pre_inc");
 		node->unary.expr = $2;
@@ -1789,7 +2097,6 @@ expression
 		$$ = node;
 	}
 	| DEC_OP expression {
-		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("pre_dec_op", UNARY_TYPE, sizeof(struct tree_unary));
 		node->unary.operat = strdup("pre_dec");
 		node->unary.expr = $2;
@@ -1797,7 +2104,6 @@ expression
 		$$ = node;
 	}
 	| expression INC_OP {
-		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("aft_inc_op", UNARY_TYPE, sizeof(struct tree_unary));
 		node->unary.operat = strdup("aft_inc");
 		node->unary.expr = $1;
@@ -1805,7 +2111,6 @@ expression
 		$$ = node;
 	}
 	| expression DEC_OP {
-		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("aft_dec_op", UNARY_TYPE, sizeof(struct tree_unary));
 		node->unary.operat = strdup("aft_dec");
 		node->unary.expr = $1;
@@ -1881,7 +2186,6 @@ expression
 		$$ = node;
 	}
 	| SIZEOFTYPE typeoparg {
-		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("sizeoftype", SIZEOFTYPE_TYPE, sizeof(struct tree_sizeoftype));
 		node->sizeoftype.typeoparg = $2;
 		node->common.print_node = print_sizeoftype;
@@ -1891,14 +2195,12 @@ expression
 
 typeoparg
 	: ctypedecl {
-		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("typeoparg", TYPEOPARG_TYPE, sizeof(struct tree_typeoparg));
 		node->typeoparg.ctypedecl = $1;
 		node->common.print_node = print_typeoparg;
 		$$ = node;
 	}
 	| '(' ctypedecl ')' {
-		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("typeoparg_brack", TYPEOPARG_TYPE, sizeof(struct tree_typeoparg));
 		node->typeoparg.ctypedecl_brack = $2;
 		node->common.print_node = print_typeoparg;
@@ -1908,14 +2210,12 @@ typeoparg
 
 expression
 	: NEW ctypedecl {
-		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("new", NEW_TYPE, sizeof(struct tree_new));
 		node->new_tree.type = $2;
 		node->common.print_node = print_new;
 		$$ = node;
 	}
 	| NEW ctypedecl '[' expression ']' {
-		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("new", NEW_TYPE, sizeof(struct tree_new));
 		node->new_tree.type = $2;
 		node->new_tree.count = $4;
@@ -1932,11 +2232,11 @@ expression
 	}
 	| '[' expression_list ']' {
 		debug_proc("Line : %d\n", __LINE__);
-		tree_t* node = (tree_t*)create_node("expr_array", ARRAY_TYPE, sizeof(struct tree_array));
-		node->array.expr = $2;
-		node->common.print_node = print_array;
-		$$ = node;
-	}
+        tree_t* node = (tree_t*)create_node("expr_array", ARRAY_TYPE, sizeof(struct tree_array));
+        node->array.expr = $2;
+        node->common.print_node = print_array;
+        $$ = node;
+    }
 	| expression '[' expression endianflag ']' {
 		tree_t* node = (tree_t*)create_node("bit_slicing_expr", BIT_SLIC_EXPR_TYPE, sizeof(struct tree_bit_slic));
 		node->bit_slic.expr = $1;
@@ -1971,22 +2271,18 @@ endianflag
 
 expression_opt
 	: expression {
-		debug_proc("Line : %d\n", __LINE__);
 		$$ = $1;
 	}
 	| {
-		debug_proc("Line : %d\n", __LINE__);
 		$$ = NULL;
 	}
 	;
 
 comma_expression_opt
 	: comma_expression {
-		debug_proc("Line : %d\n", __LINE__);
 		$$ = $1;
 	}
 	| {
-		debug_proc("Line : %d\n", __LINE__);
 		$$ = NULL;
 	}
 	;
@@ -2014,7 +2310,6 @@ statement
 		$$ = $1;
 	}
 	| ';' {
-		debug_proc("Line : %d\n", __LINE__);
 		$$ = NULL;
 	}
 	| expression ';'{
@@ -2052,7 +2347,6 @@ statement
 		$$ = node;
 	}
 	| FOR '(' comma_expression_opt ';' expression_opt ';' comma_expression_opt ')' statement {
-		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("for", FOR_TYPE, sizeof(struct tree_for));
 		node->for_tree.init = $3;
 		node->for_tree.cond = $5;
@@ -2062,7 +2356,6 @@ statement
 		$$ = node;
 	}
 	| SWITCH '(' expression ')' statement {
-		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("switch", SWITCH_TYPE, sizeof(struct tree_switch));
 		node->switch_tree.cond = $3;
 		node->switch_tree.block = $5;
@@ -2070,17 +2363,51 @@ statement
 		$$ = node;
 	}
 	| DELETE expression ';' {
-		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("delete", DELETE_TYPE, sizeof(struct tree_delete));
 		node->delete_tree.expr = $2;
 		node->common.print_node = print_delete;
 		$$ = node;
 	}
-	| TRY statement CATCH statement {
+	| TRY {
+		try_catch_attr_t* attr = (try_catch_attr_t*)gdml_zmalloc(sizeof(try_catch_attr_t));
+
 		tree_t* node = (tree_t*)create_node("try_catch", TRY_CATCH_TYPE, sizeof(struct tree_try_catch));
-		node->try_catch.try_block = $2;
-		node->try_catch.catch_block = $4;
+		node->common.attr = attr;
+
+		symtab_t table = symtab_create();
+		table->table_num = ++current_table_num;
+		attr->try_table = symtab_insert_child(current_table, table);
+
+		attr->common.node = node;
+		push(table_stack, current_table);
+		current_table = table;
+
+		$<tree_type>$ = node;
+	}
+	statement {
+		tree_t* node = $<tree_type>2;
+		node->try_catch.try_block = $3;
+		current_table = pop(table_stack);
+		$<tree_type>$ = node;
+	}
+	CATCH {
+		tree_t* node = $<tree_type>4;
+		try_catch_attr_t* attr = node->common.attr;
+
+		symtab_t table = symtab_create();
+		table->table_num = ++current_table_num;
+		attr->catch_table = symtab_insert_child(current_table, table);
+
+		push(table_stack, current_table);
+		current_table = table;
+
+		$<tree_type>$ = node;
+	}
+	statement {
+		tree_t* node = $<tree_type>6;
+		node->try_catch.catch_block = $7;
 		node->common.print_node = print_try_catch;
+		current_table = pop(table_stack);
 		DBG(" try catch in statement\n");
 		$$ = node;
 	}
@@ -2162,21 +2489,39 @@ statement
 		node->common.print_node = print_select;
 		$$ = node;
 	}
-	| FOREACH ident IN '(' expression ')' statement {
+	| FOREACH ident IN '(' expression ')' {
+		foreach_attr_t* attr = (foreach_attr_t*)gdml_zmalloc(sizeof(foreach_attr_t));
+		attr->ident = $2->ident.str;
+		/*FIXME: calculate the exprssion */
+		symtab_t table = symtab_create();
+		table->table_num = ++current_table_num;
+		attr->table = symtab_insert_child(current_table, table);
+		push(table_stack, current_table);
+		current_table = table;
+		symbol_insert(current_table, $2->ident.str, FOREACH_TYPE, attr);
+
 		tree_t* node = (tree_t*)create_node("foreach", FOREACH_TYPE, sizeof(struct tree_foreach));
 		node->foreach.ident = $2;
 		node->foreach.in_expr = $5;
-		node->foreach.block = $7;
 		node->common.print_node = print_foreach;
+		node->common.attr = attr;
+
+		attr->common.node = node;
 		DBG("FOREACH in statement\n");
+
+		$<tree_type>$ = node;
+	}
+	statement
+	{
+		tree_t* node = $<tree_type>7;
+		node->foreach.block = $8;
+		current_table = pop(table_stack);
 		$$ = node;
 	}
 	| ident ':' statement {
-		debug_proc("Line : %d\n", __LINE__);
 		$$ = NULL;
 	}
 	| CASE expression ':' statement {
-		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("case", CASE_TYPE, sizeof(struct tree_case));
 		/* TODO: charge the break */
 		node->case_tree.expr = $2;
@@ -2184,14 +2529,12 @@ statement
 		$$ = node;
 	}
 	| DEFAULT ':' statement {
-		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("default", DEFAULT_TYPE, sizeof(struct tree_default));
 		node->default_tree.block = $3;
 		node->common.print_node = print_default;
 		$$ = node;
 	}
 	| GOTO ident ';' {
-		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("goto", GOTO_TYPE, sizeof(struct tree_goto));
 		node->goto_tree.label = $2;
 		node->common.print_node = print_goto;
@@ -2285,7 +2628,6 @@ local_keyword
 		$$ = node;
 	}
 	| AUTO {
-		debug_proc("Line : %d\n", __LINE__);
 		tree_t* node = (tree_t*)create_node("local_keyword", LOCAL_KEYWORD_TYPE, sizeof(struct tree_local_keyword));
 		node->local_keyword.name = strdup("auto");
 		node->common.print_node = print_local_keyword;
@@ -2302,7 +2644,6 @@ local
 		$$ = node;
 	}
 	| STATIC cdecl ';' {
-		debug_proc("Line : %d\n", __LINE__);
 		DBG("In STATIC \n");
 		tree_t* node = (tree_t*)create_node("local static", LOCAL_TYPE, sizeof(struct tree_local));
 		node->local_tree.is_static = 1;
@@ -2330,11 +2671,9 @@ local
 
 objident_list
 	: objident {
-		debug_proc("Line : %d\n", __LINE__);
 		$$ = $1;
 	}
 	| objident_list ',' objident {
-		debug_proc("Line : %d\n", __LINE__);
 		create_node_list($1, $3);
 		$$ = $1;
 	}

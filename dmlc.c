@@ -103,6 +103,7 @@ int main (int argc, char *argv[])
 	assert (ast != NULL);
 	printf("node name: %s\n", ast->common.name);
 	print_ast (ast);
+	printf("Print the syntax tree ok!\n");
 #if QEMU
 	gen_qemu_code (ast, "./output/");
 #else
