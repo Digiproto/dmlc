@@ -134,8 +134,6 @@ typedef enum
 	LOG_TYPE,
 	/* . | ->*/
 	COMPONENT_TYPE,
-	/* defined */
-	DEFINED_TYPE,
 	/* undefined */
 	UNDEFINED_TYPE,
 	/* throw */
@@ -204,11 +202,100 @@ typedef enum
 	LAYOUT_TYPE
 } type_t;
 
-typedef struct obj_variable
-{
-	int type;
-	char *name;
-} objtype;
+typedef enum {
+	/*-----expr assign type----*/
+	/* += */
+	ADD_ASSIGN_TYPE,
+	/* -= */
+	SUB_ASSIGN_TYPE,
+	/* *= */
+	MUL_ASSIGN_TYPE,
+	/* /= */
+	DIV_ASSIGN_TYPE,
+	/* %= */
+	MOD_ASSIGN_TYPE,
+	/* |= */
+	OR_ASSIGN_TYPE,
+	/* &= */
+	AND_ASSIGN_TYPE,
+	/* ^= */
+	XOR_ASSIGN_TYPE,
+	/* <<= */
+	LEFT_ASSIGN_TYPE,
+	/* >>= */
+	RIGHT_ASSIGN_TYPE,
+
+	/*-----binary operat------ */
+	/* + */
+	ADD_TYPE,
+	/* - */
+	SUB_TYPE,
+	/* * */
+	MUL_TYPE,
+	/* / */
+	DIV_TYPE,
+	/* % */
+	MOD_TYPE,
+	/* << */
+	LEFT_OP_TYPE,
+	/* >> */
+	RIGHT_OP_TYPE,
+	/* == */
+	EQ_OP_TYPE,
+	/* != */
+	NE_OP_TYPE,
+	/* < */
+	LESS_TYPE,
+	/* > */
+	GREAT_TYPE,
+	/* <= */
+	LESS_EQ_TYPE,
+	/* >= */
+	GREAT_EQ_TYPE,
+	/* || */
+	OR_OP_TYPE,
+	/* && */
+	AND_OP_TYPE,
+	/* | */
+	OR_TYPE,
+	/* ^ */
+	XOR_TYPE,
+	/* & */
+	AND_TYPE,
+
+	/* unary operator */
+	/* - */
+	NEGATIVE_TYPE,
+	/* + */
+	CONVERT_TYPE,
+	/* ! */
+	NON_OP_TYPE,
+	/* ~ */
+	BIT_NON_TYPE,
+	/* & */
+	ADDR_TYPE,
+	/* * */
+	POINTER_TYPE,
+	/* defined */
+	DEFINED_TYPE,
+	/* # */
+	EXPR_TO_STR_TYPE,
+	/* ++A */
+	PRE_INC_OP_TYPE,
+	/* --A */
+	PRE_DEC_OP_TYPE,
+	/* A++ */
+	AFT_INC_OP_TYPE,
+	/* A-- */
+	AFT_DEC_OP_TYPE,
+
+	/*------component_type-----*/
+	/* . */
+	COMPONENT_DOT_TYPE,
+	/* -> */
+	COMPONENT_POINTER_TYPE,
+}operator_type_t;
+
 typedef struct expression
 {
 } expression_t;

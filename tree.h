@@ -601,6 +601,7 @@ struct tree_bitfields_dec {
 struct tree_expr_assign {
 	struct tree_common common;
 	const char* assign_symbol;		// the assign symbol like: = /= %= ...
+	operator_type_t type;
 	tree_t* left;				// the left expression about assignment
 	tree_t* right;				// the right expression about assignment
 };
@@ -622,6 +623,7 @@ struct tree_new {
 struct tree_unary {
 	struct tree_common common;
 	const char* operat;
+	operator_type_t type;
 	tree_t* expr;
 };
 
@@ -631,6 +633,7 @@ struct tree_unary {
 struct tree_binary {
 	struct tree_common common;
 	const char* operat;			// the operator about binary like: / &= += etc.
+	operator_type_t type;
 	tree_t* left;				// the left expression about binary
 	tree_t* right;				// the right expression about binary
 };
@@ -757,6 +760,7 @@ struct tree_quote {
 struct tree_component {
 	struct tree_common common;
 	const char* comp;					// the component(.)
+	operator_type_t type;
 	tree_t* expr;				// expression about component
 	tree_t* ident;				// indentifier about component
 };

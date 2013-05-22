@@ -75,6 +75,9 @@ typedef struct constant_attr
 } constant_attr_t;
 typedef struct struct_attr
 {
+    struct symbol_common common;
+    const char* name;
+    symtab_t table;
 } struct_attr_t;
 typedef struct object_stmt_node
 {
@@ -174,11 +177,18 @@ typedef struct try_catch_attr {
 	symtab_t catch_table;
 }try_catch_attr_t;
 
+typedef struct bitfield_attr {
+    struct symbol_common common;
+    const char* name;
+    symtab_t table;
+}bitfield_attr_t;
+
 typedef struct register_array_attr
 {
 } register_array_attr_t;
 
 typedef struct bitrange_attr{
+	struct symbol_common common;
 	int is_fix;
 	expression_t expr;
 	expression_t expr_end;
@@ -300,6 +310,12 @@ typedef struct device_attr
 	bank_list_node_t *banks;
 	tree_t* node;
 } device_attr_t;
+
+typedef struct layout_attr {
+    struct symbol_common common;
+    char* str;
+    symtab_t table;
+} layout_attr_t;
 
 typedef struct ident_attr
 {

@@ -994,7 +994,7 @@ toplevel
 		constant_attr_t* attr = (constant_attr_t*)gdml_zmalloc(sizeof(constant_attr_t));
 		attr->name = $2->ident.str;
 		attr->common.table_num = current_table->table_num;
-		/*FIXME: should calulate the exprssion value */
+		/*FIXME: should calulate the expression value */
 		symbol_insert(current_table, $2->ident.str, CONSTANT_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("assign", ASSIGN_TYPE, sizeof(struct tree_assign));
@@ -1041,11 +1041,27 @@ toplevel
 		node->common.print_node = print_cdecl;
 		$$ = node;
 	}
-	| STRUCT ident '{' struct_decls '}' {
+	| STRUCT ident '{' {
+		struct_attr_t* attr = (struct_attr_t*)gdml_zmalloc(sizeof(struct_attr_t));
+		attr->name = $2->ident.str;
+
+		symtab_t table = symtab_create();
+		table->table_num = ++current_table_num;
+		attr->table = symtab_insert_child(current_table, table);
+
+		push(table_stack, current_table);
+		current_table = table;
+
 		tree_t* node = (tree_t*)create_node("struct", STRUCT_TYPE, sizeof(struct tree_struct));
-		node->struct_tree.ident = $2;
-		node->struct_tree.block = $4;
+		node->struct_tree.ident = $2->ident.str;
 		node->common.print_node = print_struct;
+		node->common.attr = attr;
+		$<tree_type>$ = node;
+	}
+	struct_decls '}' {
+		tree_t* node = $<tree_type>4;
+		node->struct_tree.block = $5;
+		current_table = pop(table_stack);
 		$$ = node;
 	}
 	| HEADER {
@@ -1391,13 +1407,22 @@ offsetspec
 
 bitrange
 	: '[' expression ']' {
+		/* should calulate the expression value */
+		bitrange_attr_t* attr = (bitrange_attr_t*)gdml_zmalloc(sizeof(bitrange_attr_t));
+		attr->is_fix = 1;
 		tree_t* node = (tree_t*)create_node("array", ARRAY_TYPE, sizeof(struct tree_array));
 		node->array.is_fix = 1;
 		node->array.expr = $2;
 		node->common.print_node = print_array;
+		node->common.attr = attr;
+
+		attr->common.node = node;
 		$$ = node;
 	}
 	| '[' expression ':' expression ']' {
+		/* should calulate the expression value */
+		bitrange_attr_t* attr = (bitrange_attr_t*)gdml_zmalloc(sizeof(bitrange_attr_t));
+		attr->is_fix = 0;
 		tree_t* node = (tree_t*)create_node("array", ARRAY_TYPE, sizeof(struct tree_array));
 		node->array.is_fix = 0;
 		node->array.expr = $2;
@@ -1616,11 +1641,31 @@ struct_decls
 	;
 
 layout
-	:LAYOUT STRING_LITERAL '{' layout_decls '}' {
+	:LAYOUT STRING_LITERAL '{' {
+		layout_attr_t* attr = (layout_attr_t*)gdml_zmalloc(sizeof(layout_attr_t));
+		attr->str = $2;
+		symbol_insert(current_table, $2, LAYOUT_TYPE, attr);
+
+		symtab_t table = symtab_create();
+		table->table_num = ++current_table_num;
+		attr->table = symtab_insert_child(current_table, table);
+
+		push(table_stack, current_table);
+		current_table = table;
+
 		tree_t* node = (tree_t*)create_node("layout", LAYOUT_TYPE, sizeof(struct tree_layout));
 		node->layout.name = $2;
-		node->layout.block = $4;
 		node->common.print_node = print_layout;
+		node->common.attr = attr;
+
+		attr->common.node = node;
+
+		$<tree_type>$ = node;
+	}
+	layout_decls '}' {
+		tree_t* node = $<tree_type>4;
+		node->layout.block = $5;
+		current_table = pop(table_stack);
 		$$ = node;
 	}
 	;
@@ -1636,11 +1681,30 @@ layout_decls
 	;
 
 bitfields
-	: BITFIELDS INTEGER_LITERAL '{' bitfields_decls '}' {
+	: BITFIELDS INTEGER_LITERAL '{' {
+		bitfield_attr_t* attr = (bitfield_attr_t*)gdml_zmalloc(sizeof(bitfield_attr_t));
+		attr->name = $2;
+		symbol_insert(current_table, $2, BITFIELDS_TYPE, attr);
+
+		symtab_t table = symtab_create();
+		table->table_num = ++current_table_num;
+		attr->table = symtab_insert_child(current_table, table);
+
+		push(table_stack, current_table);
+		current_table = table;
+
 		tree_t* node = (tree_t*)create_node("bitfields", BITFIELDS_TYPE, sizeof(struct tree_bitfields));
 		node->bitfields.name = $2;
-		node->bitfields.block = $4;
 		node->common.print_node = print_bitfields;
+		node->common.attr = attr;
+
+		attr->common.node = node;
+		$<tree_type>$ = node;
+	}
+	bitfields_decls '}' {
+		tree_t* node = $<tree_type>4;
+		node->bitfields.block = $5;
+		current_table = pop(table_stack);
 		$$ = node;
 	}
 	;
@@ -1783,6 +1847,7 @@ expression
 	: expression '=' expression {
 		tree_t* node = (tree_t*)create_node("assign", EXPR_ASSIGN_TYPE, sizeof(struct tree_expr_assign));
 		node->expr_assign.assign_symbol = strdup("=");
+		node->expr_assign.type = EXPR_ASSIGN_TYPE;
 		node->expr_assign.left = $1;
 		node->expr_assign.right = $3;
 		node->common.print_node = print_expr_assign;
@@ -1791,6 +1856,7 @@ expression
 	| expression ADD_ASSIGN expression {
 		tree_t* node = (tree_t*)create_node("add_assign", EXPR_ASSIGN_TYPE, sizeof(struct tree_expr_assign));
 		node->expr_assign.assign_symbol = strdup("+=");
+		node->expr_assign.type = ADD_ASSIGN_TYPE;
 		node->expr_assign.left = $1;
 		node->expr_assign.right = $3;
 		node->common.print_node = print_binary;
@@ -1799,6 +1865,7 @@ expression
 	| expression SUB_ASSIGN expression {
 		tree_t* node = (tree_t*)create_node("sub_assign", EXPR_ASSIGN_TYPE, sizeof(struct tree_expr_assign));
 		node->expr_assign.assign_symbol = strdup("-=");
+		node->expr_assign.type = SUB_ASSIGN_TYPE;
 		node->expr_assign.left = $1;
 		node->expr_assign.right = $3;
 		node->common.print_node = print_binary;
@@ -1807,6 +1874,7 @@ expression
 	| expression MUL_ASSIGN expression {
 		tree_t* node = (tree_t*)create_node("mul_assign", EXPR_ASSIGN_TYPE, sizeof(struct tree_expr_assign));
 		node->expr_assign.assign_symbol = strdup("*=");
+		node->expr_assign.type = MUL_ASSIGN_TYPE;
 		node->expr_assign.left = $1;
 		node->expr_assign.right = $3;
 		node->common.print_node = print_binary;
@@ -1815,6 +1883,7 @@ expression
 	| expression DIV_ASSIGN expression {
 		tree_t* node = (tree_t*)create_node("div_assign", EXPR_ASSIGN_TYPE, sizeof(struct tree_expr_assign));
 		node->expr_assign.assign_symbol = strdup("/=");
+		node->expr_assign.type = DIV_ASSIGN_TYPE;
 		node->expr_assign.left = $1;
 		node->expr_assign.right = $3;
 		node->common.print_node = print_binary;
@@ -1823,6 +1892,7 @@ expression
 	| expression MOD_ASSIGN expression {
 		tree_t* node = (tree_t*)create_node("mod_assign", EXPR_ASSIGN_TYPE, sizeof(struct tree_expr_assign));
 		node->expr_assign.assign_symbol = strdup("%=");
+		node->expr_assign.type = MOD_ASSIGN_TYPE;
 		node->expr_assign.left = $1;
 		node->expr_assign.right = $3;
 		node->common.print_node = print_binary;
@@ -1831,6 +1901,7 @@ expression
 	| expression OR_ASSIGN expression {
 		tree_t* node = (tree_t*)create_node("or_assign", EXPR_ASSIGN_TYPE, sizeof(struct tree_expr_assign));
 		node->expr_assign.assign_symbol = strdup("|=");
+		node->expr_assign.type = OR_ASSIGN_TYPE;
 		node->expr_assign.left = $1;
 		node->expr_assign.right = $3;
 		node->common.print_node = print_binary;
@@ -1839,6 +1910,7 @@ expression
 	| expression AND_ASSIGN expression {
 		tree_t* node = (tree_t*)create_node("and_assign", EXPR_ASSIGN_TYPE, sizeof(struct tree_expr_assign));
 		node->expr_assign.assign_symbol = strdup("&=");
+		node->expr_assign.type = AND_ASSIGN_TYPE;
 		node->expr_assign.left = $1;
 		node->expr_assign.right = $3;
 		node->common.print_node = print_binary;
@@ -1847,6 +1919,7 @@ expression
 	| expression XOR_ASSIGN expression {
 		tree_t* node = (tree_t*)create_node("xor_assign", EXPR_ASSIGN_TYPE, sizeof(struct tree_expr_assign));
 		node->expr_assign.assign_symbol = strdup("^=");
+		node->expr_assign.type = XOR_ASSIGN_TYPE;
 		node->expr_assign.left = $1;
 		node->expr_assign.right = $3;
 		node->common.print_node = print_binary;
@@ -1855,6 +1928,7 @@ expression
 	| expression LEFT_ASSIGN expression {
 		tree_t* node = (tree_t*)create_node("left_assign", EXPR_ASSIGN_TYPE, sizeof(struct tree_expr_assign));
 		node->expr_assign.assign_symbol = strdup("<<=");
+		node->expr_assign.type = LEFT_ASSIGN_TYPE;
 		node->expr_assign.left = $1;
 		node->expr_assign.right = $3;
 		node->common.print_node = print_binary;
@@ -1863,6 +1937,7 @@ expression
 	| expression RIGHT_ASSIGN expression {
 		tree_t* node = (tree_t*)create_node("right_assign", EXPR_ASSIGN_TYPE, sizeof(struct tree_expr_assign));
 		node->expr_assign.assign_symbol = strdup(">>=");
+		node->expr_assign.type = RIGHT_ASSIGN_TYPE;
 		node->expr_assign.left = $1;
 		node->expr_assign.right = $3;
 		node->common.print_node = print_binary;
@@ -1879,6 +1954,7 @@ expression
 	| expression '+' expression {
 		tree_t* node = (tree_t*)create_node("add", BINARY_TYPE, sizeof(struct tree_binary));
 		node->binary.operat = strdup("+");
+		node->binary.type = ADD_TYPE;
 		node->binary.left = $1;
 		node->binary.right = $3;
 		node->common.print_node = print_binary;
@@ -1887,6 +1963,7 @@ expression
 	| expression '-' expression {
 		tree_t* node = (tree_t*)create_node("sub", BINARY_TYPE, sizeof(struct tree_binary));
 		node->binary.operat = strdup("-");
+		node->binary.type = SUB_TYPE;
 		node->binary.left = $1;
 		node->binary.right = $3;
 		node->common.print_node = print_binary;
@@ -1895,6 +1972,7 @@ expression
 	| expression '*' expression {
 		tree_t* node = (tree_t*)create_node("mul", BINARY_TYPE, sizeof(struct tree_binary));
 		node->binary.operat = strdup("*");
+		node->binary.type = MUL_TYPE;
 		node->binary.left = $1;
 		node->binary.right = $3;
 		node->common.print_node = print_binary;
@@ -1903,6 +1981,7 @@ expression
 	| expression '/' expression {
 		tree_t* node = (tree_t*)create_node("div", BINARY_TYPE, sizeof(struct tree_binary));
 		node->binary.operat = strdup("/");
+		node->binary.type = DIV_TYPE;
 		node->binary.left = $1;
 		node->binary.right = $3;
 		node->common.print_node = print_binary;
@@ -1911,6 +1990,7 @@ expression
 	| expression '%' expression {
 		tree_t* node = (tree_t*)create_node("mod", BINARY_TYPE, sizeof(struct tree_binary));
 		node->binary.operat = strdup("%");
+		node->binary.type = MOD_TYPE;
 		node->binary.left = $1;
 		node->binary.right = $3;
 		node->common.print_node = print_binary;
@@ -1919,6 +1999,7 @@ expression
 	| expression LEFT_OP expression {
 		tree_t* node = (tree_t*)create_node("left_op", BINARY_TYPE, sizeof(struct tree_binary));
 		node->binary.operat = strdup("<<");
+		node->binary.type = LEFT_OP_TYPE;
 		node->binary.left = $1;
 		node->binary.right = $3;
 		node->common.print_node = print_binary;
@@ -1927,6 +2008,7 @@ expression
 	| expression RIGHT_OP expression {
 		tree_t* node = (tree_t*)create_node("right_op", BINARY_TYPE, sizeof(struct tree_binary));
 		node->binary.operat = strdup(">>");
+		node->binary.type = RIGHT_OP_TYPE;
 		node->binary.left = $1;
 		node->binary.right = $3;
 		node->common.print_node = print_binary;
@@ -1935,6 +2017,7 @@ expression
 	| expression EQ_OP expression {
 		tree_t* node = (tree_t*)create_node("eq_op", BINARY_TYPE, sizeof(struct tree_binary));
 		node->binary.operat = strdup("==");
+		node->binary.type = EQ_OP_TYPE;
 		node->binary.left = $1;
 		node->binary.right = $3;
 		node->common.print_node = print_binary;
@@ -1943,6 +2026,7 @@ expression
 	| expression NE_OP expression {
 		tree_t* node = (tree_t*)create_node("ne_op", BINARY_TYPE, sizeof(struct tree_binary));
 		node->binary.operat = strdup("!=");
+		node->binary.type = NE_OP_TYPE;
 		node->binary.left = $1;
 		node->binary.right = $3;
 		node->common.print_node = print_binary;
@@ -1951,6 +2035,7 @@ expression
 	| expression '<' expression {
 		tree_t* node = (tree_t*)create_node("less", BINARY_TYPE, sizeof(struct tree_binary));
 		node->binary.operat = strdup("<");
+		node->binary.type = LESS_TYPE;
 		node->binary.left = $1;
 		node->binary.right = $3;
 		node->common.print_node = print_binary;
@@ -1959,6 +2044,7 @@ expression
 	| expression '>' expression {
 		tree_t* node = (tree_t*)create_node("great", BINARY_TYPE, sizeof(struct tree_binary));
 		node->binary.operat = strdup(">");
+		node->binary.type = GREAT_TYPE;
 		node->binary.left = $1;
 		node->binary.right = $3;
 		node->common.print_node = print_binary;
@@ -1967,6 +2053,7 @@ expression
 	| expression LE_OP expression {
 		tree_t* node = (tree_t*)create_node("less_eq", BINARY_TYPE, sizeof(struct tree_binary));
 		node->binary.operat = strdup("<=");
+		node->binary.type = LESS_EQ_TYPE;
 		node->binary.left = $1;
 		node->binary.right = $3;
 		node->common.print_node = print_binary;
@@ -1975,6 +2062,7 @@ expression
 	| expression GE_OP expression {
 		tree_t* node = (tree_t*)create_node("great_eq", BINARY_TYPE, sizeof(struct tree_binary));
 		node->binary.operat = strdup(">=");
+		node->binary.type = GREAT_EQ_TYPE;
 		node->binary.left = $1;
 		node->binary.right = $3;
 		node->common.print_node = print_binary;
@@ -1983,6 +2071,7 @@ expression
 	| expression OR_OP expression {
 		tree_t* node = (tree_t*)create_node("or_op", BINARY_TYPE, sizeof(struct tree_binary));
 		node->binary.operat = strdup("||");
+		node->binary.type = OR_OP_TYPE;
 		node->binary.left = $1;
 		node->binary.right = $3;
 		node->common.print_node = print_binary;
@@ -1991,6 +2080,7 @@ expression
 	| expression AND_OP expression {
 		tree_t* node = (tree_t*)create_node("and_op", BINARY_TYPE, sizeof(struct tree_binary));
 		node->binary.operat = strdup("&&");
+		node->binary.type = AND_OP_TYPE;
 		node->binary.left = $1;
 		node->binary.right = $3;
 		node->common.print_node = print_binary;
@@ -1999,6 +2089,7 @@ expression
 	| expression '|' expression {
 		tree_t* node = (tree_t*)create_node("or", BINARY_TYPE, sizeof(struct tree_binary));
 		node->binary.operat = strdup("|");
+		node->binary.type = OR_TYPE;
 		node->binary.left = $1;
 		node->binary.right = $3;
 		node->common.print_node = print_binary;
@@ -2007,6 +2098,7 @@ expression
 	| expression '^' expression {
 		tree_t* node = (tree_t*)create_node("xor", BINARY_TYPE, sizeof(struct tree_binary));
 		node->binary.operat = strdup("^");
+		node->binary.type = XOR_TYPE;
 		node->binary.left = $1;
 		node->binary.right = $3;
 		node->common.print_node = print_binary;
@@ -2015,6 +2107,7 @@ expression
 	| expression '&' expression {
 		tree_t* node = (tree_t*)create_node("and", BINARY_TYPE, sizeof(struct tree_binary));
 		node->binary.operat = strdup("&");
+		node->binary.type = AND_TYPE;
 		node->binary.left = $1;
 		node->binary.right = $3;
 		node->common.print_node = print_binary;
@@ -2036,6 +2129,7 @@ expression
 	| '-' expression {
 		tree_t* node = (tree_t*)create_node("negative", UNARY_TYPE, sizeof(struct tree_unary));
 		node->unary.operat = strdup("-");
+		node->unary.type = NEGATIVE_TYPE;
 		node->unary.expr = $2;
 		node->common.print_node = print_unary;
 		$$ = node;
@@ -2043,6 +2137,7 @@ expression
 	| '+' expression {
 		tree_t* node = (tree_t*)create_node("convert", UNARY_TYPE, sizeof(struct tree_unary));
 		node->unary.operat = strdup("+");
+		node->unary.type = CONVERT_TYPE;
 		node->unary.expr = $2;
 		node->common.print_node = print_unary;
 		$$ = node;
@@ -2050,6 +2145,7 @@ expression
 	| '!' expression {
 		tree_t* node = (tree_t*)create_node("non_op", UNARY_TYPE, sizeof(struct tree_unary));
 		node->unary.operat = strdup("!");
+		node->unary.type = NON_OP_TYPE;
 		node->unary.expr = $2;
 		node->common.print_node = print_unary;
 		$$ = node;
@@ -2057,6 +2153,7 @@ expression
 	| '~' expression {
 		tree_t* node = (tree_t*)create_node("bit_non", UNARY_TYPE, sizeof(struct tree_unary));
 		node->unary.operat = strdup("~");
+		node->unary.type = BIT_NON_TYPE;
 		node->unary.expr = $2;
 		node->common.print_node = print_unary;
 		$$ = node;
@@ -2064,6 +2161,7 @@ expression
 	| '&' expression {
 		tree_t* node = (tree_t*)create_node("addr", UNARY_TYPE, sizeof(struct tree_unary));
 		node->unary.operat = strdup("&");
+		node->unary.type = ADDR_TYPE;
 		node->unary.expr = $2;
 		node->common.print_node = print_unary;
 		$$ = node;
@@ -2071,6 +2169,7 @@ expression
 	| '*' expression {
 		tree_t* node = (tree_t*)create_node("pointer", UNARY_TYPE, sizeof(struct tree_unary));
 		node->unary.operat = strdup("*");
+		node->unary.type = POINTER_TYPE;
 		node->unary.expr = $2;
 		node->common.print_node = print_unary;
 		$$ = node;
@@ -2078,6 +2177,7 @@ expression
 	| DEFINED expression {
 		tree_t* node = (tree_t*)create_node("defined", UNARY_TYPE, sizeof(struct tree_unary));
 		node->unary.operat = strdup("defined");
+		node->unary.type = DEFINED_TYPE;
 		node->unary.expr = $2;
 		node->common.print_node = print_unary;
 		$$ = node;
@@ -2085,6 +2185,7 @@ expression
 	| '#' expression {
 		tree_t* node = (tree_t*)create_node("translates", UNARY_TYPE, sizeof(struct tree_unary));
 		node->unary.operat = strdup("#");
+		node->unary.type = EXPR_TO_STR_TYPE;
 		node->unary.expr = $2;
 		node->common.print_node = print_unary;
 		$$ = node;
@@ -2092,6 +2193,7 @@ expression
 	| INC_OP expression {
 		tree_t* node = (tree_t*)create_node("pre_inc_op", UNARY_TYPE, sizeof(struct tree_unary));
 		node->unary.operat = strdup("pre_inc");
+		node->unary.type = PRE_INC_OP_TYPE;
 		node->unary.expr = $2;
 		node->common.print_node = print_unary;
 		$$ = node;
@@ -2099,6 +2201,7 @@ expression
 	| DEC_OP expression {
 		tree_t* node = (tree_t*)create_node("pre_dec_op", UNARY_TYPE, sizeof(struct tree_unary));
 		node->unary.operat = strdup("pre_dec");
+		node->unary.type = PRE_DEC_OP_TYPE;
 		node->unary.expr = $2;
 		node->common.print_node = print_unary;
 		$$ = node;
@@ -2106,6 +2209,7 @@ expression
 	| expression INC_OP {
 		tree_t* node = (tree_t*)create_node("aft_inc_op", UNARY_TYPE, sizeof(struct tree_unary));
 		node->unary.operat = strdup("aft_inc");
+		node->unary.type = AFT_INC_OP_TYPE;
 		node->unary.expr = $1;
 		node->common.print_node = print_unary;
 		$$ = node;
@@ -2113,6 +2217,7 @@ expression
 	| expression DEC_OP {
 		tree_t* node = (tree_t*)create_node("aft_dec_op", UNARY_TYPE, sizeof(struct tree_unary));
 		node->unary.operat = strdup("aft_dec");
+		node->unary.type = AFT_DEC_OP_TYPE;
 		node->unary.expr = $1;
 		node->common.print_node = print_unary;
 		$$ = node;
@@ -2172,6 +2277,7 @@ expression
 	| expression '.' objident {
 		tree_t* node = (tree_t*)create_node("dot", COMPONENT_TYPE, sizeof(struct tree_component));
 		node->component.comp = strdup(".");
+		node->component.type = COMPONENT_DOT_TYPE;
 		node->component.expr = $1;
 		node->component.ident = $3;
 		node->common.print_node = print_component;
@@ -2180,6 +2286,7 @@ expression
 	| expression METHOD_RETURN objident {
 		tree_t* node = (tree_t*)create_node("pointer", COMPONENT_TYPE, sizeof(struct tree_component));
 		node->component.comp = strdup("->");
+		node->component.type = COMPONENT_POINTER_TYPE;
 		node->component.expr = $1;
 		node->component.ident = $3;
 		node->common.print_node = print_component;
