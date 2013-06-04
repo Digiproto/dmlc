@@ -63,22 +63,22 @@ typedef enum
 #define _debug_in_white(fmt,...)    printf("\033[1;37m"fmt"\033[0m", ## __VA_ARGS__)
 
 void debug_color (COLOR_TYPE type, char *format, ...);
-int debug_find_tail (char *format, ...);
-int debug_add_child (char *format, ...);
-int debug_create_node (char *format, ...);
-int debug_create_node_list (char *format, ...);
+int debug_blude(char *format, ...);
+int debug_green(char *format, ...);
 int debug_proc (char *format, ...);
 int debug_black (char *format, ...);
+int debug_red(char *format, ...);
+int debug_brown(char* format, ...);
 
 //#define DEBUG_CODE_COLOR
 
 #ifdef	DEBUG_CODE_COLOR
 #define DEBUG_COLOR				debug_color
 #define DEBUG_BLACK				debug_black
-#define DEBUG_FIND_TAIL			debug_find_tail
-#define DEBUG_ADD_CHILD			debug_add_child
-#define DEBUG_CREATE_NODE		debug_create_node
-#define DEBUG_CREATE_NODE_LIST	debug_create_node_list
+#define DEBUG_FIND_TAIL			debug_green
+#define DEBUG_ADD_CHILD			debug_blude
+#define DEBUG_CREATE_NODE		debug_green
+#define DEBUG_CREATE_NODE_LIST	debug_red
 #else
 #define DEBUG_COLOR
 #define DEBUG_BLACK

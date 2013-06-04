@@ -109,7 +109,7 @@ void debug_color (COLOR_TYPE type, char *format, ...)
 	}
 }
 
-int debug_find_tail (char *format, ...)
+int debug_blue(char *format, ...)
 {
 	char buf[MAX_LENGTH];
 	memset (buf, '\0', MAX_LENGTH);
@@ -124,22 +124,7 @@ int debug_find_tail (char *format, ...)
 	return 0;
 }
 
-int debug_add_child (char *format, ...)
-{
-	char buf[MAX_LENGTH];
-	memset (buf, '\0', MAX_LENGTH);
-	va_list args;
-	va_start (args, format);
-	vsprintf (buf, format, args);
-	out_bounds (buf);
-	va_end (args);
-
-	_debug_in_blue ("%s", buf);
-
-	return 0;
-}
-
-int debug_create_node (char *format, ...)
+int debug_green(char* format, ...)
 {
 	char buf[MAX_LENGTH];
 	memset (buf, '\0', MAX_LENGTH);
@@ -154,7 +139,7 @@ int debug_create_node (char *format, ...)
 	return 0;
 }
 
-int debug_create_node_list (char *format, ...)
+int debug_red(char *format, ...)
 {
 	char buf[MAX_LENGTH];
 	memset (buf, '\0', MAX_LENGTH);
@@ -193,6 +178,19 @@ int debug_black (char *format, ...)
 	out_bounds (buf);
 	va_end (args);
 
-	_debug_in_black ("%s", buf);
+	_debug_in_black ("\t%s", buf);
+	return 0;
+}
+
+int debug_brown(char* format, ...) {
+	char buf[MAX_LENGTH];
+	memset (buf, '\0', MAX_LENGTH);
+	va_list args;
+	va_start (args, format);
+	vsprintf (buf, format, args);
+	out_bounds (buf);
+	va_end (args);
+
+	_debug_in_brown ("\t%s", buf);
 	return 0;
 }
