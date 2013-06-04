@@ -85,7 +85,6 @@ loop:
 "for"           { count(yyscanner); return(FOR); }  
 "goto"          { count(yyscanner); return(GOTO); }  
 "if"            { count(yyscanner); return(IF); }  
-"int"           { count(yyscanner); return(INT); }  
 "long"          { count(yyscanner); return(LONG); }  
 "register"      { count(yyscanner); return(REGISTER); }  
 "return"        { count(yyscanner); return(RETURN); }  
@@ -123,6 +122,11 @@ loop:
 "typeof"		{ count(yyscanner); return(TYPEOF);}
 "assert"		{ count(yyscanner); return(ASSERT);}
 "cast"			{ count(yyscanner); return(CAST);}
+(int|uint)[1-9]* {
+					count(yyscanner);
+					yylval_param->sval = (char *) strdup(yyget_text(yyscanner));
+					return(INT);
+				}
 "header"		{
 					count(yyscanner);
 					char c, c1;

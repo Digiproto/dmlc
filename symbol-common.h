@@ -43,15 +43,23 @@ typedef struct symbol {
     };
 }*symbol_t;
 
+struct template_table {
+	char* template_name;
+	struct symtab *table;
+	struct template_table *next;
+};
+
 /* a hash table for storing symbols. it have a pointer to a brother,
  * have a pointer to a child.  */
 struct symtab {
     struct symtab *parent;
     struct symtab *sibling;
     struct symtab *child;
+	struct template_table* template_table;
 	symbol_t list;
     symbol_t table[MAX_SYMBOLS];
 	int table_num;
+	type_t type;
 };
 
 /* find and insert symbol from the symbol table.  */
@@ -62,7 +70,7 @@ symbol_t symbol_find_curr_notype(symtab_t symtab, char* name);
 int symbol_find_type_curr(symtab_t symtab, type_t type, symbol_t **result);
 int symbol_insert(symtab_t symtab, const char* name, type_t type, void* attr);
 /* operate the symbol tables.  */
-symtab_t symtab_create();
+symtab_t symtab_create(type_t type);
 symtab_t symtab_insert_sibling(symtab_t symtab, symtab_t newtab);
 symtab_t symtab_insert_child(symtab_t symtab, symtab_t newtab);
 void symtab_free(symtab_t symtab, int table_num);

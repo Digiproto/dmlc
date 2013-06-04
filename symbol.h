@@ -28,11 +28,18 @@
 #ifndef	SYMBOL_H
 #define	SYMBOL_H
 #include "tree.h"
+#include "expression.h"
+#include "decl.h"
 
 struct symbol_common {
    tree_t* node;
    int table_num;
 };
+
+typedef struct variable {
+    int type;
+    char *name;
+} variable_t;
 
 typedef struct dml_attr
 {
@@ -86,8 +93,9 @@ typedef struct object_stmt_node
 typedef struct paramspec {
 	int is_default;
 	int is_auto;
+	int type;
 	const char* str;
-	expression_t *exp;
+	expression_t *expr;
 }paramspec_t;
 
 typedef struct parameter_attr
@@ -96,9 +104,18 @@ typedef struct parameter_attr
 	struct paramspec_t* spec;
 } parameter_attr_t;
 
+typedef struct value {
+}value_t;
+
 typedef struct params {
-	char* basetype;
-	char* variable;
+	int is_notype;
+	decl_t* decl;
+	char* var_name;
+#if 0
+	decl_type_t* decl_type;
+	char* decl_str;
+	expression_t *value;
+#endif
 }params_t;
 
 typedef struct method_params {
@@ -161,7 +178,7 @@ typedef struct register_list_node
 typedef struct bank_attr
 {
 	struct symbol_common common;
-	const char** template_name;
+	const char** templates;
 	const char *name;
 	const char* desc;
 	int template_num;
@@ -327,30 +344,4 @@ typedef struct const_str_attr
 	const char *name;
 } const_str_attr_t;
 
-typedef struct cdecl {
-	const char* name;
-    int is_constant;
-    int is_static;
-    int is_local;
-	int is_extern;
-	int is_typedef;
-} cdecl_attr_t;
-
-#if 0
-typedef struct symbol
-{
-	const char *name;
-	int type;					/* READ, WRITE, or NAME */
-	union
-	{
-		void *default_type;
-		device_attr_t *device;
-		bitorder_attr_t *bitorder;
-	} attr;
-	struct symbol *next;		/* the other symbol with the same hash value */
-} symbol_t;
-
-symbol_t *symbol_find (char *name, int type);
-int symbol_insert (const char *name, int type, void *attr);
-#endif
 #endif

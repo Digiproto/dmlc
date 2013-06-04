@@ -35,6 +35,7 @@
 #include "debug_color.h"
 #include "types.h"
 #include "symbol.h"
+#include "decl_func.h"
 
 #ifdef AST_DEBUG
 #define DBG(fmt, ...) do { fprintf(stderr, fmt, ## __VA_ARGS__); } while (0)
@@ -417,70 +418,40 @@ int get_param_num(tree_t* node) {
 	return num;
 }
 
-char* get_basetype(tree_t* node) {
-	printf("\n\tPay attention: should parsing the basetype\n\n");
-	return NULL;
-}
-
-char* get_variable(tree_t* node) {
-	printf("\n\tPay attention: should parsing the variable\n\n");
-	return NULL;
-}
-
-params_t* get_param_decl(tree_t* node) {
-	assert(node != NULL);
-	if (node->common.type != CDECL_TYPE) {
-		printf("params type is : %s\n", node->common.name);
-		exit(-1);
-	}
-	tree_t* basetype = node->cdecl.basetype;
-	tree_t* decl = node->cdecl.decl;
-	params_t* param = (params_t*)gdml_zmalloc(sizeof(params_t));
-	if ((basetype->common.type) == IDENT_TYPE) {
-		param->variable = basetype->ident.str;
-	}
-	else {
-		printf("param type: %s\n", node->common.name);
-		param->basetype = get_basetype(basetype);
-		param->variable = get_variable(decl);
-	}
-
-	return param;
-}
-
-params_t** get_param_list(tree_t* node, int param_num) {
+params_t** get_param_list(tree_t* node, int param_num, symtab_t table) {
 	assert(node != NULL);
 	params_t** list = gdml_zmalloc(param_num * (sizeof(params_t*)));
 	tree_t* tmp = node;
 	int i = 0;
 	while (tmp != NULL) {
 		/* FIXME: parsing the param */
-		list[i] = get_param_decl(tmp);
+		list[i] = get_param_decl(tmp, table);
 		i++;
 		tmp = tmp->common.sibling;
 	}
 	return list;
 }
 
-method_params_t* get_method_params(tree_t* node) {
+method_params_t* get_method_params(tree_t* node, symtab_t table) {
 	if (node == NULL) {
 		return NULL;
 	}
 	method_params_t* params = (method_params_t*)gdml_zmalloc(sizeof(method_params_t));
 	if (node->params.in_params) {
 		params->in_argc = get_param_num(node->params.in_params);
-		params->in_list = get_param_list(node->params.in_params, (params->in_argc));
+		params->in_list = get_param_list(node->params.in_params, (params->in_argc), table);
 	}
 
 	if (node->params.ret_params) {
 		params->ret_argc = get_param_num(node->params.ret_params);
-		params->ret_list = get_param_list(node->params.ret_params, (params->ret_argc));
+		params->ret_list = get_param_list(node->params.ret_params, (params->ret_argc), table);
 	}
 
 	return params;
 }
 
-paramspec_t* get_paramspec(tree_t* node) {
+paramspec_t* get_paramspec(tree_t* node, symtab_t table) {
+	DEBUG_BLACK("In %s, line = %d\n", __FUNCTION__, __LINE__);
 	if (node == NULL) {
 		return NULL;
 	}
@@ -489,11 +460,12 @@ paramspec_t* get_paramspec(tree_t* node) {
 	spec->is_auto = node->paramspec.is_auto;
 	if (node->paramspec.string) {
 		spec->str = get_const_string(node->paramspec.string);
+		spec->type = CONST_STRING_TYPE;
 	}
 	if (node->paramspec.expr) {
-		/* FIXME: should write a function to get value of expression */
-		printf("\nNeed to parse the expression!\n\n");
-		//exit(-1);
+		printf("paramspec is expression expr type: %s\n",node->paramspec.expr->common.name);
+		//spec->expr = parse_expression(node->paramspec.expr, table);
+		spec->type = spec->expr->final_type;
 	}
 
 	return spec;
@@ -530,6 +502,169 @@ int get_offset(tree_t* node) {
 		printf("The size is another type expression - node type: %d, name: %s\n", node->common.type, node->common.name);
 		exit(-1);
 	}
+
+	return -1;
+}
+
+void add_template_to_table(symtab_t table, char* template) {
+	assert(table != NULL);
+	assert(template != NULL);
+
+	printf("In %s, line = %d, templates: %s\n",
+			__FUNCTION__, __LINE__, template);
+
+	struct template_table* pre_temp_table = table->template_table;
+	struct template_table* temp_table = NULL;
+	char* template_name = NULL;
+
+	while ((table->template_table) != NULL) {
+		template_name = table->template_table->template_name;
+		printf("In %s, line = %d, trave templates: %s\n", template_name);
+		if (strcmp(template, template_name) == 0) {
+			fprintf(stderr, "re-load template: %s\n", template);
+			/*FIXME: should handle the error */
+			exit(-1);
+		}
+		pre_temp_table = table->template_table;
+		table->template_table = table->template_table->next;
+	}
+
+	temp_table = (struct template_table*)gdml_zmalloc(sizeof(struct template_table));
+
+	symbol_t symbol = symbol_find(table, template, TEMPLATE_TYPE);
+	if (symbol == NULL) {
+		fprintf(stderr, "can not find the template: %s\n", template);
+		/* FIXME: should handle the error */
+		exit(-1);
+	}
+	template_attr_t* attr = symbol->attr;
+	temp_table->table = attr->table;
+	temp_table->template_name = strdup(template);
+
+	if (pre_temp_table == NULL) {
+		table->template_table = temp_table;
+		table->template_table->next = temp_table->next;
+	}
+	else {
+		table->template_table->next = temp_table;
+	}
+
+	printf("In %s, line = %d, insert templates table: %s\n", __func__, __LINE__, table->template_table->template_name);
+
+	return;
+}
+
+void add_templates_to_table(symtab_t table, char** templates, int num) {
+	assert(table);
+
+	if (num == 0) {
+		return;
+	}
+
+	int i = 0;
+
+	for (i = 0; i < num; i++) {
+		printf("In %s, line = %d, num: %d, templates: %s\n",
+				__FUNCTION__, __LINE__, i, templates[i]);
+
+		add_template_to_table(table, templates[i]);
+	}
+
+	return;
+}
+
+void get_object_template_table(symtab_t table, tree_t* node) {
+	printf("In %s, line = %d, node(%d): %s\n",
+			__FUNCTION__, __LINE__, node->common.type, node->common.name);
+
+	assert(table != NULL);
+	assert(node != NULL);
+	char** templates = NULL;
+	int template_num = 0;
+
+	switch(node->common.type) {
+		case BANK_TYPE:
+			{
+				bank_attr_t* attr = (bank_attr_t*)(node->common.attr);
+				templates = attr->templates;
+				template_num = attr->template_num;
+				break;
+			}
+		case REGISTER_TYPE:
+			{
+				register_attr_t* attr = (register_attr_t*)(node->common.attr);
+				templates = attr->templates;
+				template_num = attr->templates_num;
+				break;
+			}
+		case FIELD_TYPE:
+			{
+				field_attr_t* attr = (field_attr_t*)(node->common.attr);
+				templates = attr->templates;
+				template_num = attr->template_num;
+				break;
+			}
+		case CONNECT_TYPE:
+			{
+				connect_attr_t* attr = (connect_attr_t*)(node->common.attr);
+				templates = attr->templates;
+				template_num = attr->template_num;
+				break;
+			}
+		case INTERFACE_TYPE:
+			{
+				interface_attr_t* attr = (interface_attr_t*)(node->common.attr);
+				templates = attr->templates;
+				template_num = attr->template_num;
+				break;
+			}
+		case ATTRIBUTE_TYPE:
+			{
+				attribute_attr_t* attr = (attribute_attr_t*)(node->common.attr);
+				templates = attr->templates;
+				template_num = attr->template_num;
+				break;
+			}
+		case EVENT_TYPE:
+			{
+				event_attr_t* attr = (event_attr_t*)(node->common.attr);
+				templates = attr->templates;
+				template_num = attr->template_num;
+				break;
+			}
+		case GROUP_TYPE:
+			{
+				group_attr_t* attr = (group_attr_t*)(node->common.attr);
+				templates = attr->templates;
+				template_num = attr->template_num;
+				break;
+			}
+		case PORT_TYPE:
+			{
+				port_attr_t* attr = (port_attr_t*)(node->common.attr);
+				templates = attr->templates;
+				template_num = attr->template_num;
+				break;
+			}
+		case IMPLEMENT_TYPE:
+			{
+				implement_attr_t* attr = (implement_attr_t*)(node->common.attr);
+				templates = attr->templates;
+				template_num = attr->template_num;
+				break;
+			}
+		case TEMPLATE_TYPE:
+			break;
+		default:
+			fprintf(stderr, "unknown object type(%d) : %s",
+					node->common.type, node->common.name);
+			/* FIXME handle the error */
+			break;
+	}
+
+	add_templates_to_table(table, templates, template_num);
+
+	return;
 }
 
 char** get_templates(tree_t* head) {

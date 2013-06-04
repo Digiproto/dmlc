@@ -114,11 +114,12 @@ static symbol_t _symbol_find_notype(symbol_t* symbol_table, const char* name) {
  *
  * @return return the table pointer.
  */
-static symtab_t table_malloc()
+static symtab_t table_malloc(type_t type)
 {
     symtab_t new_symtab = (symtab_t) malloc(sizeof(struct symtab));
     assert(new_symtab != NULL);
     bzero(new_symtab, sizeof(struct symtab));
+	new_symtab->type = type;
     return new_symtab;
 }
 
@@ -145,6 +146,21 @@ static symbol_t symbol_new(const char *name, type_t type, void *attr)
     return new_undef;
 }
 
+symbol_t symbol_find_from_templates(struct template_table* templates, char* name, type_t type) {
+	symbol_t rt;
+
+	while (templates != NULL) {
+        rt = _symbol_find(templates->table, name, type);
+        if(rt) {
+            return rt;
+        }
+
+		templates = templates->next;
+	}
+
+	return NULL;
+}
+
 /**
  * @brief find the symbol with same name and type from the current symbol table or parent.
  *
@@ -154,7 +170,7 @@ static symbol_t symbol_new(const char *name, type_t type, void *attr)
  *
  * @return the pointer of the symbol with information.
  */
-symbol_t symbol_find(symtab_t symtab, char *name, type_t type)
+symbol_t symbol_find(symtab_t symtab, char* name, type_t type)
 {
     assert(symtab != NULL && name != NULL);
     symtab_t tmp = symtab;
@@ -164,6 +180,10 @@ symbol_t symbol_find(symtab_t symtab, char *name, type_t type)
         if(rt) {
             return rt;
         }
+		rt = symbol_find_from_templates(symtab->template_table, name, type);
+		if (rt) {
+			return rt;
+		}
         tmp = tmp->parent;
     }
     return NULL;
@@ -181,7 +201,31 @@ symbol_t symbol_find(symtab_t symtab, char *name, type_t type)
 symbol_t symbol_find_curr(symtab_t symtab, char *name, type_t type)
 {
     assert(symtab != NULL && name != NULL);
-    return _symbol_find(symtab->table, name, type);
+	symbol_t rt = NULL;
+
+    rt = _symbol_find(symtab->table, name, type);
+	if (rt) {
+		return rt;
+	}
+
+	rt = symbol_find_from_templates(symtab->template_table, name, type);
+
+	return rt;
+}
+
+symbol_t symbol_find_from_templates_notype(struct template_table* templates, char* name) {
+	symbol_t rt;
+
+	while (templates != NULL) {
+        rt = _symbol_find_notype(templates->table, name);
+        if(rt) {
+            return rt;
+        }
+
+		templates = templates->next;
+	}
+
+	return NULL;
 }
 
 /**
@@ -202,6 +246,10 @@ symbol_t symbol_find_notype(symtab_t symtab, char *name)
         if(rt) {
             return rt;
         }
+		rt = symbol_find_from_templates_notype(tmp->template_table, name);
+		if (rt) {
+			return rt;
+		}
         tmp = tmp->parent;
     }
     return NULL;
@@ -218,7 +266,13 @@ symbol_t symbol_find_notype(symtab_t symtab, char *name)
 symbol_t symbol_find_curr_notype(symtab_t symtab, char *name)
 {
     assert(symtab != NULL && name != NULL);
-    return _symbol_find_notype(symtab->table, name);
+	symbol_t rt = NULL;
+
+    rt = _symbol_find_notype(symtab->table, name);
+	if (rt) {
+		return rt;
+	}
+	return symbol_find_from_templates_notype(symtab->template_table, name);
 }
 
 /**
@@ -276,8 +330,14 @@ int symbol_insert(symtab_t symtab, const char* name, type_t type, void* attr)
 
     symbol_t new_symbol = symbol_new(name, type, attr);
 
-	DBG ("In %s, name = %s, type = %d, hash value = %d, table num: %d\n", __FUNCTION__, name, type,
-			str_hash (name), symtab->table_num);
+	if ((symtab->table_num) == 1) {
+		debug_proc("In %s, name = %s, type = %d, hash value = %d, table num: %d\n",
+				__FUNCTION__, name, type, str_hash (name), symtab->table_num);
+	}
+	else {
+		debug_blue("\tIn %s, name = %s, type = %d, hash value = %d, table num: %d\n",
+				__FUNCTION__, name, type, str_hash (name), symtab->table_num);
+	}
 	int new_index = str_hash(name);
     symbol_t s = symtab->table[new_index];
     if(s == NULL){ /* blank slot */
@@ -315,9 +375,9 @@ int symbol_insert(symtab_t symtab, const char* name, type_t type, void* attr)
  *
  * @return return the symbol table.
  */
-symtab_t symtab_create()
+symtab_t symtab_create(type_t type)
 {
-    return table_malloc();
+    return table_malloc(type);
 }
 
 void sibling_table_free(symtab_t symtab, int table_num) {
@@ -420,6 +480,16 @@ void get_all_symbol(symtab_t symtab, symbol_callback func_callback)
 }
 #endif
 
+void print_all_symbol(symtab_t table) {
+	symbol_t symbol = table->list;
+	while(symbol != NULL) {
+		printf("symbol: %s\n", symbol->name);
+		symbol = symbol->lnext;
+	}
+
+	return ;
+}
+
 /**
  * @brief init a new symbol list undefined.
  *
@@ -498,7 +568,7 @@ void sym_undef_free(symbol_t node)
 void params_insert_table(symtab_t table, method_params_t* method_params) {
 	assert(table != NULL);
 	if (method_params == NULL) {
-		return NULL;
+		return;
 	}
 	int i = 0;
 	int in_argc = method_params->in_argc;
@@ -508,12 +578,20 @@ void params_insert_table(symtab_t table, method_params_t* method_params) {
 
 	for (i = 0; i < in_argc; i++) {
 		/* FIXME: should parsing the params attribute */
-		//symbol_insert(table, in_list[i]->variable, IDENT_TYPE, NULL);
+		if (symbol_insert(table, in_list[i]->var_name, PARAM_TYPE, in_list[i]) == -1) {
+			fprintf(stderr, "method param : %s redefined\n", in_list[i]->var_name);
+			/* FIXME: handle the error */
+			exit(-1);
+		}
 	}
 
 	for (i = 0; i < ret_argc; i++) {
 		/* FIXME: should parsing the params attribute */
-		//symbol_insert(table, ret_list[i]->variable, IDENT_TYPE, NULL);
+		if (symbol_insert(table, ret_list[i]->var_name, PARAM_TYPE, ret_list[i]) == -1) {
+			fprintf(stderr, "method param : %s redefined\n", in_list[i]->var_name);
+			/* FIXME: handle the error */
+			exit(-1);
+		}
 	}
 
 	return;

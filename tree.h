@@ -25,6 +25,7 @@
 #define __TREE_H__
 
 #include "symbol-common.h"
+//#include "decl.h"
 
 /**
  * @brief : location of token in file
@@ -255,6 +256,7 @@ struct tree_ident {
 	struct tree_common common;
 	const char* str;
 	int len;
+	type_t type;
 };
 
 /**
@@ -336,6 +338,7 @@ struct tree_cdecl {
  */
 struct tree_cdecl_brack {
 	struct tree_common common;
+	int is_list;
 	tree_t* cdecl;				// the cdecl out brackets
 	tree_t* decl_list;			// the cdecl in brackets
 };
@@ -634,6 +637,7 @@ struct tree_binary {
 	struct tree_common common;
 	const char* operat;			// the operator about binary like: / &= += etc.
 	operator_type_t type;
+	type_t final_type;
 	tree_t* left;				// the left expression about binary
 	tree_t* right;				// the right expression about binary
 };
@@ -656,6 +660,7 @@ struct tree_cast {
 	struct tree_common common;
 	tree_t* expr;
 	tree_t* ctype;
+	void* decl;
 };
 
 /**

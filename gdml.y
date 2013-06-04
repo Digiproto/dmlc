@@ -30,9 +30,11 @@ extern int  yylex(YYSTYPE *yylval_param, yyscan_t yyscanner);
 extern char* builtin_filename;
 symtab_t root_table;
 stack_t* table_stack;
+int object_spec_type = -1;
 static symtab_t current_table = NULL;
 static symtab_t prefix_table = NULL;
 static long int current_table_num = 0;
+tree_t* current_object_node = NULL;
 %}
 
 %output  "Parser.c"
@@ -88,6 +90,7 @@ static long int current_table_num = 0;
 %type	<sval> STRING_LITERAL
 %type	<sval> INTEGER_LITERAL
 %type	<sval> FLOAT_LITERAL
+%type	<sval> INT
 %type	<tree_type> typeident
 %type	<tree_type> local_keyword
 %type	<tree_type> const_opt
@@ -193,7 +196,7 @@ begin_unit
 
 dml
 	: DEVICE objident ';' {
-		root_table = symtab_create();
+		root_table = symtab_create(DEVICE_TYPE);
 		current_table = root_table;
 		current_table->table_num = ++current_table_num;
 		table_stack = initstack();
@@ -212,8 +215,6 @@ dml
 		attr->common.node = node;
 		node->common.attr = attr;
 
-		printf("Line = %d, node name: %s, device name: %s\n",
-		__LINE__, node->device.common.name, node->device.name);
 		$<tree_type>$ = node;
 	}
 	syntax_modifiers device_statements {
@@ -340,17 +341,19 @@ object
 		bank_attr_t* attr = (bank_attr_t*)gdml_zmalloc(sizeof(bank_attr_t));
 		attr->name = $2->ident.str;
 		attr->common.table_num = current_table->table_num;
-		attr->template_name = get_templates($3);
+		attr->templates = get_templates($3);
 		attr->template_num = get_list_num($3);
 
 		tree_t* node = (tree_t*)create_node("bank", BANK_TYPE, sizeof(struct tree_bank));
 		node->bank.name = $2->ident.str;
 		node->bank.templates = $3;
 		node->common.attr = attr;
+		current_object_node = node;
 
 		attr->common.node = node;
 
 		symbol_insert(current_table, $2->ident.str, BANK_TYPE, attr);
+		object_spec_type = BANK_TYPE;
 
 		$<tree_type>$ = node;
 	}
@@ -360,6 +363,7 @@ object
 		bank_attr_t* attr = (bank_attr_t*)($<tree_type>4->common.attr);
 		attr->desc = get_obj_desc($5);
 		attr->table = get_obj_block_table($5);
+		object_spec_type = -1;
 		$$ = $<tree_type>4;
 	}
 	| REGISTER objident sizespec offsetspec istemplate {
@@ -380,8 +384,10 @@ object
 		node->reg.templates = $5;
 		node->common.print_node = print_register;
 		node->common.attr = attr;
+		current_object_node = node;
 
 		attr->common.node = node;
+		object_spec_type = REGISTER_TYPE;
 		$<tree_type>$ = node;
 	}
 	object_spec {
@@ -390,6 +396,7 @@ object
 		attr->desc = get_obj_desc($7);
 		attr->table = get_obj_block_table($7);
 		node->reg.spec = $7;
+		object_spec_type = -1;
 		$$ = node;
 	}
 	| REGISTER objident '[' arraydef ']' sizespec offsetspec istemplate {
@@ -412,8 +419,10 @@ object
 		node->reg.templates = $8;
 		node->common.print_node = print_register;
 		node->common.attr = attr;
+		current_object_node = node;
 
 		attr->common.node = node;
+		object_spec_type = REGISTER_TYPE;
 		$<tree_type>$ = node;
 	}
 	object_spec {
@@ -422,6 +431,7 @@ object
 		node->reg.spec = $10;
 		attr->desc = get_obj_desc($10);
 		attr->table = get_obj_block_table($10);
+		object_spec_type = -1;
 		$$ = node;
 	}
 	| FIELD objident bitrange istemplate {
@@ -444,6 +454,7 @@ object
 		node->field.templates = $4;
 		node->common.print_node = print_field;
 		node->common.attr = attr;
+		current_object_node = node;
 
 		attr->common.node = node;
 
@@ -475,6 +486,7 @@ object
 		node->field.templates = $3;
 		node->common.print_node = print_field;
 		node->common.attr = attr;
+		current_object_node = node;
 
 		attr->common.node = node;
 		$<tree_type>$ = node;
@@ -520,6 +532,7 @@ object
 		node->connect.templates = $3;
 		node->common.print_node = print_connect;
 		node->common.attr = attr;
+		current_object_node = node;
 
 		attr->common.node = node;
 		DBG("CONNECT_TYPE: %s\n", $2->ident.str);
@@ -549,6 +562,7 @@ object
 		node->interface.templates = $3;
 		node->common.print_node = print_interface;
 		node->common.attr =attr;
+		current_object_node = node;
 
 		attr->common.node = node;
 		DBG("Interface_type: %s\n", $2->ident.str);
@@ -579,6 +593,7 @@ object
 		node->attribute.templates = $3;
 		node->common.print_node = print_attribute;
 		node->common.attr = attr;
+		current_object_node = node;
 
 		attr->common.node = node;
 		DBG("Attribute: %s\n", $2->ident.str);
@@ -604,6 +619,7 @@ object
 		node->event.templates = $3;
 		node->common.print_node = print_event;
 		node->common.attr = attr;
+		current_object_node = node;
 
 		attr->common.node = node;
 		$<tree_type>$ = node;
@@ -628,6 +644,7 @@ object
 		node->group.templates = $3;
 		node->common.print_node = print_group;
 		node->common.attr = attr;
+		current_object_node = node;
 
 		attr->common.node = node;
 		$<tree_type>$ = node;
@@ -652,6 +669,7 @@ object
 		node->port.templates = $3;
 		node->common.print_node = print_port;
 		node->common.attr = attr;
+		current_object_node = node;
 
 		attr->common.node = node;
 		$<tree_type>$ = node;
@@ -676,6 +694,7 @@ object
 		node->implement.templates = $3;
 		node->common.print_node = print_implement;
 		node->common.attr = attr;
+		current_object_node = node;
 
 		attr->common.node = node;
 		DBG("objident: %s\n", $2->ident.str);
@@ -704,6 +723,7 @@ object
 		node->attribute.templates = $6;
 		node->common.print_node = print_attribute;
 		node->common.attr = attr;
+		current_object_node = node;
 
 		attr->common.node = node;
 
@@ -732,6 +752,7 @@ object
 		node->group.templates = $6;
 		node->common.print_node = print_group;
 		node->common.attr = attr;
+		current_object_node = node;
 
 		attr->common.node = node;
 		$<tree_type>$ = node;
@@ -759,6 +780,7 @@ object
 		node->connect.templates = $6;
 		node->common.print_node = print_connect;
 		node->common.attr = attr;
+		current_object_node = node;
 
 		attr->common.node = node;
 
@@ -780,7 +802,7 @@ method
 		attr->name = $2->ident.str;
 		attr->is_extern = 0;
 		attr->is_default = 0;
-		attr->method_params = get_method_params($3);
+		attr->method_params = get_method_params($3, current_table);
 		symbol_insert(current_table, $2->ident.str, METHOD_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("method", METHOD_TYPE, sizeof(struct tree_method));
@@ -794,7 +816,7 @@ method
 		attr->common.node = node;
 		DBG("method is %s\n", $2->ident.str);
 
-		symtab_t table = symtab_create();
+		symtab_t table = symtab_create(METHOD_TYPE);
 		table->table_num = ++current_table_num;
 		attr->table = symtab_insert_child(current_table, table);
 
@@ -831,7 +853,7 @@ method
 		attr->common.node = node;
 		DBG("method is %s\n", $2->ident.str);
 
-		symtab_t table = symtab_create();
+		symtab_t table = symtab_create(METHOD_TYPE);
 		table->table_num = ++current_table_num;
 		attr->table = symtab_insert_child(current_table, table);
 
@@ -867,7 +889,7 @@ method
 		attr->common.node = node;
 		DBG("method extern is %s\n", $3->ident.str);
 
-		symtab_t table = symtab_create();
+		symtab_t table = symtab_create(METHOD_TYPE);
         table->table_num = ++current_table_num;
         attr->table = symtab_insert_child(current_table, table);
 
@@ -904,7 +926,7 @@ method
 		attr->common.node = node;
 		DBG("method extern is %s\n", $3->ident.str);
 
-		symtab_t table = symtab_create();
+		symtab_t table = symtab_create(METHOD_TYPE);
         table->table_num = ++current_table_num;
         attr->table = symtab_insert_child(current_table, table);
 
@@ -954,14 +976,18 @@ toplevel
 		attr->name = $2->ident.str;
 		if (symbol_insert(current_table, $2->ident.str, TEMPLATE_TYPE, attr) == -1) {
 			fprintf(stderr, "redefined\n");
+			/* FIXME: handle the error */
+			exit(-1);
 		}
 
 		tree_t* node = (tree_t*)create_node("template", TEMPLATE_TYPE, sizeof(struct tree_template));
 		node->temp.name = $2->ident.str;
 		node->common.print_node = print_template;
 		node->common.attr = attr;
+		current_object_node = node;
 
 		attr->common.node = node;
+		object_spec_type = TEMPLATE_TYPE;
 		$<tree_type>$ = node;
 	}
 	object_spec {
@@ -970,6 +996,7 @@ toplevel
 		node->temp.spec = $4;
 		attr->desc = get_obj_desc($4);
 		attr->table = get_obj_block_table($4);
+		object_spec_type = -1;
 		$$ = node;
 	}
 	| LOGGROUP ident ';' {
@@ -1011,8 +1038,10 @@ toplevel
 		/* TODO: we should find the name of extern */
 		//symbol_t* symbol = symbol_find()
 		DBG("\nPay attention: we should find the name of extern\n\n");
+		#if 0
 		cdecl_attr_t* attr = (cdecl_attr_t*)gdml_zmalloc(sizeof(cdecl_attr_t));
 		attr->is_extern = 1;
+		#endif
 
 		tree_t* node = (tree_t*)create_node("cdecl", CDECL_TYPE, sizeof(struct tree_cdecl));
 		node->cdecl.is_extern = 1;
@@ -1024,8 +1053,10 @@ toplevel
 		/* FIXME: we should find the name cdecl */
 		DBG("\nPay attention: we should find the name of typedef cdecl\n\n");
 		//$$ = create_node("UNIMP", TYPEDEF_TYPE);
+		#if 0
 		cdecl_attr_t* attr = (cdecl_attr_t*)gdml_zmalloc(sizeof(cdecl_attr_t));
 		attr->is_typedef = 1;
+		#endif
 
 		tree_t* node = (tree_t*)create_node("cdecl", CDECL_TYPE, sizeof(struct tree_cdecl));
 		node->cdecl.is_typedef = 1;
@@ -1045,7 +1076,7 @@ toplevel
 		struct_attr_t* attr = (struct_attr_t*)gdml_zmalloc(sizeof(struct_attr_t));
 		attr->name = $2->ident.str;
 
-		symtab_t table = symtab_create();
+		symtab_t table = symtab_create(STRUCT_TYPE);
 		table->table_num = ++current_table_num;
 		attr->table = symtab_insert_child(current_table, table);
 
@@ -1084,6 +1115,7 @@ istemplate_stmt
 			fprintf(stderr, "Pay attention: No such template %s in IS statement\n", $2);
 		}
 		#endif
+		add_template_to_table(current_table, $2->ident.str);
 		$$ = $2;
 	}
 	;
@@ -1171,7 +1203,13 @@ object_spec
 		node->spec.desc = $1;
 
 		tree_t* block = (tree_t*)create_node("block", BLOCK_TYPE, sizeof(struct tree_block));
-		symtab_t table = symtab_create();
+	symtab_t table = NULL;
+		if (object_spec_type == TEMPLATE_TYPE) {
+			table = symtab_create(TEMPLATE_TYPE);
+		}
+		else {
+			table = symtab_create(SPEC_TYPE);
+		}
 		table->table_num = ++current_table_num;
 		block->block.table = symtab_insert_child(current_table, table);
 
@@ -1181,6 +1219,8 @@ object_spec
 		//prefix_table = current_table;
 		push(table_stack, current_table);
 		current_table = block->block.table;
+		/* get the object templates */
+		get_object_template_table(current_table, current_object_node);
 		$<tree_type>$ = node;
 	}
 	object_statements '}' {
@@ -1274,7 +1314,7 @@ parameter
 		}
 		parameter_attr_t* attr = (parameter_attr_t*)gdml_zmalloc(sizeof(parameter_attr_t));
 		attr->name = $2->ident.str;
-		attr->spec = get_paramspec($3);
+		//attr->spec = get_paramspec($3, current_table);
 		symbol_insert(current_table, $2->ident.str, PARAMETER_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("parameter", PARAMETER_TYPE, sizeof(struct tree_param));
@@ -1328,7 +1368,7 @@ method_params
 		$$ = NULL;
 	}
 	| '(' cdecl_or_ident_list ')' {
-		tree_t* node = (tree_t*)create_node("method_params", PARM_TYPE, sizeof(struct tree_params));
+		tree_t* node = (tree_t*)create_node("method_params", PARAM_TYPE, sizeof(struct tree_params));
 		node->params.have_in_param = 1;
 		/* TODO: maybe we should get the pararmeters' type */
 		//node->params.in_argc = get_node_num($2);
@@ -1339,7 +1379,7 @@ method_params
 		$$ = node;
 	}
 	| METHOD_RETURN '(' cdecl_or_ident_list ')' {
-		tree_t* node = (tree_t*)create_node("method_params", PARM_TYPE, sizeof(struct tree_params));
+		tree_t* node = (tree_t*)create_node("method_params", PARAM_TYPE, sizeof(struct tree_params));
 		node->params.in_params = NULL;
 		node->params.have_in_param = 0;
 		node->params.have_ret_param = 1;
@@ -1350,7 +1390,7 @@ method_params
 		$$ = node;
 	}
 	| '(' cdecl_or_ident_list ')' METHOD_RETURN '(' cdecl_or_ident_list ')' {
-		tree_t* node = (tree_t*)create_node("method_params", PARM_TYPE, sizeof(struct tree_params));
+		tree_t* node = (tree_t*)create_node("method_params", PARAM_TYPE, sizeof(struct tree_params));
 		node->params.have_in_param = 1;
 		//node->params.in_argc = get_node_num($2);
 		/* TODO: maybe we should get the pararmeters' type */
@@ -1521,6 +1561,7 @@ cdecl3
 	}
 	| cdecl3 '(' cdecl_list ')' {
 		tree_t* node = (tree_t*)create_node("cdecl_brack", CDECL_BRACK_TYPE, sizeof(struct tree_cdecl_brack));
+		node->cdecl_brack.is_list = 1;
 		node->cdecl_brack.cdecl = $1;
 		node->cdecl_brack.decl_list = $3;
 		node->common.print_node = print_cdecl_brak;
@@ -1646,7 +1687,7 @@ layout
 		attr->str = $2;
 		symbol_insert(current_table, $2, LAYOUT_TYPE, attr);
 
-		symtab_t table = symtab_create();
+		symtab_t table = symtab_create(LAYOUT_TYPE);
 		table->table_num = ++current_table_num;
 		attr->table = symtab_insert_child(current_table, table);
 
@@ -1686,7 +1727,7 @@ bitfields
 		attr->name = $2;
 		symbol_insert(current_table, $2, BITFIELDS_TYPE, attr);
 
-		symtab_t table = symtab_create();
+		symtab_t table = symtab_create(BITFIELDS_TYPE);
 		table->table_num = ++current_table_num;
 		attr->table = symtab_insert_child(current_table, table);
 
@@ -1791,7 +1832,9 @@ ctypedecl_simple
 
 const_opt
 	: CONST  {
-		$$ = (tree_t*)c_keyword_node("const");
+		tree_t* node  = (tree_t*)c_keyword_node("const");
+		node->ident.type = CONST_TYPE;
+		$$ = node;
 	}
 	|  {
 		$$ = NULL;
@@ -1803,31 +1846,49 @@ typeident
 		$$ = $1;
 	}
 	| CHAR {
-		$$ = (tree_t*)c_keyword_node("char");
+		tree_t* node = (tree_t*)c_keyword_node("char");
+		node->ident.type = CHAR_TYPE;
+		$$ = node;
 	}
 	| DOUBLE {
-		$$ = (tree_t*)c_keyword_node("double");
+		tree_t* node = (tree_t*)c_keyword_node("double");
+		node->ident.type = DOUBLE_TYPE;
+		$$ = node;
 	}
 	| FLOAT {
-		$$ = (tree_t*)c_keyword_node("float");
+		tree_t* node = (tree_t*)c_keyword_node("float");
+		node->ident.type = FLOAT_TYPE;
+		$$ = node;
 	}
 	| INT {
-		$$ = (tree_t*)c_keyword_node("int");
+		tree_t* node = (tree_t*)c_keyword_node($1);
+		node->ident.type = INT_TYPE;
+		$$ = node;
 	}
 	| LONG {
-		$$ = (tree_t*)c_keyword_node("long");
+		tree_t* node = (tree_t*)c_keyword_node("long");
+		node->ident.type = LONG_TYPE;
+		$$ = node;
 	}
 	| SHORT  {
-		$$ = (tree_t*)c_keyword_node("short");
+		tree_t* node = (tree_t*)c_keyword_node("short");
+		node->ident.type = SHORT_TYPE;
+		$$ = node;
 	}
 	| SIGNED {
-		$$ = (tree_t*)c_keyword_node("signed");
+		tree_t* node = (tree_t*)c_keyword_node("signed");
+		node->ident.type = SIGNED_TYPE;
+		$$ = node;
 	}
 	| UNSIGNED {
-		$$ = (tree_t*)c_keyword_node("unsigned");
+		tree_t* node = (tree_t*)c_keyword_node("unsigned");
+		node->ident.type = UNSIGNED_TYPE;
+		$$ = node;
 	}
 	| VOID {
-		$$ = (tree_t*)c_keyword_node("void");
+		tree_t* node = (tree_t*)c_keyword_node("void");
+		node->ident.type = VOID_TYPE;
+		$$ = node;
 	}
 	;
 
@@ -2415,12 +2476,14 @@ statement
 	}
 	| local {
 		$$ = $1;
+		//parse_local_decl($1, current_table);
 	}
 	| ';' {
 		$$ = NULL;
 	}
 	| expression ';'{
 		DBG("expression in statement\n");
+		//parse_expression($1, current_table);
 		$$ =  $1;
 	}
 	| IF '(' expression ')' statement {
@@ -2481,7 +2544,7 @@ statement
 		tree_t* node = (tree_t*)create_node("try_catch", TRY_CATCH_TYPE, sizeof(struct tree_try_catch));
 		node->common.attr = attr;
 
-		symtab_t table = symtab_create();
+		symtab_t table = symtab_create(TRY_CATCH_TYPE);
 		table->table_num = ++current_table_num;
 		attr->try_table = symtab_insert_child(current_table, table);
 
@@ -2501,7 +2564,7 @@ statement
 		tree_t* node = $<tree_type>4;
 		try_catch_attr_t* attr = node->common.attr;
 
-		symtab_t table = symtab_create();
+		symtab_t table = symtab_create(TRY_CATCH_TYPE);
 		table->table_num = ++current_table_num;
 		attr->catch_table = symtab_insert_child(current_table, table);
 
@@ -2600,7 +2663,7 @@ statement
 		foreach_attr_t* attr = (foreach_attr_t*)gdml_zmalloc(sizeof(foreach_attr_t));
 		attr->ident = $2->ident.str;
 		/*FIXME: calculate the exprssion */
-		symtab_t table = symtab_create();
+		symtab_t table = symtab_create(FOREACH_TYPE);
 		table->table_num = ++current_table_num;
 		attr->table = symtab_insert_child(current_table, table);
 		push(table_stack, current_table);
@@ -2801,16 +2864,24 @@ objident
 		$$ = $1;
 	}
 	| THIS {
-		$$ = (tree_t*)dml_keyword_node("this");
+		tree_t* node = (tree_t*)dml_keyword_node("this");
+		node->ident.type = THIS_TYPE;
+		$$ = node;
 	}
 	| REGISTER {
-		$$ = (tree_t*)dml_keyword_node("register");
+		tree_t* node = (tree_t*)dml_keyword_node("register");
+		node->ident.type = REGISTER_TYPE;
+		$$ = node;
 	}
 	| SIGNED {
-		$$ = (tree_t*)c_keyword_node("signed");
+		tree_t* node = (tree_t*)c_keyword_node("signed");
+		node->ident.type = SIGNED_TYPE;
+		$$ = node;
 	}
 	| UNSIGNED {
-		$$ = (tree_t*)c_keyword_node("unsigned");
+		tree_t* node = (tree_t*)c_keyword_node("unsigned");
+		node->ident.type = UNSIGNED_TYPE;
+		$$ = node;
 	}
 	;
 
@@ -2823,91 +2894,149 @@ ident
 		$$ = ident;
 	}
 	| ATTRIBUTE {
-		$$ = (tree_t*)dml_keyword_node("attribute");
+		tree_t* node = (tree_t*)dml_keyword_node("attribute");
+		node->ident.type = ATTRIBUTE_TYPE;
+		$$ = node;
 	}
 	| BANK {
-		$$ = (tree_t*)dml_keyword_node("bank");
+		tree_t* node = (tree_t*)dml_keyword_node("bank");
+		node->ident.type = BANK_TYPE;
+		$$ = node;
 	}
 	| BITORDER {
-		$$ = (tree_t*)dml_keyword_node("bitorder");
+		tree_t* node = (tree_t*)dml_keyword_node("bitorder");
+		node->ident.type = BITORDER_TYPE;
+		$$ = node;
 	}
 	| CONNECT {
-		$$ = (tree_t*)dml_keyword_node("connect");
+		tree_t* node = (tree_t*)dml_keyword_node("connect");
+		node->ident.type = CONNECT_TYPE;
+		$$ = node;
 	}
 	| CONSTANT {
-		$$ = (tree_t*)dml_keyword_node("constant");
+		tree_t* node = (tree_t*)dml_keyword_node("constant");
+		node->ident.type = CONSTANT_TYPE;
+		$$ = node;
 	}
 	| DATA {
-		$$ = (tree_t*)dml_keyword_node("data");
+		tree_t* node = (tree_t*)dml_keyword_node("data");
+		node->ident.type = DATA_TYPE;
+		$$ = node;
 	}
 	| DEVICE {
-		$$ = (tree_t*)dml_keyword_node("device");
+		tree_t* node = (tree_t*)dml_keyword_node("device");
+		node->ident.type = DEVICE_TYPE;
+		$$ = node;
 	}
 	| EVENT {
-		$$ = (tree_t*)dml_keyword_node("event");
+		tree_t* node = (tree_t*)dml_keyword_node("event");
+		node->ident.type = EVENT_TYPE;
+		$$ = node;
 	}
 	| FIELD {
-		$$ = (tree_t*)dml_keyword_node("field");
+		tree_t* node = (tree_t*)dml_keyword_node("field");
+		node->ident.type = FIELD_TYPE;
+		$$ = node;
 	}
 	| FOOTER {
-		$$ = (tree_t*)dml_keyword_node("footer");
+		tree_t* node = (tree_t*)dml_keyword_node("footer");
+		node->ident.type = FOOTER_TYPE;
+		$$ = node;
 	}
 	| GROUP {
-		$$ = (tree_t*)dml_keyword_node("group");
+		tree_t* node = (tree_t*)dml_keyword_node("group");
+		node->ident.type = GROUP_TYPE;
+		$$ = node;
 	}
 	| IMPLEMENT {
-		$$ = (tree_t*)dml_keyword_node("implement");
+		tree_t* node = (tree_t*)dml_keyword_node("implement");
+		node->ident.type = IMPLEMENT_TYPE;
+		$$ = node;
 	}
 	| IMPORT {
-		$$ = (tree_t*)dml_keyword_node("import");
+		tree_t* node = (tree_t*)dml_keyword_node("import");
+		node->ident.type = IMPORT_TYPE;
+		$$ = node;
 	}
 	| INTERFACE {
-		$$ = (tree_t*)dml_keyword_node("interface");
+		tree_t* node = (tree_t*)dml_keyword_node("interface");
+		node->ident.type = INTERFACE_TYPE;
+		$$ = node;
 	}
 	| LOGGROUP {
-		$$ = (tree_t*)dml_keyword_node("loggroup");
+		tree_t* node = (tree_t*)dml_keyword_node("loggroup");
+		node->ident.type = LOGGROUP_TYPE;
+		$$ = node;
 	}
 	| METHOD {
-		$$ = (tree_t*)dml_keyword_node("method");
+		tree_t* node = (tree_t*)dml_keyword_node("method");
+		node->ident.type = METHOD_TYPE;
+		$$ = node;
 	}
 	| PORT {
-		$$ = (tree_t*)dml_keyword_node("port");
+		tree_t* node = (tree_t*)dml_keyword_node("port");
+		node->ident.type = PORT_TYPE;
+		$$ = node;
 	}
 	| SIZE {
-		$$ = (tree_t*)dml_keyword_node("size");
+		tree_t* node = (tree_t*)dml_keyword_node("size");
+		node->ident.type = SIZE_TYPE;
+		$$ = node;
 	}
 	| CLASS {
-		$$ = (tree_t*)dml_keyword_node("class");
+		tree_t* node = (tree_t*)dml_keyword_node("class");
+		node->ident.type = CLASS_TYPE;
+		$$ = node;
 	}
 	| ENUM {
-		$$ = (tree_t*)dml_keyword_node("enum");
+		tree_t* node = (tree_t*)dml_keyword_node("enum");
+		node->ident.type = ENUM_TYPE;
+		$$ = node;
 	}
 	| NAMESPACE {
-		$$ = (tree_t*)dml_keyword_node("namespace");
+		tree_t* node = (tree_t*)dml_keyword_node("namespace");
+		node->ident.type = NAMESPACE_TYPE;
+		$$ = node;
 	}
 	| PRIVATE {
-		$$ = (tree_t*)dml_keyword_node("private");
+		tree_t* node = (tree_t*)dml_keyword_node("private");
+		node->ident.type = PRIVATE_TYPE;
+		$$ = node;
 	}
 	| PROTECTED {
-		$$ = (tree_t*)dml_keyword_node("protected");
+		tree_t* node = (tree_t*)dml_keyword_node("protected");
+		node->ident.type = PROTECTED_TYPE;
+		$$ = node;
 	}
 	| PUBLIC {
-		$$ = (tree_t*)dml_keyword_node("public");
+		tree_t* node = (tree_t*)dml_keyword_node("public");
+		node->ident.type = PUBLIC_TYPE;
+		$$ = node;
 	}
 	| RESTRICT {
-		$$ = (tree_t*)dml_keyword_node("register");
+		tree_t* node = (tree_t*)dml_keyword_node("register");
+		node->ident.type = RESTRICT_TYPE;
+		$$ = node;
 	}
 	| UNION {
-		$$ = (tree_t*)dml_keyword_node("union");
+		tree_t* node = (tree_t*)dml_keyword_node("union");
+		node->ident.type = UNION_TYPE;
+		$$ = node;
 	}
 	| USING {
-		$$ = (tree_t*)dml_keyword_node("using");
+		tree_t* node = (tree_t*)dml_keyword_node("using");
+		node->ident.type = USING_TYPE;
+		$$ = node;
 	}
 	| VIRTUAL {
-		$$ = (tree_t*)dml_keyword_node("virtual");
+		tree_t* node = (tree_t*)dml_keyword_node("virtual");
+		node->ident.type = VIRTUAL_TYPE;
+		$$ = node;
 	}
 	| VOLATILE {
-		$$ = (tree_t*)dml_keyword_node("volatile");
+		tree_t* node  = (tree_t*)dml_keyword_node("volatile");
+		node->ident.type = VOLATILE_TYPE;
+		$$ = node;
 	}
 	;
 

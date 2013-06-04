@@ -1,7 +1,7 @@
 # Written by Michael.Kang(blackfin.kang@gmail.com)
 
-dmlc:Parser.c Lexer.c symbol.c ast.c simics_code_gen.c dmlc.c qemu_code_gen.c debug_color.c stack.c
-	gcc -g -o dmlc Parser.c Lexer.c symbol.c ast.c dmlc.c qemu_code_gen.c simics_code_gen.c debug_color.c stack.c
+dmlc:Parser.c Lexer.c symbol.c ast.c simics_code_gen.c dmlc.c qemu_code_gen.c debug_color.c stack.c decl.c
+	gcc -g -o dmlc Parser.c Lexer.c symbol.c ast.c dmlc.c qemu_code_gen.c simics_code_gen.c debug_color.c stack.c decl.c
 Lexer.c:gdml.lex
 	flex gdml.lex
 Parser.c:gdml.y

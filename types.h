@@ -28,8 +28,9 @@
 #define __TYPES_H__
 typedef enum
 {
+	NO_TYPE = 1,
 	/* dml */
-	DML_TYPE = 1,
+	DML_TYPE,
 	/* device */
 	DEVICE_TYPE,
 	/* parameter */
@@ -75,7 +76,7 @@ typedef enum
 	/* identifier */
 	IDENT_TYPE,
 	/* method param */
-	PARM_TYPE,
+	PARAM_TYPE,
 	/* constant string */
 	CONST_STRING_TYPE,
 	/* constant */
@@ -102,12 +103,12 @@ typedef enum
 	AUTO_TYPE,
 	/* $ */
 	QUOTE_TYPE,
+	/* bool */
+	BOOL_TYPE,
 	/* int data */
 	INTEGER_TYPE,
 	/* float data */
 	FLOAT_TYPE,
-	/* type identify : int8 int16 */
-	TYPEIDENT_TYPE,
 	/* dml keyword */
 	DML_KEYWORD_TYPE,
 	/* c keyword */
@@ -139,7 +140,7 @@ typedef enum
 	/* throw */
 	THROW_TYPE,
 	/* const */
-	CONST_KEY_TYPE,
+	CONST_TYPE,
 	/* extern */
 	EXTERN_KEY_TYPE,
 	/* struct */
@@ -199,7 +200,32 @@ typedef enum
 	/* bitfields decl */
 	BITFIELDS_DECL_TYPE,
 	/* layout */
-	LAYOUT_TYPE
+	LAYOUT_TYPE,
+	/* typedef */
+	TYPEDEF_TYPE,
+	/* c keyword */
+	CHAR_TYPE,
+	DOUBLE_TYPE,
+	INT_TYPE,
+	LONG_TYPE,
+	SHORT_TYPE,
+	SIGNED_TYPE,
+	UNSIGNED_TYPE,
+	VOID_TYPE,
+	SIZE_TYPE,
+	CLASS_TYPE,
+	ENUM_TYPE,
+	NAMESPACE_TYPE,
+	PRIVATE_TYPE,
+	PROTECTED_TYPE,
+	PUBLIC_TYPE,
+	RESTRICT_TYPE,
+	UNION_TYPE,
+	USING_TYPE,
+	VIRTUAL_TYPE,
+	VOLATILE_TYPE,
+	FOOTER_TYPE,
+	THIS_TYPE
 } type_t;
 
 typedef enum {
@@ -278,6 +304,8 @@ typedef enum {
 	POINTER_TYPE,
 	/* defined */
 	DEFINED_TYPE,
+	/* vect */
+	VECT_TYPE,
 	/* # */
 	EXPR_TO_STR_TYPE,
 	/* ++A */
@@ -296,7 +324,4 @@ typedef enum {
 	COMPONENT_POINTER_TYPE,
 }operator_type_t;
 
-typedef struct expression
-{
-} expression_t;
 #endif

@@ -91,7 +91,7 @@ int main (int argc, char *argv[])
 	char tmp[256];
 	snprintf (tmp, 256, "%s/%s", simics_dml_dir, import_file_list[0]);
 	builtin_filename = tmp;
-	root_table = symtab_create();
+	//root_table = symtab_create();
 	//printf("In %s, builtin_filename=%s\n", __FUNCTION__, builtin_filename);
 	//sleep(1);
 	/* dml-builtins.dml */
