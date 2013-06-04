@@ -1314,7 +1314,7 @@ parameter
 		}
 		parameter_attr_t* attr = (parameter_attr_t*)gdml_zmalloc(sizeof(parameter_attr_t));
 		attr->name = $2->ident.str;
-		//attr->spec = get_paramspec($3, current_table);
+		attr->spec = get_paramspec($3, current_table);
 		symbol_insert(current_table, $2->ident.str, PARAMETER_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("parameter", PARAMETER_TYPE, sizeof(struct tree_param));
@@ -2476,14 +2476,14 @@ statement
 	}
 	| local {
 		$$ = $1;
-		//parse_local_decl($1, current_table);
+		parse_local_decl($1, current_table);
 	}
 	| ';' {
 		$$ = NULL;
 	}
 	| expression ';'{
 		DBG("expression in statement\n");
-		//parse_expression($1, current_table);
+		parse_expression($1, current_table);
 		$$ =  $1;
 	}
 	| IF '(' expression ')' statement {

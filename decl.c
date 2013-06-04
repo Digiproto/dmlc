@@ -650,10 +650,10 @@ expression_t* parse_array_expression(tree_t* node, symtab_t table) {
 
 	while (node != NULL) {
 		if (expr == NULL) {
-			//expr = parse_expression(node, table);
+			expr = parse_expression(node, table);
 		}
 		else {
-			//expr->next = parse_expression(node, table);
+			expr->next = parse_expression(node, table);
 		}
 		node = node->common.sibling;
 	}
@@ -891,9 +891,9 @@ int charge_float_expr(decl_type_t* type) {
 }
 
 int charge_decl_expr_type(decl_t* decl, expression_t* expr) {
-	if ((expr == NULL) | (decl == NULL)) {
-		return 0;
-	}
+	assert(decl != NULL);
+	assert(expr != NULL);
+
 	int ret = 0;
 
 	switch (expr->final_type) {
@@ -962,8 +962,7 @@ void parse_local_decl(tree_t* node, symtab_t table) {
 			__func__, __LINE__, decl->decl_str, decl->var->var_name);
 
 	if (node->local_tree.expr) {
-		expression_t* expr = NULL;
-		//expression_t* expr = parse_expression(node->local_tree.expr, table);
+		expression_t* expr = parse_expression(node->local_tree.expr, table);
 		if (charge_decl_expr_type(decl, expr) != 0) {
 			fprintf(stderr, "error: invalid initializer\n");
 			return;

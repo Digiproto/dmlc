@@ -464,7 +464,7 @@ paramspec_t* get_paramspec(tree_t* node, symtab_t table) {
 	}
 	if (node->paramspec.expr) {
 		printf("paramspec is expression expr type: %s\n",node->paramspec.expr->common.name);
-		//spec->expr = parse_expression(node->paramspec.expr, table);
+		spec->expr = parse_expression(node->paramspec.expr, table);
 		spec->type = spec->expr->final_type;
 	}
 
