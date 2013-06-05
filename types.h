@@ -103,12 +103,6 @@ typedef enum
 	AUTO_TYPE,
 	/* $ */
 	QUOTE_TYPE,
-	/* bool */
-	BOOL_TYPE,
-	/* int data */
-	INTEGER_TYPE,
-	/* float data */
-	FLOAT_TYPE,
 	/* dml keyword */
 	DML_KEYWORD_TYPE,
 	/* c keyword */
@@ -143,8 +137,6 @@ typedef enum
 	CONST_TYPE,
 	/* extern */
 	EXTERN_KEY_TYPE,
-	/* struct */
-	STRUCT_TYPE,
 	/* method extern  */
 	METHOD_EXTERN_TYPE,
 	/* goto */
@@ -173,8 +165,6 @@ typedef enum
 	ERROR_TYPE,
 	/* select */
 	SELECT_TYPE,
-	/* typeof */
-	TYPEOF_TYPE,
 	/* return */
 	RETURN_TYPE,
 	/* cast */
@@ -203,6 +193,14 @@ typedef enum
 	LAYOUT_TYPE,
 	/* typedef */
 	TYPEDEF_TYPE,
+	/* typeof */
+	TYPEOF_TYPE,
+	/* bool */
+	BOOL_TYPE,
+	/* const int data: 0, 1, 3 */
+	INTEGER_TYPE,
+	/* float data */
+	FLOAT_TYPE,
 	/* c keyword */
 	CHAR_TYPE,
 	DOUBLE_TYPE,
@@ -212,15 +210,17 @@ typedef enum
 	SIGNED_TYPE,
 	UNSIGNED_TYPE,
 	VOID_TYPE,
+	ENUM_TYPE,
+	UNION_TYPE,
+	/* struct */
+	STRUCT_TYPE,
 	SIZE_TYPE,
 	CLASS_TYPE,
-	ENUM_TYPE,
 	NAMESPACE_TYPE,
 	PRIVATE_TYPE,
 	PROTECTED_TYPE,
 	PUBLIC_TYPE,
 	RESTRICT_TYPE,
-	UNION_TYPE,
 	USING_TYPE,
 	VIRTUAL_TYPE,
 	VOLATILE_TYPE,

@@ -138,22 +138,37 @@ type_t get_decl_type(decl_t* decl) {
 		return DOUBLE_TYPE;
 	if (type->float_type)
 		return FLOAT_TYPE;
-	if (type->long_type)
-		return LONG_TYPE;
-	if (type->short_type)
-		return SHORT_TYPE;
-	if (type->signed_type)
-		return SIGNED_TYPE;
-	if (type->unsigned_type)
-		return UNSIGNED_TYPE;
+	if (type->long_type) {
+		if (type->double_type) {
+			return DOUBLE_TYPE;
+		}
+		return INT_TYPE;
+	}
+	if (type->short_type) {
+		return INT_TYPE;
+	}
+	if (type->signed_type) {
+		if ((type->char_type) || (type->float_type)
+				|| (type->double_type) || (type->float_type)){
+			/* do nothing */
+		}
+		else {
+			return INT_TYPE;
+		}
+	}
+	if (type->unsigned_type) {
+		if ((type->char_type) || (type->float_type)
+				|| (type->double_type) || (type->float_type)){
+			/* do nothing */
+		}
+		else {
+			return INT_TYPE;
+		}
+	}
 	if (type->string_type)
 		return CONST_STRING_TYPE;
-	if (type->point_type)
-		return POINTER_TYPE;
 	if (type->vect_type)
 		return VECT_TYPE;
-	if (type->array_type)
-		return ARRAY_TYPE;
 	if (type->struct_type)
 		return STRUCT_TYPE;
 	if (type->layout_type)
@@ -207,7 +222,7 @@ decl_type_t*  parse_identifier(tree_t* node, symtab_t table, decl_t* decl) {
 			var->var_num += 1;
 			decl->var = var;
 		}
-		symbol_insert(table, node->ident.str, IDENT_TYPE, decl);
+		//symbol_insert(table, node->ident.str, IDENT_TYPE, decl);
 	}
 
 	return NULL;
@@ -249,7 +264,7 @@ int parse_char(decl_t* decl) {
 	assert(decl);
 	decl_type_t* type = decl->type;
 	if ((type->char_type) || (type->double_type) || (type->float_type) ||
-			(type->int_type) || (type->short_type) || (type->void_type) ||
+			(type->int_type) || (type->void_type) ||
 			(type->bool_type) || (type->struct_type) || (type->layout_type) ||
 			(type->bitfields_type) || (type->typeof_type) ||
 			(type->enum_type) || (type->union_type)) {
@@ -257,8 +272,9 @@ int parse_char(decl_t* decl) {
 		/* FIXME: handle the error */
 		exit(-1);
 	}
-	else if (type->long_type) {
-		fprintf(stderr, "error: both ‘long’ and ‘char’ in declaration specifiers\n");
+	else if ((type->long_type) || (type->short_type)) {
+		fprintf(stderr, "error: both ‘%s’ and ‘char’ in declaration specifiers\n",
+				(type->long_type) ? "long" : "short");
 		/* FIXME: handle the error */
 		exit(-1);
 	}
@@ -898,6 +914,7 @@ int charge_decl_expr_type(decl_t* decl, expression_t* expr) {
 
 	switch (expr->final_type) {
 		case INTEGER_TYPE:
+		case INT_TYPE:
 			ret = charge_integer_expr(decl->type);
 			break;
 		case FLOAT_TYPE:
@@ -912,6 +929,23 @@ int charge_decl_expr_type(decl_t* decl, expression_t* expr) {
 	}
 
 	return ret;
+}
+
+void insert_ident_decl(symtab_t table, decl_t* decl) {
+	assert(table != NULL);
+	assert(decl != NULL);
+
+	int i = 0;
+	int type = get_decl_type(decl);
+
+	char* name = NULL;
+	var_name_t* var = decl->var;
+	while (var) {
+		symbol_insert(table, var->var_name, type, decl);
+		var = var->next;
+	}
+
+	return;
 }
 
 void parse_local_decl(tree_t* node, symtab_t table) {
@@ -971,6 +1005,8 @@ void parse_local_decl(tree_t* node, symtab_t table) {
 		printf("In %s, line = %d, value final type: %d : %d\n",
 				__func__, __LINE__, decl->value->final_type, INTEGER_TYPE);
 	}
+
+	insert_ident_decl(table, decl);
 
 	return;
 }

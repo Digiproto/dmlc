@@ -51,6 +51,18 @@ void free_child(tree_t* node) {
 
 extern expression_t* cal_expression(tree_t* node, symtab_t table, expression_t* expr);
 
+int charge_type_int(int type) {
+	if (type == CHAR_TYPE || (type == INTEGER_TYPE)
+			|| (type == INT_TYPE) || (type == SHORT_TYPE)
+			|| (type == UNSIGNED_TYPE) || (type == SIGNED_TYPE)
+			|| (type == LONG_TYPE)) {
+		return 1;
+	}
+	else {
+		return 0;
+	}
+}
+
 int charge_node_is_const(tree_t* node) {
 	assert(node != NULL);
 	int type = node->common.type;
@@ -65,8 +77,8 @@ int charge_node_is_const(tree_t* node) {
 
 expression_t * get_const_expr_value(tree_t* node, expression_t* expr) {
 	/* FIXME: assert is noly for debugging */
-	printf("In %s, line = %d, node type: %s\n",
-			__func__, __LINE__, node->common.name);
+	printf("In %s, line = %d, node type: %s : %d\n",
+			__func__, __LINE__, node->common.name, node->common.type);
 	assert(node != NULL);
 	const_expr_t* const_expr = (const_expr_t*)gdml_zmalloc(sizeof(const_expr_t));
 	expr->is_const = 1;
@@ -125,8 +137,11 @@ int charge_type(int type1, int type2) {
 				/* FIXME: handle the warning */
 				return type2;
 			}
+			else if ((type1 == NO_TYPE) && (type2 == CONST_STRING_TYPE)) {
+				return type2;
+			}
 			else {
-				fprintf(stderr, "error: incompatible types when assigning to type\n");
+				fprintf(stderr, "Line: %d, error: incompatible types when assigning to type\n", __LINE__);
 				/* FIXME: handle the error */
 				exit(-1);
 				return -1;
@@ -135,12 +150,12 @@ int charge_type(int type1, int type2) {
 		case INT_TYPE:
 		case INTEGER_TYPE:
 			if ((type2 == DOUBLE_TYPE) || (type2 == INT_TYPE) || (type2 == FLOAT_TYPE)
-					|| (type2 == INTEGER_TYPE) || (type2 == LONG_TYPE)
-					|| (type2 == SHORT_TYPE) || (type2 == SIGNED_TYPE)
-					|| (type2 == UNSIGNED_TYPE)) {
+					|| (type2 == LONG_TYPE) || (type2 == SHORT_TYPE)
+					|| (type2 == SIGNED_TYPE) || (type2 == UNSIGNED_TYPE)) {
 				return type2;
 			}
-			else if ((type2 == CHAR_TYPE) || (type2 == NO_TYPE) || (type2 == BOOL_TYPE)) {
+			else if ((type2 == CHAR_TYPE) || (type2 == NO_TYPE)
+					|| (type2 == BOOL_TYPE) || type2 == INTEGER_TYPE) {
 				return type1;
 			}
 			else if (type2 == POINTER_TYPE) {
@@ -149,7 +164,7 @@ int charge_type(int type1, int type2) {
 				return type2;
 			}
 			else {
-				fprintf(stderr, "error: incompatible types when assigning to type\n");
+				fprintf(stderr, "line: %d, error: incompatible types when assigning to type\n", __LINE__);
 				/* FIXME: handle the error */
 				exit(-1);
 				return -1;
@@ -164,7 +179,7 @@ int charge_type(int type1, int type2) {
 				return type1;
 			}
 			else {
-				fprintf(stderr, "error: incompatible types when assigning to type\n");
+				fprintf(stderr, "line: %d, error: incompatible types when assigning to type\n", __LINE__);
 				/* FIXME: handle the error */
 				exit(-1);
 				return -1;
@@ -182,7 +197,7 @@ int charge_type(int type1, int type2) {
 				return type1;
 			}
 			else {
-				fprintf(stderr, "error: incompatible types when assigning to type\n");
+				fprintf(stderr, "line: %d, error: incompatible types when assigning to type\n", __LINE__);
 				/* FIXME: handle the error */
 				exit(-1);
 				return -1;
@@ -218,7 +233,7 @@ int charge_type(int type1, int type2) {
 				return type2;
 			}
 			else {
-				fprintf(stderr, "error: incompatible types when assigning to type\n");
+				fprintf(stderr, "line: %d, error: incompatible types when assigning to type\n", __LINE__);
 				/* FIXME: handle the error */
 				exit(-1);
 			}
@@ -240,7 +255,7 @@ int charge_type(int type1, int type2) {
 				return type2;
 			}
 			else {
-				fprintf(stderr, "error: incompatible types when assigning to type\n");
+				fprintf(stderr, "line: %d, error: incompatible types when assigning to type\n", __LINE__);
 				/* FIXME: handle the error */
 				exit(-1);
 				return -1;
@@ -258,7 +273,7 @@ int charge_type(int type1, int type2) {
 				return type1;
 			}
 			else {
-				fprintf(stderr, "error: incompatible types when assigning to type\n");
+				fprintf(stderr, "Line: %d, error: incompatible types when assigning to type\n", __LINE__);
 				/* FIXME: handle the error */
 				exit(-1);
 				return -1;
@@ -273,7 +288,7 @@ int charge_type(int type1, int type2) {
 				return type1;
 			}
 			else {
-				fprintf(stderr, "error: incompatible types when assigning to type\n");
+				fprintf(stderr, "Line: %d, error: incompatible types when assigning to type\n", __LINE__);
 				/* FIXME: handle the error */
 				exit(-1);
 				return -1;
@@ -288,7 +303,7 @@ int charge_type(int type1, int type2) {
 				return type2;
 			}
 			else {
-				fprintf(stderr, "error: incompatible types when assigning to type\n");
+				fprintf(stderr, "Line: %d, error: incompatible types when assigning to type\n", __LINE__);
 				/* FIXME: handle the error */
 				exit(-1);
 				return -1;
@@ -366,15 +381,25 @@ void cal_assign_left(tree_t* node, symtab_t table, expression_t* left_expr, expr
 			paramspec_t* spec = parameter->spec;
 			int type = charge_type(spec->type, right_expr->final_type);
 			if (type < 0) {
-				fprintf(stderr, "ierror: incompatible types when assigning to type\n");
+				fprintf(stderr, "Line : %d error: incompatible types when assigning to type\n", __LINE__);
 				/* FIXME : handle the error */
 				exit(-1);
 			}
 			spec->type = type;
 			spec->expr = right_expr;
 		}
+		else if (((symbol->type) >= BITFIELDS_TYPE) &&
+				((symbol->type) <= STRUCT_TYPE)){
+			int type = charge_type(symbol->type, right_expr->final_type);
+			if (type > 0) {
+				decl_t* decl = (decl_t*)(symbol->attr);
+				decl->value = right_expr;
+				right_expr->final_type = type;
+			}
+		}
 		else {
-			printf("other type : %d\n", left_node->common.type);
+			printf("In %s, line = %d, other type: %d\n",
+					__func__, __LINE__, symbol->type);
 			/* FIXME: handle the error */
 			exit(-1);
 		}
@@ -394,7 +419,6 @@ void cal_assign_left(tree_t* node, symtab_t table, expression_t* left_expr, expr
 expression_t* cal_common_assign(tree_t* node, symtab_t table, expression_t* expr) {
 		printf("In %s, line = %d\n", __FUNCTION__, __LINE__);
 		expr = cal_expression(node->expr_assign.right, table, expr);
-		printf("expr final_type: %d\n", expr->final_type);
 		expression_t* left_expr = (expression_t*)gdml_zmalloc(sizeof(expression_t));
 		cal_assign_left(node, table, left_expr, expr);
 		expr->is_const = 0;
@@ -508,8 +532,6 @@ expression_t* cal_ternary_expr(tree_t* node, symtab_t table, expression_t* expr)
 	assert(node != NULL);
 	assert(table != NULL);
 	assert(expr != NULL);
-	printf("In %s, line = %d, node type: %s\n",
-			__FUNCTION__, __LINE__, node->common.name);
 
 	if ((node->ternary.cond == NULL)
 			|| (node->ternary.expr_true == NULL)
@@ -519,11 +541,20 @@ expression_t* cal_ternary_expr(tree_t* node, symtab_t table, expression_t* expr)
 		exit(-1);
 	}
 
+	int true_type, false_type;
 	cal_expression(node->ternary.cond, table, expr);
 	cal_expression(node->ternary.expr_true, table,  expr);
+	true_type = expr->final_type;
 	cal_expression(node->ternary.expr_false, table, expr);
-
+	false_type = expr->final_type;
+	/* TODO: the expression type node defined */
+	if (true_type == false_type) {
+		expr->final_type = true_type;
+	}
 	expr->node = node;
+
+	printf("In %s, line = %d, node type: %s, type: %d\n",
+			__FUNCTION__, __LINE__, node->common.name, expr->final_type);
 	return expr;
 }
 
@@ -653,7 +684,7 @@ expression_t* cal_add_expr(tree_t* node, symtab_t table, expression_t* expr) {
 	tree_t* right = NULL;
 	operator_type_t op_type = 0;
 
-	if (node->binary.type == ADD_TYPE) {
+	if (node->binary.type) {
 		left = node->binary.left;
 		right = node->binary.right;
 		op_type = node->binary.type;
@@ -718,10 +749,15 @@ expression_t* cal_add_expr(tree_t* node, symtab_t table, expression_t* expr) {
 }
 
 expression_t* binary_expr_common(tree_t* node, symtab_t table, expression_t* expr) {
+	assert(node != NULL);
+	assert(table != NULL);
+	assert(expr != NULL);
 
 	tree_t* left = NULL;
 	tree_t* right = NULL;
+	int left_type, right_type;
 	operator_type_t op_type = 0;
+	left_type = right_type = 0;
 
 	if (node->binary.type) {
 		left = node->binary.left;
@@ -735,7 +771,9 @@ expression_t* binary_expr_common(tree_t* node, symtab_t table, expression_t* exp
 	}
 
 	cal_expression(left, table, expr);
+	left_type = expr->final_type;
 	cal_expression(right, table, expr);
+	right_type = expr->final_type;
 
 	if (charge_node_is_const(left) && (charge_node_is_const(right))) {
 		 tree_t* new_node = NULL;
@@ -761,6 +799,10 @@ expression_t* binary_expr_common(tree_t* node, symtab_t table, expression_t* exp
 		node = new_node;
 		expr = get_const_expr_value(node, expr);
 	}
+	else {
+		expr->final_type = charge_type(left_type, right_type);
+	}
+
 	printf("In %s, line = %d, node type: %s, expr final_type: %d\n",
 			__func__, __LINE__, node->common.name, expr->final_type);
 
@@ -990,6 +1032,11 @@ expression_t* unary_bit_non(tree_t* node, symtab_t table, expression_t* expr) {
 		}
 	}
 	else {
+		if (charge_type_int(expr->final_type) == 0) {
+			fprintf(stderr, "error: invalid operands to binary\n");
+			/* TODO: handle the error */
+			exit(-1);
+		}
 		expr->node = node;
 	}
 
@@ -1094,6 +1141,9 @@ expression_t* unary_expr_common(tree_t* node, symtab_t table, expression_t* expr
 		}
 	}
 	else {
+		if (node->unary.type == NON_OP_TYPE) {
+			expr->final_type = INT_TYPE;
+		}
 		expr->node = node;
 	}
 
@@ -1402,4 +1452,21 @@ expression_t* parse_expression(tree_t* node, symtab_t table) {
 	cal_expression(node, table, expr);
 
 	return expr;
+}
+
+void parse_comma_expression(tree_t* node, symtab_t table) {
+	if (node == NULL) {
+		return ;
+	}
+	assert(table != NULL);
+
+	tree_t* expr_node = node;
+	while (expr_node != NULL) {
+		printf("In %s, line = %d, node->type: %s\n",
+				__func__, __LINE__, node->common.name);
+		parse_expression(expr_node, table);
+		expr_node = node->common.sibling;
+	}
+
+	return ;
 }

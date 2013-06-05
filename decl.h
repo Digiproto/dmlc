@@ -29,9 +29,9 @@ typedef struct array_decl array_decl_t;
 
 typedef struct type {
 	unsigned char_type : 1;
+	unsigned int_type  : 1;
 	unsigned double_type : 1;
 	unsigned float_type : 1;
-	unsigned int_type  : 1;
 
 	unsigned short_type : 1;
 	/* long,  long int, long doulbe, long long */
