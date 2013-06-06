@@ -34,6 +34,7 @@
 #include <string.h>				/* for strcmp, strdup & friends */
 #include <assert.h>
 #include "symbol.h"
+#include "stack.h"
 #ifdef SYMBOL_DEBUG
 #define DBG(fmt, ...) do { fprintf(stderr, fmt, ## __VA_ARGS__); } while (0)
 #else
@@ -595,6 +596,18 @@ void params_insert_table(symtab_t table, method_params_t* method_params) {
 	}
 
 	return;
+}
+
+symtab_t change_table(symtab_t current_table, stack_t* table_stack, int* current_table_num, type_t type) {
+	assert(current_table != NULL);
+	assert(table_stack != NULL);
+
+	symtab_t table = symtab_create(IF_ELSE_TYPE);
+	table->table_num = ++(*current_table_num);
+	symtab_insert_child(current_table, table);
+	push(table_stack, current_table);
+
+	return table;
 }
 
 #ifdef SYMBOL_DEBUG

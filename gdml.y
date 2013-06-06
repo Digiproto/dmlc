@@ -99,6 +99,7 @@ tree_t* current_object_node = NULL;
 %type	<tree_type> device_statements
 %type	<tree_type> device_statement
 %type	<tree_type> statement
+%type	<tree_type> if_statment
 %type	<tree_type> syntax_modifier
 %type	<tree_type> toplevel
 %type	<tree_type> import
@@ -146,6 +147,7 @@ tree_t* current_object_node = NULL;
 %type	<tree_type> ctypedecl_array
 %type	<tree_type> ctypedecl_simple
 %type	<tree_type> object_if
+%type	<tree_type> object_if_statement
 %type	<tree_type> layout
 %type	<tree_type> layout_decls
 %type	<tree_type> bitfields
@@ -816,15 +818,11 @@ method
 		attr->common.node = node;
 		DBG("method is %s\n", $2->ident.str);
 
-		symtab_t table = symtab_create(METHOD_TYPE);
-		table->table_num = ++current_table_num;
-		attr->table = symtab_insert_child(current_table, table);
+		current_table = change_table(current_table, table_stack, &current_table_num, METHOD_TYPE);
+		attr->table = current_table;
 
-		//prefix_table = current_table;
-		push(table_stack, current_table);
-		current_table = table;
 		/* insert the parameters of method into table */
-		params_insert_table(table, attr->method_params);
+		params_insert_table(current_table, attr->method_params);
 		$<tree_type>$ = node;
 	}
 	compound_statement {
@@ -853,15 +851,10 @@ method
 		attr->common.node = node;
 		DBG("method is %s\n", $2->ident.str);
 
-		symtab_t table = symtab_create(METHOD_TYPE);
-		table->table_num = ++current_table_num;
-		attr->table = symtab_insert_child(current_table, table);
-
-		//prefix_table = current_table;
-		push(table_stack, current_table);
-		current_table = table;
+		current_table = change_table(current_table, table_stack, &current_table_num, METHOD_TYPE);
+		attr->table = current_table;
 		/* insert the parameters of method into table */
-		params_insert_table(table, attr->method_params);
+		params_insert_table(current_table, attr->method_params);
 		$<tree_type>$ = node;
 	}
 	compound_statement {
@@ -889,15 +882,10 @@ method
 		attr->common.node = node;
 		DBG("method extern is %s\n", $3->ident.str);
 
-		symtab_t table = symtab_create(METHOD_TYPE);
-        table->table_num = ++current_table_num;
-        attr->table = symtab_insert_child(current_table, table);
-
-        //prefix_table = current_table;
-		push(table_stack, current_table);
-        current_table = table;
+		current_table = change_table(current_table, table_stack, &current_table_num, METHOD_TYPE);
+		attr->table = current_table;
         /* insert the parameters of method into table */
-        params_insert_table(table, attr->method_params);
+        params_insert_table(current_table, attr->method_params);
 		$<tree_type>$ = node;
 	}
 	compound_statement {
@@ -926,15 +914,10 @@ method
 		attr->common.node = node;
 		DBG("method extern is %s\n", $3->ident.str);
 
-		symtab_t table = symtab_create(METHOD_TYPE);
-        table->table_num = ++current_table_num;
-        attr->table = symtab_insert_child(current_table, table);
-
-        //prefix_table = current_table;
-		push(table_stack, current_table);
-        current_table = table;
+		current_table = change_table(current_table, table_stack, &current_table_num, METHOD_TYPE);
+		attr->table = current_table;
         /* insert the parameters of method into table */
-        params_insert_table(table, attr->method_params);
+        params_insert_table(current_table, attr->method_params);
         $<tree_type>$ = node;
 	}
 	compound_statement {
@@ -1076,12 +1059,8 @@ toplevel
 		struct_attr_t* attr = (struct_attr_t*)gdml_zmalloc(sizeof(struct_attr_t));
 		attr->name = $2->ident.str;
 
-		symtab_t table = symtab_create(STRUCT_TYPE);
-		table->table_num = ++current_table_num;
-		attr->table = symtab_insert_child(current_table, table);
-
-		push(table_stack, current_table);
-		current_table = table;
+		current_table = change_table(current_table, table_stack, &current_table_num, STRUCT_TYPE);
+		attr->table = current_table;
 
 		tree_t* node = (tree_t*)create_node("struct", STRUCT_TYPE, sizeof(struct tree_struct));
 		node->struct_tree.ident = $2->ident.str;
@@ -1212,13 +1191,13 @@ object_spec
 		}
 		table->table_num = ++current_table_num;
 		block->block.table = symtab_insert_child(current_table, table);
+		//prefix_table = current_table;
+		push(table_stack, current_table);
+		current_table = block->block.table;
 
 		node->spec.block = block;
 		node->common.print_node = print_object_spec;
 
-		//prefix_table = current_table;
-		push(table_stack, current_table);
-		current_table = block->block.table;
 		/* get the object templates */
 		get_object_template_table(current_table, current_object_node);
 		$<tree_type>$ = node;
@@ -1279,29 +1258,50 @@ object_statement
 	}
 	;
 
+object_if_statement
+	: IF '(' expression ')' '{' {
+		tree_t* node =  (tree_t*)create_node("if_else", IF_ELSE_TYPE, sizeof(struct tree_if_else));
+		node->if_else.cond = $3;
+		parse_expression($3, current_table);
+
+		current_table = change_table(current_table, table_stack, &current_table_num, IF_ELSE_TYPE);
+		$<tree_type>$ = node;
+	}
+	object_statements '}' {
+		tree_t* node = $<tree_type>6;
+		node->if_else.if_block = $7;
+		node->common.print_node = print_if_else;
+
+		current_table = pop(table_stack);
+		$$ = node;
+	}
+
 object_if
-	: IF '(' expression ')' '{' object_statements '}' {
-		tree_t* node =  (tree_t*)create_node("if_else", IF_ELSE_TYPE, sizeof(struct tree_if_else));
-		node->if_else.cond = $3;
-		node->if_else.if_block = $6;
-		node->if_else.else_block = NULL;
-		node->common.print_node = print_if_else;
+	: object_if_statement {
+		$$ = $1;
+	}
+	| object_if_statement ELSE '{' {
+		current_table = change_table(current_table, table_stack, &current_table_num, IF_ELSE_TYPE);
+		$<tree_type>$ = NULL;
+	}
+	object_statements '}' {
+		tree_t* node = $1;
+		node->if_else.else_block = $5;
+
+		current_table = pop(table_stack);
+
 		$$ = node;
 	}
-	| IF '(' expression ')' '{' object_statements '}' ELSE '{' object_statements '}' {
-		tree_t* node =  (tree_t*)create_node("if_else", IF_ELSE_TYPE, sizeof(struct tree_if_else));
-		node->if_else.cond = $3;
-		node->if_else.if_block = $6;
-		node->if_else.else_block = $10;
-		node->common.print_node = print_if_else;
-		$$ = node;
+	| object_if_statement ELSE {
+		current_table = change_table(current_table, table_stack, &current_table_num, IF_ELSE_TYPE);
+		$<tree_type>$ = NULL;
 	}
-	| IF '(' expression ')' '{' object_statements '}' ELSE object_if {
-		tree_t* node =  (tree_t*)create_node("if_else", IF_ELSE_TYPE, sizeof(struct tree_if_else));
-		node->if_else.cond = $3;
-		node->if_else.if_block = $6;
-		node->if_else.else_block = $9;
-		node->common.print_node = print_if_else;
+	object_if {
+		tree_t* node = $1;
+		node->if_else.else_block = $4;
+
+		current_table = pop(table_stack);
+
 		$$ = node;
 	}
 	;
@@ -1687,12 +1687,8 @@ layout
 		attr->str = $2;
 		symbol_insert(current_table, $2, LAYOUT_TYPE, attr);
 
-		symtab_t table = symtab_create(LAYOUT_TYPE);
-		table->table_num = ++current_table_num;
-		attr->table = symtab_insert_child(current_table, table);
-
-		push(table_stack, current_table);
-		current_table = table;
+		current_table = change_table(current_table, table_stack, &current_table_num, LAYOUT_TYPE);
+		attr->table  = current_table;
 
 		tree_t* node = (tree_t*)create_node("layout", LAYOUT_TYPE, sizeof(struct tree_layout));
 		node->layout.name = $2;
@@ -1727,12 +1723,8 @@ bitfields
 		attr->name = $2;
 		symbol_insert(current_table, $2, BITFIELDS_TYPE, attr);
 
-		symtab_t table = symtab_create(BITFIELDS_TYPE);
-		table->table_num = ++current_table_num;
-		attr->table = symtab_insert_child(current_table, table);
-
-		push(table_stack, current_table);
-		current_table = table;
+		current_table = change_table(current_table, table_stack, &current_table_num, BITFIELDS_TYPE);
+		attr->table = current_table;
 
 		tree_t* node = (tree_t*)create_node("bitfields", BITFIELDS_TYPE, sizeof(struct tree_bitfields));
 		node->bitfields.name = $2;
@@ -2470,6 +2462,23 @@ expression_list
 	}
 	;
 
+if_statment
+	: IF '(' expression ')' {
+		tree_t* node = (tree_t*)create_node("if_else", IF_ELSE_TYPE, sizeof(struct tree_if_else));
+		node->if_else.cond = $3;
+		parse_expression($3, current_table);
+
+		current_table = change_table(current_table, table_stack, &current_table_num, IF_ELSE_TYPE);
+		$<tree_type>$ = node;
+	}
+	statement {
+		tree_t* node = $<tree_type>5;
+		node->if_else.if_block = $6;
+		node->common.print_node = print_if_else;
+		current_table = pop(table_stack);
+		$$ = node;
+	}
+
 statement
 	: compound_statement {
 		$$ = $1;
@@ -2486,56 +2495,99 @@ statement
 		parse_expression($1, current_table);
 		$$ =  $1;
 	}
-	| IF '(' expression ')' statement {
-		tree_t* node = (tree_t*)create_node("if_else", IF_ELSE_TYPE, sizeof(struct tree_if_else));
-		node->if_else.cond = $3;
-		node->if_else.if_block = $5;
-		node->common.print_node = print_if_else;
+	| if_statment
+	| if_statment ELSE {
+		tree_t* node = $1;
+
+		current_table = change_table(current_table, table_stack, &current_table_num, IF_ELSE_TYPE);
+
+		$<tree_type>$ = node;
+	}
+	statement {
+		tree_t* node = $<tree_type>1;
+		node->if_else.else_block = $4;
+		current_table = pop(table_stack);
 		$$ = node;
 	}
-	| IF '(' expression ')' statement ELSE statement {
-		tree_t* node = (tree_t*)create_node("if_else", IF_ELSE_TYPE, sizeof(struct tree_if_else));
-		node->if_else.cond = $3;
-		node->if_else.if_block = $5;
-		node->if_else.else_block = $7;
-		node->common.print_node = print_if_else;
-		$$ = node;
-	}
-	| WHILE '(' expression ')' statement {
+	| WHILE '(' expression ')' {
 		tree_t* node = (tree_t*)create_node("do_while", DO_WHILE_TYPE, sizeof(struct tree_do_while));
 		node->do_while.cond = $3;
-		node->do_while.block = $5;
+		parse_expression($3, current_table);
+
+		current_table = change_table(current_table, table_stack, &current_table_num, DO_WHILE_TYPE);
+
+		$<tree_type>$ = node;
+	}
+	statement {
+		tree_t* node = $<tree_type>5;
+		node->do_while.block = $6;
 		node->common.print_node = print_while;
+		current_table = pop(table_stack);
 		$$ = node;
 	}
-	| DO statement WHILE '(' expression ')' ';' {
+	| DO {
 		tree_t* node = (tree_t*)create_node("do_while", DO_WHILE_TYPE, sizeof(struct tree_do_while));
 		node->do_while.have_do = 1;
-		node->do_while.cond = $5;
-		node->do_while.block = $2;
+
+		current_table = change_table(current_table, table_stack, &current_table_num, DO_WHILE_TYPE);
+
+		$<tree_type>$ = node;
+	}
+	statement WHILE '(' expression ')' ';' {
+		tree_t* node = $<tree_type>2;
+		node->do_while.cond = $6;
+		node->do_while.block = $3;
 		node->common.print_node = print_do_while;
+		parse_expression($6, current_table);
+
+		current_table = pop(table_stack);
+
 		$$ = node;
 	}
-	| FOR '(' comma_expression_opt ';' expression_opt ';' comma_expression_opt ')' statement {
+	| FOR '(' comma_expression_opt ';' expression_opt ';' comma_expression_opt ')' {
 		tree_t* node = (tree_t*)create_node("for", FOR_TYPE, sizeof(struct tree_for));
 		node->for_tree.init = $3;
 		node->for_tree.cond = $5;
 		node->for_tree.update = $7;
-		node->for_tree.block = $9;
 		node->common.print_node = print_for;
+		parse_comma_expression($3, current_table);
+		parse_expression($5, current_table);
+		parse_comma_expression($7, current_table);
+
+		current_table = change_table(current_table, table_stack, &current_table_num, FOR_TYPE);
+
+		$<tree_type>$ = node;
+	}
+	statement {
+		tree_t* node = $<tree_type>9;
+		node->for_tree.block = $10;
+
+		current_table = pop(table_stack);
+
 		$$ = node;
 	}
-	| SWITCH '(' expression ')' statement {
+	| SWITCH '(' expression ')' {
 		tree_t* node = (tree_t*)create_node("switch", SWITCH_TYPE, sizeof(struct tree_switch));
 		node->switch_tree.cond = $3;
-		node->switch_tree.block = $5;
+		parse_expression($3, current_table);
+
+		current_table = change_table(current_table, table_stack, &current_table_num, SWITCH_TYPE);
+
+		$<tree_type>$ = node;
+	}
+	statement {
+		tree_t* node = $<tree_type>5;
+		node->switch_tree.block = $6;
 		node->common.print_node = print_switch;
+
+		current_table = pop(table_stack);
 		$$ = node;
 	}
 	| DELETE expression ';' {
 		tree_t* node = (tree_t*)create_node("delete", DELETE_TYPE, sizeof(struct tree_delete));
 		node->delete_tree.expr = $2;
 		node->common.print_node = print_delete;
+		parse_expression($2, current_table);
 		$$ = node;
 	}
 	| TRY {
@@ -2544,13 +2596,8 @@ statement
 		tree_t* node = (tree_t*)create_node("try_catch", TRY_CATCH_TYPE, sizeof(struct tree_try_catch));
 		node->common.attr = attr;
 
-		symtab_t table = symtab_create(TRY_CATCH_TYPE);
-		table->table_num = ++current_table_num;
-		attr->try_table = symtab_insert_child(current_table, table);
-
-		attr->common.node = node;
-		push(table_stack, current_table);
-		current_table = table;
+		current_table = change_table(current_table, table_stack, &current_table_num, TRY_CATCH_TYPE);
+		attr->try_table = current_table;
 
 		$<tree_type>$ = node;
 	}
@@ -2564,12 +2611,8 @@ statement
 		tree_t* node = $<tree_type>4;
 		try_catch_attr_t* attr = node->common.attr;
 
-		symtab_t table = symtab_create(TRY_CATCH_TYPE);
-		table->table_num = ++current_table_num;
-		attr->catch_table = symtab_insert_child(current_table, table);
-
-		push(table_stack, current_table);
-		current_table = table;
+		current_table = change_table(current_table, table_stack, &current_table_num, TRY_CATCH_TYPE);
+		attr->catch_table = current_table;
 
 		$<tree_type>$ = node;
 	}
@@ -2586,6 +2629,8 @@ statement
 		node->after_call.cond = $3;
 		node->after_call.call_expr = $6;
 		node->common.print_node = print_after_call;
+		parse_expression($3, current_table);
+		parse_expression($6, current_table);
 		DBG("AFTER CALL statement\n");
 		$$ = node;
 	}
@@ -2594,6 +2639,7 @@ statement
 		node->call_inline.expr = $2;
 		node->call_inline.ret_args = $3;
 		node->common.print_node = print_call_inline;
+		parse_expression($2, current_table);
 		DBG("CALL statement\n");
 		$$ = node;
 	}
@@ -2602,6 +2648,7 @@ statement
 		node->call_inline.expr = $2;
 		node->call_inline.ret_args = $3;
 		node->common.print_node = print_call_inline;
+		parse_expression($2, current_table);
 		DBG("inline statement\n");
 		$$ = node;
 	}
@@ -2610,6 +2657,7 @@ statement
 		tree_t* node = (tree_t*)create_node("assert", ASSERT_TYPE, sizeof(struct tree_assert));
 		node->assert_tree.expr = $2;
 		node->common.print_node = print_assert;
+		parse_expression($2, current_table);
 		$$ = node;
 	}
 	| LOG STRING_LITERAL ',' expression ',' expression ':' STRING_LITERAL ',' log_args ';' {
@@ -2625,6 +2673,8 @@ statement
 		//node->log.argc = get_node_num($10);
 		node->log.args = $10;
 		node->common.print_node = print_log;
+		parse_expression($4, current_table);
+		parse_expression($6, current_table);
 
 		$$ = node;
 	}
@@ -2636,6 +2686,7 @@ statement
 		//node->log.argc = get_node_num($7);
 		node->log.args = $7;
 		node->common.print_node = print_log;
+		parse_expression($4, current_table);
 
 		$$ = node;
 	}
@@ -2649,25 +2700,42 @@ statement
 
 		$$ = node;
 	}
-	| SELECT ident IN '(' expression ')' WHERE '(' expression ')' statement ELSE statement {
+	| SELECT ident IN '(' expression ')' WHERE '(' expression ')' {
 		tree_t* node = (tree_t*)create_node("select", SELECT_TYPE, sizeof(struct tree_select));
 		node->select.ident = $2;
 		node->select.in_expr = $5;
 		node->select.cond = $9;
-		node->select.where_block = $11;
-		node->select.else_block = $13;
 		node->common.print_node = print_select;
+		parse_expression($5, current_table);
+		parse_expression($9, current_table);
+
+		current_table = change_table(current_table, table_stack, &current_table_num, SELECT_TYPE);
+
+		$<tree_type>$ = node;
+	}
+	statement {
+		tree_t* node = $<tree_type>11;
+		node->select.where_block = $12;
+		current_table = pop(table_stack);
+		$<tree_type>$ = node;
+	}
+	ELSE {
+		current_table = change_table(current_table, table_stack, &current_table_num, SELECT_TYPE);
+		$<tree_type>$ = NULL;
+	}
+	statement {
+		tree_t* node = $<tree_type>11;
+		node->select.else_block = $16;
+		current_table = pop(table_stack);
 		$$ = node;
 	}
 	| FOREACH ident IN '(' expression ')' {
 		foreach_attr_t* attr = (foreach_attr_t*)gdml_zmalloc(sizeof(foreach_attr_t));
 		attr->ident = $2->ident.str;
-		/*FIXME: calculate the exprssion */
-		symtab_t table = symtab_create(FOREACH_TYPE);
-		table->table_num = ++current_table_num;
-		attr->table = symtab_insert_child(current_table, table);
-		push(table_stack, current_table);
-		current_table = table;
+
+		current_table = change_table(current_table, table_stack, &current_table_num, FOREACH_TYPE);
+		attr->table = current_table;
+
 		symbol_insert(current_table, $2->ident.str, FOREACH_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("foreach", FOREACH_TYPE, sizeof(struct tree_foreach));
@@ -2678,11 +2746,11 @@ statement
 
 		attr->common.node = node;
 		DBG("FOREACH in statement\n");
+		parse_expression($5, current_table);
 
 		$<tree_type>$ = node;
 	}
-	statement
-	{
+	statement {
 		tree_t* node = $<tree_type>7;
 		node->foreach.block = $8;
 		current_table = pop(table_stack);
@@ -2691,17 +2759,34 @@ statement
 	| ident ':' statement {
 		$$ = NULL;
 	}
-	| CASE expression ':' statement {
+	| CASE expression ':' {
 		tree_t* node = (tree_t*)create_node("case", CASE_TYPE, sizeof(struct tree_case));
 		/* TODO: charge the break */
 		node->case_tree.expr = $2;
-		node->case_tree.block = $4;
+		parse_expression($2, current_table);
+
+		current_table = change_table(current_table, table_stack, &current_table_num, CASE_TYPE);
+
+		$<tree_type>$ = node;
+	}
+	statement {
+		tree_t* node = $<tree_type>4;
+		node->case_tree.block = $5;
+		current_table = pop(table_stack);
 		$$ = node;
 	}
-	| DEFAULT ':' statement {
+	| DEFAULT ':' {
 		tree_t* node = (tree_t*)create_node("default", DEFAULT_TYPE, sizeof(struct tree_default));
-		node->default_tree.block = $3;
+
+		current_table = change_table(current_table, table_stack, &current_table_num, DEFAULT_TYPE);
+
+		$<tree_type>$ = node;
+	}
+	statement {
+		tree_t* node = $<tree_type>3;
+		node->default_tree.block = $4;
 		node->common.print_node = print_default;
+		current_table = pop(table_stack);
 		$$ = node;
 	}
 	| GOTO ident ';' {
