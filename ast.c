@@ -510,7 +510,7 @@ void add_template_to_table(symtab_t table, char* template) {
 	assert(table != NULL);
 	assert(template != NULL);
 
-	printf("In %s, line = %d, templates: %s\n",
+	DEBUG_ADD_TEMPLATE("In %s, line = %d, templates: %s ",
 			__FUNCTION__, __LINE__, template);
 
 	struct template_table* pre_temp_table = table->template_table;
@@ -540,6 +540,7 @@ void add_template_to_table(symtab_t table, char* template) {
 	template_attr_t* attr = symbol->attr;
 	temp_table->table = attr->table;
 	temp_table->template_name = strdup(template);
+	DEBUG_ADD_TEMPLATE("num: %d\n", temp_table->table->table_num);
 
 	if (pre_temp_table == NULL) {
 		table->template_table = temp_table;
@@ -549,7 +550,7 @@ void add_template_to_table(symtab_t table, char* template) {
 		table->template_table->next = temp_table;
 	}
 
-	printf("In %s, line = %d, insert templates table: %s\n", __func__, __LINE__, table->template_table->template_name);
+	DEBUG_ADD_TEMPLATE("In %s, line = %d, insert templates table: %s\n", __func__, __LINE__, table->template_table->template_name);
 
 	return;
 }

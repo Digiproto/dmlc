@@ -60,6 +60,7 @@ struct symtab {
     symbol_t table[MAX_SYMBOLS];
 	int table_num;
 	type_t type;
+	int no_check;
 };
 
 /* find and insert symbol from the symbol table.  */

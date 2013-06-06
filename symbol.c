@@ -97,6 +97,7 @@ static symbol_t _symbol_find(symbol_t* symbol_table, const char* name, type_t ty
  * @return return symbol structure pointer or NULL on error.
  */
 static symbol_t _symbol_find_notype(symbol_t* symbol_table, const char* name) {
+
     symbol_t symbol = symbol_table[str_hash(name)];
 	if (symbol) {
 		/* hash conflict */
@@ -121,6 +122,9 @@ static symtab_t table_malloc(type_t type)
     assert(new_symtab != NULL);
     bzero(new_symtab, sizeof(struct symtab));
 	new_symtab->type = type;
+	if (type == TEMPLATE_TYPE) {
+		new_symtab->no_check = 1;
+	}
     return new_symtab;
 }
 
@@ -151,7 +155,7 @@ symbol_t symbol_find_from_templates(struct template_table* templates, char* name
 	symbol_t rt;
 
 	while (templates != NULL) {
-        rt = _symbol_find(templates->table, name, type);
+        rt = _symbol_find(templates->table->table, name, type);
         if(rt) {
             return rt;
         }
@@ -218,7 +222,7 @@ symbol_t symbol_find_from_templates_notype(struct template_table* templates, cha
 	symbol_t rt;
 
 	while (templates != NULL) {
-        rt = _symbol_find_notype(templates->table, name);
+        rt = _symbol_find_notype(templates->table->table, name);
         if(rt) {
             return rt;
         }
@@ -426,6 +430,9 @@ symtab_t symtab_insert_sibling(symtab_t symtab, symtab_t newtab)
 	//	__func__, __LINE__, tmp->table_num, newtab->table_num);
     tmp->sibling = newtab;
     newtab->parent = symtab->parent;
+	if ((newtab->no_check) == 0) {
+		newtab->no_check = symtab->parent->no_check;
+	}
 
     return newtab;
 }
@@ -449,6 +456,9 @@ symtab_t symtab_insert_child(symtab_t symtab, symtab_t newtab)
     }else{
         symtab->child = newtab;
         newtab->parent = symtab;
+		if ((newtab->no_check) == 0) {
+			newtab->no_check = symtab->no_check;
+		}
         return newtab;
     }
 }

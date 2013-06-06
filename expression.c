@@ -1273,9 +1273,9 @@ expression_t* get_ident_value(tree_t* node, symtab_t table,  expression_t* expr)
 		expr->final_type = symbol->type;
 	}
 	else {
-		if (table->type == TEMPLATE_TYPE) {
+		if (table->no_check) {
 			DEBUG_TEMPLATE_SYMBOL("warning: %s no undeclared in template\n", node->ident.str);
-			symbol_insert(table, node->ident.str, NO_TYPE, NULL);
+			//symbol_insert(table, node->ident.str, NO_TYPE, NULL);
 			expr->final_type = NO_TYPE;
 		}
 		else {

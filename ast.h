@@ -3,6 +3,7 @@
 
 #include "tree.h"
 #include "symbol.h"
+#include "debug_color.h"
 
 typedef struct node
 {
@@ -106,5 +107,14 @@ void print_new(tree_t* node, int pos);
 void print_bitfields_decls(tree_t* node, int pos);
 void print_bitfields(tree_t* node, int pos);
 void print_goto(tree_t* node, int pos);
+
+#define DEBUG_AST
+
+#ifdef DEBUG_AST
+#define DEBUG_ADD_TEMPLATE debug_brown
+#else
+#define DEBUG_ADD_TEMPLATE
+#endif
+
 
 #endif

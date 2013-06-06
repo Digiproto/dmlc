@@ -33,7 +33,6 @@
 #include "Lexer.h"
 #include "symbol.h"
 
-#define DEBUG_AST 1
 #define QEMU 0
 
 #if QEMU
@@ -73,9 +72,7 @@ tree_t* get_ast (char *filename)
 	yylex_destroy (scanner);
 
 	fclose (file);
-#if DEBUG_AST
 	//print_ast(root);
-#endif
 	return root;
 }
 
