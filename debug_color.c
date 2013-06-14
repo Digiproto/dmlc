@@ -109,6 +109,48 @@ void debug_color (COLOR_TYPE type, char *format, ...)
 	}
 }
 
+int debug_cyan(char* format, ...) {
+	char buf[MAX_LENGTH];
+	memset (buf, '\0', MAX_LENGTH);
+	va_list args;
+	va_start (args, format);
+	vsprintf (buf, format, args);
+	out_bounds (buf);
+	va_end (args);
+
+	_debug_in_cyan ("%s", buf);
+
+	return 0;
+}
+
+int debug_purple(char* format, ...) {
+	char buf[MAX_LENGTH];
+	memset (buf, '\0', MAX_LENGTH);
+	va_list args;
+	va_start (args, format);
+	vsprintf (buf, format, args);
+	out_bounds (buf);
+	va_end (args);
+
+	_debug_in_purple ("%s", buf);
+
+	return 0;
+}
+
+int debug_light_red(char* format, ...) {
+	char buf[MAX_LENGTH];
+	memset (buf, '\0', MAX_LENGTH);
+	va_list args;
+	va_start (args, format);
+	vsprintf (buf, format, args);
+	out_bounds (buf);
+	va_end (args);
+
+	_debug_in_light_red ("%s", buf);
+
+	return 0;
+}
+
 int debug_blue(char *format, ...)
 {
 	char buf[MAX_LENGTH];
