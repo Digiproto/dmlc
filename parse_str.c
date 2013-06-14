@@ -24,6 +24,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <regex.h>
+#include <assert.h>
+#include "tree.h"
+#include "ast.h"
 
 /**
  * @brief strlist_free free a string list.
@@ -76,7 +79,7 @@ int scanfstr(const char *str, char ***typelist)
 	const int    cflags    = REG_EXTENDED;
 	const size_t nmatch    = 3;
 	const int    buflen    = 1024;
-	const char  *pattern   = "%[0-9]*[.]?[0-9]*((h{0,2}|l{0,2})[diufscpeExXgGocnm]{1})";
+	const char  *pattern   = "%[0-9]*[.]?[0-9]*((h{0,2}|l{0,2})[#]?[diufscpeExXgGocnm]{1})";
 	const int    typeindex = 1;
 	const int    endindex  = 2;
 
@@ -107,6 +110,29 @@ int scanfstr(const char *str, char ***typelist)
 
 	regfree(&reg);
 	return n;
+}
+
+struct log_args* parse_log(tree_t* node) {
+	assert(node != NULL);
+	printf("In %s, line = %d, log fromat: %s\n",
+			__func__, __LINE__, node->log.format);
+
+	struct log_args* log = (struct log_args*)gdml_zmalloc(sizeof(struct log_args));
+	char** typelist = NULL;
+	int arg_num = 0;
+
+	log->argc = scanfstr(node->log.format, &typelist);
+	arg_num = get_list_num(node->log.args);
+
+	if ((log->argc) > arg_num) {
+		printf("argc: %d, arg_num: %d\n", log->argc, arg_num);
+		fprintf(stderr, "warning: too few arguments for format\n");
+		/* TODO: handle the error */
+		exit(-1);
+	}
+	/* FIXME: we should refer to printf? */
+
+	return log;
 }
 
 #ifdef SCANFSTRING_DEBUG
