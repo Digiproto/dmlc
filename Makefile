@@ -1,7 +1,9 @@
 # Written by Michael.Kang(blackfin.kang@gmail.com)
 
+CFLAGS= -g -O2 -Werror-implicit-function-declaration -Werror=return-type -Wmissing-field-initializers -Wuninitialized
+//CFLAGS=
 dmlc:Parser.c Lexer.c symbol.c ast.c simics_code_gen.c dmlc.c qemu_code_gen.c debug_color.c stack.c expression.c decl.c parse_str.c
-	gcc -g -o dmlc Parser.c Lexer.c symbol.c ast.c dmlc.c qemu_code_gen.c simics_code_gen.c debug_color.c stack.c expression.c decl.c parse_str.c
+	gcc $(CFLAGS) -g -o dmlc Parser.c Lexer.c symbol.c ast.c dmlc.c qemu_code_gen.c simics_code_gen.c debug_color.c stack.c expression.c decl.c parse_str.c
 Lexer.c:gdml.lex
 	flex gdml.lex
 Parser.c:gdml.y
