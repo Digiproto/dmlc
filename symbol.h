@@ -344,4 +344,26 @@ typedef struct const_str_attr
 	const char *name;
 } const_str_attr_t;
 
+typedef struct func_param {
+	decl_t* decl;
+	int is_ellipsis;
+	struct func_param* next;
+}func_param_t;
+
+typedef struct fucntion {
+	char* func_name;
+	decl_t* ret_decl;
+	func_param_t* param;
+	int argc;
+} function_t;
+
+typedef struct c_array {
+	char* name;
+	decl_t* decl;
+	expression_t* expr;
+}c_array_t;
+
+void params_insert_table(symtab_t table, method_params_t* method_params);
+paramspec_t* get_paramspec(tree_t* node, symtab_t table);
+void parse_comma_expression(tree_t* node, symtab_t table);
 #endif

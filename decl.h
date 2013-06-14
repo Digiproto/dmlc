@@ -69,6 +69,7 @@ typedef struct type {
 	unsigned is_auto : 1;
 	unsigned is_static : 1;
 
+	unsigned is_func : 4;
 	//unsigned is_const : 4;
 
 	char* struct_name;
@@ -79,6 +80,7 @@ typedef struct type {
 	char* union_name;
 	char* typedef_name;
 	array_decl_t* array_decl;
+	void* func_decl;
 }decl_type_t;
 
 struct decl_common {
@@ -125,12 +127,14 @@ struct decl_enum {
 
 typedef struct variable_name {
 	char* var_name;
-	struct variable_name* next;
 	int var_num;
+	struct variable_name* next;
 }var_name_t;
 
 typedef struct decl {
 	char* decl_str;
+	int is_defined;
+	char* defined_name;
 	decl_type_t* type;
 	expression_t* value;
 	var_name_t* var;
@@ -144,5 +148,19 @@ struct array_decl {
 	expression_t* expr_end;
 	struct array_decl* next;
 };
+
+decl_t*  parse_extern_cdecl_or_ident(tree_t* node, symtab_t table);
+void add_template_to_table(symtab_t table, char* template);
+void print_templates(symtab_t table);
+void parse_local_decl(tree_t* node, symtab_t table);
+struct log_args* parse_log(tree_t* node);
+void set_decl_type(decl_type_t* decl_type, type_t type);
+type_t get_decl_type(decl_t* decl);
+decl_t* parse_ctypedecl(tree_t* node, symtab_t table);
+decl_t* parse_ctypedecl(tree_t* node, symtab_t table);
+int parse_typeident(tree_t* node, symtab_t table, decl_t* decl);
+int parse_cdecl(tree_t* node, symtab_t table, decl_t* decl);
+int parse_cdecl2(tree_t* node, symtab_t table, decl_t* decl);
+int parse_cdecl3(tree_t* node, symtab_t table, decl_t* decl);
 
 #endif /* __DECL_H__ */

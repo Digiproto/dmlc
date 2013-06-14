@@ -219,15 +219,20 @@ symbol_t symbol_find_curr(symtab_t symtab, char *name, type_t type)
 }
 
 symbol_t symbol_find_from_templates_notype(struct template_table* templates, char* name) {
-	symbol_t rt;
+	symbol_t rt = NULL;
+	symtab_t table = NULL;
+	int i = 0;
 
 	while (templates != NULL) {
-        rt = _symbol_find_notype(templates->table->table, name);
+		//table = templates->table->table;
+		table = templates->table;
+        rt = symbol_find_notype(table, name);
         if(rt) {
             return rt;
         }
 
 		templates = templates->next;
+		i++;
 	}
 
 	return NULL;
@@ -586,9 +591,15 @@ void params_insert_table(symtab_t table, method_params_t* method_params) {
 	int ret_argc = method_params->ret_argc;
 	params_t** in_list = method_params->in_list;
 	params_t** ret_list = method_params->ret_list;
+	decl_t* param_decl = NULL; 
 
 	for (i = 0; i < in_argc; i++) {
-		/* FIXME: should parsing the params attribute */
+		param_decl = in_list[i]->decl;
+		if (param_decl->is_defined) {
+			printf("In %s, line = %d, %s defined!\n",
+					__func__, __LINE__, in_list[i]->var_name);
+			continue;
+		}
 		if (symbol_insert(table, in_list[i]->var_name, PARAM_TYPE, in_list[i]) == -1) {
 			fprintf(stderr, "method param : %s redefined\n", in_list[i]->var_name);
 			/* FIXME: handle the error */
@@ -597,7 +608,12 @@ void params_insert_table(symtab_t table, method_params_t* method_params) {
 	}
 
 	for (i = 0; i < ret_argc; i++) {
-		/* FIXME: should parsing the params attribute */
+		param_decl = ret_list[i]->decl;
+		if (param_decl->is_defined) {
+			printf("In %s, line = %d, %s defined!\n",
+					__func__, __LINE__, ret_list[i]->var_name);
+			continue;
+		}
 		if (symbol_insert(table, ret_list[i]->var_name, PARAM_TYPE, ret_list[i]) == -1) {
 			fprintf(stderr, "method param : %s redefined\n", in_list[i]->var_name);
 			/* FIXME: handle the error */

@@ -55,7 +55,7 @@
 void* gdml_zmalloc(int size) {
 	void* ret = malloc(size);
 	if (ret == NULL) {
-		fprintf(stderr, "malloc failed!\n");
+		fprintf(stderr, "malloc failed : %s!\n", strerror(errno));
 		exit(-1);
 	}
 	memset(ret, 0, size);
@@ -293,7 +293,7 @@ int get_list_num (tree_t* root) {
 	tree_t* node = root;
 	while (node != NULL) {
 		num++;
-		printf("name: %s, type: %d\n", node->common.name, node->common.type);
+		//printf("name: %s, type: %d\n", node->common.name, node->common.type);
 		node = node->common.sibling;
 	}
 	return num;
@@ -405,7 +405,9 @@ char* get_const_string(tree_t* node) {
 }
 
 int get_param_num(tree_t* node) {
-	assert(node != NULL);
+	if (node == NULL) {
+		return 0;
+	}
 	int num = 0;
 	tree_t* tmp = node;
 	while (tmp != NULL) {
@@ -419,7 +421,9 @@ int get_param_num(tree_t* node) {
 }
 
 params_t** get_param_list(tree_t* node, int param_num, symtab_t table) {
-	assert(node != NULL);
+	if (node == NULL) {
+		return NULL;
+	}
 	params_t** list = gdml_zmalloc(param_num * (sizeof(params_t*)));
 	tree_t* tmp = node;
 	int i = 0;
@@ -451,7 +455,6 @@ method_params_t* get_method_params(tree_t* node, symtab_t table) {
 }
 
 paramspec_t* get_paramspec(tree_t* node, symtab_t table) {
-	DEBUG_BLACK("In %s, line = %d\n", __FUNCTION__, __LINE__);
 	if (node == NULL) {
 		return NULL;
 	}
@@ -462,10 +465,13 @@ paramspec_t* get_paramspec(tree_t* node, symtab_t table) {
 		spec->str = get_const_string(node->paramspec.string);
 		spec->type = CONST_STRING_TYPE;
 	}
+	if (spec->is_auto) {
+		spec->type = NO_TYPE;
+	}
 	if (node->paramspec.expr) {
-		printf("paramspec is expression expr type: %s\n",node->paramspec.expr->common.name);
 		spec->expr = parse_expression(node->paramspec.expr, table);
 		spec->type = spec->expr->final_type;
+		printf("paramspec is expression expr type: %d\n", spec->type);
 	}
 
 	return spec;
@@ -488,6 +494,8 @@ int get_size(tree_t* node) {
 		printf("The size is another type expression - node type: %d, name: %s\n", node->common.type, node->common.name);
 		exit(-1);
 	}
+
+	return 0;
 }
 
 int get_offset(tree_t* node) {
@@ -503,33 +511,46 @@ int get_offset(tree_t* node) {
 		exit(-1);
 	}
 
-	return -1;
+	return 0;
+}
+
+void print_templates(symtab_t table) {
+	assert(table);
+	struct template_table* tmp = table->template_table;
+
+	int i = 0;
+	while ((tmp) != NULL) {
+		debug_cyan("templates name(%d): %s, table_num: %d\n", i++, tmp->template_name, tmp->table->table_num);
+		tmp = tmp->next;
+	}
+
+	return;
 }
 
 void add_template_to_table(symtab_t table, char* template) {
 	assert(table != NULL);
 	assert(template != NULL);
 
-	DEBUG_ADD_TEMPLATE("In %s, line = %d, templates: %s ",
-			__FUNCTION__, __LINE__, template);
-
 	struct template_table* pre_temp_table = table->template_table;
 	struct template_table* temp_table = NULL;
+	struct template_table* new_table = NULL;
 	char* template_name = NULL;
 
-	while ((table->template_table) != NULL) {
-		template_name = table->template_table->template_name;
-		printf("In %s, line = %d, trave templates: %s\n", template_name);
+	temp_table = table->template_table;
+
+	while ((temp_table) != NULL) {
+		template_name = temp_table->template_name;
+		printf("In %s, line = %d, trave templates: %s\n", __func__, __LINE__, template_name);
 		if (strcmp(template, template_name) == 0) {
 			fprintf(stderr, "re-load template: %s\n", template);
 			/*FIXME: should handle the error */
 			exit(-1);
 		}
-		pre_temp_table = table->template_table;
-		table->template_table = table->template_table->next;
+		pre_temp_table = temp_table;
+		temp_table = temp_table->next;
 	}
 
-	temp_table = (struct template_table*)gdml_zmalloc(sizeof(struct template_table));
+	new_table = (struct template_table*)gdml_zmalloc(sizeof(struct template_table));
 
 	symbol_t symbol = symbol_find(table, template, TEMPLATE_TYPE);
 	if (symbol == NULL) {
@@ -538,19 +559,20 @@ void add_template_to_table(symtab_t table, char* template) {
 		exit(-1);
 	}
 	template_attr_t* attr = symbol->attr;
-	temp_table->table = attr->table;
-	temp_table->template_name = strdup(template);
-	DEBUG_ADD_TEMPLATE("num: %d\n", temp_table->table->table_num);
+	new_table->table = attr->table;
+	new_table->template_name = strdup(template);
 
-	if (pre_temp_table == NULL) {
-		table->template_table = temp_table;
-		table->template_table->next = temp_table->next;
+	if (table->template_table == NULL) {
+		table->template_table = new_table;
 	}
 	else {
-		table->template_table->next = temp_table;
+		printf("pre_temp_table : %s\n", pre_temp_table->template_name);
+		//table->template_table  = new_table;
+		pre_temp_table->next = new_table;
 	}
 
-	DEBUG_ADD_TEMPLATE("In %s, line = %d, insert templates table: %s\n", __func__, __LINE__, table->template_table->template_name);
+	DEBUG_ADD_TEMPLATE("In %s, line = %d, insert templates table: %s, num: %d\n",
+			__func__, __LINE__, template, new_table->table->table_num);
 
 	return;
 }
@@ -565,8 +587,8 @@ void add_templates_to_table(symtab_t table, char** templates, int num) {
 	int i = 0;
 
 	for (i = 0; i < num; i++) {
-		printf("In %s, line = %d, num: %d, templates: %s\n",
-				__FUNCTION__, __LINE__, i, templates[i]);
+		printf("\nIn %s, line = %d, num: %d, templates: %s, table_num: %d\n",
+				__FUNCTION__, __LINE__, i, templates[i], table->table_num);
 
 		add_template_to_table(table, templates[i]);
 	}

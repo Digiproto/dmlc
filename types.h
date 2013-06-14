@@ -37,6 +37,8 @@ typedef enum
 	PARAMETER_TYPE,
 	/* method */
 	METHOD_TYPE,
+	/* c function  */
+	FUNCTION_TYPE,
 	/* bank */
 	BANK_TYPE,
 	/* register */

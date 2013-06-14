@@ -76,6 +76,11 @@ struct tree_int_cst
 };
 #endif
 
+struct tree_import {
+	struct tree_common common;
+	const char* file_name;
+};
+
 
 /**
  * @brief : tree node about const string
@@ -477,6 +482,12 @@ struct tree_assert {
 	tree_t* expr;
 };
 
+struct log_args {
+	int argc;
+	char** typelist;
+	int *types;
+};
+
 /**
  * @brief : tree node about log statement
  */
@@ -486,7 +497,8 @@ struct tree_log {
 	tree_t* level;				// log level:from 1 to 4
 	tree_t* group;				// the group the log belonged
 	const char* format;				// the format aobut log information
-	int argc;					// number about information
+	//int argc;					// number about information
+	struct log_args* log_info;
 	tree_t* args;				// log information
 };
 
@@ -820,6 +832,7 @@ union tree_node
 	struct tree_common  common;
 	struct tree_dml dml;
 	struct tree_device device;
+	struct tree_import import;
 	struct tree_bitorder bitorder;
 	struct tree_bank bank;
 	struct tree_object_spec spec;

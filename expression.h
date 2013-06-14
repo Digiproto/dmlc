@@ -55,10 +55,12 @@ typedef struct expression {
 } expression_t;
 
 expression_t* parse_expression(tree_t* node, symtab_t table);
+void parse_log_args(tree_t* node, symtab_t table);
 
 #define DEBUG_EXPRESSION
 #ifdef DEBUG_EXPRESSION
 #define DEBUG_TEMPLATE_SYMBOL debug_green
+#define DEBUG_IDENT_VALUE debug_purple
 #else
 #define DEBUG_TEMPLATE_SYMBOL
 #endif

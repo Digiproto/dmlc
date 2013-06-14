@@ -19,11 +19,27 @@ typedef struct level
 
 } level_t;
 
+tree_t* get_ast (char *filename);
 void* gdml_zmalloc(int size);
 char** get_templates(tree_t* head);
 int get_list_num (tree_t* root);
 symtab_t get_obj_block_table(tree_t* spec);
 arraydef_attr_t* get_arraydef(tree_t* node);
+tree_t* create_node (char *name, int type, int size);
+void add_child (tree_t* parent, tree_t* child);
+tree_t* create_node_list (tree_t* root, tree_t* new_node);
+char* get_obj_desc(tree_t* spec);
+int get_size(tree_t* node);
+int get_offset(tree_t* node);
+method_params_t* get_method_params(tree_t* node, symtab_t table);
+void get_object_template_table(symtab_t table, tree_t* node);
+tree_t* c_keyword_node (const char* name);
+tree_t* dml_keyword_node(const char* name);
+long long strtoi (char *str);
+void print_ast (tree_t* root);
+int get_param_num(tree_t* node);
+int get_list_num (tree_t* root);
+
 void print_dml(tree_t* node, int pos);
 void print_device(tree_t* node, int pos);
 void print_bitorder(tree_t* node, int pos);

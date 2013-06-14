@@ -27,6 +27,7 @@ typedef struct YYLTYPE
 #include "Lexer.h"
 
 extern int  yylex(YYSTYPE *yylval_param, yyscan_t yyscanner);
+void yyerror(yyscan_t* scanner, void* v, char *s);
 extern char* builtin_filename;
 symtab_t root_table;
 stack_t* table_stack;
@@ -171,7 +172,7 @@ tree_t* current_object_node = NULL;
 %left LEFT_OP RIGHT_OP
 %left '+' '-'
 %left '*' '/' '%'
-%right UNARY INC_OP DEC_OP
+%right '!' '~' '#' '$' DEFINED INC_OP DEC_OP
 %left HYPERUNARY
 %left POINTSAT '.' '(' '['
 
@@ -837,7 +838,7 @@ method
 		attr->name = $2->ident.str;
 		attr->is_extern = 0;
 		attr->is_default = 1;
-		attr->method_params = get_method_params($3);
+		attr->method_params = get_method_params($3, current_table);
 		symbol_insert(current_table, $2->ident.str, METHOD_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("method", METHOD_TYPE, sizeof(struct tree_method));
@@ -868,7 +869,7 @@ method
 		attr->name = $3->ident.str;
 		attr->is_extern = 1;
 		attr->is_default = 0;
-		attr->method_params = get_method_params($4);
+		attr->method_params = get_method_params($4, current_table);
 		symbol_insert(current_table, $3->ident.str, METHOD_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("method", METHOD_TYPE, sizeof(struct tree_method));
@@ -900,7 +901,7 @@ method
 		attr->name = $3->ident.str;
 		attr->is_extern = 1;
 		attr->is_default = 1;
-		attr->method_params = get_method_params($4);
+		attr->method_params = get_method_params($4, current_table);
 		symbol_insert(current_table, $3->ident.str, METHOD_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("method", METHOD_TYPE, sizeof(struct tree_method));
@@ -1004,8 +1005,10 @@ toplevel
 		constant_attr_t* attr = (constant_attr_t*)gdml_zmalloc(sizeof(constant_attr_t));
 		attr->name = $2->ident.str;
 		attr->common.table_num = current_table->table_num;
+		attr->value = parse_expression($4, current_table);
 		/*FIXME: should calulate the expression value */
 		symbol_insert(current_table, $2->ident.str, CONSTANT_TYPE, attr);
+		printf("constant type: %d\n", attr->value->final_type);
 
 		tree_t* node = (tree_t*)create_node("assign", ASSIGN_TYPE, sizeof(struct tree_assign));
 		node->assign.is_constant = 1;
@@ -1025,6 +1028,7 @@ toplevel
 		cdecl_attr_t* attr = (cdecl_attr_t*)gdml_zmalloc(sizeof(cdecl_attr_t));
 		attr->is_extern = 1;
 		#endif
+		parse_extern_cdecl_or_ident($2, current_table);
 
 		tree_t* node = (tree_t*)create_node("cdecl", CDECL_TYPE, sizeof(struct tree_cdecl));
 		node->cdecl.is_extern = 1;
@@ -1095,6 +1099,7 @@ istemplate_stmt
 		}
 		#endif
 		add_template_to_table(current_table, $2->ident.str);
+		print_templates(current_table);
 		$$ = $2;
 	}
 	;
@@ -1135,7 +1140,8 @@ import
 		}
 
 		yyscan_t scanner;
-		tree_t* root = (tree_t*)create_node($2, IMPORT_TYPE);
+		tree_t* root = (tree_t*)create_node($2, IMPORT_TYPE, sizeof(struct tree_import));
+		root->import.file_name = strdup(fullname);
 		DBG("Begin parse the import file %s\n", fullname);
 		tree_t* ast = NULL;
 		yylex_init(&scanner);
@@ -2667,14 +2673,14 @@ statement
 		node->log.level = $4;
 		node->log.group = $6;
 		node->log.format = $8;
-		/* TODO: step1: charge the print arg type and num in format */
-		/* TODO: step2: get the actual arg type and num */
-		/* TODO: step3: charge the args */
-		//node->log.argc = get_node_num($10);
 		node->log.args = $10;
-		node->common.print_node = print_log;
+
 		parse_expression($4, current_table);
 		parse_expression($6, current_table);
+		parse_log_args($10, current_table);
+
+		node->log.log_info = parse_log(node);
+		node->common.print_node = print_log;
 
 		$$ = node;
 	}
@@ -2683,10 +2689,13 @@ statement
 		node->log.log_type = $2;
 		node->log.level = $4;
 		node->log.format = $6;
-		//node->log.argc = get_node_num($7);
 		node->log.args = $7;
-		node->common.print_node = print_log;
+
 		parse_expression($4, current_table);
+		parse_log_args($7, current_table);
+
+		node->log.log_info = parse_log(node);
+		node->common.print_node = print_log;
 
 		$$ = node;
 	}
@@ -2694,8 +2703,11 @@ statement
 		tree_t* node = (tree_t*)create_node("log", LOG_TYPE, sizeof(struct tree_log));
 		node->log.log_type = $2;
 		node->log.format = $4;
-		//node->log.argc = get_node_num($5);
 		node->log.args = $5;
+
+		parse_log_args($5, current_table);
+
+		node->log.log_info = parse_log(node);
 		node->common.print_node = print_log;
 
 		$$ = node;
@@ -3132,7 +3144,7 @@ ident
 extern int column;
 int lineno  = 1;    /* number of current source line */
 
-void yyerror(yyscan_t* scanner, char *s) {
+void yyerror(yyscan_t* scanner, void* v, char *s) {
 	fflush(stdout);
 	fprintf(stderr,"Syntax error on line #%d, column #%d: %s\n", lineno, column, s);
 	exit(1);

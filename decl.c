@@ -29,6 +29,8 @@
 #include "symbol.h"
 #include "tree.h"
 #include "types.h"
+#include "ast.h"
+#include "decl.h"
 
 void* gdml_realloc(void* addr, int size) {
 	if (addr == NULL) {
@@ -46,13 +48,18 @@ void* gdml_realloc(void* addr, int size) {
 }
 
 char* add_type_str(char* addr, char* str){
-	printf("In %s, line = %d, addr : %s :  str: %s\n",
-			__func__, __LINE__, addr, str);
-	addr = (char*)gdml_realloc(addr, (strlen(str) + 2));
+	assert(str != NULL);
+	int size = 0;
+
+	if (addr != NULL) {
+		size = strlen(addr);
+	}
+	size += strlen(str) + 2;
+
+	addr = (char*)gdml_realloc(addr, size);
 	addr = strcat(addr, str);
 	addr = strcat(addr, " ");
-	printf("In %s, line = %d, str: %s : addr: %s\n",
-			__func__, __LINE__, str, addr);
+	printf("addr str : %s, len: %d\n", addr, strlen(str));
 
 	return addr;
 }
@@ -117,6 +124,8 @@ void set_decl_type(decl_type_t* decl_type, type_t type) {
 			break;
 		case TYPEDEF_TYPE:
 			decl_type->typedef_type = 1;
+			break;
+		case NO_TYPE:
 			break;
 		default:
 			printf("other type: %d\n", type);
@@ -183,9 +192,64 @@ type_t get_decl_type(decl_t* decl) {
 		return UNION_TYPE;
 	if (type->typedef_type)
 		return TYPEDEF_TYPE;
+
+	return 0;
 }
 
-decl_type_t*  parse_identifier(tree_t* node, symtab_t table, decl_t* decl) {
+var_name_t* create_var_name(char* name) {
+	assert(name != NULL);
+
+	var_name_t* var_new = (var_name_t*)gdml_zmalloc(sizeof(var_name_t));
+	var_new->var_name = name;
+
+	return var_new;
+}
+
+int symbol_construct_type(symbol_t symbol, decl_t* decl) {
+	assert(symbol != NULL);
+	assert(decl != NULL);
+
+	switch(symbol->type) {
+		case STRUCT_TYPE:
+			printf("In %s, line = %d, struct_type!\n", __func__, __LINE__);
+			exit(-1);
+			break;
+		case LAYOUT_TYPE:
+			printf("In %s, line = %d, layout_type!\n", __func__, __LINE__);
+			exit(-1);
+			break;
+		case BITFIELDS_TYPE:
+			printf("In %s, line = %d, bitfields_type!\n", __func__, __LINE__);
+			exit(-1);
+			break;
+		case TYPEDEF_TYPE:
+			printf("In %s, line = %d, typedef_type!\n", __func__, __LINE__);
+			exit(-1);
+			break;
+		case TYPEOF_TYPE:
+			printf("In %s, line = %d, typeof_type!\n", __func__, __LINE__);
+			exit(-1);
+			break;
+		case ENUM_TYPE:
+			printf("In %s, line = %d, enum_type!\n", __func__, __LINE__);
+			exit(-1);
+			break;
+		case UNION_TYPE:
+			printf("In %s, line = %d, union_type!\n", __func__, __LINE__);
+			exit(-1);
+			break;
+		default:
+			printf("In %s, line = %d, symbol name: %s, type: %d\n",
+					__func__, __LINE__, symbol->name, symbol->type);
+			decl->is_defined = 1;
+			decl->defined_name = symbol->name;
+			break;
+	}
+
+	return 0;
+}
+
+void parse_identifier(tree_t* node, symtab_t table, decl_t* decl) {
 	assert(node != NULL);
 	assert(table != NULL);
 	assert(decl != NULL);
@@ -200,32 +264,30 @@ decl_type_t*  parse_identifier(tree_t* node, symtab_t table, decl_t* decl) {
 			__func__, __LINE__, node->ident.str);
 	symbol_t symbol = symbol_find_notype(table, node->ident.str);
 	if (symbol != NULL) {
-		printf("In %s, line = %d, finded the symbol: %s\n", node->ident.str);
-		/* FIXME: the symbol is struct or other */
-		exit(-1);
+		printf("In %s, line = %d, finded the symbol: %s, type: %d : %d\n",
+				__func__, __LINE__, node->ident.str, node->common.type, symbol->type);
+		symbol_construct_type(symbol, decl);
 	}
 	else {
 		decl->decl_str = add_type_str(decl->decl_str, node->ident.str);
-		if (decl->var != NULL) {
+		if (decl->var == NULL) {
+			decl->var = create_var_name(node->ident.str);
+			decl->var->var_num += 1;
+			printf("decl->var->name 2: %s : %s\n", decl->var->var_name, node->ident.str);
+		}
+		else {
 			var_name_t* var = decl->var;
+			printf("decl->var->name1: %s: %s\n", var->var_name, decl->var->var_name);
 			while (var->next != NULL)  {
 				var = var->next;
 			}
-			var_name_t* var_new = (var_name_t*)gdml_zmalloc(sizeof(var_name_t));
-			var_new->var_name = node->ident.str;
-			var->next = var_new;
-			var->var_num += 1;
-		}
-		else {
-			var_name_t* var = (var_name_t*)gdml_zmalloc(sizeof(var_name_t));
-			var->var_name = node->ident.str;
-			var->var_num += 1;
-			decl->var = var;
+			var->next = create_var_name(node->ident.str);
+			decl->var->var_num += 1;
 		}
 		//symbol_insert(table, node->ident.str, IDENT_TYPE, decl);
 	}
 
-	return NULL;
+	return ;
 }
 
 decl_t* parse_struct(tree_t* node, symtab_t table, decl_t* decl) {
@@ -562,7 +624,7 @@ decl_t* parse_dml_keyword(tree_t* node, symtab_t table, decl_t* decl) {
 	return decl;
 }
 
-decl_t* parse_basetype(tree_t* node, symtab_t table, decl_t* decl) {
+void parse_basetype(tree_t* node, symtab_t table, decl_t* decl) {
 	 assert(node != NULL);
 	 assert(table != NULL);
 	 assert(decl != NULL);
@@ -584,14 +646,14 @@ decl_t* parse_basetype(tree_t* node, symtab_t table, decl_t* decl) {
 			break;
 		case TYPEOF_TYPE:
 			printf("typeof defined!\n");
-			 parse_typeof(node, table, decl);
+			parse_typeof(node, table, decl);
 			break;
 		default:
 			parse_typeident(node, table, decl);
 			break;
 	}
 
-	return decl;
+	return ;
 }
 
 params_t* get_param_decl(tree_t* node, symtab_t table) {
@@ -607,10 +669,22 @@ params_t* get_param_decl(tree_t* node, symtab_t table) {
 	param->decl = decl;
 
 	parse_cdecl(node, table, decl);
-	if ((decl->var->var_num) > 1) {
+	if (((decl->var) != NULL) && ((decl->var->var_num) > 1)) {
 		fprintf(stderr, "the method parameter some problem!\n");
-		/* FIXME: handle the error */
-		exit(-1);
+		var_name_t* var = decl->var;
+		if ((strcmp(var->var_name, "attr_value_t") == 0)
+				|| (strcmp(var->var_name, "set_error_t") == 0)) {
+			param->var_name = var->next->var_name;
+			/* FIXME: in fact the type it struct type */
+			param->is_notype = 1;
+		}
+		else {
+			/* FIXME: handle the error */
+			exit(-1);
+		}
+	}
+	else if (decl->is_defined) {
+		param->var_name = decl->defined_name;
 	}
 	else {
 		param->var_name = decl->var->var_name;
@@ -620,7 +694,7 @@ params_t* get_param_decl(tree_t* node, symtab_t table) {
 	}
 
 	printf("IN %s, line = %d, decl_str: %s, va_name: %s\n",
-			__func__, __LINE__, decl->decl_str, decl->var->var_name);
+			__func__, __LINE__, decl->decl_str, param->var_name);
 
 	return param;
 }
@@ -677,6 +751,31 @@ expression_t* parse_array_expression(tree_t* node, symtab_t table) {
 	return expr;
 }
 
+int parse_c_array(tree_t* node, symtab_t table, array_decl_t* array_decl) {
+	assert(node != NULL);
+	assert(table != NULL);
+	assert(array_decl != NULL);
+
+	tree_t* name_node = node->array.decl;
+
+	if ((name_node->common.type == IDENT_TYPE)
+			|| (name_node->common.type == DML_KEYWORD_TYPE)) {
+		if (strcmp(name_node->ident.str, "this") == 0) {
+			fprintf(stderr, "synax error at 'this'\n");
+			/* TODO: handle the error */
+			exit(-1);
+		}
+		else {
+			symbol_insert(table, name_node->ident.str, ARRAY_TYPE, array_decl->decl);
+		}
+	}
+	else {
+		parse_cdecl3(name_node, table, array_decl->decl);
+	}
+
+	return 0;
+}
+
 int parse_array(tree_t* node, symtab_t table, decl_t* decl) {
 	assert((node != NULL) || (table != NULL) || (decl != NULL));
 	printf("In %s, line = %d, node type: %s\n",
@@ -685,14 +784,14 @@ int parse_array(tree_t* node, symtab_t table, decl_t* decl) {
 	array_decl_t* array_decl = (array_decl_t*)gdml_zmalloc(sizeof(array_decl_t));
 
 	if (node->array.decl) {
-		parse_cdecl3(node->array.decl, table, decl);
-		/* FIXME should get array identifier */
+		parse_c_array(node, table, array_decl);
 	}
 
 	decl->type->array_type += 1;
 	decl->decl_str = add_type_str(decl->decl_str, "[");
 
 	array_decl->is_fix = node->array.is_fix;
+	array_decl->decl= decl;
 
 	if (node->array.ident) {
 		tree_t* ident = node->array.ident;
@@ -750,6 +849,145 @@ int parse_cdecl_list(tree_t* node, symtab_t table, decl_t* decl) {
 	return 0;
 }
 
+func_param_t* parse_func_param(tree_t* node, symtab_t table) {
+	assert(node != NULL);
+	assert(table != NULL);
+
+	printf("In %s, line = %d, node type: %s\n",
+			__func__, __LINE__, node->common.name);
+
+	func_param_t* new_param = (func_param_t*)gdml_zmalloc(sizeof(func_param_t));
+
+	decl_t* decl = (decl_t*)gdml_zmalloc(sizeof(decl_t));
+	decl_type_t* type = (decl_type_t*)gdml_zmalloc(sizeof(decl_type_t));
+	decl->type = type;
+
+	if (node->common.type == ELLIPSIS_TYPE) {
+		new_param->is_ellipsis = 1;
+		free(type);
+		free(decl);
+		printf("params decl_str: %s\n", "...");
+	}
+	else {
+		parse_cdecl(node, table, decl);
+		new_param->decl = decl;
+		printf("params decl_str: %s\n", new_param->decl->decl_str);
+	}
+
+
+	return new_param;
+}
+
+void print_param_list(func_param_t* param) {
+	assert(param);
+
+	func_param_t* tmp = param;
+	int num = 0;
+
+	while (tmp != NULL) {
+		printf("param[%d] : ", ++num);
+		if (tmp->is_ellipsis) {
+			printf("%s\n", "...");
+		}
+		else {
+			printf("%s\n", tmp->decl->decl_str);
+		}
+		tmp = tmp->next;
+	}
+
+	return;
+}
+
+func_param_t* find_param_tail(func_param_t* root) {
+	assert(root != NULL);
+	func_param_t* tmp = root;
+
+	while(tmp->next) {
+		tmp = tmp->next;
+	}
+
+	return tmp;
+}
+
+func_param_t* create_param_list(func_param_t* root, func_param_t* new) {
+	assert(new != NULL);
+
+	func_param_t* tail = NULL;
+
+	if (root == NULL) {
+		root = new;
+	}
+	else {
+		tail = find_param_tail(root);
+		tail->next = new;
+	}
+
+	return root;
+}
+
+func_param_t* parse_function_params(tree_t* node, symtab_t table) {
+	assert(table != NULL);
+
+	if (node == NULL) {
+		return NULL;
+	}
+
+	printf("IN %s, line = %d, node type: %s\n",
+			__func__, __LINE__, node->common.name);
+
+	tree_t* param_node = node;
+	func_param_t* param = NULL;
+	func_param_t* new_param = NULL;
+
+	while (param_node) {
+		new_param = parse_func_param(param_node, table);
+		param = create_param_list(param, new_param);
+		param_node = param_node->common.sibling;
+	}
+	print_param_list(param);
+
+	return param;
+}
+
+int parse_c_function(tree_t* node, symtab_t table, decl_t* decl) {
+	assert(node != NULL);
+	assert(table != NULL);
+	assert(decl != NULL);
+
+	char* func_name = NULL;
+	tree_t* func_node = node->cdecl_brack.cdecl;
+	tree_t* func_params = node->cdecl_brack.decl_list;
+
+	if ((func_node->common.type == IDENT_TYPE)
+			|| (func_node->common.type == DML_KEYWORD_TYPE)) {
+		function_t* func = (function_t*)gdml_zmalloc(sizeof(function_t));
+		func->func_name = func_node->ident.str;
+		if(strcmp(func->func_name, "this") == 0) {
+			fprintf(stderr, "synax error at 'this'\n");
+			/* TODO: handle the error */
+			exit(-1);
+		}
+		func->ret_decl = decl;
+		func->argc = get_param_num(func_params);
+		func->param = parse_function_params(func_params, table);
+		if ((decl->type->is_extern) != 1) {
+			fprintf(stderr, "The c function : %s should defined in c file\n", func->func_name);
+			/* FIXME: handle the error */
+			exit(-1);
+		}
+		decl->type->is_func = 1;
+		decl->type->func_decl = func;
+	}
+	else {
+		fprintf(stderr, "name collision on '%s'\n", func_node->ident.str);
+		/* TODO: handle the error */
+		exit(-1);
+	}
+	tree_t* list = node->cdecl_brack.decl_list;
+
+	return 0;
+}
+
 int parse_decl_brack(tree_t* node, symtab_t table, decl_t* decl) {
 	assert(node != NULL);
 	assert(table != NULL);
@@ -761,23 +999,29 @@ int parse_decl_brack(tree_t* node, symtab_t table, decl_t* decl) {
 	 *		cdecl3 '(' cdecl_list ')'
 	 *		| '(' cdecl2 ')'
 	 */
-	parse_cdecl3(node->cdecl_brack.cdecl, table, decl);
-
-	decl->decl_str = add_type_str(decl->decl_str, "( ");
-
-	if (node->cdecl_brack.is_list) {
-		parse_cdecl_list((node->cdecl_brack.decl_list), table, decl);
+	/* extern function grammar : cdecl3 '(' cdecl_list ')' */
+	if ((node->cdecl_brack.cdecl) && (node->cdecl_brack.is_list)) {
+		fprintf(stderr, "extern c function : decl_str: %s\n", decl->decl_str);
+		parse_c_function(node, table, decl);
+	}
+	else if (node->cdecl_brack.decl_list) {
+		parse_cdecl2(node->cdecl_brack.decl_list, table, decl);
+		fprintf(stderr, "not extern c function\n");
+		exit(-1);
 	}
 	else {
-		parse_cdecl2(node->cdecl_brack.decl_list, table, decl);
+		fprintf(stderr, "other cdecl3!\n");
+		/* TODO: handle the error */
+		exit(-1);
 	}
-
-	decl->decl_str = add_type_str(decl->decl_str, ") ");
 
 	return 0;
 }
 
 int parse_typeident(tree_t* node, symtab_t table, decl_t* decl) {
+	assert(node != NULL);
+	assert(table != NULL);
+	assert(decl != NULL);
 	switch(node->common.type) {
 		case C_KEYWORD_TYPE:
 			parse_c_keyword(node, table, decl);
@@ -848,7 +1092,7 @@ int parse_cdecl(tree_t* node, symtab_t table, decl_t* decl) {
 
 	if (node->cdecl.is_const) {
 		decl->type->type_const += 1;
-		decl->decl_str = add_type_str(decl->decl_str, "const ");
+		decl->decl_str = add_type_str(decl->decl_str, "const");
 		printf("In %s, line = %d, decl_str: %s\n",
 				__func__, __LINE__, decl->decl_str);
 	}
@@ -936,12 +1180,13 @@ void insert_ident_decl(symtab_t table, decl_t* decl) {
 	assert(decl != NULL);
 
 	int i = 0;
+	char* name = NULL;
 	int type = get_decl_type(decl);
 
-	char* name = NULL;
 	var_name_t* var = decl->var;
 	while (var) {
-		symbol_insert(table, var->var_name, type, decl);
+		name = var->var_name;
+		symbol_insert(table, name, type, decl);
 		var = var->next;
 	}
 
@@ -1083,6 +1328,43 @@ decl_t* parse_ctypedecl(tree_t* node, symtab_t table) {
 
 	if (node->ctypedecl.ctypedecl_ptr) {
 		parse_ctypedecl_ptr(node->ctypedecl.ctypedecl_ptr, table, decl);
+	}
+
+	return decl;
+}
+
+decl_t*  parse_extern_cdecl_or_ident(tree_t* node, symtab_t table) {
+	assert(node != NULL);
+	assert(table != NULL);
+
+	decl_t* decl = (decl_t*)gdml_zmalloc(sizeof(decl_t));
+	decl_type_t* type = (decl_type_t*)gdml_zmalloc(sizeof(decl_type_t));
+	decl->type = type;
+
+	type->is_extern +=1;
+	decl->decl_str = add_type_str(decl->decl_str, "extern");
+
+	parse_cdecl(node, table, decl);
+	if (decl->type->is_func) {
+		function_t* func = (function_t*)(decl->type->func_decl);
+		if (table->table_num == 1) {
+			symbol_insert(table, func->func_name, FUNCTION_TYPE, func);
+		}
+		else {
+			fprintf(stderr, "extern function should the topest!\n");
+			/* TODO: handle the error */
+			exit(-1);
+		}
+	}
+	else {
+		printf("In %s, line = %d, decl_str: %s\n",
+				__func__, __LINE__, decl->decl_str);
+		var_name_t* var = decl->var;
+		while (var) {
+			printf("name: %s\n", var->var_name);
+			symbol_insert(table, var->var_name, IDENT_TYPE, decl);
+			var = var->next;
+		}
 	}
 
 	return decl;

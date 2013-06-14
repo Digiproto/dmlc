@@ -49,6 +49,8 @@ const char *import_file_list[] = {
 	NULL
 };
 
+extern int yyparse (yyscan_t scanner, tree_t** root_ptr);
+
 /**
 * @brief generate an ast from a dml source file.
 *
