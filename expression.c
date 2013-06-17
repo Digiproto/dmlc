@@ -380,8 +380,6 @@ void cal_assign_left(tree_t* node, symtab_t table, expression_t* left_expr, expr
 				}
 				set_decl_type(decl->type, type);
 				decl->value = right_expr;
-				printf("param is no type: %d, expr type: %d\n", param->is_notype, right_expr->final_type);
-				exit(-1);
 			}
 			printf("In %s, line = %d, right_expr is_notype : %d\n", __func__, __LINE__, right_expr->final_type);
 		}
@@ -1381,6 +1379,7 @@ int get_c_type(symbol_t symbol) {
 					__func__, __LINE__, type);
 			break;
 		case METHOD_TYPE:
+		case FUNCTION_TYPE:
 			type = NO_TYPE;
 			break;
 		default:
@@ -1502,7 +1501,6 @@ expression_t* get_brack_expr(tree_t* node, symtab_t table,  expression_t* expr) 
 		else {
 			cal_expression(out_node, table, expr);
 		}
-		printf("In %s, line = %d, nod type: %s\n", __FUNCTION__, __LINE__, out_node->common.name);
 	}
 	/* (expression)*/
 	if (node->expr_brack.expr_in_brack) {

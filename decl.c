@@ -322,8 +322,33 @@ decl_t* parse_typeof(tree_t* node, symtab_t table, decl_t* decl) {
 	return decl;
 }
 
+int parse_bool(decl_t* decl) {
+	decl_type_t* type = decl->type;
+	if ((type->char_type) || (type->double_type) || (type->float_type) ||
+			(type->int_type) || (type->void_type) ||
+			(type->bool_type) || (type->struct_type) || (type->layout_type) ||
+			(type->bitfields_type) || (type->typeof_type) ||
+			(type->enum_type) || (type->union_type)) {
+		fprintf(stderr, "error: two or more data types in declaration specifiers\n");
+		/* FIXME: handle the error */
+		exit(-1);
+	}
+	else if ((type->long_type) || (type->short_type)) {
+		fprintf(stderr, "error: both ‘%s’ and ‘bool’ in declaration specifiers\n",
+				(type->long_type) ? "long" : "short");
+		/* FIXME: handle the error */
+		exit(-1);
+	}
+	else {
+		type->char_type = 1;
+		decl->decl_str = add_type_str(decl->decl_str, "bool");
+	}
+
+	return 0;
+}
+
 int parse_char(decl_t* decl) {
-	assert(decl);
+	assert(decl != NULL);
 	decl_type_t* type = decl->type;
 	if ((type->char_type) || (type->double_type) || (type->float_type) ||
 			(type->int_type) || (type->void_type) ||
@@ -577,6 +602,9 @@ decl_t* parse_c_keyword(tree_t* node, symtab_t table, decl_t* decl) {
 			__func__, __LINE__, node->common.name);
 
 	switch(node->ident.type) {
+		case BOOL_TYPE:
+			parse_bool(decl);
+			break;
 		case CHAR_TYPE:
 			parse_char(decl);
 			break;
@@ -617,9 +645,10 @@ decl_t* parse_c_keyword(tree_t* node, symtab_t table, decl_t* decl) {
 }
 
 decl_t* parse_dml_keyword(tree_t* node, symtab_t table, decl_t* decl) {
-	printf("IN %s, line = %d, node type: %s\n",
-			__func__, __LINE__, node->common.name);
-	exit(-1);
+	printf("IN %s, line = %d, node type: %s : %s\n",
+			__func__, __LINE__, node->common.name, node->ident.str);
+	node->common.type = IDENT_TYPE;
+	parse_identifier(node, table, decl);
 
 	return decl;
 }
@@ -670,10 +699,12 @@ params_t* get_param_decl(tree_t* node, symtab_t table) {
 
 	parse_cdecl(node, table, decl);
 	if (((decl->var) != NULL) && ((decl->var->var_num) > 1)) {
-		fprintf(stderr, "the method parameter some problem!\n");
 		var_name_t* var = decl->var;
+		fprintf(stderr, "the method parameter some problem num: %d : %s, !\n",
+				decl->var->var_num, var->var_name);
 		if ((strcmp(var->var_name, "attr_value_t") == 0)
-				|| (strcmp(var->var_name, "set_error_t") == 0)) {
+				|| (strcmp(var->var_name, "set_error_t") == 0)
+				|| (strcmp(var->var_name, "generic_transaction_t") == 0)) {
 			param->var_name = var->next->var_name;
 			/* FIXME: in fact the type it struct type */
 			param->is_notype = 1;
@@ -1114,7 +1145,7 @@ int charge_integer_expr(decl_type_t* type) {
 	assert(type != NULL);
 	if ((type->char_type) || (type->int_type) || (type->double_type) ||
 			(type->float_type) || (type->short_type) || (type->long_type) ||
-			(type->unsigned_type) || (type->signed_type)) {
+			(type->unsigned_type) || (type->signed_type) || (type->bool_type)) {
 		return 0;
 	}
 	else if (type->point_type) {
@@ -1124,7 +1155,7 @@ int charge_integer_expr(decl_type_t* type) {
 		return 1;
 	}
 	else {
-		fprintf(stderr, "error: invalid initializer\n");
+		fprintf(stderr, "Line: %d, error: invalid initializer\n", __LINE__);
 		/* FIXME: handle the error */
 		exit(-1);
 		return -1;
@@ -1141,7 +1172,7 @@ int charge_float_expr(decl_type_t* type) {
 		return 0;
 	}
 	else {
-		fprintf(stderr, "error: invalid initializer\n");
+		fprintf(stderr, "Line : %d, error: invalid initializer\n", __LINE__);
 		/* FIXME: handle the error */
 		exit(-1);
 		return -1;
@@ -1163,6 +1194,9 @@ int charge_decl_expr_type(decl_t* decl, expression_t* expr) {
 			break;
 		case FLOAT_TYPE:
 			ret = charge_float_expr(decl->type);
+			break;
+		case BOOL_TYPE:
+			ret = charge_integer_expr(decl->type);
 			break;
 		default:
 			fprintf(stderr, "other expression type: %d\n", expr->final_type);
@@ -1243,12 +1277,10 @@ void parse_local_decl(tree_t* node, symtab_t table) {
 	if (node->local_tree.expr) {
 		expression_t* expr = parse_expression(node->local_tree.expr, table);
 		if (charge_decl_expr_type(decl, expr) != 0) {
-			fprintf(stderr, "error: invalid initializer\n");
+			fprintf(stderr, "Line: %d, error: invalid initializer\n", __LINE__);
 			return;
 		}
 		decl->value =  expr;
-		printf("In %s, line = %d, value final type: %d : %d\n",
-				__func__, __LINE__, decl->value->final_type, INTEGER_TYPE);
 	}
 
 	insert_ident_decl(table, decl);

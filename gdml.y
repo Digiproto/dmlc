@@ -64,7 +64,7 @@ tree_t* current_object_node = NULL;
 %token XOR_ASSIGN OR_ASSIGN TYPE_NAME REG_OFFSET
 
 %token TYPEDEF EXTERN STATIC AUTO REGISTER
-%token CHAR SHORT INT LONG SIGNED UNSIGNED FLOAT DOUBLE CONST VOLATILE VOID
+%token BOOL CHAR SHORT INT LONG SIGNED UNSIGNED FLOAT DOUBLE CONST VOLATILE VOID
 %token STRUCT UNION ENUM ELLIPSIS
 
 %token CASE DEFAULT IF ELSE SWITCH WHILE DO FOR GOTO CONTINUE BREAK RETURN
@@ -100,7 +100,7 @@ tree_t* current_object_node = NULL;
 %type	<tree_type> device_statements
 %type	<tree_type> device_statement
 %type	<tree_type> statement
-%type	<tree_type> if_statment
+%type	<tree_type> if_statement
 %type	<tree_type> syntax_modifier
 %type	<tree_type> toplevel
 %type	<tree_type> import
@@ -1843,6 +1843,11 @@ typeident
 	: ident {
 		$$ = $1;
 	}
+	| BOOL {
+		tree_t* node = (tree_t*)c_keyword_node("bool");
+		node->ident.type = BOOL_TYPE;
+		$$ = node;
+	}
 	| CHAR {
 		tree_t* node = (tree_t*)c_keyword_node("char");
 		node->ident.type = CHAR_TYPE;
@@ -2468,7 +2473,7 @@ expression_list
 	}
 	;
 
-if_statment
+if_statement
 	: IF '(' expression ')' {
 		tree_t* node = (tree_t*)create_node("if_else", IF_ELSE_TYPE, sizeof(struct tree_if_else));
 		node->if_else.cond = $3;
@@ -2501,8 +2506,8 @@ statement
 		parse_expression($1, current_table);
 		$$ =  $1;
 	}
-	| if_statment
-	| if_statment ELSE {
+	| if_statement
+	| if_statement ELSE {
 		tree_t* node = $1;
 
 		current_table = change_table(current_table, table_stack, &current_table_num, IF_ELSE_TYPE);

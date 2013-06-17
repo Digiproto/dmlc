@@ -72,6 +72,7 @@ loop:
 "auto"          { count(yyscanner); return(AUTO); }  
 "break"         { count(yyscanner); return(BREAK); }  
 "case"          { count(yyscanner); return(CASE); }  
+"bool"			{ count(yyscanner); return(BOOL); }
 "char"          { count(yyscanner); return(CHAR); }  
 "const"         { count(yyscanner); return(CONST); }  
 "continue"      { count(yyscanner); return(CONTINUE); }  
