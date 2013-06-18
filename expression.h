@@ -56,6 +56,7 @@ typedef struct expression {
 
 expression_t* parse_expression(tree_t* node, symtab_t table);
 void parse_log_args(tree_t* node, symtab_t table);
+expression_t* get_ident_value(tree_t* node, symtab_t table,  expression_t* expr);
 
 #define DEBUG_EXPRESSION
 #ifdef DEBUG_EXPRESSION

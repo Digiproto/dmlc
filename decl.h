@@ -153,6 +153,7 @@ decl_t*  parse_extern_cdecl_or_ident(tree_t* node, symtab_t table);
 void add_template_to_table(symtab_t table, char* template);
 void print_templates(symtab_t table);
 void parse_local_decl(tree_t* node, symtab_t table);
+void parse_data_cdecl(tree_t* node, symtab_t table);
 struct log_args* parse_log(tree_t* node);
 void set_decl_type(decl_type_t* decl_type, type_t type);
 type_t get_decl_type(decl_t* decl);

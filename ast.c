@@ -286,7 +286,7 @@ tree_t* create_node_list (tree_t* root, tree_t* new_node)
  */
 int get_list_num (tree_t* root) {
 	if (root == NULL) {
-		return -1;
+		return 0;
 	}
 
 	int num = 0;

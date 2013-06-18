@@ -503,14 +503,7 @@ object
 		$$ = node;
 	}
 	| DATA cdecl ';' {
-		/* TODO: should find the identifier*/
-		#if 0
-		node_t* node = find_node($2, IDENT_TYPE);
-		data_attr_t* attr = malloc(sizeof(data_attr_t));
-		memset(attr, 0, sizeof(data_attr_t));
-		attr->name = strdup(node->name);
-		symbol_insert(node->name, DATA_TYPE, attr);
-		#endif
+		parse_data_cdecl($2, current_table);
 
 		tree_t* node = (tree_t*)create_node("cdecl", CDECL_TYPE, sizeof(struct tree_cdecl));
 		node->cdecl.is_data = 1;
@@ -2307,7 +2300,6 @@ expression
 		$$= node;
 	}
 	| FLOAT_LITERAL {
-		DBG("Float_literal: %s\n", $1);
 		tree_t* node = (tree_t*)create_node("float_literal", FLOAT_TYPE, sizeof(struct tree_float_cst));
 		node->float_cst.float_str = $1;
 		node->float_cst.value = atof($1);
@@ -2763,7 +2755,7 @@ statement
 
 		attr->common.node = node;
 		DBG("FOREACH in statement\n");
-		parse_expression($5, current_table);
+		attr->expr = parse_expression($5, current_table);
 
 		$<tree_type>$ = node;
 	}

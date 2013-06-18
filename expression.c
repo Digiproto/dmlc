@@ -292,12 +292,14 @@ int charge_type(int type1, int type2) {
 			if ((type2 == CHAR_TYPE) || (type2 == INT_TYPE) || (type2 == UNDEFINED_TYPE)
 					|| (type2 == INTEGER_TYPE) || (type2 == LONG_TYPE)
 					|| (type2 == SHORT_TYPE) || (type2 == SIGNED_TYPE)
-					|| (type2 == UNSIGNED_TYPE) || (type2 == BOOL_TYPE)) {
+					|| (type2 == UNSIGNED_TYPE) || (type2 == BOOL_TYPE)
+					|| (type2 == POINTER_TYPE) || (type2 == NO_TYPE)) {
 				fprintf(stderr, "warning: assignment makes integer from pointer without a cast\n");
 				return type1;
 			}
 			else {
-				fprintf(stderr, "Line: %d, error: incompatible types when assigning to type\n", __LINE__);
+				fprintf(stderr, "Line: %d, error: incompatible types when assigning to type: %d\n",
+						__LINE__, type2);
 				/* FIXME: handle the error */
 				exit(-1);
 				return -1;
@@ -342,15 +344,17 @@ int charge_left_right_expr_type(expression_t* left_expr, expression_t* right_exp
 }
 
 void cal_assign_left(tree_t* node, symtab_t table, expression_t* left_expr, expression_t* right_expr) {
-	printf("In %s, line = %d, left_node type: %s, %d\n", __FUNCTION__, __LINE__, node->common.name, node->common.type);
 	assert(node != NULL);
 	assert(left_expr != NULL);
 	assert(right_expr != NULL);
 
 	tree_t* left_node = node->expr_assign.left;
+	printf("In %s, line = %d, left_node type: %s, %d\n",
+			__FUNCTION__, __LINE__, left_node->common.name, left_node->common.type);
+
 	left_expr = cal_expression(left_node, table, left_expr);
 	if (left_expr->is_const) {
-		fprintf(stderr, "error: lvalue required as left operand of assignment\n");
+		fprintf(stderr, "error: value required as left operand of assignment\n");
 		/* FIXME: should handle the error */
 		exit(-1);
 	}
@@ -424,20 +428,24 @@ void cal_assign_left(tree_t* node, symtab_t table, expression_t* left_expr, expr
 	}
 	else if (left_node->common.type == QUOTE_TYPE) {
 		tree_t* node = left_node->quote.ident;
-		if (strcmp(node->ident.str, "this") == 0) {
+		if (charge_node_is_const(node)) {
+			fprintf(stderr, "the quote can not the const!\n");
+			/* TODO: hann  the error */
+			exit(-1);
+		}
+		else if (strcmp(node->ident.str, "this") == 0) {
 			/* do nothing */
 		}
 		else {
-			printf("other quote!\n");
-			exit(-1);
+			get_ident_value(node, table, left_expr);
+			type = charge_left_right_expr_type(left_expr, right_expr);
+			right_expr->final_type = type;
 		}
 	}
 	else {
 		printf("other left node type : %d\n", left_node->common.type);
 		type = charge_left_right_expr_type(left_expr, right_expr);
 		right_expr->final_type = type;
-		/*FXIME: This is only for debugging */
-		exit(-1);
 	}
 	right_expr->node = node;
 
@@ -1162,6 +1170,7 @@ expression_t* unary_expr_common(tree_t* node, symtab_t table, expression_t* expr
 				new_node = (tree_t*)create_node("integer_literal", INTEGER_TYPE, sizeof(struct tree_int_cst));
 				new_node->int_cst.value = (int)final_value;
 				new_node->int_cst.int_str = int_str;
+				new_node->common.print_node = print_interger;
 				expr->final_type = final_type;
 			}
 
@@ -1177,9 +1186,9 @@ expression_t* unary_expr_common(tree_t* node, symtab_t table, expression_t* expr
 			free_sibling(node);
 			free_child(node);
 
+			expr->node = new_node;
 			node = new_node;
 			expr = get_const_expr_value(node, expr);
-			expr->node = node;
 		}
 	}
 	else {
@@ -1241,8 +1250,8 @@ expression_t* cal_unary_expr(tree_t* node, symtab_t table,  expression_t* expr) 
 			fprintf(stderr, "Wrong unary type: %s\n", node->common.name);
 			break;
 	}
-	printf("In %s, line = %d, expr->final_type: %d\n",
-			__FUNCTION__, __LINE__, expr->final_type);
+	printf("In %s, line = %d, node type: %s, expr->final_type: %d\n",
+			__FUNCTION__, __LINE__, node->common.name, expr->final_type);
 	return expr;
 }
 
@@ -1342,6 +1351,10 @@ int get_parameter_type(symbol_t symbol) {
 	parameter_attr_t* parameter = (parameter_attr_t*)(symbol->attr);
 	paramspec_t* spec = parameter->spec;
 
+	if (spec == NULL) {
+		return NO_TYPE;
+	}
+
 	if (spec->str)
 		return CONST_STRING_TYPE;
 	else
@@ -1356,10 +1369,19 @@ int get_constant_type(symbol_t symbol) {
 	return (attr->value->final_type);
 }
 
+int get_foreach_type(symbol_t symbol) {
+	assert(symbol != NULL);
+
+	foreach_attr_t* attr = (foreach_attr_t*)(symbol->attr);
+	expression_t* expr = attr->expr;
+
+	return (expr->final_type);
+}
+
 int get_c_type(symbol_t symbol) {
 	assert(symbol != NULL);
-	printf("In %s, line = %d, symbol name: %s\n",
-			__FUNCTION__, __LINE__, symbol->name);
+	printf("In %s, line = %d, symbol name: %s, type: %d\n",
+			__FUNCTION__, __LINE__, symbol->name, symbol->type);
 	int type = 0;
 
 	switch(symbol->type) {
@@ -1378,9 +1400,34 @@ int get_c_type(symbol_t symbol) {
 			printf("\nIN %s, line = %d, constant type: %d\n",
 					__func__, __LINE__, type);
 			break;
+		case FOREACH_TYPE:
+			type = get_foreach_type(symbol);
+			printf("\nIN %s, line = %d, foreach type: %d\n",
+					__func__, __LINE__, type);
+			break;
+		case IDENT_TYPE:
+			if (strcmp(symbol->name, "NULL") == 0) {
+				type = POINTER_TYPE;
+			}
+			else {
+				fprintf(stderr, "other identifier: %s\n", symbol->name);
+			}
+			break;
 		case METHOD_TYPE:
 		case FUNCTION_TYPE:
+		case LOGGROUP_TYPE:
+		case TEMPLATE_TYPE:
 			type = NO_TYPE;
+			break;
+		case STRUCT_TYPE:
+			printf("symbol name: %s\n", symbol->name);
+			decl_t* decl = (decl_t*)(symbol->attr);
+			if (strcmp(decl->type->struct_name, "cycles_t") == 0) {
+				type = INT_TYPE;
+			}
+			else {
+				type = STRUCT_TYPE;
+			}
 			break;
 		default:
 			fprintf(stderr, "In %s, line = %d, other dml type: %d\n",
@@ -1406,6 +1453,7 @@ tree_t* bool_expression(tree_t* node, expression_t* expr, int value) {
 
 	new_node->common.child = node->common.child;
 	new_node->common.sibling = node->common.sibling;
+	new_node->common.print_node = print_interger;
 
 	free(node);
 
@@ -1434,6 +1482,9 @@ expression_t* get_ident_value(tree_t* node, symtab_t table,  expression_t* expr)
 		}
 		else if (strcmp(node->ident.str, "true") == 0) {
 			node = bool_expression(node, expr, 1);
+		}
+		else if (strcmp(node->ident.str, "NULL") == 0) {
+			expr->final_type = POINTER_TYPE;
 		}
 		else if (strncmp(node->ident.str, "SIM", 3) == 0) {
 			/* TODO: handle the function return value */
@@ -1539,8 +1590,14 @@ expression_t* get_bit_slic_expr(tree_t* node, symtab_t table,  expression_t* exp
 			__func__, __LINE__, node->common.name);
 
 	cal_expression(node->bit_slic.expr, table, expr);
+	if (expr->is_const) {
+		fprintf(stderr, "The bit slic declare should not const!\n");
+		exit(-1);
+	}
 	cal_expression(node->bit_slic.bit, table, expr);
 	cal_expression(node->bit_slic.bit_end, table, expr);
+
+	expr->is_const = 0;
 
 	tree_t* endian = node->bit_slic.endian;
 	if (endian) {

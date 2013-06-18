@@ -68,8 +68,13 @@ void set_decl_type(decl_type_t* decl_type, type_t type) {
 	assert(decl_type != NULL);
 
 	switch(type) {
+		case NO_TYPE:
+		case UNDEFINED_TYPE:
+			decl_type->no_type = 1;
+			break;
 		case CHAR_TYPE:
 			decl_type->char_type = 1;
+			break;
 		case INTEGER_TYPE:
 		case INT_TYPE:
 			decl_type->int_type = 1;
@@ -125,8 +130,6 @@ void set_decl_type(decl_type_t* decl_type, type_t type) {
 		case TYPEDEF_TYPE:
 			decl_type->typedef_type = 1;
 			break;
-		case NO_TYPE:
-			break;
 		default:
 			printf("other type: %d\n", type);
 			exit(-1);
@@ -139,6 +142,10 @@ void set_decl_type(decl_type_t* decl_type, type_t type) {
 type_t get_decl_type(decl_t* decl) {
 	assert(decl != NULL);
 	decl_type_t* type = decl->type;
+	if (type->no_type)
+		return NO_TYPE;
+	if (type->point_type)
+		return POINTER_TYPE;
 	if (type->char_type)
 		return CHAR_TYPE;
 	if (type->int_type)
@@ -249,6 +256,28 @@ int symbol_construct_type(symbol_t symbol, decl_t* decl) {
 	return 0;
 }
 
+void create_var_list(decl_t* decl, char* var_name) {
+	assert(decl != NULL);
+	assert(var_name != NULL);
+
+	if (decl->var == NULL) {
+		decl->var = create_var_name(var_name);
+		decl->var->var_num += 1;
+		printf("decl->var->name 2: %s : %s\n", decl->var->var_name, var_name);
+	}
+	else {
+		var_name_t* var = decl->var;
+		printf("decl->var->name1: %s: %s\n", var->var_name, decl->var->var_name);
+		while (var->next != NULL)  {
+			var = var->next;
+		}
+		var->next = create_var_name(var_name);
+		decl->var->var_num += 1;
+	}
+
+	return;
+}
+
 void parse_identifier(tree_t* node, symtab_t table, decl_t* decl) {
 	assert(node != NULL);
 	assert(table != NULL);
@@ -267,22 +296,18 @@ void parse_identifier(tree_t* node, symtab_t table, decl_t* decl) {
 		printf("In %s, line = %d, finded the symbol: %s, type: %d : %d\n",
 				__func__, __LINE__, node->ident.str, node->common.type, symbol->type);
 		symbol_construct_type(symbol, decl);
+		create_var_list(decl, node->ident.str);
 	}
 	else {
 		decl->decl_str = add_type_str(decl->decl_str, node->ident.str);
-		if (decl->var == NULL) {
-			decl->var = create_var_name(node->ident.str);
-			decl->var->var_num += 1;
-			printf("decl->var->name 2: %s : %s\n", decl->var->var_name, node->ident.str);
+		if ((strcmp(node->ident.str, "conf_object_t") == 0)
+				|| (strcmp(node->ident.str, "cycle_interface_t") == 0)
+				|| (strcmp(node->ident.str, "cycles_t") == 0)) {
+			decl->type->struct_type = 1;
+			decl->type->struct_name = node->ident.str;
 		}
 		else {
-			var_name_t* var = decl->var;
-			printf("decl->var->name1: %s: %s\n", var->var_name, decl->var->var_name);
-			while (var->next != NULL)  {
-				var = var->next;
-			}
-			var->next = create_var_name(node->ident.str);
-			decl->var->var_num += 1;
+			create_var_list(decl, node->ident.str);
 		}
 		//symbol_insert(table, node->ident.str, IDENT_TYPE, decl);
 	}
@@ -317,8 +342,13 @@ decl_t* parse_bitfields(tree_t* node, symtab_t table, decl_t* decl) {
 decl_t* parse_typeof(tree_t* node, symtab_t table, decl_t* decl) {
 	printf("In %s, line = %d, node type: %s\n",
 			__func__, __LINE__, node->common.name);
+	assert(node != NULL);
+	assert(table != NULL);
+	assert(decl != NULL);
 
-	exit(-1);
+	expression_t* expr = parse_expression(node->typeof_tree.expr, table);
+	set_decl_type(decl->type, expr->final_type);
+
 	return decl;
 }
 
@@ -1145,7 +1175,8 @@ int charge_integer_expr(decl_type_t* type) {
 	assert(type != NULL);
 	if ((type->char_type) || (type->int_type) || (type->double_type) ||
 			(type->float_type) || (type->short_type) || (type->long_type) ||
-			(type->unsigned_type) || (type->signed_type) || (type->bool_type)) {
+			(type->unsigned_type) || (type->signed_type) || (type->bool_type)
+			|| (type->no_type)) {
 		return 0;
 	}
 	else if (type->point_type) {
@@ -1168,7 +1199,8 @@ int charge_float_expr(decl_type_t* type) {
 	assert(type != NULL);
 	if ((type->char_type) || (type->int_type) || (type->double_type) ||
 			(type->float_type) || (type->short_type) || (type->long_type) ||
-			(type->unsigned_type) || (type->signed_type)) {
+			(type->unsigned_type) || (type->signed_type) || (type->no_type)
+			|| (type->bool_type)) {
 		return 0;
 	}
 	else {
@@ -1198,6 +1230,9 @@ int charge_decl_expr_type(decl_t* decl, expression_t* expr) {
 		case BOOL_TYPE:
 			ret = charge_integer_expr(decl->type);
 			break;
+		case NO_TYPE:
+			//ret = charge_notype_expr(decl->type);
+			break;
 		default:
 			fprintf(stderr, "other expression type: %d\n", expr->final_type);
 			/* FIXME: handle the error */
@@ -1223,6 +1258,20 @@ void insert_ident_decl(symtab_t table, decl_t* decl) {
 		symbol_insert(table, name, type, decl);
 		var = var->next;
 	}
+
+	return;
+}
+
+void parse_data_cdecl(tree_t* node, symtab_t table) {
+	assert(node != NULL);
+	assert(table != NULL);
+
+	decl_t* decl = (decl_t*)gdml_zmalloc(sizeof(decl_t));
+	decl_type_t* type = (decl_type_t*)gdml_zmalloc(sizeof(decl_type_t));
+	decl->type = type;
+
+	parse_cdecl(node, table, decl);
+	insert_ident_decl(table, decl);
 
 	return;
 }

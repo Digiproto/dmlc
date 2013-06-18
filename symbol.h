@@ -150,7 +150,7 @@ typedef struct arraydef_attr {
 typedef struct foreach_attr {
 	struct symbol_common common;
 	char* ident;
-	expression_t* expression;
+	expression_t* expr;
 	symtab_t table;
 }foreach_attr_t;
 
