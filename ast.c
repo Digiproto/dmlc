@@ -305,7 +305,7 @@ char* get_obj_desc(tree_t* spec) {
 	}
 	if (spec->spec.desc) {
 		tree_t* tmp = spec->spec.desc;
-		printf("In %s, line = %d, obj_desc: %s\n",
+		DEBUG_AST("In %s, line = %d, obj_desc: %s\n",
 				__FUNCTION__, __LINE__, tmp->string.pointer);
 		return (char*)(tmp->string.pointer);
 	}
@@ -398,7 +398,7 @@ char* get_const_string(tree_t* node) {
 		return NULL;
 	}
 
-	printf("In %s, line = %d, str: %s\n",
+	DEBUG_AST("In %s, line = %d, str: %s\n",
 			__func__, __LINE__, node->string.pointer);
 
 	return node->string.pointer;
@@ -415,7 +415,7 @@ int get_param_num(tree_t* node) {
 		tmp = tmp->common.sibling;
 	}
 
-	printf("In %s, line = %d, param num: %d\n",
+	DEBUG_AST("In %s, line = %d, param num: %d\n",
 			__func__, __LINE__, num);
 	return num;
 }
@@ -471,7 +471,7 @@ paramspec_t* get_paramspec(tree_t* node, symtab_t table) {
 	if (node->paramspec.expr) {
 		spec->expr = parse_expression(node->paramspec.expr, table);
 		spec->type = spec->expr->final_type;
-		printf("paramspec is expression expr type: %d\n", spec->type);
+		DEBUG_AST("paramspec is expression expr type: %d\n", spec->type);
 	}
 
 	return spec;
@@ -491,7 +491,7 @@ int get_size(tree_t* node) {
 		}
 	}
 	else {
-		printf("The size is another type expression - node type: %d, name: %s\n", node->common.type, node->common.name);
+		DEBUG_AST("The size is another type expression - node type: %d, name: %s\n", node->common.type, node->common.name);
 		exit(-1);
 	}
 
@@ -507,7 +507,7 @@ int get_offset(tree_t* node) {
 		return offset;
 	}
 	else {
-		printf("The size is another type expression - node type: %d, name: %s\n", node->common.type, node->common.name);
+		DEBUG_AST("The size is another type expression - node type: %d, name: %s\n", node->common.type, node->common.name);
 		exit(-1);
 	}
 
@@ -520,7 +520,7 @@ void print_templates(symtab_t table) {
 
 	int i = 0;
 	while ((tmp) != NULL) {
-		debug_cyan("templates name(%d): %s, table_num: %d\n", i++, tmp->template_name, tmp->table->table_num);
+		DEBUG_TEMPLATES("templates name(%d): %s, table_num: %d\n", i++, tmp->template_name, tmp->table->table_num);
 		tmp = tmp->next;
 	}
 
@@ -540,7 +540,7 @@ void add_template_to_table(symtab_t table, char* template) {
 
 	while ((temp_table) != NULL) {
 		template_name = temp_table->template_name;
-		printf("In %s, line = %d, trave templates: %s\n", __func__, __LINE__, template_name);
+		DEBUG_AST("In %s, line = %d, trave templates: %s\n", __func__, __LINE__, template_name);
 		if (strcmp(template, template_name) == 0) {
 			fprintf(stderr, "re-load template: %s\n", template);
 			/*FIXME: should handle the error */
@@ -566,7 +566,7 @@ void add_template_to_table(symtab_t table, char* template) {
 		table->template_table = new_table;
 	}
 	else {
-		printf("pre_temp_table : %s\n", pre_temp_table->template_name);
+		DEBUG_AST("pre_temp_table : %s\n", pre_temp_table->template_name);
 		//table->template_table  = new_table;
 		pre_temp_table->next = new_table;
 	}
@@ -587,7 +587,7 @@ void add_templates_to_table(symtab_t table, char** templates, int num) {
 	int i = 0;
 
 	for (i = 0; i < num; i++) {
-		printf("\nIn %s, line = %d, num: %d, templates: %s, table_num: %d\n",
+		DEBUG_AST("\nIn %s, line = %d, num: %d, templates: %s, table_num: %d\n",
 				__FUNCTION__, __LINE__, i, templates[i], table->table_num);
 
 		add_template_to_table(table, templates[i]);
@@ -597,7 +597,7 @@ void add_templates_to_table(symtab_t table, char** templates, int num) {
 }
 
 void get_object_template_table(symtab_t table, tree_t* node) {
-	printf("In %s, line = %d, node(%d): %s\n",
+	DEBUG_AST("In %s, line = %d, node(%d): %s\n",
 			__FUNCTION__, __LINE__, node->common.type, node->common.name);
 
 	assert(table != NULL);
@@ -702,7 +702,7 @@ char** get_templates(tree_t* head) {
 		if (((node->common.type) == DML_KEYWORD_TYPE) ||
 				((node->common.type) == IDENT_TYPE)) {
 			templates[i++] = node->ident.str;
-			printf("identifier:  %s : %s\n", node->ident.str, templates[i - 1]);
+			DEBUG_AST("identifier:  %s : %s\n", node->ident.str, templates[i - 1]);
 		}
 		else {
 			fprintf(stderr, "The templates'type is(%d) : %s: %s\n",

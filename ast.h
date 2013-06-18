@@ -124,12 +124,16 @@ void print_bitfields_decls(tree_t* node, int pos);
 void print_bitfields(tree_t* node, int pos);
 void print_goto(tree_t* node, int pos);
 
-#define DEBUG_AST
+//#define DEBUG_AST_TREE
 
-#ifdef DEBUG_AST
+#ifdef DEBUG_AST_TREE
 #define DEBUG_ADD_TEMPLATE debug_brown
+#define DEBUG_TEMPLATES debug_cyan
+#define DEBUG_AST printf
 #else
 #define DEBUG_ADD_TEMPLATE
+#define DEBUG_TEMPLATES
+#define DEBUG_AST
 #endif
 
 

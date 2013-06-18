@@ -341,11 +341,11 @@ int symbol_insert(symtab_t symtab, const char* name, type_t type, void* attr)
     symbol_t new_symbol = symbol_new(name, type, attr);
 
 	if ((symtab->table_num) == 1) {
-		debug_proc("In %s, name = %s, type = %d, hash value = %d, table num: %d\n",
+		DEBUG_TOP_LEVEL("In %s, name = %s, type = %d, hash value = %d, table num: %d\n",
 				__FUNCTION__, name, type, str_hash (name), symtab->table_num);
 	}
 	else {
-		debug_blue("\tIn %s, name = %s, type = %d, hash value = %d, table num: %d\n",
+		DEBUG_OTHER_LEVEL("\tIn %s, name = %s, type = %d, hash value = %d, table num: %d\n",
 				__FUNCTION__, name, type, str_hash (name), symtab->table_num);
 	}
 	int new_index = str_hash(name);
@@ -596,7 +596,7 @@ void params_insert_table(symtab_t table, method_params_t* method_params) {
 	for (i = 0; i < in_argc; i++) {
 		param_decl = in_list[i]->decl;
 		if (param_decl->is_defined) {
-			printf("In %s, line = %d, %s defined!\n",
+			DEBUG_SYMBOL("In %s, line = %d, %s defined!\n",
 					__func__, __LINE__, in_list[i]->var_name);
 			continue;
 		}
@@ -610,7 +610,7 @@ void params_insert_table(symtab_t table, method_params_t* method_params) {
 	for (i = 0; i < ret_argc; i++) {
 		param_decl = ret_list[i]->decl;
 		if (param_decl->is_defined) {
-			printf("In %s, line = %d, %s defined!\n",
+			DEBUG_SYMBOL("In %s, line = %d, %s defined!\n",
 					__func__, __LINE__, ret_list[i]->var_name);
 			continue;
 		}

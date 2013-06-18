@@ -59,7 +59,7 @@ char* add_type_str(char* addr, char* str){
 	addr = (char*)gdml_realloc(addr, size);
 	addr = strcat(addr, str);
 	addr = strcat(addr, " ");
-	printf("addr str : %s, len: %d\n", addr, strlen(str));
+	DEBUG_DECL("addr str : %s, len: %d\n", addr, strlen(str));
 
 	return addr;
 }
@@ -218,35 +218,35 @@ int symbol_construct_type(symbol_t symbol, decl_t* decl) {
 
 	switch(symbol->type) {
 		case STRUCT_TYPE:
-			printf("In %s, line = %d, struct_type!\n", __func__, __LINE__);
+			DEBUG_DECL("In %s, line = %d, struct_type!\n", __func__, __LINE__);
 			exit(-1);
 			break;
 		case LAYOUT_TYPE:
-			printf("In %s, line = %d, layout_type!\n", __func__, __LINE__);
+			DEBUG_DECL("In %s, line = %d, layout_type!\n", __func__, __LINE__);
 			exit(-1);
 			break;
 		case BITFIELDS_TYPE:
-			printf("In %s, line = %d, bitfields_type!\n", __func__, __LINE__);
+			DEBUG_DECL("In %s, line = %d, bitfields_type!\n", __func__, __LINE__);
 			exit(-1);
 			break;
 		case TYPEDEF_TYPE:
-			printf("In %s, line = %d, typedef_type!\n", __func__, __LINE__);
+			DEBUG_DECL("In %s, line = %d, typedef_type!\n", __func__, __LINE__);
 			exit(-1);
 			break;
 		case TYPEOF_TYPE:
-			printf("In %s, line = %d, typeof_type!\n", __func__, __LINE__);
+			DEBUG_DECL("In %s, line = %d, typeof_type!\n", __func__, __LINE__);
 			exit(-1);
 			break;
 		case ENUM_TYPE:
-			printf("In %s, line = %d, enum_type!\n", __func__, __LINE__);
+			DEBUG_DECL("In %s, line = %d, enum_type!\n", __func__, __LINE__);
 			exit(-1);
 			break;
 		case UNION_TYPE:
-			printf("In %s, line = %d, union_type!\n", __func__, __LINE__);
+			DEBUG_DECL("In %s, line = %d, union_type!\n", __func__, __LINE__);
 			exit(-1);
 			break;
 		default:
-			printf("In %s, line = %d, symbol name: %s, type: %d\n",
+			DEBUG_DECL("In %s, line = %d, symbol name: %s, type: %d\n",
 					__func__, __LINE__, symbol->name, symbol->type);
 			decl->is_defined = 1;
 			decl->defined_name = symbol->name;
@@ -263,11 +263,11 @@ void create_var_list(decl_t* decl, char* var_name) {
 	if (decl->var == NULL) {
 		decl->var = create_var_name(var_name);
 		decl->var->var_num += 1;
-		printf("decl->var->name 2: %s : %s\n", decl->var->var_name, var_name);
+		DEBUG_DECL("decl->var->name 2: %s : %s\n", decl->var->var_name, var_name);
 	}
 	else {
 		var_name_t* var = decl->var;
-		printf("decl->var->name1: %s: %s\n", var->var_name, decl->var->var_name);
+		DEBUG_DECL("decl->var->name1: %s: %s\n", var->var_name, decl->var->var_name);
 		while (var->next != NULL)  {
 			var = var->next;
 		}
@@ -289,11 +289,11 @@ void parse_identifier(tree_t* node, symtab_t table, decl_t* decl) {
 		exit(-1);
 	}
 
-	printf("In %s, line = %d, find symbol: %s\n",
+	DEBUG_DECL("In %s, line = %d, find symbol: %s\n",
 			__func__, __LINE__, node->ident.str);
 	symbol_t symbol = symbol_find_notype(table, node->ident.str);
 	if (symbol != NULL) {
-		printf("In %s, line = %d, finded the symbol: %s, type: %d : %d\n",
+		DEBUG_DECL("In %s, line = %d, finded the symbol: %s, type: %d : %d\n",
 				__func__, __LINE__, node->ident.str, node->common.type, symbol->type);
 		symbol_construct_type(symbol, decl);
 		create_var_list(decl, node->ident.str);
@@ -316,7 +316,7 @@ void parse_identifier(tree_t* node, symtab_t table, decl_t* decl) {
 }
 
 decl_t* parse_struct(tree_t* node, symtab_t table, decl_t* decl) {
-	printf("In %s, line = %d, node type: %s\n",
+	DEBUG_DECL("In %s, line = %d, node type: %s\n",
 			__func__, __LINE__, node->common.name);
 	exit(-1);
 
@@ -324,7 +324,7 @@ decl_t* parse_struct(tree_t* node, symtab_t table, decl_t* decl) {
 }
 
 decl_t* parse_layout(tree_t* node, symtab_t table, decl_t* decl) {
-	printf("In %s, line = %d, node type: %s\n",
+	DEBUG_DECL("In %s, line = %d, node type: %s\n",
 			__func__, __LINE__, node->common.name);
 
 	exit(-1);
@@ -332,7 +332,7 @@ decl_t* parse_layout(tree_t* node, symtab_t table, decl_t* decl) {
 }
 
 decl_t* parse_bitfields(tree_t* node, symtab_t table, decl_t* decl) {
-	printf("In %s, line = %d, node type: %s\n",
+	DEBUG_DECL("In %s, line = %d, node type: %s\n",
 			__func__, __LINE__, node->common.name);
 
 	exit(-1);
@@ -340,7 +340,7 @@ decl_t* parse_bitfields(tree_t* node, symtab_t table, decl_t* decl) {
 }
 
 decl_t* parse_typeof(tree_t* node, symtab_t table, decl_t* decl) {
-	printf("In %s, line = %d, node type: %s\n",
+	DEBUG_DECL("In %s, line = %d, node type: %s\n",
 			__func__, __LINE__, node->common.name);
 	assert(node != NULL);
 	assert(table != NULL);
@@ -484,7 +484,7 @@ int parse_int(tree_t* node, decl_t* decl) {
 	else {
 		type->int_type = 1;
 		decl->decl_str = add_type_str(decl->decl_str, node->ident.str);
-		printf("In %s, line = %d, decl str: %s\n",
+		DEBUG_DECL("In %s, line = %d, decl str: %s\n",
 				__func__, __LINE__, decl->decl_str);
 	}
 
@@ -628,7 +628,7 @@ decl_t* parse_c_keyword(tree_t* node, symtab_t table, decl_t* decl) {
 	assert(node != NULL);
 	assert(table != NULL);
 	assert(decl != NULL);
-	printf("In %s, line = %d, node->type: %s\n",
+	DEBUG_DECL("In %s, line = %d, node->type: %s\n",
 			__func__, __LINE__, node->common.name);
 
 	switch(node->ident.type) {
@@ -675,7 +675,7 @@ decl_t* parse_c_keyword(tree_t* node, symtab_t table, decl_t* decl) {
 }
 
 decl_t* parse_dml_keyword(tree_t* node, symtab_t table, decl_t* decl) {
-	printf("IN %s, line = %d, node type: %s : %s\n",
+	DEBUG_DECL("IN %s, line = %d, node type: %s : %s\n",
 			__func__, __LINE__, node->common.name, node->ident.str);
 	node->common.type = IDENT_TYPE;
 	parse_identifier(node, table, decl);
@@ -687,24 +687,20 @@ void parse_basetype(tree_t* node, symtab_t table, decl_t* decl) {
 	 assert(node != NULL);
 	 assert(table != NULL);
 	 assert(decl != NULL);
-	printf("In %s, line = %d, node type: %s\n",
+	DEBUG_DECL("In %s, line = %d, node type: %s\n",
 			__func__, __LINE__, node->common.name);
 
 	switch (node->common.type) {
 		case STRUCT_TYPE:
-			printf("struct defined !\n");
 			parse_struct(node, table, decl);
 			break;
 		case LAYOUT_TYPE:
-			printf("layout defined!\n");
 			parse_layout(node, table, decl);
 			break;
 		case BITFIELDS_TYPE:
-			printf("bitfields defined!\n");
 			parse_bitfields(node, table, decl);
 			break;
 		case TYPEOF_TYPE:
-			printf("typeof defined!\n");
 			parse_typeof(node, table, decl);
 			break;
 		default:
@@ -718,7 +714,7 @@ void parse_basetype(tree_t* node, symtab_t table, decl_t* decl) {
 params_t* get_param_decl(tree_t* node, symtab_t table) {
 	assert(node != NULL);
 	if (node->common.type != CDECL_TYPE) {
-		printf("params type is : %s\n", node->common.name);
+		DEBUG_DECL("params type is : %s\n", node->common.name);
 		exit(-1);
 	}
 	params_t* param = (params_t*)gdml_zmalloc(sizeof(params_t));
@@ -730,7 +726,7 @@ params_t* get_param_decl(tree_t* node, symtab_t table) {
 	parse_cdecl(node, table, decl);
 	if (((decl->var) != NULL) && ((decl->var->var_num) > 1)) {
 		var_name_t* var = decl->var;
-		fprintf(stderr, "the method parameter some problem num: %d : %s, !\n",
+		DEBUG_DECL("the method parameter some problem num: %d : %s\n",
 				decl->var->var_num, var->var_name);
 		if ((strcmp(var->var_name, "attr_value_t") == 0)
 				|| (strcmp(var->var_name, "set_error_t") == 0)
@@ -754,7 +750,7 @@ params_t* get_param_decl(tree_t* node, symtab_t table) {
 		}
 	}
 
-	printf("IN %s, line = %d, decl_str: %s, va_name: %s\n",
+	DEBUG_DECL("IN %s, line = %d, decl_str: %s, va_name: %s\n",
 			__func__, __LINE__, decl->decl_str, param->var_name);
 
 	return param;
@@ -796,7 +792,7 @@ expression_t* parse_array_expression(tree_t* node, symtab_t table) {
 	assert(node != NULL);
 	assert(table != NULL);
 	expression_t* expr = NULL;
-	printf("In %s, line = %d, node type: %s\n",
+	DEBUG_DECL("In %s, line = %d, node type: %s\n",
 			__func__, __LINE__, node->common.name);
 
 	while (node != NULL) {
@@ -839,7 +835,7 @@ int parse_c_array(tree_t* node, symtab_t table, array_decl_t* array_decl) {
 
 int parse_array(tree_t* node, symtab_t table, decl_t* decl) {
 	assert((node != NULL) || (table != NULL) || (decl != NULL));
-	printf("In %s, line = %d, node type: %s\n",
+	DEBUG_DECL("In %s, line = %d, node type: %s\n",
 			__func__, __LINE__, node->common.name);
 
 	array_decl_t* array_decl = (array_decl_t*)gdml_zmalloc(sizeof(array_decl_t));
@@ -861,7 +857,7 @@ int parse_array(tree_t* node, symtab_t table, decl_t* decl) {
 			/* FIXME: handle the error */
 			exit(-1);
 		}
-		printf("array ident: %s\n", ident->ident.str);
+		DEBUG_DECL("array ident: %s\n", ident->ident.str);
 		if (symbol_insert(table, ident->ident.str, IDENT_TYPE, NULL) == -1) {
 			fprintf(stderr, "redfined: %s\n", ident->ident.str);
 			/* FIXME: handle  the error */
@@ -891,7 +887,7 @@ int parse_cdecl_list(tree_t* node, symtab_t table, decl_t* decl) {
 	if (node == NULL) {
 		return 0;
 	}
-	printf("In %s, line = %d, node type: %s\n",
+	DEBUG_DECL("In %s, line = %d, node type: %s\n",
 			__func__, __LINE__, node->common.name);
 
 	if (node->common.type == ELLIPSIS_TYPE) {
@@ -914,7 +910,7 @@ func_param_t* parse_func_param(tree_t* node, symtab_t table) {
 	assert(node != NULL);
 	assert(table != NULL);
 
-	printf("In %s, line = %d, node type: %s\n",
+	DEBUG_DECL("In %s, line = %d, node type: %s\n",
 			__func__, __LINE__, node->common.name);
 
 	func_param_t* new_param = (func_param_t*)gdml_zmalloc(sizeof(func_param_t));
@@ -927,12 +923,12 @@ func_param_t* parse_func_param(tree_t* node, symtab_t table) {
 		new_param->is_ellipsis = 1;
 		free(type);
 		free(decl);
-		printf("params decl_str: %s\n", "...");
+		DEBUG_DECL("params decl_str: %s\n", "...");
 	}
 	else {
 		parse_cdecl(node, table, decl);
 		new_param->decl = decl;
-		printf("params decl_str: %s\n", new_param->decl->decl_str);
+		DEBUG_DECL("params decl_str: %s\n", new_param->decl->decl_str);
 	}
 
 
@@ -946,12 +942,12 @@ void print_param_list(func_param_t* param) {
 	int num = 0;
 
 	while (tmp != NULL) {
-		printf("param[%d] : ", ++num);
+		DEBUG_DECL("param[%d] : ", ++num);
 		if (tmp->is_ellipsis) {
-			printf("%s\n", "...");
+			DEBUG_DECL("%s\n", "...");
 		}
 		else {
-			printf("%s\n", tmp->decl->decl_str);
+			DEBUG_DECL("%s\n", tmp->decl->decl_str);
 		}
 		tmp = tmp->next;
 	}
@@ -993,7 +989,7 @@ func_param_t* parse_function_params(tree_t* node, symtab_t table) {
 		return NULL;
 	}
 
-	printf("IN %s, line = %d, node type: %s\n",
+	DEBUG_DECL("IN %s, line = %d, node type: %s\n",
 			__func__, __LINE__, node->common.name);
 
 	tree_t* param_node = node;
@@ -1052,7 +1048,7 @@ int parse_c_function(tree_t* node, symtab_t table, decl_t* decl) {
 int parse_decl_brack(tree_t* node, symtab_t table, decl_t* decl) {
 	assert(node != NULL);
 	assert(table != NULL);
-	printf("In %s, line = %d, node type: %s\n",
+	DEBUG_DECL("In %s, line = %d, node type: %s\n",
 			__func__, __LINE__, node->common.name);
 
 	/*
@@ -1062,7 +1058,7 @@ int parse_decl_brack(tree_t* node, symtab_t table, decl_t* decl) {
 	 */
 	/* extern function grammar : cdecl3 '(' cdecl_list ')' */
 	if ((node->cdecl_brack.cdecl) && (node->cdecl_brack.is_list)) {
-		fprintf(stderr, "extern c function : decl_str: %s\n", decl->decl_str);
+		DEBUG_DECL("extern c function : decl_str: %s\n", decl->decl_str);
 		parse_c_function(node, table, decl);
 	}
 	else if (node->cdecl_brack.decl_list) {
@@ -1146,7 +1142,7 @@ int parse_cdecl(tree_t* node, symtab_t table, decl_t* decl) {
 	assert(node != NULL);
 	assert(table != NULL);
 	assert(table != NULL);
-	printf("In %s, line = %d, node type: %s\n",
+	DEBUG_DECL("In %s, line = %d, node type: %s\n",
 			__func__, __LINE__, node->common.name);
 
 	decl_type_t* type = decl->type;
@@ -1154,14 +1150,14 @@ int parse_cdecl(tree_t* node, symtab_t table, decl_t* decl) {
 	if (node->cdecl.is_const) {
 		decl->type->type_const += 1;
 		decl->decl_str = add_type_str(decl->decl_str, "const");
-		printf("In %s, line = %d, decl_str: %s\n",
+		DEBUG_DECL("In %s, line = %d, decl_str: %s\n",
 				__func__, __LINE__, decl->decl_str);
 	}
 
 	if (node->cdecl.basetype) {
 		parse_basetype(node->cdecl.basetype, table, decl);
 	}
-	printf("In %s, line = %d, decl_str: %s\n",
+	DEBUG_DECL("In %s, line = %d, decl_str: %s\n",
 			__func__, __LINE__, decl->decl_str);
 
 	if (node->cdecl.decl) {
@@ -1320,7 +1316,7 @@ void parse_local_decl(tree_t* node, symtab_t table) {
 
 	parse_cdecl(node->local_tree.cdecl, table, decl);
 
-	printf("In %s, line = %d, decl_str: %s, var_name: %s\n",
+	DEBUG_DECL("In %s, line = %d, decl_str: %s, var_name: %s\n",
 			__func__, __LINE__, decl->decl_str, decl->var->var_name);
 
 	if (node->local_tree.expr) {
@@ -1438,11 +1434,11 @@ decl_t*  parse_extern_cdecl_or_ident(tree_t* node, symtab_t table) {
 		}
 	}
 	else {
-		printf("In %s, line = %d, decl_str: %s\n",
+		DEBUG_DECL("In %s, line = %d, decl_str: %s\n",
 				__func__, __LINE__, decl->decl_str);
 		var_name_t* var = decl->var;
 		while (var) {
-			printf("name: %s\n", var->var_name);
+			DEBUG_DECL("name: %s\n", var->var_name);
 			symbol_insert(table, var->var_name, IDENT_TYPE, decl);
 			var = var->next;
 		}

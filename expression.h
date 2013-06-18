@@ -58,12 +58,15 @@ expression_t* parse_expression(tree_t* node, symtab_t table);
 void parse_log_args(tree_t* node, symtab_t table);
 expression_t* get_ident_value(tree_t* node, symtab_t table,  expression_t* expr);
 
-#define DEBUG_EXPRESSION
+//#define DEBUG_EXPRESSION
 #ifdef DEBUG_EXPRESSION
 #define DEBUG_TEMPLATE_SYMBOL debug_green
 #define DEBUG_IDENT_VALUE debug_purple
+#define DEBUG_EXPR printf
 #else
 #define DEBUG_TEMPLATE_SYMBOL
+#define DEBUG_IDENT_VALUE
+#define DEBUG_EXPR
 #endif
 
 #endif /* __EXPRESSION_H__ */

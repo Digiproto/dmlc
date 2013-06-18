@@ -164,4 +164,12 @@ int parse_cdecl(tree_t* node, symtab_t table, decl_t* decl);
 int parse_cdecl2(tree_t* node, symtab_t table, decl_t* decl);
 int parse_cdecl3(tree_t* node, symtab_t table, decl_t* decl);
 
+//#define DEBUG_DECLARE
+
+#ifdef DEBUG_DECLARE
+#define DEBUG_DECL printf
+#else
+#define DEBUG_DECL
+#endif
+
 #endif /* __DECL_H__ */

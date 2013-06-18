@@ -189,7 +189,7 @@ begin_unit
 			exit(-1);
 		}
 		*root_ptr = (tree_t*)create_node("dml", DML_TYPE, sizeof(struct tree_dml));
-		printf("root_ptr: 0x%x, *root_ptr: 0x%x\n", root_ptr, *root_ptr);
+		//printf("root_ptr: 0x%x, *root_ptr: 0x%x\n", root_ptr, *root_ptr);
 		(*root_ptr)->dml.version = $2;
 		(*root_ptr)->dml.common.print_node = print_dml;
 		if($4 != NULL)
@@ -1001,7 +1001,7 @@ toplevel
 		attr->value = parse_expression($4, current_table);
 		/*FIXME: should calulate the expression value */
 		symbol_insert(current_table, $2->ident.str, CONSTANT_TYPE, attr);
-		printf("constant type: %d\n", attr->value->final_type);
+		//printf("constant type: %d\n", attr->value->final_type);
 
 		tree_t* node = (tree_t*)create_node("assign", ASSIGN_TYPE, sizeof(struct tree_assign));
 		node->assign.is_constant = 1;
@@ -1764,7 +1764,6 @@ bitfields_decls
 ctypedecl
 	: const_opt basetype ctypedecl_ptr {
 		tree_t* node = (tree_t*)create_node("ctypedecl", CTYPEDECL_TYPE, sizeof(struct tree_ctypedecl));
-		printf("line: %d, name: %s\n", __LINE__, node->common.name);
 		node->ctypedecl.const_opt = $1;
 		node->ctypedecl.basetype = $2;
 		node->ctypedecl.ctypedecl_ptr = $3;

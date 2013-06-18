@@ -366,4 +366,17 @@ typedef struct c_array {
 void params_insert_table(symtab_t table, method_params_t* method_params);
 paramspec_t* get_paramspec(tree_t* node, symtab_t table);
 void parse_comma_expression(tree_t* node, symtab_t table);
+
+//#define DEBUG_SYMBOLS
+
+#ifdef DEBUG_SYMBOLS
+#define DEBUG_TOP_LEVEL debug_proc
+#define DEBUG_OTHER_LEVEL debug_blue
+#define DEBUG_SYMBOL printf
+#else
+#define DEBUG_TOP_LEVEL
+#define DEBUG_OTHER_LEVEL
+#define DEBUG_SYMBOL
+#endif
+
 #endif

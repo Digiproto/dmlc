@@ -78,7 +78,7 @@ int charge_node_is_const(tree_t* node) {
 
 expression_t * get_const_expr_value(tree_t* node, expression_t* expr) {
 	/* FIXME: assert is noly for debugging */
-	printf("In %s, line = %d, node type: %s : %d\n",
+	DEBUG_EXPR("In %s, line = %d, node type: %s : %d\n",
 			__func__, __LINE__, node->common.name, node->common.type);
 	assert(node != NULL);
 	const_expr_t* const_expr = (const_expr_t*)gdml_zmalloc(sizeof(const_expr_t));
@@ -114,7 +114,7 @@ expression_t * get_const_expr_value(tree_t* node, expression_t* expr) {
 
 
 expression_t* cal_expr_assign(tree_t* node, expression_t* expr) {
-	printf("In %s, line = %d, node type: %s\n",
+	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
 			__func__, __LINE__, node->common.name);
 	exit(-1);
 	return expr;
@@ -349,7 +349,7 @@ void cal_assign_left(tree_t* node, symtab_t table, expression_t* left_expr, expr
 	assert(right_expr != NULL);
 
 	tree_t* left_node = node->expr_assign.left;
-	printf("In %s, line = %d, left_node type: %s, %d\n",
+	DEBUG_EXPR("In %s, line = %d, left_node type: %s, %d\n",
 			__FUNCTION__, __LINE__, left_node->common.name, left_node->common.type);
 
 	left_expr = cal_expression(left_node, table, left_expr);
@@ -385,7 +385,7 @@ void cal_assign_left(tree_t* node, symtab_t table, expression_t* left_expr, expr
 				set_decl_type(decl->type, type);
 				decl->value = right_expr;
 			}
-			printf("In %s, line = %d, right_expr is_notype : %d\n", __func__, __LINE__, right_expr->final_type);
+			DEBUG_EXPR("In %s, line = %d, right_expr is_notype : %d\n", __func__, __LINE__, right_expr->final_type);
 		}
 		else if (symbol->type == IDENT_TYPE) {
 			decl_t* decl = (decl_t*)(symbol->attr);
@@ -420,7 +420,7 @@ void cal_assign_left(tree_t* node, symtab_t table, expression_t* left_expr, expr
 			}
 		}
 		else {
-			printf("In %s, line = %d, other type: %d\n",
+			DEBUG_EXPR("In %s, line = %d, other type: %d\n",
 					__func__, __LINE__, symbol->type);
 			/* FIXME: handle the error */
 			exit(-1);
@@ -443,7 +443,7 @@ void cal_assign_left(tree_t* node, symtab_t table, expression_t* left_expr, expr
 		}
 	}
 	else {
-		printf("other left node type : %d\n", left_node->common.type);
+		DEBUG_EXPR("other left node type : %d\n", left_node->common.type);
 		type = charge_left_right_expr_type(left_expr, right_expr);
 		right_expr->final_type = type;
 	}
@@ -453,7 +453,7 @@ void cal_assign_left(tree_t* node, symtab_t table, expression_t* left_expr, expr
 }
 
 expression_t* cal_common_assign(tree_t* node, symtab_t table, expression_t* expr) {
-		printf("In %s, line = %d\n", __FUNCTION__, __LINE__);
+		DEBUG_EXPR("In %s, line = %d\n", __FUNCTION__, __LINE__);
 		expr = cal_expression(node->expr_assign.right, table, expr);
 		expression_t* left_expr = (expression_t*)gdml_zmalloc(sizeof(expression_t));
 		cal_assign_left(node, table, left_expr, expr);
@@ -464,7 +464,7 @@ expression_t* cal_common_assign(tree_t* node, symtab_t table, expression_t* expr
 }
 
 expression_t* cal_div_assign(tree_t* node, symtab_t table, expression_t* expr) {
-	printf("In %s, line = %d, node type: %s\n",
+	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
 			__FUNCTION__, __LINE__, node->common.name);
 
 	expr = cal_expression(node->expr_assign.right, table, expr);
@@ -501,7 +501,7 @@ expression_t* cal_mod_assign(tree_t* node, symtab_t table, expression_t* expr) {
 	assert(node != NULL);
 	assert(table != NULL);
 	assert(expr != NULL);
-	printf("In %s, line = %d, node type: %s\n",
+	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
 			__FUNCTION__, __LINE__, node->common.name);
 
 	expr = cal_expression(node->expr_assign.right, table, expr);
@@ -528,7 +528,7 @@ expression_t* cal_mod_assign(tree_t* node, symtab_t table, expression_t* expr) {
 extern expression_t* cal_binary_expr(tree_t* node, symtab_t table, expression_t* expr);
 
 expression_t* cal_assign_expr(tree_t* node, symtab_t table, expression_t* expr) {
-	printf("In %s, line = %d, node type: %s\n",
+	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
 			__func__, __LINE__, node->common.name);
 	assert(node != NULL);
 	assert(expr != NULL);
@@ -593,7 +593,7 @@ expression_t* cal_ternary_expr(tree_t* node, symtab_t table, expression_t* expr)
 	}
 	expr->node = node;
 
-	printf("In %s, line = %d, node type: %s, type: %d, true type: %d, false_type: %d\n",
+	DEBUG_EXPR("In %s, line = %d, node type: %s, type: %d, true type: %d, false_type: %d\n",
 			__FUNCTION__, __LINE__, node->common.name, expr->final_type, true_type, false_type);
 	return expr;
 }
@@ -719,7 +719,7 @@ expression_t* cal_add_expr(tree_t* node, symtab_t table, expression_t* expr) {
 	assert(node != NULL);
 	assert(table != NULL);
 	assert(expr != NULL);
-	printf("In %s, line = %d, node type: %s\n",
+	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
 			__func__, __LINE__, node->common.name);
 
 	tree_t* left = NULL;
@@ -784,7 +784,7 @@ expression_t* cal_add_expr(tree_t* node, symtab_t table, expression_t* expr) {
 		expr->node = node;
 	}
 
-	printf("In %s, line = %d, node type: %s, expr final_type: %d\n",
+	DEBUG_EXPR("In %s, line = %d, node type: %s, expr final_type: %d\n",
 			__func__, __LINE__, node->common.name, expr->final_type);
 
 	return expr;
@@ -794,7 +794,7 @@ expression_t* binary_expr_common(tree_t* node, symtab_t table, expression_t* exp
 	assert(node != NULL);
 	assert(table != NULL);
 	assert(expr != NULL);
-	printf("In %s, line = %d, node type: %s\n",
+	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
 			__func__, __LINE__, node->common.name);
 
 	tree_t* left = NULL;
@@ -847,7 +847,7 @@ expression_t* binary_expr_common(tree_t* node, symtab_t table, expression_t* exp
 		expr->final_type = charge_type(left_type, right_type);
 	}
 
-	printf("In %s, line = %d, node type: %s, expr final_type: %d\n",
+	DEBUG_EXPR("In %s, line = %d, node type: %s, expr final_type: %d\n",
 			__func__, __LINE__, node->common.name, expr->final_type);
 
 	return expr;
@@ -856,7 +856,7 @@ expression_t* binary_expr_common(tree_t* node, symtab_t table, expression_t* exp
 expression_t* binary_expr_int(tree_t* node, symtab_t table, expression_t* expr) {
 	assert(node != NULL);
 	assert(expr != NULL);
-	printf("In %s, line = %d, node type: %s\n",
+	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
 			__func__, __LINE__, node->common.name);
 
 	tree_t* left = NULL;
@@ -959,7 +959,7 @@ expression_t* binary_expr_int(tree_t* node, symtab_t table, expression_t* expr) 
 		expr->final_type = charge_type(left_type, right_type);
 		expr->node = node;
 	}
-	printf("In %s, line = %d, node type: %s, expr final_type: %d\n",
+	DEBUG_EXPR("In %s, line = %d, node type: %s, expr final_type: %d\n",
 			__func__, __LINE__, node->common.name, expr->final_type);
 
 	return expr;
@@ -969,7 +969,7 @@ expression_t* cal_binary_expr(tree_t* node, symtab_t table, expression_t* expr) 
 	assert(node != NULL);
 	assert(table != NULL);
 	assert(expr != NULL);
-	printf("In %s, line = %d, node type: %s\n",
+	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
 			__func__, __LINE__, node->common.name);
 
 	operator_type_t type = 0;
@@ -1051,7 +1051,7 @@ expression_t* cal_binary_expr(tree_t* node, symtab_t table, expression_t* expr) 
 			expr->node = node;
 			break;
 	}
-	printf("In %s, line = %d, node->type: %s, expr->final_type: %d\n",
+	DEBUG_EXPR("In %s, line = %d, node->type: %s, expr->final_type: %d\n",
 			__func__, __LINE__, node->common.name, expr->final_type);
 	return expr;
 }
@@ -1250,13 +1250,13 @@ expression_t* cal_unary_expr(tree_t* node, symtab_t table,  expression_t* expr) 
 			fprintf(stderr, "Wrong unary type: %s\n", node->common.name);
 			break;
 	}
-	printf("In %s, line = %d, node type: %s, expr->final_type: %d\n",
+	DEBUG_EXPR("In %s, line = %d, node type: %s, expr->final_type: %d\n",
 			__FUNCTION__, __LINE__, node->common.name, expr->final_type);
 	return expr;
 }
 
 expression_t* cal_cast_expr(tree_t* node, symtab_t table, expression_t* expr) {
-	printf("In %s, line = %d, node type: %s\n",
+	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
 			__func__, __LINE__, node->common.name);
 	cal_expression(node->cast.expr, table, expr);
 	/* FIXME: should find the type symbol from symbol table */
@@ -1266,7 +1266,7 @@ expression_t* cal_cast_expr(tree_t* node, symtab_t table, expression_t* expr) {
 }
 
 expression_t* cal_sizeof_expr(tree_t* node, symtab_t table,  expression_t* expr) {
-	printf("In %s, line = %d, node type: %s\n",
+	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
 			__func__, __LINE__, node->common.name);
 
 	tree_t* node_expr = node->sizeof_tree.expr;
@@ -1292,7 +1292,7 @@ expression_t* cal_quote_expr(tree_t* node, symtab_t table,  expression_t* expr) 
 	assert(table != NULL);
 	assert(expr != NULL);
 
-	printf("IN %s, line = %d, node->type: %s\n",
+	DEBUG_EXPR("IN %s, line = %d, node->type: %s\n",
 			__func__, __LINE__, node->common.name);
 
 	if (charge_node_is_const(node)) {
@@ -1313,7 +1313,7 @@ expression_t* cal_quote_expr(tree_t* node, symtab_t table,  expression_t* expr) 
 
 	expr->node = node;
 
-	printf("IN %s, line = %d, node->type: %s, final_type: %d\n",
+	DEBUG_EXPR("IN %s, line = %d, node->type: %s, final_type: %d\n",
 			__func__, __LINE__, node->common.name, expr->final_type);
 
 	return expr;
@@ -1380,29 +1380,29 @@ int get_foreach_type(symbol_t symbol) {
 
 int get_c_type(symbol_t symbol) {
 	assert(symbol != NULL);
-	printf("In %s, line = %d, symbol name: %s, type: %d\n",
+	DEBUG_EXPR("In %s, line = %d, symbol name: %s, type: %d\n",
 			__FUNCTION__, __LINE__, symbol->name, symbol->type);
 	int type = 0;
 
 	switch(symbol->type) {
 		case PARAM_TYPE:
 			type = get_method_param_type(symbol);
-			printf("IN %s, line = %d, param type: %d\n",
+			DEBUG_EXPR("IN %s, line = %d, param type: %d\n",
 					__func__, __LINE__, type);
 			break;
 		case PARAMETER_TYPE:
 			type = get_parameter_type(symbol);
-			printf("IN %s, line = %d, parameter type: %d\n",
+			DEBUG_EXPR("IN %s, line = %d, parameter type: %d\n",
 					__func__, __LINE__, type);
 			break;
 		case CONSTANT_TYPE:
 			type = get_constant_type(symbol);
-			printf("\nIN %s, line = %d, constant type: %d\n",
+			DEBUG_EXPR("\nIN %s, line = %d, constant type: %d\n",
 					__func__, __LINE__, type);
 			break;
 		case FOREACH_TYPE:
 			type = get_foreach_type(symbol);
-			printf("\nIN %s, line = %d, foreach type: %d\n",
+			DEBUG_EXPR("\nIN %s, line = %d, foreach type: %d\n",
 					__func__, __LINE__, type);
 			break;
 		case IDENT_TYPE:
@@ -1420,7 +1420,7 @@ int get_c_type(symbol_t symbol) {
 			type = NO_TYPE;
 			break;
 		case STRUCT_TYPE:
-			printf("symbol name: %s\n", symbol->name);
+			DEBUG_EXPR("symbol name: %s\n", symbol->name);
 			decl_t* decl = (decl_t*)(symbol->attr);
 			if (strcmp(decl->type->struct_name, "cycles_t") == 0) {
 				type = INT_TYPE;
@@ -1467,7 +1467,7 @@ expression_t* get_ident_value(tree_t* node, symtab_t table,  expression_t* expr)
 	 * should insert it*/
 	symbol_t symbol = symbol_find_notype(table, node->ident.str);
 	if ((symbol != NULL)) {
-		printf("symbol name: %s, type: %d\n", symbol->name, symbol->type);
+		DEBUG_EXPR("symbol name: %s, type: %d\n", symbol->name, symbol->type);
 		if (is_c_type(symbol->type) == 1) {
 			expr->final_type = symbol->type;
 		}
@@ -1511,7 +1511,7 @@ expression_t* get_ident_value(tree_t* node, symtab_t table,  expression_t* expr)
 }
 
 expression_t* get_component_expr(tree_t* node, symtab_t table,  expression_t* expr) {
-	printf("In %s, line = %d, node type: %s\n",
+	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
 			__func__, __LINE__, node->common.name);
 	//cal_expression(node->component.expr, table, expr);
 	//char* member = node->omponent.ident;
@@ -1521,14 +1521,14 @@ expression_t* get_component_expr(tree_t* node, symtab_t table,  expression_t* ex
 }
 
 expression_t* get_sizeoftype_expr(tree_t* node, symtab_t table,  expression_t* expr) {
-	printf("In %s, line = %d, node type: %s\n",
+	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
 			__func__, __LINE__, node->common.name);
 	/* FIXME: should charge the identifier type */
 	return expr;
 }
 
 expression_t* get_new_expr(tree_t* node, symtab_t table,  expression_t* expr) {
-	printf("In %s, line = %d, node type: %s\n",
+	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
 			__func__, __LINE__, node->common.name);
 
 	parse_ctypedecl(node->new_tree.type, table);
@@ -1539,7 +1539,7 @@ expression_t* get_new_expr(tree_t* node, symtab_t table,  expression_t* expr) {
 }
 
 expression_t* get_brack_expr(tree_t* node, symtab_t table,  expression_t* expr) {
-	printf("In %s, line = %d, node type: %s\n",
+	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
 			__func__, __LINE__, node->common.name);
 	/* expression (expression_list)*/
 	if (node->expr_brack.expr) {
@@ -1573,7 +1573,7 @@ expression_t* get_brack_expr(tree_t* node, symtab_t table,  expression_t* expr) 
 }
 
 expression_t* get_array_expr(tree_t* node, symtab_t table,  expression_t* expr) {
-	printf("In %s, line = %d, node type: %s\n",
+	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
 			__func__, __LINE__, node->common.name);
 	tree_t* node_arr = node->array.expr;
 	while(node_arr) {
@@ -1586,7 +1586,7 @@ expression_t* get_array_expr(tree_t* node, symtab_t table,  expression_t* expr) 
 }
 
 expression_t* get_bit_slic_expr(tree_t* node, symtab_t table,  expression_t* expr) {
-	printf("In %s, line = %d, node type: %s\n",
+	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
 			__func__, __LINE__, node->common.name);
 
 	cal_expression(node->bit_slic.expr, table, expr);
@@ -1688,12 +1688,12 @@ expression_t* parse_expression(tree_t* node, symtab_t table) {
 	}
 	assert(table != NULL);
 
-	printf("In %s, table num: %d\n", __FUNCTION__, table->table_num);
+	DEBUG_EXPR("In %s, table num: %d\n", __FUNCTION__, table->table_num);
 
 	expression_t* expr = (expression_t*)gdml_zmalloc(sizeof(expression_t));
 	cal_expression(node, table, expr);
 
-	printf("In %s, line = %d, expr final_type: %d\n",
+	DEBUG_EXPR("In %s, line = %d, expr final_type: %d\n",
 			__func__, __LINE__, expr->final_type);
 
 	return expr;
@@ -1707,7 +1707,7 @@ void parse_comma_expression(tree_t* node, symtab_t table) {
 
 	tree_t* expr_node = node;
 	while (expr_node != NULL) {
-		printf("In %s, line = %d, node->type: %s\n",
+		DEBUG_EXPR("In %s, line = %d, node->type: %s\n",
 				__func__, __LINE__, node->common.name);
 		parse_expression(expr_node, table);
 		expr_node = node->common.sibling;

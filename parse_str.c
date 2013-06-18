@@ -114,8 +114,6 @@ int scanfstr(const char *str, char ***typelist)
 
 struct log_args* parse_log(tree_t* node) {
 	assert(node != NULL);
-	printf("In %s, line = %d, log fromat: %s\n",
-			__func__, __LINE__, node->log.format);
 
 	struct log_args* log = (struct log_args*)gdml_zmalloc(sizeof(struct log_args));
 	char** typelist = NULL;
@@ -125,7 +123,7 @@ struct log_args* parse_log(tree_t* node) {
 	arg_num = get_list_num(node->log.args);
 
 	if ((log->argc) > arg_num) {
-		printf("argc: %d, arg_num: %d\n", log->argc, arg_num);
+		//printf("argc: %d, arg_num: %d\n", log->argc, arg_num);
 		fprintf(stderr, "warning: too few arguments for format\n");
 		/* TODO: handle the error */
 		exit(-1);
