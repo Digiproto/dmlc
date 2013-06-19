@@ -469,7 +469,7 @@ paramspec_t* get_paramspec(tree_t* node, symtab_t table) {
 		spec->type = NO_TYPE;
 	}
 	if (node->paramspec.expr) {
-		spec->expr = parse_expression(node->paramspec.expr, table);
+		spec->expr = parse_expression(&(node->paramspec.expr), table);
 		spec->type = spec->expr->final_type;
 		DEBUG_AST("paramspec is expression expr type: %d\n", spec->type);
 	}
@@ -1190,7 +1190,7 @@ void print_cast(tree_t* node, int pos) {
 void print_float_literal(tree_t* node, int pos) {
 	/* Grammar: FLOAT_LITERAL */
 	print_pos(pos);
-	printf("[%s : %s : %d]\n",
+	printf("[%s : %s : %d-------------------------------]\n",
 			node->common.name, node->float_cst.float_str, pos);
 
 	print_sibling(node, pos);

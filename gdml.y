@@ -998,7 +998,7 @@ toplevel
 		constant_attr_t* attr = (constant_attr_t*)gdml_zmalloc(sizeof(constant_attr_t));
 		attr->name = $2->ident.str;
 		attr->common.table_num = current_table->table_num;
-		attr->value = parse_expression($4, current_table);
+		attr->value = parse_expression(&($4), current_table);
 		/*FIXME: should calulate the expression value */
 		symbol_insert(current_table, $2->ident.str, CONSTANT_TYPE, attr);
 		//printf("constant type: %d\n", attr->value->final_type);
@@ -1261,7 +1261,7 @@ object_if_statement
 	: IF '(' expression ')' '{' {
 		tree_t* node =  (tree_t*)create_node("if_else", IF_ELSE_TYPE, sizeof(struct tree_if_else));
 		node->if_else.cond = $3;
-		parse_expression($3, current_table);
+		parse_expression(&($3), current_table);
 
 		current_table = change_table(current_table, table_stack, &current_table_num, IF_ELSE_TYPE);
 		$<tree_type>$ = node;
@@ -2468,7 +2468,7 @@ if_statement
 	: IF '(' expression ')' {
 		tree_t* node = (tree_t*)create_node("if_else", IF_ELSE_TYPE, sizeof(struct tree_if_else));
 		node->if_else.cond = $3;
-		parse_expression($3, current_table);
+		parse_expression(&($3), current_table);
 
 		current_table = change_table(current_table, table_stack, &current_table_num, IF_ELSE_TYPE);
 		$<tree_type>$ = node;
@@ -2494,7 +2494,7 @@ statement
 	}
 	| expression ';'{
 		DBG("expression in statement\n");
-		parse_expression($1, current_table);
+		parse_expression(&($1), current_table);
 		$$ =  $1;
 	}
 	| if_statement
@@ -2514,7 +2514,7 @@ statement
 	| WHILE '(' expression ')' {
 		tree_t* node = (tree_t*)create_node("do_while", DO_WHILE_TYPE, sizeof(struct tree_do_while));
 		node->do_while.cond = $3;
-		parse_expression($3, current_table);
+		parse_expression(&($3), current_table);
 
 		current_table = change_table(current_table, table_stack, &current_table_num, DO_WHILE_TYPE);
 
@@ -2540,7 +2540,8 @@ statement
 		node->do_while.cond = $6;
 		node->do_while.block = $3;
 		node->common.print_node = print_do_while;
-		parse_expression($6, current_table);
+		parse_expression(&($6), current_table);
+		//parse_expression($6, current_table);
 
 		current_table = pop(table_stack);
 
@@ -2552,9 +2553,10 @@ statement
 		node->for_tree.cond = $5;
 		node->for_tree.update = $7;
 		node->common.print_node = print_for;
-		parse_comma_expression($3, current_table);
-		parse_expression($5, current_table);
-		parse_comma_expression($7, current_table);
+
+		parse_comma_expression(&($3), current_table);
+		parse_expression(&($5), current_table);
+		parse_comma_expression(&($7), current_table);
 
 		current_table = change_table(current_table, table_stack, &current_table_num, FOR_TYPE);
 
@@ -2571,7 +2573,7 @@ statement
 	| SWITCH '(' expression ')' {
 		tree_t* node = (tree_t*)create_node("switch", SWITCH_TYPE, sizeof(struct tree_switch));
 		node->switch_tree.cond = $3;
-		parse_expression($3, current_table);
+		parse_expression(&($3), current_table);
 
 		current_table = change_table(current_table, table_stack, &current_table_num, SWITCH_TYPE);
 
@@ -2589,7 +2591,7 @@ statement
 		tree_t* node = (tree_t*)create_node("delete", DELETE_TYPE, sizeof(struct tree_delete));
 		node->delete_tree.expr = $2;
 		node->common.print_node = print_delete;
-		parse_expression($2, current_table);
+		parse_expression(&($2), current_table);
 		$$ = node;
 	}
 	| TRY {
@@ -2631,8 +2633,9 @@ statement
 		node->after_call.cond = $3;
 		node->after_call.call_expr = $6;
 		node->common.print_node = print_after_call;
-		parse_expression($3, current_table);
-		parse_expression($6, current_table);
+
+		parse_expression(&($3), current_table);
+		parse_expression(&($6), current_table);
 		DBG("AFTER CALL statement\n");
 		$$ = node;
 	}
@@ -2641,7 +2644,7 @@ statement
 		node->call_inline.expr = $2;
 		node->call_inline.ret_args = $3;
 		node->common.print_node = print_call_inline;
-		parse_expression($2, current_table);
+		parse_expression(&($2), current_table);
 		DBG("CALL statement\n");
 		$$ = node;
 	}
@@ -2650,7 +2653,7 @@ statement
 		node->call_inline.expr = $2;
 		node->call_inline.ret_args = $3;
 		node->common.print_node = print_call_inline;
-		parse_expression($2, current_table);
+		parse_expression(&($2), current_table);
 		DBG("inline statement\n");
 		$$ = node;
 	}
@@ -2659,7 +2662,7 @@ statement
 		tree_t* node = (tree_t*)create_node("assert", ASSERT_TYPE, sizeof(struct tree_assert));
 		node->assert_tree.expr = $2;
 		node->common.print_node = print_assert;
-		parse_expression($2, current_table);
+		parse_expression(&($2), current_table);
 		$$ = node;
 	}
 	| LOG STRING_LITERAL ',' expression ',' expression ':' STRING_LITERAL ',' log_args ';' {
@@ -2671,9 +2674,9 @@ statement
 		node->log.format = $8;
 		node->log.args = $10;
 
-		parse_expression($4, current_table);
-		parse_expression($6, current_table);
-		parse_log_args($10, current_table);
+		parse_expression(&($4), current_table);
+		parse_expression(&($6), current_table);
+		parse_log_args(&($10), current_table);
 
 		node->log.log_info = parse_log(node);
 		node->common.print_node = print_log;
@@ -2687,8 +2690,8 @@ statement
 		node->log.format = $6;
 		node->log.args = $7;
 
-		parse_expression($4, current_table);
-		parse_log_args($7, current_table);
+		parse_expression(&($4), current_table);
+		parse_log_args(&($7), current_table);
 
 		node->log.log_info = parse_log(node);
 		node->common.print_node = print_log;
@@ -2701,7 +2704,8 @@ statement
 		node->log.format = $4;
 		node->log.args = $5;
 
-		parse_log_args($5, current_table);
+		tree_t* log_node = $5;
+		parse_log_args(&log_node, current_table);
 
 		node->log.log_info = parse_log(node);
 		node->common.print_node = print_log;
@@ -2714,8 +2718,9 @@ statement
 		node->select.in_expr = $5;
 		node->select.cond = $9;
 		node->common.print_node = print_select;
-		parse_expression($5, current_table);
-		parse_expression($9, current_table);
+
+		parse_expression(&($5), current_table);
+		parse_expression(&($9), current_table);
 
 		current_table = change_table(current_table, table_stack, &current_table_num, SELECT_TYPE);
 
@@ -2754,7 +2759,7 @@ statement
 
 		attr->common.node = node;
 		DBG("FOREACH in statement\n");
-		attr->expr = parse_expression($5, current_table);
+		attr->expr = parse_expression(&($5), current_table);
 
 		$<tree_type>$ = node;
 	}
@@ -2771,7 +2776,7 @@ statement
 		tree_t* node = (tree_t*)create_node("case", CASE_TYPE, sizeof(struct tree_case));
 		/* TODO: charge the break */
 		node->case_tree.expr = $2;
-		parse_expression($2, current_table);
+		parse_expression(&($2), current_table);
 
 		current_table = change_table(current_table, table_stack, &current_table_num, CASE_TYPE);
 

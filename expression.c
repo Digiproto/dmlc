@@ -32,25 +32,31 @@
 #include "symbol-common.h"
 #include "debug_color.h"
 
-void free_sibling(tree_t* node) {
-	assert(node != NULL);
-	if (node->common.sibling) {
-		free(node->common.sibling);
+void free_sibling(tree_t** node) {
+	assert(*node != NULL);
+	if ((*node)->common.sibling) {
+		free((*node)->common.sibling);
 	}
 
 	return;
 }
 
-void free_child(tree_t* node) {
-	assert(node != NULL);
-	if (node->common.child) {
-		free(node->common.child);
+void free_child(tree_t** node) {
+	assert(*node != NULL);
+	if ((*node)->common.child) {
+		free((*node)->common.child);
 	}
 
 	return;
 }
 
-extern expression_t* cal_expression(tree_t* node, symtab_t table, expression_t* expr);
+void assgin_sibling_child_null(tree_t** node) {
+	assert(*node != NULL);
+	(*node)->common.sibling = NULL;
+	(*node)->common.child = NULL;
+
+	return ;
+}
 
 int charge_type_int(int type) {
 	if (type == CHAR_TYPE || (type == INTEGER_TYPE)
@@ -76,11 +82,11 @@ int charge_node_is_const(tree_t* node) {
 	}
 }
 
-expression_t * get_const_expr_value(tree_t* node, expression_t* expr) {
+expression_t* get_const_expr_value(tree_t* node, expression_t* expr) {
+	assert(node != NULL);
 	/* FIXME: assert is noly for debugging */
 	DEBUG_EXPR("In %s, line = %d, node type: %s : %d\n",
 			__func__, __LINE__, node->common.name, node->common.type);
-	assert(node != NULL);
 	const_expr_t* const_expr = (const_expr_t*)gdml_zmalloc(sizeof(const_expr_t));
 	expr->is_const = 1;
 	expr->const_expr = const_expr;
@@ -109,14 +115,6 @@ expression_t * get_const_expr_value(tree_t* node, expression_t* expr) {
 	}
 
 	expr->node = node;
-	return expr;
-}
-
-
-expression_t* cal_expr_assign(tree_t* node, expression_t* expr) {
-	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
-			__func__, __LINE__, node->common.name);
-	exit(-1);
 	return expr;
 }
 
@@ -343,21 +341,20 @@ int charge_left_right_expr_type(expression_t* left_expr, expression_t* right_exp
 	return charge_type(left_expr->final_type, right_expr->final_type);
 }
 
-void cal_assign_left(tree_t* node, symtab_t table, expression_t* left_expr, expression_t* right_expr) {
-	assert(node != NULL);
+void cal_assign_left(tree_t** node, symtab_t table, expression_t* left_expr, expression_t* right_expr) {
+	assert(*node != NULL);
 	assert(left_expr != NULL);
 	assert(right_expr != NULL);
 
-	tree_t* left_node = node->expr_assign.left;
-	DEBUG_EXPR("In %s, line = %d, left_node type: %s, %d\n",
-			__FUNCTION__, __LINE__, left_node->common.name, left_node->common.type);
+	left_expr = cal_expression(&((*node)->expr_assign.left), table, left_expr);
 
-	left_expr = cal_expression(left_node, table, left_expr);
+	tree_t* left_node = (*node)->expr_assign.left;
 	if (left_expr->is_const) {
 		fprintf(stderr, "error: value required as left operand of assignment\n");
 		/* FIXME: should handle the error */
 		exit(-1);
 	}
+
 	/* FIXME: there is some problems */
 	int type = -1;
 	if (left_node->common.type == IDENT_TYPE) {
@@ -437,7 +434,7 @@ void cal_assign_left(tree_t* node, symtab_t table, expression_t* left_expr, expr
 			/* do nothing */
 		}
 		else {
-			get_ident_value(node, table, left_expr);
+			get_ident_value(&(left_node->quote.ident), table, left_expr);
 			type = charge_left_right_expr_type(left_expr, right_expr);
 			right_expr->final_type = type;
 		}
@@ -447,92 +444,33 @@ void cal_assign_left(tree_t* node, symtab_t table, expression_t* left_expr, expr
 		type = charge_left_right_expr_type(left_expr, right_expr);
 		right_expr->final_type = type;
 	}
-	right_expr->node = node;
+	right_expr->node = *node;
 
 	return;
 }
 
-expression_t* cal_common_assign(tree_t* node, symtab_t table, expression_t* expr) {
-		DEBUG_EXPR("In %s, line = %d\n", __FUNCTION__, __LINE__);
-		expr = cal_expression(node->expr_assign.right, table, expr);
-		expression_t* left_expr = (expression_t*)gdml_zmalloc(sizeof(expression_t));
-		cal_assign_left(node, table, left_expr, expr);
-		expr->is_const = 0;
-		expr->node = node;
-
-		return expr;
-}
-
-expression_t* cal_div_assign(tree_t* node, symtab_t table, expression_t* expr) {
-	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
-			__FUNCTION__, __LINE__, node->common.name);
-
-	expr = cal_expression(node->expr_assign.right, table, expr);
-	if (expr->is_const == 1) {
-		if ((expr->final_type) == INTEGER_TYPE) {
-			if ((expr->const_expr->int_value == 0) &&
-					(expr->const_expr->out_64bit == 0)) {
-				fprintf(stderr, "warning: division by zero\n");
-			}
-		}
-		else if ((expr->final_type) == FLOAT_TYPE) {
-			if (expr->const_expr->float_value == 0) {
-				fprintf(stderr, "warning: division by zero\n");
-			}
-		}
-		else {
-			fprintf(stderr, "line: %d error: invalid operands to binary\n", __LINE__);
-			/* FIXME: handle the error */
-			exit(-1);
-		}
-	}
-	expression_t* left_expr = (expression_t*)gdml_zmalloc(sizeof(expression_t));
-	/* FIXME: first should divid it */
-#if 0
-	cal_assign_left(node, table, left_expr, expr);
-	expr->is_const = 0;
-	expr->node = node;
-#endif
-
-	return expr;
-}
-
-expression_t* cal_mod_assign(tree_t* node, symtab_t table, expression_t* expr) {
-	assert(node != NULL);
+expression_t* cal_common_assign(tree_t** node, symtab_t table, expression_t* expr) {
+	assert(*node != NULL);
 	assert(table != NULL);
 	assert(expr != NULL);
-	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
-			__FUNCTION__, __LINE__, node->common.name);
+	DEBUG_EXPR("In %s, line = %d\n", __FUNCTION__, __LINE__);
 
-	expr = cal_expression(node->expr_assign.right, table, expr);
-	if (expr->is_const == 1) {
-		if ((expr->final_type) != INTEGER_TYPE) {
-			fprintf(stderr, "Line: %d, error: invalid operands to binary\n", __LINE__);
-			/* FIXME: handle the error */
-			exit(-1);
-		}
-		else {
-			if ((expr->const_expr->int_value == 0) &&
-					(expr->const_expr->out_64bit == 0)) {
-				fprintf(stderr, "warning: division by zero\n");
-			}
-		}
-	}
+	expr = cal_expression(&((*node)->expr_assign.right), table, expr);
 	expression_t* left_expr = (expression_t*)gdml_zmalloc(sizeof(expression_t));
-	/* FIXME: handle the expression */
+	cal_assign_left(node, table, left_expr, expr);
+	expr->is_const = 0;
+	expr->node = *node;
 
-	expr->node = node;
 	return expr;
 }
 
-extern expression_t* cal_binary_expr(tree_t* node, symtab_t table, expression_t* expr);
-
-expression_t* cal_assign_expr(tree_t* node, symtab_t table, expression_t* expr) {
+expression_t* cal_assign_expr(tree_t** node, symtab_t table, expression_t* expr) {
 	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
-			__func__, __LINE__, node->common.name);
-	assert(node != NULL);
+			__func__, __LINE__, (*node)->common.name);
+	assert(*node != NULL);
 	assert(expr != NULL);
-	switch(node->expr_assign.type) {
+	assert(table != NULL);
+	switch((*node)->expr_assign.type) {
 			/* = */
 		case EXPR_ASSIGN_TYPE:
 			cal_common_assign(node, table, expr);
@@ -561,27 +499,28 @@ expression_t* cal_assign_expr(tree_t* node, symtab_t table, expression_t* expr) 
 			cal_common_assign(node, table, expr);
 			break;
 	}
+	expr->node = *node;
 	return expr;
 }
 
-expression_t* cal_ternary_expr(tree_t* node, symtab_t table, expression_t* expr) {
-	assert(node != NULL);
+expression_t* cal_ternary_expr(tree_t** node, symtab_t table, expression_t* expr) {
+	assert(*node != NULL);
 	assert(table != NULL);
 	assert(expr != NULL);
 
-	if ((node->ternary.cond == NULL)
-			|| (node->ternary.expr_true == NULL)
-			|| (node->ternary.expr_false == NULL)) {
+	if ((((*node)->ternary.cond) == NULL)
+			|| (((*node)->ternary.expr_true) == NULL)
+			|| (((*node)->ternary.expr_false) == NULL)) {
 		fprintf(stderr, " The ternary need expression\n");
 		/* FIXME: handle the error */
 		exit(-1);
 	}
 
 	int true_type, false_type;
-	cal_expression(node->ternary.cond, table, expr);
-	cal_expression(node->ternary.expr_true, table,  expr);
+	cal_expression(&((*node)->ternary.cond), table, expr);
+	cal_expression(&((*node)->ternary.expr_true), table,  expr);
 	true_type = expr->final_type;
-	cal_expression(node->ternary.expr_false, table, expr);
+	cal_expression(&((*node)->ternary.expr_false), table, expr);
 	false_type = expr->final_type;
 	/* TODO: the expression type node defined */
 	if (true_type == false_type) {
@@ -591,14 +530,14 @@ expression_t* cal_ternary_expr(tree_t* node, symtab_t table, expression_t* expr)
 		/* TODO: should determine the final type */
 		expr->final_type = NO_TYPE;
 	}
-	expr->node = node;
+	expr->node = *node;
 
 	DEBUG_EXPR("In %s, line = %d, node type: %s, type: %d, true type: %d, false_type: %d\n",
-			__FUNCTION__, __LINE__, node->common.name, expr->final_type, true_type, false_type);
+			__FUNCTION__, __LINE__, (*node)->common.name, expr->final_type, true_type, false_type);
 	return expr;
 }
 
-int get_left_right_value(tree_t* left, tree_t* right, tree_t* new_node, expression_t* expr, operator_type_t op_type) {
+int get_left_right_value(tree_t* left, tree_t* right, tree_t** new_node, expression_t* expr, operator_type_t op_type) {
 	assert(left != NULL);
 	assert(right != NULL);
 
@@ -688,18 +627,18 @@ int get_left_right_value(tree_t* left, tree_t* right, tree_t* new_node, expressi
 	if (final_type == FLOAT_TYPE) {
 		char* float_str = (char*)gdml_zmalloc(sizeof(char) * 64);
 		sprintf(float_str, "%f", final_value);
-		new_node = (tree_t*)create_node("float_literal", FLOAT_TYPE, sizeof(struct tree_float_cst));
-		new_node->float_cst.float_str = float_str;
-		new_node->float_cst.value = final_value;
-		new_node->common.print_node = print_float_literal;
+		*new_node = (tree_t*)create_node("float_literal", FLOAT_TYPE, sizeof(struct tree_float_cst));
+		(*new_node)->float_cst.float_str = float_str;
+		(*new_node)->float_cst.value = final_value;
+		(*new_node)->common.print_node = print_float_literal;
 		expr->final_type = final_type;
 	}
 	if ((final_type == INTEGER_TYPE) || (final_type == BOOL_TYPE)) {
 		char* int_str = (char*)gdml_zmalloc(sizeof(char) * 64);
 		sprintf(int_str, "%d", final_type);
-		new_node = (tree_t*)create_node("integer_literal", INTEGER_TYPE, sizeof(struct tree_int_cst));
-		new_node->int_cst.value = (int)final_value;
-		new_node->int_cst.int_str = int_str;
+		*new_node = (tree_t*)create_node("integer_literal", INTEGER_TYPE, sizeof(struct tree_int_cst));
+		(*new_node)->int_cst.value = (int)final_value;
+		(*new_node)->int_cst.int_str = int_str;
 		expr->final_type = final_type;
 	}
 
@@ -715,33 +654,36 @@ int get_left_right_value(tree_t* left, tree_t* right, tree_t* new_node, expressi
 	return 0;
 }
 
-expression_t* cal_add_expr(tree_t* node, symtab_t table, expression_t* expr) {
-	assert(node != NULL);
+expression_t* cal_add_expr(tree_t** node, symtab_t table, expression_t* expr) {
+	assert(*node != NULL);
 	assert(table != NULL);
 	assert(expr != NULL);
 	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
-			__func__, __LINE__, node->common.name);
+			__func__, __LINE__, (*node)->common.name);
 
 	tree_t* left = NULL;
 	tree_t* right = NULL;
 	operator_type_t op_type = 0;
-
-	if (node->binary.type) {
-		left = node->binary.left;
-		right = node->binary.right;
-		op_type = node->binary.type;
-	}
-	else {
-		left = node->expr_assign.left;
-		right = node->expr_assign.right;
-		op_type = node->expr_assign.type;
-	}
 	int left_type, right_type;
 
-	cal_expression(left, table, expr);
-	left_type = expr->final_type;
-	cal_expression(right, table, expr);
-	right_type = expr->final_type;
+	if ((*node)->binary.type) {
+		cal_expression(&((*node)->binary.left), table, expr);
+		left_type = expr->final_type;
+		cal_expression(&((*node)->binary.right), table, expr);
+		right_type = expr->final_type;
+		op_type = (*node)->binary.type;
+		left = (*node)->binary.left;
+		right = (*node)->binary.right;
+	}
+	else {
+		cal_expression(&((*node)->expr_assign.left), table, expr);
+		left_type = expr->final_type;
+		cal_expression(&((*node)->expr_assign.right), table, expr);
+		right_type = expr->final_type;
+		op_type = (*node)->expr_assign.type;
+		left = (*node)->expr_assign.left;
+		right = (*node)->expr_assign.right;
+	}
 
 	if (charge_node_is_const(left) && charge_node_is_const(right)) {
 		tree_t* new_node = NULL;
@@ -765,37 +707,36 @@ expression_t* cal_add_expr(tree_t* node, symtab_t table, expression_t* expr) {
 			expr->final_type = UNDEFINED_TYPE;
 		}
 		else {
-			if (get_left_right_value(left, right, new_node, expr, op_type) != 0) {
+			if (get_left_right_value(left, right, &new_node, expr, op_type) != 0) {
 				expr->final_type = charge_type(left_type, right_type);
-				expr->node = node;
+				expr->node = *node;
 				return expr;
 			}
 		}
-		new_node->common.sibling = node->common.sibling;
-		new_node->common.child = node->common.child;
-		free_sibling(node);
-		free_child(node);
-		free(node);
-		node = new_node;
-		expr = get_const_expr_value(node, expr);
+		new_node->common.sibling = (*node)->common.sibling;
+		new_node->common.child = (*node)->common.child;
+		assgin_sibling_child_null(node);
+		free(*node);
+		*node = new_node;
+		expr = get_const_expr_value(*node, expr);
 	}
 	else {
 		expr->final_type = charge_type(left_type, right_type);
-		expr->node = node;
+		expr->node = *node;
 	}
 
 	DEBUG_EXPR("In %s, line = %d, node type: %s, expr final_type: %d\n",
-			__func__, __LINE__, node->common.name, expr->final_type);
+			__func__, __LINE__, (*node)->common.name, expr->final_type);
 
 	return expr;
 }
 
-expression_t* binary_expr_common(tree_t* node, symtab_t table, expression_t* expr) {
-	assert(node != NULL);
+expression_t* binary_expr_common(tree_t** node, symtab_t table, expression_t* expr) {
+	assert(*node != NULL);
 	assert(table != NULL);
 	assert(expr != NULL);
 	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
-			__func__, __LINE__, node->common.name);
+			__func__, __LINE__, (*node)->common.name);
 
 	tree_t* left = NULL;
 	tree_t* right = NULL;
@@ -803,21 +744,26 @@ expression_t* binary_expr_common(tree_t* node, symtab_t table, expression_t* exp
 	operator_type_t op_type = 0;
 	left_type = right_type = 0;
 
-	if (node->binary.type) {
-		left = node->binary.left;
-		right = node->binary.right;
-		op_type = node->binary.type;
+	if ((*node)->binary.type) {
+		cal_expression(&((*node)->binary.left), table, expr);
+		left_type = expr->final_type;
+		cal_expression(&((*node)->binary.right), table, expr);
+		right_type = expr->final_type;
+
+		left = (*node)->binary.left;
+		right = (*node)->binary.right;
+		op_type = (*node)->binary.type;
 	}
 	else {
-		left = node->expr_assign.left;
-		right = node->expr_assign.right;
-		op_type = node->expr_assign.type;
-	}
+		cal_expression(&((*node)->expr_assign.left), table, expr);
+		left_type = expr->final_type;
+		cal_expression(&((*node)->expr_assign.right), table, expr);
+		right_type = expr->final_type;
 
-	cal_expression(left, table, expr);
-	left_type = expr->final_type;
-	cal_expression(right, table, expr);
-	right_type = expr->final_type;
+		left = (*node)->expr_assign.left;
+		right = (*node)->expr_assign.right;
+		op_type = (*node)->expr_assign.type;
+	}
 
 	if (charge_node_is_const(left) && (charge_node_is_const(right))) {
 		 tree_t* new_node = NULL;
@@ -825,39 +771,39 @@ expression_t* binary_expr_common(tree_t* node, symtab_t table, expression_t* exp
 				|| (right->common.type == CONST_STRING_TYPE) || (right->common.type == UNDEFINED_TYPE)) {
 			fprintf(stderr, "The left(%s) or right(%s) node type is wrong!\n",
 					left->common.name, right->common.name);
-			expr->node = node;
+			expr->node = *node;
 			/* TODO: handle the error */
 			return expr;
 		}
 		else {
-			if (get_left_right_value(left, right, new_node, expr, op_type) == 0) {
-				expr->node = node;
+			if (get_left_right_value(left, right, &new_node, expr, op_type) == 0) {
+				expr->node = *node;
 				return expr;
 			}
 		}
-		new_node->common.sibling = node->common.sibling;
-		new_node->common.child = node->common.child;
-		free_sibling(node);
-		free_child(node);
-		free(node);
-		node = new_node;
-		expr = get_const_expr_value(node, expr);
+		new_node->common.sibling = (*node)->common.sibling;
+		new_node->common.child = (*node)->common.child;
+		assgin_sibling_child_null(node);
+		free(*node);
+		*node = new_node;
+		expr = get_const_expr_value(*node, expr);
 	}
 	else {
 		expr->final_type = charge_type(left_type, right_type);
 	}
 
 	DEBUG_EXPR("In %s, line = %d, node type: %s, expr final_type: %d\n",
-			__func__, __LINE__, node->common.name, expr->final_type);
+			__func__, __LINE__, (*node)->common.name, expr->final_type);
 
 	return expr;
 }
 
-expression_t* binary_expr_int(tree_t* node, symtab_t table, expression_t* expr) {
-	assert(node != NULL);
+expression_t* binary_expr_int(tree_t** node, symtab_t table, expression_t* expr) {
+	assert(*node != NULL);
+	assert(table != NULL);
 	assert(expr != NULL);
 	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
-			__func__, __LINE__, node->common.name);
+			__func__, __LINE__, (*node)->common.name);
 
 	tree_t* left = NULL;
 	tree_t* right = NULL;
@@ -865,21 +811,26 @@ expression_t* binary_expr_int(tree_t* node, symtab_t table, expression_t* expr) 
 	int left_type, right_type;
 	left_type = right_type = 0;
 
-	if (node->binary.type) {
-		left = node->binary.left;
-		right = node->binary.right;
-		op_type = node->binary.type;
+	if ((*node)->binary.type) {
+		cal_expression(&((*node)->binary.left), table, expr);
+		left_type = expr->final_type;
+		cal_expression(&((*node)->binary.right), table, expr);
+		right_type = expr->final_type;
+
+		left = (*node)->binary.left;
+		right = (*node)->binary.right;
+		op_type = (*node)->binary.type;
 	}
 	else {
-		left = node->expr_assign.left;
-		right = node->expr_assign.right;
-		op_type = node->expr_assign.type;
-	}
+		cal_expression(&((*node)->expr_assign.left), table, expr);
+		left_type = expr->final_type;
+		cal_expression(&((*node)->expr_assign.right), table, expr);
+		right_type = expr->final_type;
 
-	cal_expression(left, table, expr);
-	left_type = expr->final_type;
-	cal_expression(right, table, expr);
-	right_type = expr->final_type;
+		left = (*node)->expr_assign.left;
+		right = (*node)->expr_assign.right;
+		op_type = (*node)->expr_assign.type;
+	}
 
 	if (charge_node_is_const(left) && charge_node_is_const(right)) {
 		if ((left->common.type == INTEGER_TYPE) &&
@@ -889,7 +840,7 @@ expression_t* binary_expr_int(tree_t* node, symtab_t table, expression_t* expr) 
 			if ((left->int_cst.out_64bit) || (right->int_cst.out_64bit)){
 				fprintf(stderr, "Pay attention: the binary operator have problems: left: %s\n", left->int_cst.int_str);
 				expr->final_type = INTEGER_TYPE;
-				expr->node = node;
+				expr->node = *node;
 				return expr;
 			}
 			else {
@@ -922,8 +873,8 @@ expression_t* binary_expr_int(tree_t* node, symtab_t table, expression_t* expr) 
 						final_value = (left_value & right_value);
 						break;
 					default:
-						fprintf(stderr, "The binary operator is other type: %s\n", node->common.name);
-						expr -> node = node;
+						fprintf(stderr, "The binary operator is other type: %s\n", (*node)->common.name);
+						expr -> node = *node;
 						return expr;
 				}
 
@@ -933,52 +884,51 @@ expression_t* binary_expr_int(tree_t* node, symtab_t table, expression_t* expr) 
 				new_node->int_cst.int_str = value_str;
 				new_node->int_cst.value = final_value;
 				new_node->common.print_node = print_interger;
-				new_node->common.sibling = node->common.sibling;
-				new_node->common.child = node->common.child;
+				new_node->common.sibling = (*node)->common.sibling;
+				new_node->common.child = (*node)->common.child;
 				if ((left->common.sibling) || (left->common.child)
 						|| (right->common.sibling) || (right->common.child)) {
 					fprintf(stderr, "The left or right node has sibling or child\n");
 				}
-				free(node->binary.left);
-				free(node->binary.right);
-				free_sibling(node);
-				free_child(node);
-				free(node);
-				node = new_node;
-				expr = get_const_expr_value(node, expr);
+				free((*node)->binary.left);
+				free((*node)->binary.right);
+				assgin_sibling_child_null(node);
+				free(*node);
+				*node = new_node;
+				expr = get_const_expr_value(*node, expr);
 			}
 		}
 		else {
 			fprintf(stderr, "The binary operation's type is wrong, left: %s, right: %s\n",
 					left->common.name, right->common.name);
 			expr->final_type = charge_type(left_type, right_type);
-			expr->node = node;
+			expr->node = *node;
 		}
 	}
 	else {
 		expr->final_type = charge_type(left_type, right_type);
-		expr->node = node;
+		expr->node = *node;
 	}
 	DEBUG_EXPR("In %s, line = %d, node type: %s, expr final_type: %d\n",
-			__func__, __LINE__, node->common.name, expr->final_type);
+			__func__, __LINE__, (*node)->common.name, expr->final_type);
 
 	return expr;
 }
 
-expression_t* cal_binary_expr(tree_t* node, symtab_t table, expression_t* expr) {
-	assert(node != NULL);
+expression_t* cal_binary_expr(tree_t** node, symtab_t table, expression_t* expr) {
+	assert(*node != NULL);
 	assert(table != NULL);
 	assert(expr != NULL);
 	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
-			__func__, __LINE__, node->common.name);
+			__func__, __LINE__, (*node)->common.name);
 
 	operator_type_t type = 0;
 
-	if (node->binary.type) {
-		type = node->binary.type;
+	if ((*node)->binary.type) {
+		type = (*node)->binary.type;
 	}
 	else {
-		type = node->expr_assign.type;
+		type = (*node)->expr_assign.type;
 	}
 	switch (type) {
 			/* + */
@@ -1047,22 +997,23 @@ expression_t* cal_binary_expr(tree_t* node, symtab_t table, expression_t* expr) 
 			expr = binary_expr_int(node, table, expr);
 			break;
 		default:
-			fprintf(stderr, "The binary operation is other type : %s\n", node->common.name);
-			expr->node = node;
+			fprintf(stderr, "The binary operation is other type : %s\n", (*node)->common.name);
+			expr->node = *node;
 			break;
 	}
 	DEBUG_EXPR("In %s, line = %d, node->type: %s, expr->final_type: %d\n",
-			__func__, __LINE__, node->common.name, expr->final_type);
+			__func__, __LINE__, (*node)->common.name, expr->final_type);
 	return expr;
 }
 
-expression_t* unary_bit_non(tree_t* node, symtab_t table, expression_t* expr) {
-	assert(node != NULL);
+expression_t* unary_bit_non(tree_t** node, symtab_t table, expression_t* expr) {
+	assert(*node != NULL);
+	assert(table != NULL);
 	assert(expr != NULL);
 
-	cal_expression(node->unary.expr, table, expr);
+	cal_expression(&((*node)->unary.expr), table, expr);
+	tree_t* unary_expr = (*node)->unary.expr;
 
-	tree_t* unary_expr = node->unary.expr;
 	if (charge_node_is_const(unary_expr)) {
 		if (unary_expr->common.type != INTEGER_TYPE) {
 			fprintf(stderr, "The bit non operation expression should int\n");
@@ -1073,12 +1024,12 @@ expression_t* unary_bit_non(tree_t* node, symtab_t table, expression_t* expr) {
 			int value = ~(unary_expr->int_cst.value);
 			tree_t* new_node = (tree_t*)gdml_zmalloc(sizeof(struct tree_int_cst));
 			new_node->int_cst.value = value;
-			new_node->common.sibling = node->common.sibling;
-			new_node->common.child = node->common.child;
-			free(node->unary.expr);
+			new_node->common.sibling = (*node)->common.sibling;
+			new_node->common.child = (*node)->common.child;
+			free((*node)->unary.expr);
 			free_sibling(node);
 			free_child(node);
-			node = unary_expr;
+			*node = unary_expr;
 			expr = get_const_expr_value(unary_expr, expr);
 		}
 	}
@@ -1088,18 +1039,19 @@ expression_t* unary_bit_non(tree_t* node, symtab_t table, expression_t* expr) {
 			/* TODO: handle the error */
 			exit(-1);
 		}
-		expr->node = node;
+		expr->node = *node;
 	}
 
 	return expr;
 }
 
-expression_t* unary_expr_common(tree_t* node, symtab_t table, expression_t* expr) {
-	assert(node != NULL);
+expression_t* unary_expr_common(tree_t** node, symtab_t table, expression_t* expr) {
+	assert(*node != NULL);
+	assert(table != NULL);
 	assert(expr != NULL);
 
-	tree_t* unary_expr = node->unary.expr;
-	cal_expression(unary_expr, table, expr);
+	cal_expression(&((*node)->unary.expr), table, expr);
+	tree_t* unary_expr = (*node)->unary.expr;
 
 	if (charge_node_is_const(unary_expr)) {
 		if ((unary_expr->common.type == CONST_STRING_TYPE)
@@ -1115,7 +1067,7 @@ expression_t* unary_expr_common(tree_t* node, symtab_t table, expression_t* expr
 			if (unary_expr->common.type == INTEGER_TYPE) {
 				if (unary_expr->int_cst.out_64bit) {
 					fprintf(stderr, "Pay attention: the binary operator have problems: left: %s\n", unary_expr->int_cst.int_str);
-					expr->node = node;
+					expr->node = *node;
 					/* TODO: handle the error */
 					exit(-1);
 				}
@@ -1127,7 +1079,7 @@ expression_t* unary_expr_common(tree_t* node, symtab_t table, expression_t* expr
 				final_type = FLOAT_TYPE;
 			}
 
-			switch(node->unary.type) {
+			switch((*node)->unary.type) {
 				case NEGATIVE_TYPE:
 					final_value = -value;
 					break;
@@ -1174,35 +1126,34 @@ expression_t* unary_expr_common(tree_t* node, symtab_t table, expression_t* expr
 				expr->final_type = final_type;
 			}
 
-			if ((unary_expr->common.sibling)
-					|| (unary_expr->common.child)) {
-				fprintf(stderr, "In %s, the unary expression  node has sibling or child\n", __FUNCTION__);
-				exit(-1);
-			}
-			new_node->common.sibling = node->common.sibling;
-			new_node->common.child = node->common.child;
+			new_node->common.sibling = (*node)->common.sibling;
+			new_node->common.child = (*node)->common.child;
 
-			free(node->unary.expr);
-			free_sibling(node);
-			free_child(node);
-
+			free((*node)->unary.expr);
+			free((*node)->unary.operat);
+			assgin_sibling_child_null(node);
+			free(*node);
 			expr->node = new_node;
-			node = new_node;
-			expr = get_const_expr_value(node, expr);
+			*node = new_node;
+			expr = get_const_expr_value(*node, expr);
 		}
 	}
 	else {
-		if (node->unary.type == NON_OP_TYPE) {
+		if ((*node)->unary.type == NON_OP_TYPE) {
 			expr->final_type = INT_TYPE;
 		}
-		expr->node = node;
+		expr->node = *node;
 	}
 
 	return expr;
 }
 
-expression_t* cal_unary_expr(tree_t* node, symtab_t table,  expression_t* expr) {
-	switch(node->unary.type) {
+expression_t* cal_unary_expr(tree_t** node, symtab_t table,  expression_t* expr) {
+	assert(*node != NULL);
+	assert(table != NULL);
+	assert(expr != NULL);
+
+	switch((*node)->unary.type) {
 			/* - */
 		case NEGATIVE_TYPE:
 			/* + */
@@ -1229,47 +1180,57 @@ expression_t* cal_unary_expr(tree_t* node, symtab_t table,  expression_t* expr) 
 		case POINTER_TYPE:
 			/* defined */
 		case DEFINED_TYPE:
-			cal_expression(node->unary.expr, table, expr);
-			if (charge_node_is_const(node->unary.expr)) {
+			cal_expression(&((*node)->unary.expr), table, expr);
+			if (charge_node_is_const((*node)->unary.expr)) {
 				fprintf(stderr, "The unary operation expression can not constant\n");
 					/* FIXME: should handle the error */
 					exit(-1);
 			}
-			expr->node = node;
+			expr->node = *node;
 			break;
 			/* # */
 		case EXPR_TO_STR_TYPE:
-			if (charge_node_is_const(node)) {
-				expr = get_const_expr_value(node, expr);
+			if (charge_node_is_const(*node)) {
+				expr = get_const_expr_value(*node, expr);
 			}
 			else {
-				expr->node = node;
+				expr->node = *node;
 			}
 			break;
 		default:
-			fprintf(stderr, "Wrong unary type: %s\n", node->common.name);
+			fprintf(stderr, "Wrong unary type: %s\n", (*node)->common.name);
 			break;
 	}
 	DEBUG_EXPR("In %s, line = %d, node type: %s, expr->final_type: %d\n",
-			__FUNCTION__, __LINE__, node->common.name, expr->final_type);
+			__FUNCTION__, __LINE__, (*node)->common.name, expr->final_type);
+
 	return expr;
 }
 
-expression_t* cal_cast_expr(tree_t* node, symtab_t table, expression_t* expr) {
+expression_t* cal_cast_expr(tree_t** node, symtab_t table, expression_t* expr) {
+	assert(*node != NULL);
+	assert(table != NULL);
+	assert(expr != NULL);
 	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
-			__func__, __LINE__, node->common.name);
-	cal_expression(node->cast.expr, table, expr);
+			__func__, __LINE__, (*node)->common.name);
+
+	cal_expression(&((*node)->cast.expr), table, expr);
+
 	/* FIXME: should find the type symbol from symbol table */
-	node->cast.decl = parse_ctypedecl(node->cast.ctype, table);
-	expr->node = node;
+	(*node)->cast.decl = parse_ctypedecl((*node)->cast.ctype, table);
+	expr->node = *node;
+
 	return expr;
 }
 
-expression_t* cal_sizeof_expr(tree_t* node, symtab_t table,  expression_t* expr) {
+expression_t* cal_sizeof_expr(tree_t** node, symtab_t table,  expression_t* expr) {
+	assert(*node != NULL);
+	assert(table != NULL);
+	assert(expr != NULL);
 	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
-			__func__, __LINE__, node->common.name);
+			__func__, __LINE__, (*node)->common.name);
 
-	tree_t* node_expr = node->sizeof_tree.expr;
+	tree_t* node_expr = (*node)->sizeof_tree.expr;
 	/* The sizeof operator can only be used on expressions
 	 * To take the size of a datatype,
 	 * the sizeoftype operator must be used.
@@ -1280,41 +1241,42 @@ expression_t* cal_sizeof_expr(tree_t* node, symtab_t table,  expression_t* expr)
 		/* should handle the error */
 		exit(-1);
 	}
-	cal_expression(node_expr, table, expr);
+	cal_expression(&((*node)->sizeof_tree.expr), table, expr);
 	expr->final_type = INT_TYPE;
 
-	expr->node = node;
+	expr->node = *node;
+
 	return expr;
 }
 
-expression_t* cal_quote_expr(tree_t* node, symtab_t table,  expression_t* expr) {
-	assert(node != NULL);
+expression_t* cal_quote_expr(tree_t** node, symtab_t table,  expression_t* expr) {
+	assert(*node != NULL);
 	assert(table != NULL);
 	assert(expr != NULL);
 
 	DEBUG_EXPR("IN %s, line = %d, node->type: %s\n",
-			__func__, __LINE__, node->common.name);
+			__func__, __LINE__, (*node)->common.name);
 
-	if (charge_node_is_const(node)) {
+	if (charge_node_is_const(*node)) {
 		fprintf(stderr, "error: lvalue required as unary ‘&’ operand\n");
 		/* TODO: handle the error */
 		exit(-1);
 	}
 
-	tree_t* ident = node->quote.ident;
+	tree_t* ident = (*node)->quote.ident;
 	/* FIXME: this may something wrong */
 	if (strcmp(ident->ident.str, "this") == 0) {
-		expr->node = node;
+		expr->node = *node;
 		expr->final_type = NO_TYPE;
 		return expr;
 	}
 
-	cal_expression(ident, table, expr);
+	cal_expression(&((*node)->quote.ident), table, expr);
 
-	expr->node = node;
+	expr->node = *node;
 
 	DEBUG_EXPR("IN %s, line = %d, node->type: %s, final_type: %d\n",
-			__func__, __LINE__, node->common.name, expr->final_type);
+			__func__, __LINE__, (*node)->common.name, expr->final_type);
 
 	return expr;
 }
@@ -1440,7 +1402,8 @@ int get_c_type(symbol_t symbol) {
 	return type;
 }
 
-tree_t* bool_expression(tree_t* node, expression_t* expr, int value) {
+tree_t* bool_expression(tree_t** node, expression_t* expr, int value) {
+	assert(*node != NULL);
 	assert(expr != NULL);
 	char* str = gdml_zmalloc(sizeof(int)); // only store '0' and '1'
 	sprintf(str, "%d", value);
@@ -1451,21 +1414,25 @@ tree_t* bool_expression(tree_t* node, expression_t* expr, int value) {
 	new_node->int_cst.value = value;
 	new_node->int_cst.int_str = str;
 
-	new_node->common.child = node->common.child;
-	new_node->common.sibling = node->common.sibling;
+	new_node->common.child = (*node)->common.child;
+	new_node->common.sibling = (*node)->common.sibling;
 	new_node->common.print_node = print_interger;
 
-	free(node);
+	assgin_sibling_child_null(node);
+	free(*node);
 
 	return new_node;
 }
 
-expression_t* get_ident_value(tree_t* node, symtab_t table,  expression_t* expr) {
+expression_t* get_ident_value(tree_t** node, symtab_t table,  expression_t* expr) {
+	assert(*node != NULL);
+	assert(table != NULL);
+	assert(expr != NULL);
 	DEBUG_IDENT_VALUE("In %s, line = %d, node type: %s, table type: %d, ident: %s\n",
-			__func__, __LINE__, node->common.name, table->type, node->ident.str);
+			__func__, __LINE__, (*node)->common.name, table->type, (*node)->ident.str);
 	/* FIXME: should find the symbol, if it is in the symbol table,
 	 * should insert it*/
-	symbol_t symbol = symbol_find_notype(table, node->ident.str);
+	symbol_t symbol = symbol_find_notype(table, (*node)->ident.str);
 	if ((symbol != NULL)) {
 		DEBUG_EXPR("symbol name: %s, type: %d\n", symbol->name, symbol->type);
 		if (is_c_type(symbol->type) == 1) {
@@ -1477,90 +1444,105 @@ expression_t* get_ident_value(tree_t* node, symtab_t table,  expression_t* expr)
 		}
 	}
 	else {
-		if (strcmp(node->ident.str, "false") == 0) {
-			node = bool_expression(node, expr, 0);
+		if (strcmp((*node)->ident.str, "false") == 0) {
+			*node = bool_expression(node, expr, 0);
 		}
-		else if (strcmp(node->ident.str, "true") == 0) {
-			node = bool_expression(node, expr, 1);
+		else if (strcmp((*node)->ident.str, "true") == 0) {
+			*node = bool_expression(node, expr, 1);
 		}
-		else if (strcmp(node->ident.str, "NULL") == 0) {
+		else if (strcmp((*node)->ident.str, "NULL") == 0) {
 			expr->final_type = POINTER_TYPE;
 		}
-		else if (strncmp(node->ident.str, "SIM", 3) == 0) {
+		else if (strncmp((*node)->ident.str, "SIM", 3) == 0) {
 			/* TODO: handle the function return value */
 			expr->final_type = NO_TYPE;
 		}
-		else if (strncmp(node->ident.str, "Sim", 3) == 0) {
+		else if (strncmp((*node)->ident.str, "Sim", 3) == 0) {
 			/* FIXME: in fact, it it enum type */
 			expr->final_type = INT_TYPE;
 		}
 		else if (table->no_check) {
-			DEBUG_TEMPLATE_SYMBOL("warning: %s no undeclared in template\n", node->ident.str);
+			DEBUG_TEMPLATE_SYMBOL("warning: %s no undeclared in template\n", (*node)->ident.str);
 			//symbol_insert(table, node->ident.str, NO_TYPE, NULL);
 			expr->final_type = NO_TYPE;
 		}
 		else {
-			fprintf(stderr, "%s no undeclared (first use)\n", node->ident.str);
+			fprintf(stderr, "%s no undeclared (first use)\n", (*node)->ident.str);
 			/*FIXME: please handle the error  */
 			exit(-1);
 		}
 	}
-	expr->node = node;
+	expr->node = *node;
 
 	return expr;
 }
 
-expression_t* get_component_expr(tree_t* node, symtab_t table,  expression_t* expr) {
+expression_t* get_component_expr(tree_t** node, symtab_t table,  expression_t* expr) {
+	assert(*node != NULL);
+	assert(table != NULL);
+	assert(expr != NULL);
 	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
-			__func__, __LINE__, node->common.name);
+			__func__, __LINE__, (*node)->common.name);
 	//cal_expression(node->component.expr, table, expr);
 	//char* member = node->omponent.ident;
 	/* TODO: should find the member, check it */
 	expr->final_type = NO_TYPE;
+	expr->node = *node;
 	return expr;
 }
 
-expression_t* get_sizeoftype_expr(tree_t* node, symtab_t table,  expression_t* expr) {
+expression_t* get_sizeoftype_expr(tree_t** node, symtab_t table,  expression_t* expr) {
+	assert(*node != NULL);
+	assert(table != NULL);
+	assert(expr != NULL);
 	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
-			__func__, __LINE__, node->common.name);
+			__func__, __LINE__, (*node)->common.name);
 	/* FIXME: should charge the identifier type */
+	expr->node = *node;
 	return expr;
 }
 
-expression_t* get_new_expr(tree_t* node, symtab_t table,  expression_t* expr) {
+expression_t* get_new_expr(tree_t** node, symtab_t table,  expression_t* expr) {
+	assert(*node != NULL);
+	assert(table != NULL);
+	assert(expr != NULL);
 	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
-			__func__, __LINE__, node->common.name);
+			__func__, __LINE__, (*node)->common.name);
 
-	parse_ctypedecl(node->new_tree.type, table);
-	if (node->new_tree.count) {
-		cal_expression(node->new_tree.count, table, expr);
+	parse_ctypedecl((*node)->new_tree.type, table);
+	if ((*node)->new_tree.count) {
+		cal_expression(&((*node)->new_tree.count), table, expr);
 	}
+	expr->node = *node;
 	return expr;
 }
 
-expression_t* get_brack_expr(tree_t* node, symtab_t table,  expression_t* expr) {
+expression_t* get_brack_expr(tree_t** node, symtab_t table,  expression_t* expr) {
+	assert(*node != NULL);
+	assert(table != NULL);
+	assert(expr != NULL);
 	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
-			__func__, __LINE__, node->common.name);
+			__func__, __LINE__, (*node)->common.name);
 	/* expression (expression_list)*/
-	if (node->expr_brack.expr) {
-		tree_t* out_node = node->expr_brack.expr;
+	if ((*node)->expr_brack.expr) {
+		tree_t* out_node = (*node)->expr_brack.expr;
 		if (charge_node_is_const(out_node)) {
 			fprintf(stderr, "The expression is wrong!\n");
 			/* FIXME: handle the error */
 			exit(-1);
 		}
 		else {
-			cal_expression(out_node, table, expr);
+			cal_expression(&((*node)->expr_brack.expr), table, expr);
 		}
 	}
 	/* (expression)*/
-	if (node->expr_brack.expr_in_brack) {
-		tree_t* in_node = node->expr_brack.expr_in_brack;
+	if ((*node)->expr_brack.expr_in_brack) {
+		tree_t* in_node = (*node)->expr_brack.expr_in_brack;
 		if (charge_node_is_const(in_node)) {
 			expr = get_const_expr_value(in_node, expr);
 		}
 		else {
-			expr = cal_expression(in_node, table, expr);
+			expr = cal_expression(&((*node)->expr_brack.expr_in_brack), table, expr);
 			if (charge_node_is_const(in_node)) {
 				expr = get_const_expr_value(in_node, expr);
 			}
@@ -1572,34 +1554,50 @@ expression_t* get_brack_expr(tree_t* node, symtab_t table,  expression_t* expr) 
 	return expr;
 }
 
-expression_t* get_array_expr(tree_t* node, symtab_t table,  expression_t* expr) {
+expression_t* get_array_expr(tree_t** node, symtab_t table,  expression_t* expr) {
+	assert(*node != NULL);
+	assert(table != NULL);
+	assert(expr != NULL);
 	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
-			__func__, __LINE__, node->common.name);
-	tree_t* node_arr = node->array.expr;
-	while(node_arr) {
-		cal_expression(node_arr, table, expr);
+			__func__, __LINE__, (*node)->common.name);
+
+	tree_t* node_arr = (*node)->array.expr;
+	tree_t* pre_node = (*node)->array.expr;
+
+	cal_expression(&((*node)->array.expr), table, expr);
+
+	while(node_arr->common.sibling) {
 		node_arr = node_arr->common.sibling;
+		cal_expression(&node_arr, table, expr);
+		/* node changet or node */
+		if (node_arr != (pre_node->common.sibling)) {
+			pre_node->common.sibling = node_arr;
+		}
+		pre_node = node_arr;
 	}
-	expr->node = node;
+	expr->node = *node;
 
 	return expr;
 }
 
-expression_t* get_bit_slic_expr(tree_t* node, symtab_t table,  expression_t* expr) {
+expression_t* get_bit_slic_expr(tree_t** node, symtab_t table,  expression_t* expr) {
+	assert(*node != NULL);
+	assert(table != NULL);
+	assert(expr != NULL);
 	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
-			__func__, __LINE__, node->common.name);
+			__func__, __LINE__, (*node)->common.name);
 
-	cal_expression(node->bit_slic.expr, table, expr);
+	cal_expression(&((*node)->bit_slic.expr), table, expr);
 	if (expr->is_const) {
 		fprintf(stderr, "The bit slic declare should not const!\n");
 		exit(-1);
 	}
-	cal_expression(node->bit_slic.bit, table, expr);
-	cal_expression(node->bit_slic.bit_end, table, expr);
+	cal_expression(&((*node)->bit_slic.bit), table, expr);
+	cal_expression(&((*node)->bit_slic.bit_end), table, expr);
 
 	expr->is_const = 0;
 
-	tree_t* endian = node->bit_slic.endian;
+	tree_t* endian = (*node)->bit_slic.endian;
 	if (endian) {
 		if ((strcmp(endian->ident.str, "le") != 0)
 				|| (strcmp(endian->ident.str, "be") != 0)) {
@@ -1608,15 +1606,16 @@ expression_t* get_bit_slic_expr(tree_t* node, symtab_t table,  expression_t* exp
 			exit(-1);
 		}
 	}
-	expr->node = node;
+	expr->node = *node;
 
 	return expr;
 }
 
-expression_t* cal_expression(tree_t* node, symtab_t table, expression_t* expr) {
-	assert(node != NULL);
+expression_t* cal_expression(tree_t** node, symtab_t table, expression_t* expr) {
+	assert(*node != NULL);
+	assert(table != NULL);
 	assert(expr != NULL);
-	switch(node->common.type) {
+	switch((*node)->common.type) {
 		case EXPR_ASSIGN_TYPE:
 			expr = cal_assign_expr(node, table, expr);
 			break;
@@ -1636,16 +1635,16 @@ expression_t* cal_expression(tree_t* node, symtab_t table, expression_t* expr) {
 			expr = cal_unary_expr(node, table, expr);
 			break;
 		case INTEGER_TYPE:
-			expr = get_const_expr_value(node, expr);
+			expr = get_const_expr_value(*node, expr);
 			break;
 		case FLOAT_TYPE:
-			expr = get_const_expr_value(node, expr);
+			expr = get_const_expr_value(*node, expr);
 			break;
 		case CONST_STRING_TYPE:
-			expr = get_const_expr_value(node, expr);
+			expr = get_const_expr_value(*node, expr);
 			break;
 		case UNDEFINED_TYPE:
-			expr = get_const_expr_value(node, expr);
+			expr = get_const_expr_value(*node, expr);
 			break;
 		case QUOTE_TYPE:
 			expr = cal_quote_expr(node, table, expr);
@@ -1673,17 +1672,18 @@ expression_t* cal_expression(tree_t* node, symtab_t table, expression_t* expr) {
 			expr = get_bit_slic_expr(node, table, expr);
 			break;
 		default:
-			printf("Pay attention: ther may be other type expression: %s\n", node->common.name);
+			printf("Pay attention: ther may be other type expression: %s\n", (*node)->common.name);
 			/* FIXME: Pay attention: The exit function is only for debugging */
 			exit(-1);
 			break;
 	}
 
+	expr->node = *node;
 	return expr;
 }
 
-expression_t* parse_expression(tree_t* node, symtab_t table) {
-	if (node == NULL) {
+expression_t* parse_expression(tree_t** node, symtab_t table) {
+	if (*node == NULL) {
 		return NULL;
 	}
 	assert(table != NULL);
@@ -1692,6 +1692,7 @@ expression_t* parse_expression(tree_t* node, symtab_t table) {
 
 	expression_t* expr = (expression_t*)gdml_zmalloc(sizeof(expression_t));
 	cal_expression(node, table, expr);
+	expr->node = *node;
 
 	DEBUG_EXPR("In %s, line = %d, expr final_type: %d\n",
 			__func__, __LINE__, expr->final_type);
@@ -1699,32 +1700,43 @@ expression_t* parse_expression(tree_t* node, symtab_t table) {
 	return expr;
 }
 
-void parse_comma_expression(tree_t* node, symtab_t table) {
-	if (node == NULL) {
+void parse_comma_expression(tree_t** node, symtab_t table) {
+	if (*node == NULL) {
 		return ;
 	}
 	assert(table != NULL);
 
-	tree_t* expr_node = node;
-	while (expr_node != NULL) {
+	tree_t* expr_node = *node;
+	while ((*node) != NULL) {
 		DEBUG_EXPR("In %s, line = %d, node->type: %s\n",
-				__func__, __LINE__, node->common.name);
-		parse_expression(expr_node, table);
-		expr_node = node->common.sibling;
+				__func__, __LINE__, (*node)->common.name);
+		parse_expression(node, table);
+		*node = (*node)->common.sibling;
 	}
+	*node = expr_node;
 
 	return ;
 }
 
-void parse_log_args(tree_t* node, symtab_t table) {
-	if (node == NULL) {
+void parse_log_args(tree_t** node, symtab_t table) {
+	if (*node == NULL) {
 		return;
 	}
 	assert(table != NULL);
-	tree_t* arg_node = node;
-	while (arg_node != NULL) {
-		parse_expression(arg_node, table);
+
+	parse_expression(node, table);
+	tree_t* arg_node = *node;
+	tree_t* pre_node = *node;
+
+	parse_expression(node, table);
+
+	while ((arg_node->common.sibling) != NULL) {
 		arg_node = arg_node->common.sibling;
+		parse_expression(&arg_node, table);
+		if (arg_node != (pre_node->common.sibling)) {
+			pre_node->common.sibling = arg_node;
+		}
+		pre_node = arg_node;
 	}
 
 	return;
