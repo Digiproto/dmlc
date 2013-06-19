@@ -204,7 +204,7 @@ dml
 		current_table->table_num = ++current_table_num;
 		table_stack = initstack();
 		push(table_stack, current_table);
-		printf("current_table_num: %d\n", current_table_num);
+		printf("current_table_num: %ld\n", current_table_num);
 		device_attr_t* attr = (device_attr_t*)malloc(sizeof(device_attr_t));
 		attr->name = $2->ident.str;
 		if (symbol_insert(root_table, $2->ident.str, DEVICE_TYPE, attr) == -1) {
@@ -256,6 +256,7 @@ dml
 		}
 		else {
 			printf("Line = %d, maybe something Wrong\n", __LINE__);
+			$$ = NULL;
 		}
 	}
 	;
@@ -707,7 +708,7 @@ object
 	| ATTRIBUTE objident '[' arraydef ']' istemplate {
 		attribute_attr_t* attr = (attribute_attr_t*)gdml_zmalloc(sizeof(attribute_attr_t));
 		attr->name = $2->ident.str;
-		attr->arraydef = 1;
+		attr->is_array = 1;
 		attr->arraydef = get_arraydef($4);
 		attr->templates =  get_templates($6);
 		attr->template_num = get_list_num($6);
@@ -1060,7 +1061,7 @@ toplevel
 		attr->table = current_table;
 
 		tree_t* node = (tree_t*)create_node("struct", STRUCT_TYPE, sizeof(struct tree_struct));
-		node->struct_tree.ident = $2->ident.str;
+		node->struct_tree.name = $2->ident.str;
 		node->common.print_node = print_struct;
 		node->common.attr = attr;
 		$<tree_type>$ = node;
@@ -1074,7 +1075,7 @@ toplevel
 	| HEADER {
 		/* FIXME: the header include much content */
 		tree_t* node = (tree_t*)create_node("header", HEADER_TYPE, sizeof(struct tree_head));
-		node->head.str = $1;
+		node->head.str = (char*)($1);
 		node->common.print_node = print_header;
 		/* TODO: should analyze the content of head */
 		//node->head.head = $1;
@@ -2421,8 +2422,8 @@ expression
 endianflag
 	: ',' IDENTIFIER {
 		tree_t* node = (tree_t*)create_node("endianflag", IDENT_TYPE, sizeof(struct tree_ident));
-		node->ident.str = $2;
-		node->ident.len = strlen($2);
+		node->ident.str = (char*)($2);
+		node->ident.len = strlen(((char*)($2)));
 		node->common.print_node = print_ident;
 		$$ = node;
 	}
@@ -2744,7 +2745,7 @@ statement
 	}
 	| FOREACH ident IN '(' expression ')' {
 		foreach_attr_t* attr = (foreach_attr_t*)gdml_zmalloc(sizeof(foreach_attr_t));
-		attr->ident = $2->ident.str;
+		attr->ident = ($2->ident.str);
 
 		current_table = change_table(current_table, table_stack, &current_table_num, FOREACH_TYPE);
 		attr->table = current_table;
@@ -2986,8 +2987,8 @@ objident
 ident
 	: IDENTIFIER {
 		tree_t* ident = (tree_t*)create_node("identifier", IDENT_TYPE, sizeof(struct tree_ident));
-		ident->ident.str = $1;
-		ident->ident.len = strlen($1);
+		ident->ident.str = (char*)($1);
+		ident->ident.len = strlen(((char*)($1)));
 		ident->common.print_node = print_ident;
 		$$ = ident;
 	}

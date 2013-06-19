@@ -47,7 +47,7 @@ void* gdml_realloc(void* addr, int size) {
 	return addr;
 }
 
-char* add_type_str(char* addr, char* str){
+char* add_type_str(char* addr, const char* str){
 	assert(str != NULL);
 	int size = 0;
 
@@ -203,7 +203,7 @@ type_t get_decl_type(decl_t* decl) {
 	return 0;
 }
 
-var_name_t* create_var_name(char* name) {
+var_name_t* create_var_name(const char* name) {
 	assert(name != NULL);
 
 	var_name_t* var_new = (var_name_t*)gdml_zmalloc(sizeof(var_name_t));
@@ -256,7 +256,7 @@ int symbol_construct_type(symbol_t symbol, decl_t* decl) {
 	return 0;
 }
 
-void create_var_list(decl_t* decl, char* var_name) {
+void create_var_list(decl_t* decl, const char* var_name) {
 	assert(decl != NULL);
 	assert(var_name != NULL);
 
@@ -304,7 +304,7 @@ void parse_identifier(tree_t* node, symtab_t table, decl_t* decl) {
 				|| (strcmp(node->ident.str, "cycle_interface_t") == 0)
 				|| (strcmp(node->ident.str, "cycles_t") == 0)) {
 			decl->type->struct_type = 1;
-			decl->type->struct_name = node->ident.str;
+			decl->type->struct_name = (char*)(node->ident.str);
 		}
 		else {
 			create_var_list(decl, node->ident.str);
@@ -731,7 +731,7 @@ params_t* get_param_decl(tree_t* node, symtab_t table) {
 		if ((strcmp(var->var_name, "attr_value_t") == 0)
 				|| (strcmp(var->var_name, "set_error_t") == 0)
 				|| (strcmp(var->var_name, "generic_transaction_t") == 0)) {
-			param->var_name = var->next->var_name;
+			param->var_name = (char*)(var->next->var_name);
 			/* FIXME: in fact the type it struct type */
 			param->is_notype = 1;
 		}
@@ -744,7 +744,7 @@ params_t* get_param_decl(tree_t* node, symtab_t table) {
 		param->var_name = decl->defined_name;
 	}
 	else {
-		param->var_name = decl->var->var_name;
+		param->var_name = (char*)(decl->var->var_name);
 		if ((node->cdecl.decl) == NULL) {
 			param->is_notype = 1;
 		}
@@ -1250,7 +1250,7 @@ void insert_ident_decl(symtab_t table, decl_t* decl) {
 
 	var_name_t* var = decl->var;
 	while (var) {
-		name = var->var_name;
+		name = (char*)(var->var_name);
 		symbol_insert(table, name, type, decl);
 		var = var->next;
 	}
@@ -1288,7 +1288,7 @@ void parse_local_decl(tree_t* node, symtab_t table) {
 
 	if (node->local_tree.local_keyword) {
 		tree_t* keyword = node->local_tree.local_keyword;
-		char* keyword_name = keyword->local_keyword.name;
+		char* keyword_name = (char*)(keyword->local_keyword.name);
 		if (strcmp(keyword_name, "auto") == 0) {
 			type->is_auto = 1;
 			//decl->decl_str = malloc(sizeof("auto "));

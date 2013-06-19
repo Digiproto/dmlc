@@ -51,7 +51,7 @@ typedef struct expression {
     int is_undefined;
     const_expr_t* const_expr;
     tree_t* node;
-	struct expression_t* next;
+	struct expression* next;
 } expression_t;
 
 expression_t* parse_expression(tree_t** node, symtab_t table);

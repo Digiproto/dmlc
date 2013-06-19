@@ -173,7 +173,7 @@ struct tree_register {
 	const char* name;
 	tree_t* sizespec;			// register size
 	tree_t* offset;				// offset about register start
-	char** templates;			// templates that register inherits
+	tree_t* templates;			// templates that register inherits
 	tree_t* spec;				// spec about register
 	tree_t* array;				// the array about registers that are the same type
 };
@@ -566,7 +566,7 @@ struct tree_error {
  */
 struct tree_struct {
 	struct tree_common common;
-	tree_t* ident;
+	const char* name;
 	tree_t* block;
 };
 
@@ -637,7 +637,7 @@ struct tree_new {
  */
 struct tree_unary {
 	struct tree_common common;
-	const char* operat;
+	char* operat;
 	operator_type_t type;
 	tree_t* expr;
 };

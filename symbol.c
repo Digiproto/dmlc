@@ -151,7 +151,7 @@ static symbol_t symbol_new(const char *name, type_t type, void *attr)
     return new_undef;
 }
 
-symbol_t symbol_find_from_templates(struct template_table* templates, char* name, type_t type) {
+symbol_t symbol_find_from_templates(struct template_table* templates, const char* name, type_t type) {
 	symbol_t rt;
 
 	while (templates != NULL) {
@@ -175,7 +175,7 @@ symbol_t symbol_find_from_templates(struct template_table* templates, char* name
  *
  * @return the pointer of the symbol with information.
  */
-symbol_t symbol_find(symtab_t symtab, char* name, type_t type)
+symbol_t symbol_find(symtab_t symtab, const char* name, type_t type)
 {
     assert(symtab != NULL && name != NULL);
     symtab_t tmp = symtab;
@@ -203,7 +203,7 @@ symbol_t symbol_find(symtab_t symtab, char* name, type_t type)
  *
  * @return the pointer of the symbol with information.
  */
-symbol_t symbol_find_curr(symtab_t symtab, char *name, type_t type)
+symbol_t symbol_find_curr(symtab_t symtab, const char *name, type_t type)
 {
     assert(symtab != NULL && name != NULL);
 	symbol_t rt = NULL;
@@ -218,7 +218,7 @@ symbol_t symbol_find_curr(symtab_t symtab, char *name, type_t type)
 	return rt;
 }
 
-symbol_t symbol_find_from_templates_notype(struct template_table* templates, char* name) {
+symbol_t symbol_find_from_templates_notype(struct template_table* templates, const char* name) {
 	symbol_t rt = NULL;
 	symtab_t table = NULL;
 	int i = 0;
@@ -246,7 +246,7 @@ symbol_t symbol_find_from_templates_notype(struct template_table* templates, cha
  *
  * @return the pointer of the symbol with information.
  */
-symbol_t symbol_find_notype(symtab_t symtab, char *name)
+symbol_t symbol_find_notype(symtab_t symtab, const char *name)
 {
     assert(symtab != NULL && name != NULL);
     symtab_t tmp = symtab;
@@ -273,7 +273,7 @@ symbol_t symbol_find_notype(symtab_t symtab, char *name)
  *
  * @return the pointer of the symbol with information.
  */
-symbol_t symbol_find_curr_notype(symtab_t symtab, char *name)
+symbol_t symbol_find_curr_notype(symtab_t symtab, const char *name)
 {
     assert(symtab != NULL && name != NULL);
 	symbol_t rt = NULL;
@@ -392,11 +392,12 @@ symtab_t symtab_create(type_t type)
 
 void sibling_table_free(symtab_t symtab, int table_num) {
 	symtab_t tmp = symtab;
+
 	while (tmp->sibling) {
 		if ((tmp->sibling->table_num) == table_num) {
 			free(tmp->sibling);
 			tmp->sibling = NULL;
-			return;
+			return ;
 		}
 		tmp = tmp->sibling;
 	}
@@ -624,7 +625,7 @@ void params_insert_table(symtab_t table, method_params_t* method_params) {
 	return;
 }
 
-symtab_t change_table(symtab_t current_table, stack_t* table_stack, int* current_table_num, type_t type) {
+symtab_t change_table(symtab_t current_table, stack_t* table_stack, long int* current_table_num, type_t type) {
 	assert(current_table != NULL);
 	assert(table_stack != NULL);
 

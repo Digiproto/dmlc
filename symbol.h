@@ -101,7 +101,7 @@ typedef struct paramspec {
 typedef struct parameter_attr
 {
 	const char *name;
-	struct paramspec_t* spec;
+	paramspec_t* spec;
 } parameter_attr_t;
 
 typedef struct value {
@@ -149,7 +149,7 @@ typedef struct arraydef_attr {
 
 typedef struct foreach_attr {
 	struct symbol_common common;
-	char* ident;
+	const char* ident;
 	expression_t* expr;
 	symtab_t table;
 }foreach_attr_t;
@@ -178,7 +178,7 @@ typedef struct register_list_node
 typedef struct bank_attr
 {
 	struct symbol_common common;
-	const char** templates;
+	char** templates;
 	const char *name;
 	const char* desc;
 	int template_num;
@@ -215,8 +215,8 @@ typedef struct field_attr
 {
 	struct symbol_common common;
 	const char *name;
-	const char** templates;
 	const char* desc;
+	char** templates;
 	int template_num;
 	int is_range;
 	bitrange_attr_t* bitrange;
@@ -231,8 +231,8 @@ typedef struct connect_attr
 {
 	struct symbol_common common;
 	const char* name;
-	const char** templates;
 	const char* desc;
+	char** templates;
 	int template_num;
 	int is_array;
 	arraydef_attr_t* arraydef;
@@ -247,8 +247,8 @@ typedef struct interface_attr
 {
 	struct symbol_common common;
 	const char* name;
-	const char** templates;
 	const char* desc;
+	char** templates;
 	int template_num;
 	symtab_t table;
 } interface_attr_t;
@@ -257,8 +257,8 @@ typedef struct attribute_attr
 {
 	struct symbol_common common;
 	const char* name;
-	const char** templates;
 	const char* desc;
+	char** templates;
 	int is_array;
 	int template_num;
 	arraydef_attr_t* arraydef;
@@ -272,8 +272,8 @@ typedef struct event_attr_t
 {
 	struct symbol_common common;
 	const char* name;
-	const char** templates;
 	const char* desc;
+	char** templates;
 	int template_num;
 	symtab_t table;
 } event_attr_t;
@@ -282,8 +282,8 @@ typedef struct group_attr
 {
 	struct symbol_common common;
 	const char* name;
-	const char** templates;
 	const char* desc;
+	char** templates;
 	int template_num;
 	int is_array;
 	arraydef_attr_t* arraydef;
@@ -298,8 +298,8 @@ typedef struct port_attr
 {
 	struct symbol_common common;
 	const char* name;
-	const char** templates;
 	const char* desc;
+	char** templates;
 	int template_num;
 	symtab_t table;
 } port_attr_t;
@@ -307,8 +307,8 @@ typedef struct implement_attr
 {
 	struct symbol_common common;
 	const char* name;
-	const char** templates;
 	const char* desc;
+	char** templates;
 	int template_num;
 	symtab_t table;
 } implement_attr_t;
@@ -351,14 +351,14 @@ typedef struct func_param {
 }func_param_t;
 
 typedef struct fucntion {
-	char* func_name;
+	const char* func_name;
 	decl_t* ret_decl;
 	func_param_t* param;
 	int argc;
 } function_t;
 
 typedef struct c_array {
-	char* name;
+	const char* name;
 	decl_t* decl;
 	expression_t* expr;
 }c_array_t;

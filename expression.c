@@ -94,7 +94,7 @@ expression_t* get_const_expr_value(tree_t* node, expression_t* expr) {
 		case INTEGER_TYPE:
 			expr->final_type = INTEGER_TYPE;
 			const_expr->is_interger = 1;
-			const_expr->int_str = node->int_cst.int_str;
+			const_expr->int_str = (char*)(node->int_cst.int_str);
 			const_expr->out_64bit = node->int_cst.out_64bit;
 			const_expr->int_value = node->int_cst.value;
 			break;
@@ -106,7 +106,7 @@ expression_t* get_const_expr_value(tree_t* node, expression_t* expr) {
 		case CONST_STRING_TYPE:
 			expr->final_type = CONST_STRING_TYPE;
 			const_expr->is_string = 1;
-			const_expr->string = node->string.pointer;
+			const_expr->string =(char*)(node->string.pointer);
 			break;
 		case UNDEFINED_TYPE:
 			expr->final_type = UNDEFINED_TYPE;
@@ -1062,7 +1062,8 @@ expression_t* unary_expr_common(tree_t** node, symtab_t table, expression_t* exp
 			exit(-1);
 		}
 		else {
-			float value, final_value, final_type;
+			float value, final_value;
+			int final_type;
 			value = final_value = final_type = 0;
 			if (unary_expr->common.type == INTEGER_TYPE) {
 				if (unary_expr->int_cst.out_64bit) {

@@ -13,7 +13,7 @@ INTS          (u|U|l|L)*
 #include "Parser.h"  
 extern int lineno;
 int column = 0;
-void count(yyscanner);
+void count(yyscan_t scanner);
 /* the max length of include file name */
 #define MAX_HEAD_LEN 1024
 %}  

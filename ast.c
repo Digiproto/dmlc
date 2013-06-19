@@ -401,7 +401,7 @@ char* get_const_string(tree_t* node) {
 	DEBUG_AST("In %s, line = %d, str: %s\n",
 			__func__, __LINE__, node->string.pointer);
 
-	return node->string.pointer;
+	return (char*)(node->string.pointer);
 }
 
 int get_param_num(tree_t* node) {
@@ -527,7 +527,7 @@ void print_templates(symtab_t table) {
 	return;
 }
 
-void add_template_to_table(symtab_t table, char* template) {
+void add_template_to_table(symtab_t table, const char* template) {
 	assert(table != NULL);
 	assert(template != NULL);
 
@@ -609,7 +609,7 @@ void get_object_template_table(symtab_t table, tree_t* node) {
 		case BANK_TYPE:
 			{
 				bank_attr_t* attr = (bank_attr_t*)(node->common.attr);
-				templates = attr->templates;
+				templates = (char**)(attr->templates);
 				template_num = attr->template_num;
 				break;
 			}
@@ -623,56 +623,56 @@ void get_object_template_table(symtab_t table, tree_t* node) {
 		case FIELD_TYPE:
 			{
 				field_attr_t* attr = (field_attr_t*)(node->common.attr);
-				templates = attr->templates;
+				templates = (char**)(attr->templates);
 				template_num = attr->template_num;
 				break;
 			}
 		case CONNECT_TYPE:
 			{
 				connect_attr_t* attr = (connect_attr_t*)(node->common.attr);
-				templates = attr->templates;
+				templates = (char**)(attr->templates);
 				template_num = attr->template_num;
 				break;
 			}
 		case INTERFACE_TYPE:
 			{
 				interface_attr_t* attr = (interface_attr_t*)(node->common.attr);
-				templates = attr->templates;
+				templates = (char**)(attr->templates);
 				template_num = attr->template_num;
 				break;
 			}
 		case ATTRIBUTE_TYPE:
 			{
 				attribute_attr_t* attr = (attribute_attr_t*)(node->common.attr);
-				templates = attr->templates;
+				templates = (char**)(attr->templates);
 				template_num = attr->template_num;
 				break;
 			}
 		case EVENT_TYPE:
 			{
 				event_attr_t* attr = (event_attr_t*)(node->common.attr);
-				templates = attr->templates;
+				templates = (char**)(attr->templates);
 				template_num = attr->template_num;
 				break;
 			}
 		case GROUP_TYPE:
 			{
 				group_attr_t* attr = (group_attr_t*)(node->common.attr);
-				templates = attr->templates;
+				templates = (char**)(attr->templates);
 				template_num = attr->template_num;
 				break;
 			}
 		case PORT_TYPE:
 			{
 				port_attr_t* attr = (port_attr_t*)(node->common.attr);
-				templates = attr->templates;
+				templates = (char**)(attr->templates);
 				template_num = attr->template_num;
 				break;
 			}
 		case IMPLEMENT_TYPE:
 			{
 				implement_attr_t* attr = (implement_attr_t*)(node->common.attr);
-				templates = attr->templates;
+				templates = (char**)(attr->templates);
 				template_num = attr->template_num;
 				break;
 			}
@@ -701,7 +701,7 @@ char** get_templates(tree_t* head) {
 	while (node != NULL) {
 		if (((node->common.type) == DML_KEYWORD_TYPE) ||
 				((node->common.type) == IDENT_TYPE)) {
-			templates[i++] = node->ident.str;
+			templates[i++] = (char*)(node->ident.str);
 			DEBUG_AST("identifier:  %s : %s\n", node->ident.str, templates[i - 1]);
 		}
 		else {
@@ -1639,7 +1639,7 @@ void print_parameter(tree_t* node, int pos) {
 
 	print_sibling(node, pos);
 
-	return 0;
+	return ;
 }
 
 /**
@@ -1810,7 +1810,7 @@ void print_register(tree_t* node, int pos) {
 		offset->common.print_node(offset, pos);
 	}
 	if (node->reg.templates) {
-		tree_t* templates = node->reg.templates;
+		tree_t* templates = (tree_t*)(node->reg.templates);
 		templates->common.print_node(templates, pos);
 	}
 	if (node->reg.spec) {
@@ -2065,7 +2065,7 @@ void print_cdecl_brak(tree_t* node, int pos) {
 
 	print_sibling(node, pos);
 
-	return 0;
+	return ;
 }
 
 /**
@@ -3077,11 +3077,7 @@ void print_struct(tree_t* node, int pos) {
 	 */
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
-			node->common.name, "struct", pos);
-	if (node->struct_tree.ident) {
-		tree_t* ident = node->struct_tree.ident;
-		ident->common.print_node(ident, pos);
-	}
+			node->common.name, node->struct_tree.name, pos);
 
 	if (node->struct_tree.block) {
 		tree_t* block = node->struct_tree.block;

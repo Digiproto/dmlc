@@ -47,6 +47,6 @@ stack_node_t* get_top(stack_t* ps);
 stack_node_t* push(stack_t* ps, symtab_t item);
 symtab_t pop(stack_t* ps);
 
-symtab_t change_table(symtab_t current_table, stack_t* table_stack, int* current_table_num, type_t type);
+symtab_t change_table(symtab_t current_table, stack_t* table_stack, long int* current_table_num, type_t type);
 
 #endif /* __STACK_H__ */
