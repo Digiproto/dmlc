@@ -500,12 +500,40 @@ void get_all_symbol(symtab_t symtab, symbol_callback func_callback)
 void print_all_symbol(symtab_t table) {
 	symbol_t symbol = table->list;
 	while(symbol != NULL) {
-		printf("symbol: %s\n", symbol->name);
+		printf("symbol: %s, type %d\n", symbol->name, symbol->type);
 		symbol = symbol->lnext;
 	}
 
 	return ;
 }
+
+symbol_list_t *symbol_list_find(symtab_t tab, type_t type) {
+	symbol_list_t *first = NULL;
+	symbol_list_t *cur = NULL;
+	symbol_list_t *tmp = NULL;
+
+	symbol_t sym = tab->list;
+
+	while(sym) {
+		if(sym->type == type) {
+			if(!first) {
+				first = (symbol_list_t *)malloc(sizeof(*first));
+				first->next = NULL;
+				first->sym = sym;
+				cur = first;
+			} else {
+				tmp = (symbol_list_t *)malloc(sizeof(*tmp));
+				tmp->next = NULL;
+				cur->next = tmp;
+				tmp->sym = sym;
+				cur = tmp;
+			}
+		}
+		sym = sym->lnext;
+	}
+	return first;
+}
+
 
 /**
  * @brief init a new symbol list undefined.
