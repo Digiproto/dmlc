@@ -81,6 +81,7 @@ tree_t* get_ast (char *filename)
 
 char *builtin_filename = NULL;
 symtab_t root_table = NULL;
+extern void gen_qemu_code(tree_t *root, const char *out_dir);
 int main (int argc, char *argv[])
 {
 	if (argc != 2) {
@@ -112,7 +113,7 @@ int main (int argc, char *argv[])
 	printf("node name: %s\n", ast->common.name);
 	print_ast (ast);
 	printf("Print the syntax tree ok!\n");
-#if QEMU
+#if  1 || QEMU
 	gen_qemu_code (ast, "./output/");
 #else
 	//generate_simics_code (ast, "./output/");
