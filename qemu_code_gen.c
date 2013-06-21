@@ -33,6 +33,7 @@
 #include "ast.h"
 #include "symbol.h"
 #include "symbol-common.h"
+#include "object.h"
 
 static char tab[16][32] =
 	{ {"\t"}, {"\t\t"}, {"\t\t\t"}, {"\t\t\t\t"}, {"\t\t\t\t\t"} };
@@ -426,7 +427,9 @@ void gen_qemu_code (tree_t * root, const char *name)
 	symbol_list_t *list;
 	symbol_t sym;
 	device_attr_t *dev;
+	device_t *dev_obj;
 
+	printf("welcome to qemu code generation backend\n");
 	list = symbol_list_find(root_table, DEVICE_TYPE); 
 	if(!list || list->next) {
 		printf("device not right\n");
@@ -434,6 +437,7 @@ void gen_qemu_code (tree_t * root, const char *name)
 	}
 	sym = list->sym;	
 	dev = (device_attr_t *)sym->attr;
+	dev_obj = create_device_tree(root);
 #define PATH_SIZE 256
 	char tmp[PATH_SIZE];
 
