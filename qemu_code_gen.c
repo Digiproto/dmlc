@@ -32,6 +32,7 @@
 #include "types.h"
 #include "ast.h"
 #include "symbol.h"
+#include "symbol-common.h"
 
 static char tab[16][32] =
 	{ {"\t"}, {"\t\t"}, {"\t\t\t"}, {"\t\t\t\t"}, {"\t\t\t\t\t"} };
@@ -315,7 +316,7 @@ static void gen_banks_mr_init (device_attr_t * dev, FILE * f)
 static void gen_device_init (device_attr_t * dev, FILE * f)
 {
 
-	char *dev_name = dev->name;
+	const char *dev_name = dev->name;
 	gen_banks_init (dev, f);
 	gen_banks_mr_init (dev, f);
 	fprintf (f, "\nstatic %s_init(SysBusDevice *dev){\
@@ -363,7 +364,7 @@ static void gen_bank_reset (device_attr_t * dev, bank_attr_t * bank, FILE * f,
 static void gen_device_reset (device_attr_t * dev, FILE * f)
 {
 
-	char *name = dev->name;
+	const char *name = dev->name;
 	fprintf (f, "\nstatic void %s_reset(DeviceState *dev){\
 			\n\t%s_t *_dev = DO_UPCAST(%s_t,dev.busdev,dev);\
 			\n", name, name, name);
@@ -381,7 +382,7 @@ static void gen_device_reset (device_attr_t * dev, FILE * f)
 
 static void gen_device_class_init (device_attr_t * dev, FILE * f)
 {
-	char *name = dev->name;
+	const char *name = dev->name;
 
 	gen_device_reset (dev, f);
 	gen_device_init (dev, f);
@@ -401,7 +402,7 @@ static void gen_device_class_init (device_attr_t * dev, FILE * f)
 
 static void gen_device_type_info (device_attr_t * dev, FILE * f)
 {
-	char *dev_name = dev->name;
+	const char *dev_name = dev->name;
 	gen_device_class_init (dev, f);
 	/*generate type info */
 	fprintf (f, "\nstatic const TypeInfo %s_info = { \
@@ -418,18 +419,21 @@ static void gen_device_type_info (device_attr_t * dev, FILE * f)
 	fprintf (f, "\ntype_init(%s_register_types)\n", dev_name);
 }
 
-void gen_qemu_code (node_t * root, char *name)
+extern symtab_t root_table;
+
+void gen_qemu_code (tree_t * root, const char *name)
 {
-	//symbol_t *sym = symbol_find ("DEVICE", DEVICE_TYPE);
-	/* FIXME: there is some problem */
-	symbol_t *sym;
-	if (!sym) {
-		printf ("cannot find device tree\n");
-		exit (-1);
-	}
-	//device_attr_t *dev = (device_attr_t *) sym->attr.device;
-	/* FIXME: there is some problem */
+	symbol_list_t *list;
+	symbol_t sym;
 	device_attr_t *dev;
+
+	list = symbol_list_find(root_table, DEVICE_TYPE); 
+	if(!list || list->next) {
+		printf("device not right\n");
+		exit(-1);
+	}
+	sym = list->sym;	
+	dev = (device_attr_t *)sym->attr;
 #define PATH_SIZE 256
 	char tmp[PATH_SIZE];
 
