@@ -88,6 +88,7 @@ symbol_t symbol_find_curr(symtab_t symtab, const char* name, type_t type);
 symbol_t symbol_find_notype(symtab_t symtab, const char* name);
 symbol_t symbol_find_curr_notype(symtab_t symtab, const char* name);
 symbol_list_t *symbol_list_find(symtab_t tab, type_t type);
+void symbol_list_free(symbol_list_t *list);
 int symbol_find_type_curr(symtab_t symtab, type_t type, symbol_t **result);
 int symbol_insert(symtab_t symtab, const char* name, type_t type, void* attr);
 /* operate the symbol tables.  */

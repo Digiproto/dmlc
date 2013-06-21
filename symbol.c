@@ -583,6 +583,17 @@ symbol_list_t *symbol_list_find(symtab_t tab, type_t type) {
 	return first;
 }
 
+void symbol_list_free(symbol_list_t *list) {
+	symbol_list_t *tmp;
+	symbol_list_t *old;
+
+	tmp = list;
+	while(tmp) {
+		old = tmp;
+		tmp = tmp->next;
+		free(old);		
+	}
+}
 
 /**
  * @brief init a new symbol list undefined.
