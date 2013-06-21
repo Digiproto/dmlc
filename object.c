@@ -30,7 +30,7 @@
 
 #include "object.h"
 #include <string.h>
-
+extern symtab_t root_table;
 object_t *OBJ;
 object_t *DEV;
 
@@ -84,85 +84,107 @@ static void init_object(object_t *obj, const char *name, const char *type, tree_
 	process_object_names(obj);
 }
 
-object_t *create_device_object(tree_t *t){
+static void create_bank_objs(symtab_t table);
+object_t *create_device_object(symbol_t sym){
 	device_t *dev =  (device_t *)gdml_zmalloc(sizeof(*dev));
 	if(OBJ)
-		printf("object exist\n");
-	init_object(&dev->obj,t->common.name,"device",t);
+		printf("device exists\n");
+	device_attr_t *dev_attr = (device_attr_t *)sym->attr;
+	printf("device %s found\n",sym->name);
+	init_object(&dev->obj,sym->name,"device",dev_attr->common.node);
+	OBJ = &dev->obj;
 	int i ;
 	struct list_head *p = &dev->obj.childs;
 	for(i = 0; i < 7;i++,p++){
 		INIT_LIST_HEAD(p);
 	}
+	create_bank_objs(root_table);
 	return &dev->obj;
 }
 
-static void create_field_object(tree_t *t){
-	if(!OBJ || strcmp(OBJ->obj_type,"field"))
-		printf("field %s not in right place\n",t->common.name);
-	field_t *fld = gdml_zmalloc(sizeof(*fld));
-	init_object(&fld->obj,t->common.name,"field",t);
-}
-
-static void create_field_obj(symtab_t symtab){
-	symbol_t sym = symbol_find(symtab,"FIELD",FIELD_TYPE);
+static void create_bank_object(symbol_t sym);
+void create_bank_objs(symtab_t table) {
+	symbol_list_t *list = symbol_list_find(table, BANK_TYPE);
 	object_t *obj = OBJ;
-	while(sym){
-		create_field_object((tree_t *)sym->attr);
+	while(list) {
+		create_bank_object(list->sym);	
+		/*restore OBJ to device*/
 		OBJ = obj;
-	};
+		list = list->next;
+	}
 }
 
-static void create_register_object(tree_t *t){
+static void create_field_object(symbol_t sym){
 	if(!OBJ || strcmp(OBJ->obj_type,"register"))
-		printf("register %s not in right place\n",t->common.name);
-	dml_register_t *reg = (dml_register_t *)gdml_zmalloc(sizeof(*reg));
-	init_object(&reg->obj,t->common.name,"register",t);
-	OBJ = &reg->obj;
-	create_field_obj(reg->obj.symtab);
+		printf("field %s not in right place\n",sym->name);
+	printf("found %s in register %s\n", sym->name, OBJ->name);
+	field_t *fld = gdml_zmalloc(sizeof(*fld));
+	field_attr_t *field_attr = (field_attr_t *)sym->attr;
+	init_object(&fld->obj,sym->name,"field",field_attr->common.node);
 }
 
-static void create_reg_obj(struct symtab *symtab){
-	symbol_t sym = symbol_find(symtab,"REGISTER",REGISTER_TYPE);
+static void create_field_objs(symtab_t symtab){
+	symbol_list_t *list = symbol_list_find(symtab, FIELD_TYPE);
+	symbol_t sym;
 	object_t *obj = OBJ;
-	while(sym){
-		create_register_object((tree_t *)sym->attr);
+	while(list){
+		sym = list->sym;
+		create_field_object(sym);
 		OBJ = obj;
-		sym = sym->lnext;
+		list = list->next;
 	};
 }
 
-static void create_bank_object(tree_t *t){
+static void create_register_object(symbol_t sym){
 	if(!OBJ || strcmp(OBJ->obj_type,"bank"))
-		printf("bank %s not in right place\n",t->common.name);
-	bank_t *bank = gdml_zmalloc(sizeof(*bank));
-	init_object(&bank->obj,t->common.name,"bank",t);		
-	OBJ = &bank->obj;
-	create_reg_obj(bank->obj.symtab);
+		printf("register %s not in right place\n",sym->name);
+	printf("register %s found in bank %s\n", sym->name, OBJ->name);
+	dml_register_t *reg = (dml_register_t *)gdml_zmalloc(sizeof(*reg));
+	register_attr_t *reg_attr = (register_attr_t *)(sym->attr);
+	init_object(&reg->obj,sym->name,"register",reg_attr->common.node);
+	symtab_t table = reg_attr->table;
+	//print_all_symbol(table);
+	OBJ = &reg->obj;
+	create_field_objs(table);
 }
 
-static void create_bank_obj(struct symtab *symtab){
-	symbol_t sym = symbol_find(symtab,"BANK",BANK_TYPE);
+static void create_reg_objs(symtab_t table){
+	symbol_list_t *list = symbol_list_find(table, REGISTER_TYPE);
+	symbol_t sym;
+
 	object_t *obj = OBJ;
-	while(sym){
-		create_bank_object((tree_t *)(sym->attr));
+	while(list){
+		sym = list->sym;
+		create_register_object(sym);
 		OBJ = obj;
-		sym = sym->lnext;
-	};
+		list = list->next;
+	}
 }
-extern symtab_t root_table;
+
+static void create_bank_object(symbol_t sym){
+	if(!OBJ || strcmp(OBJ->obj_type,"device"))
+		printf("bank %s not in right place\n",sym->name);
+	bank_t *bank = gdml_zmalloc(sizeof(*bank));
+	printf("bank %s found in device %s\n",sym->name, OBJ->name);
+	bank_attr_t *b = (bank_attr_t *)(sym->attr);
+	init_object(&bank->obj,sym->name,"bank",b->common.node);		
+	OBJ = &bank->obj;
+	symtab_t table = b->table;
+	create_reg_objs(table);
+}
 
 device_t *create_device_tree(tree_t  *root){
 	/*need a type search*/
+	object_t *obj;
 	print_all_symbol(root_table);
 	symbol_list_t *dev_list = symbol_list_find(root_table, DEVICE_TYPE);
 	if(!dev_list || dev_list->next) {
 		printf("device not correct\n");
 		exit(-1);
 	}
-	symbol_t sym;
-	OBJ = create_device_object((tree_t *)sym->attr);
-	DEV = OBJ;
+	symbol_t sym = dev_list->sym;
+	obj = create_device_object(sym);
+	DEV = obj;
 	//create_bank_obj((struct tree_device *)(sym->attr)->symtab);
 	return (device_t *)DEV;
 }
