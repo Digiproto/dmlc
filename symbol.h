@@ -56,7 +56,9 @@ typedef struct bitorder_attr
 
 typedef struct import_attr
 {
-	const char *filename;
+	const char *file;
+	struct symbol_common common;
+	symtab_t table;
 } import_attr_t;
 
 typedef struct template_attr

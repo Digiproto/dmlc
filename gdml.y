@@ -1015,13 +1015,7 @@ toplevel
 		$$ = node;
 	}
 	| EXTERN cdecl_or_ident ';' {
-		/* TODO: we should find the name of extern */
-		//symbol_t* symbol = symbol_find()
 		DBG("\nPay attention: we should find the name of extern\n\n");
-		#if 0
-		cdecl_attr_t* attr = (cdecl_attr_t*)gdml_zmalloc(sizeof(cdecl_attr_t));
-		attr->is_extern = 1;
-		#endif
 		parse_extern_cdecl_or_ident($2, current_table);
 
 		tree_t* node = (tree_t*)create_node("cdecl", CDECL_TYPE, sizeof(struct tree_cdecl));
@@ -1056,6 +1050,7 @@ toplevel
 	| STRUCT ident '{' {
 		struct_attr_t* attr = (struct_attr_t*)gdml_zmalloc(sizeof(struct_attr_t));
 		attr->name = $2->ident.str;
+		//symbol_insert(current_table, $2->ident.str, STRUCT_TYPE, attr);
 
 		current_table = change_table(current_table, table_stack, &current_table_num, STRUCT_TYPE);
 		attr->table = current_table;
@@ -1106,8 +1101,6 @@ import
 		int dirlen = strlen(dir);
 		int filelen = strlen($2);
 
-		/* FIXME, should check if the same filename is imported already. */
-		//symbol_insert($2, IMPORT_TYPE, NULL);
 		assert((dirlen + filelen) < 1024);
 		strncpy(&fullname[0], dir, dirlen);
 		if(*($2) == '"') {
@@ -1144,6 +1137,15 @@ import
 		yylex_destroy(scanner);
 		fclose(file);
 		DBG("End of parse the import file %s\n", fullname);
+
+		import_attr_t* attr = (import_attr_t*)gdml_zmalloc(sizeof(import_attr_t));
+		attr->file = $2;
+		attr->table = current_table;
+		attr->common.node = ast->common.child;
+		attr->common.table_num = current_table->table_num;
+		//printf("file: %s, table_num: %d\n", attr->file, attr->common.table_num);
+		/* FIXME, should check if the same filename is imported already. */
+		symbol_insert(current_table, $2, IMPORT_TYPE, attr);
 
 		$$ = ast->common.child;
 		//$$ = ast;
