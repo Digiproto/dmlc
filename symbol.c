@@ -546,8 +546,10 @@ void get_all_symbol(symtab_t symtab, symbol_callback func_callback)
 
 void print_all_symbol(symtab_t table) {
 	symbol_t symbol = table->list;
+	const char *type;
 	while(symbol != NULL) {
-		printf("symbol: %s, type %d\n", symbol->name, symbol->type);
+		type = sym_type2str[symbol->type];
+		printf("symbol: %s, type %s\n", symbol->name, type);
 		symbol = symbol->lnext;
 	}
 

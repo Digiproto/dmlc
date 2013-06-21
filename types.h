@@ -338,4 +338,19 @@ typedef enum {
 	COMPONENT_POINTER_TYPE,
 }operator_type_t;
 
+static const char *sym_type2str[] = {
+	[NO_TYPE] = "none",
+	[DML_TYPE] = "dml",
+	[DEVICE_TYPE] = "device",
+	[PARAMETER_TYPE] = "parameter",
+	[METHOD_TYPE]    = "method",
+	[BANK_TYPE]      = "bank",
+	[REGISTER_TYPE]  = "register",
+	[GROUP_TYPE]     = "group",
+	[PORT_TYPE]      = "port",
+	[IMPORT_TYPE]    = "import",
+	[TEMPLATE_TYPE]  = "template",
+	[BITORDER_TYPE]  = "bitorder",
+	[THIS_TYPE]      = "this",
+};
 #endif
