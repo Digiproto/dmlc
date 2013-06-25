@@ -32,6 +32,7 @@
 #include "Parser.h"
 #include "Lexer.h"
 #include "symbol.h"
+#include "pre_parse_dml.h"
 
 #define QEMU 0
 
@@ -96,6 +97,7 @@ int main (int argc, char *argv[])
 	/* dml-builtins.dml */
 	//node_t* import_ast = get_ast(builtin_filename);
 
+	insert_pre_dml_struct();
 	/* main ast */
 	char *filename = argv[1];
 	tree_t* ast = get_ast (filename);
