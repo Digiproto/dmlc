@@ -47,6 +47,14 @@ void* gdml_realloc(void* addr, int size) {
 	return addr;
 }
 
+decl_t* create_cdecl_struct(void) {
+	decl_t* decl = (decl_t*)gdml_zmalloc(sizeof(decl_t));
+	decl_type_t* type = (decl_type_t*)gdml_zmalloc(sizeof(decl_type_t));
+	decl->type = type;
+
+	return decl;
+}
+
 char* add_type_str(char* addr, const char* str){
 	assert(str != NULL);
 	int size = 0;
@@ -59,7 +67,7 @@ char* add_type_str(char* addr, const char* str){
 	addr = (char*)gdml_realloc(addr, size);
 	addr = strcat(addr, str);
 	addr = strcat(addr, " ");
-	DEBUG_DECL("addr str : %s, len: %d\n", addr, strlen(str));
+	DEBUG_DECL("addr str : %s, len: %d\n", addr, (int)(strlen(str)));
 
 	return addr;
 }
@@ -71,6 +79,9 @@ void set_decl_type(decl_type_t* decl_type, type_t type) {
 		case NO_TYPE:
 		case UNDEFINED_TYPE:
 			decl_type->no_type = 1;
+			break;
+		case BOOL_TYPE:
+			decl_type->bool_type = 1;
 			break;
 		case CHAR_TYPE:
 			decl_type->char_type = 1;
@@ -181,6 +192,8 @@ type_t get_decl_type(decl_t* decl) {
 			return INT_TYPE;
 		}
 	}
+	if (type->bool_type)
+		return BOOL_TYPE;
 	if (type->string_type)
 		return CONST_STRING_TYPE;
 	if (type->vect_type)
@@ -199,6 +212,8 @@ type_t get_decl_type(decl_t* decl) {
 		return UNION_TYPE;
 	if (type->typedef_type)
 		return TYPEDEF_TYPE;
+	if (type->is_func_pointer)
+		return FUNCTION_POINTER_VAR;
 
 	return 0;
 }
@@ -212,26 +227,75 @@ var_name_t* create_var_name(const char* name) {
 	return var_new;
 }
 
-int symbol_construct_type(symbol_t symbol, decl_t* decl) {
+void get_typedef_info(symbol_t symbol, decl_t* decl) {
 	assert(symbol != NULL);
 	assert(decl != NULL);
 
-	switch(symbol->type) {
+	typedef_attr_t* attr = symbol->attr;
+	decl_t* base_decl = attr->decl;
+	int type = attr->base_type;
+	switch (type) {
 		case STRUCT_TYPE:
-			DEBUG_DECL("In %s, line = %d, struct_type!\n", __func__, __LINE__);
-			exit(-1);
+			decl->type->struct_type = 1;
+			decl->type->struct_name = base_decl->type->struct_name;
+			DEBUG_DECL("In %s, line = %d, struct_type.\n", __func__, __LINE__);
 			break;
 		case LAYOUT_TYPE:
+			decl->type->layout_type = 1;
+			decl->type->layout_name = base_decl->type->layout_name;
+			DEBUG_DECL("In %s, line = %d, layout_type.\n", __func__, __LINE__);
+			break;
+		case BITFIELDS_TYPE:
+			decl->type->bitfields_type = 1;
+			decl->type->bitfields_name = base_decl->type->bitfields_name;
+			DEBUG_DECL("In %s, line = %d, bitfields_type.\n", __func__, __LINE__);
+			break;
+		case TYPEDEF_TYPE:
+			decl->type->typedef_type = 1;
+			decl->type->typedef_name = base_decl->type->typedef_name;
+			DEBUG_DECL("In %s, line = %d, typedef_type, base_type. name: %s\n",
+					__func__, __LINE__ , decl->type->typedef_name);
+			break;
+		case TYPEOF_TYPE:
+			/* TODO:  how to deal the typedef */
+			DEBUG_DECL("In %s, line = %d, typeof_type.\n", __func__, __LINE__);
+			break;
+		default:
+			set_decl_type(decl->type, type);
+			break;
+	}
+
+	return;
+}
+
+int symbol_construct_type(symbol_t symbol, decl_t* decl) {
+	assert(symbol != NULL);
+	assert(decl != NULL);
+	void* attr = NULL;
+	int type = 0;
+
+	switch(symbol->type) {
+		case STRUCT_TYPE:
+			decl->type->struct_type = 1;
+			decl->type->struct_name = symbol->name;
+			DEBUG_DECL("In %s, line = %d, struct_type : %s!\n",
+					__func__, __LINE__, symbol->name);
+			break;
+		case LAYOUT_TYPE:
+			decl->type->layout_type = 1;
+			decl->type->layout_name = symbol->name;
 			DEBUG_DECL("In %s, line = %d, layout_type!\n", __func__, __LINE__);
 			exit(-1);
 			break;
 		case BITFIELDS_TYPE:
+			decl->type->bitfields_type = 1;
+			decl->type->bitfields_name = symbol->name;
 			DEBUG_DECL("In %s, line = %d, bitfields_type!\n", __func__, __LINE__);
 			exit(-1);
 			break;
 		case TYPEDEF_TYPE:
-			DEBUG_DECL("In %s, line = %d, typedef_type!\n", __func__, __LINE__);
-			exit(-1);
+			get_typedef_info(symbol, decl);
+			DEBUG_DECL("In %s, line = %d, typedef_type, base_type!\n", __func__, __LINE__ );
 			break;
 		case TYPEOF_TYPE:
 			DEBUG_DECL("In %s, line = %d, typeof_type!\n", __func__, __LINE__);
@@ -296,47 +360,136 @@ void parse_identifier(tree_t* node, symtab_t table, decl_t* decl) {
 		DEBUG_DECL("In %s, line = %d, finded the symbol: %s, type: %d : %d\n",
 				__func__, __LINE__, node->ident.str, node->common.type, symbol->type);
 		symbol_construct_type(symbol, decl);
-		create_var_list(decl, node->ident.str);
+		decl->decl_str = add_type_str(decl->decl_str, node->ident.str);
 	}
 	else {
 		decl->decl_str = add_type_str(decl->decl_str, node->ident.str);
-		if ((strcmp(node->ident.str, "conf_object_t") == 0)
-				|| (strcmp(node->ident.str, "cycle_interface_t") == 0)
-				|| (strcmp(node->ident.str, "cycles_t") == 0)) {
-			decl->type->struct_type = 1;
-			decl->type->struct_name = (char*)(node->ident.str);
+		pre_parse_symbol_t* symbol = pre_symbol_find(node->ident.str);
+		if (symbol != NULL) {
+			decl->type->pre_dml_name = symbol->name;
+			decl->type->pre_dml_type = symbol->type;
+			DEBUG_DECL("In %s, line = %d, symbol name: %s, type: %d\n",
+					__func__, __LINE__, symbol->name, symbol->type);
+			switch(symbol->type) {
+				case STRUCT_TYPE:
+					decl->type->struct_type = 1;
+					decl->type->struct_name = symbol->name;
+					break;
+				case TYPEDEF_TYPE:
+					decl->type->typedef_type = 1;
+					decl->type->typedef_name = symbol->name;
+					break;
+				case FUNCTION_POINTER_TYPE:
+					decl->type->is_func_pointer = 1;
+					decl->type->func_point_name = symbol->name;
+					break;
+				default:
+					decl->type->is_constant = 1;
+					break;
+			}
 		}
 		else {
 			create_var_list(decl, node->ident.str);
 		}
-		//symbol_insert(table, node->ident.str, IDENT_TYPE, decl);
 	}
 
 	return ;
 }
 
-decl_t* parse_struct(tree_t* node, symtab_t table, decl_t* decl) {
-	DEBUG_DECL("In %s, line = %d, node type: %s\n",
-			__func__, __LINE__, node->common.name);
-	exit(-1);
+int parse_struct(tree_t* node, symtab_t table, decl_t* decl) {
+	assert(node != NULL);
+	assert(table != NULL);
+	assert(decl != NULL);
 
-	return decl;
+	struct_attr_t* attr = (struct_attr_t*)gdml_zmalloc(sizeof(struct_attr_t));
+	if (decl->type->pre_dml_name) {
+		attr->name = decl->type->pre_dml_name;
+	}
+	else {
+		attr->name = decl->var->var_name;
+	}
+	attr->decl = decl;
+	attr->table = node->struct_tree.table;
+	attr->common.node = node;
+	attr->common.table_num = table->table_num;
+
+	decl->type->aggregate_defined = 1;
+	node->common.attr = attr;
+
+	/* insert the stuct symbol into table */
+	if ((decl->var) && (decl->var->var_num > 1)) {
+		fprintf(stderr, "The struct have more than one name\n");
+		/* TODO: handle the error */
+		exit(-1);
+	}
+
+	symbol_insert(table, attr->name, STRUCT_TYPE, attr);
+
+	DEBUG_DECL("In %s, line = %d, node type: %s\n", __func__, __LINE__, node->common.name);
+
+	return 0;
 }
 
-decl_t* parse_layout(tree_t* node, symtab_t table, decl_t* decl) {
+int parse_layout(tree_t* node, symtab_t table, decl_t* decl) {
+	assert(node != NULL);
+	assert(table != NULL);
+	assert(decl != NULL);
+
 	DEBUG_DECL("In %s, line = %d, node type: %s\n",
 			__func__, __LINE__, node->common.name);
 
-	exit(-1);
-	return decl;
+	layout_attr_t* attr = (layout_attr_t*)gdml_zmalloc(sizeof(layout_attr_t));
+	attr->name = decl->var->var_name;
+	attr->decl = decl;
+	attr->desc = node->layout.desc;
+	attr->table = node->layout.table;
+	attr->common.node = node;
+	attr->common.table_num = table->table_num;
+
+	decl->type->aggregate_defined = 1;
+	node->common.attr = attr;
+
+	/* insert the layout symbol into table */
+	if ((decl->var->var_num) > 1) {
+		fprintf(stderr, "The layout have more than one name\n");
+		/* TODO: handle the error */
+		exit(-1);
+	}
+
+	symbol_insert(table, decl->var->var_name, LAYOUT_TYPE, attr);
+
+	return 0;
 }
 
-decl_t* parse_bitfields(tree_t* node, symtab_t table, decl_t* decl) {
+int parse_bitfields(tree_t* node, symtab_t table, decl_t* decl) {
+	assert(node != NULL);
+	assert(table != NULL);
+	assert(decl != NULL);
+
 	DEBUG_DECL("In %s, line = %d, node type: %s\n",
 			__func__, __LINE__, node->common.name);
 
-	exit(-1);
-	return decl;
+	bitfield_attr_t* attr = (bitfield_attr_t*)gdml_zmalloc(sizeof(bitfield_attr_t));
+	attr->name = decl->var->var_name;
+	attr->size_str = node->bitfields.size_str;
+	attr->size = node->bitfields.size;
+	attr->table = node->bitfields.table;
+	attr->common.node = node;
+	attr->common.table_num = table->table_num;
+
+	decl->type->aggregate_defined = 1;
+	node->common.attr = attr;
+
+	/* insert the layout symbol into table */
+	if ((decl->var->var_num) > 1) {
+		fprintf(stderr, "The bitfields have more than one name\n");
+		/* TODO: handle the error */
+		exit(-1);
+	}
+
+	symbol_insert(table, decl->var->var_name, BITFIELDS_TYPE, attr);
+
+	return 0;
 }
 
 decl_t* parse_typeof(tree_t* node, symtab_t table, decl_t* decl) {
@@ -359,9 +512,14 @@ int parse_bool(decl_t* decl) {
 			(type->bool_type) || (type->struct_type) || (type->layout_type) ||
 			(type->bitfields_type) || (type->typeof_type) ||
 			(type->enum_type) || (type->union_type)) {
-		fprintf(stderr, "error: two or more data types in declaration specifiers\n");
-		/* FIXME: handle the error */
-		exit(-1);
+		if (decl->type->typedef_type) {
+			create_var_list(decl, "bool");
+		}
+		else {
+			fprintf(stderr, "error: two or more data types in declaration specifiers\n");
+			/* FIXME: handle the error */
+			exit(-1);
+		}
 	}
 	else if ((type->long_type) || (type->short_type)) {
 		fprintf(stderr, "error: both ‘%s’ and ‘bool’ in declaration specifiers\n",
@@ -385,9 +543,14 @@ int parse_char(decl_t* decl) {
 			(type->bool_type) || (type->struct_type) || (type->layout_type) ||
 			(type->bitfields_type) || (type->typeof_type) ||
 			(type->enum_type) || (type->union_type)) {
-		fprintf(stderr, "error: two or more data types in declaration specifiers\n");
-		/* FIXME: handle the error */
-		exit(-1);
+		if (decl->type->typedef_type) {
+			create_var_list(decl, "char");
+		}
+		else {
+			fprintf(stderr, "error: two or more data types in declaration specifiers\n");
+			/* FIXME: handle the error */
+			exit(-1);
+		}
 	}
 	else if ((type->long_type) || (type->short_type)) {
 		fprintf(stderr, "error: both ‘%s’ and ‘char’ in declaration specifiers\n",
@@ -411,9 +574,14 @@ int parse_double(decl_t* decl) {
 			(type->bool_type) || (type->struct_type) || (type->layout_type) ||
 			(type->bitfields_type) || (type->typeof_type) || (type->enum_type) ||
 			(type->union_type)) {
-		fprintf(stderr, "error: two or more data types in declaration specifiers\n");
-		/* FIXME: handle the error */
-		exit(-1);
+		if (decl->type->typedef_type) {
+			create_var_list(decl, "double");
+		}
+		else {
+			fprintf(stderr, "error: two or more data types in declaration specifiers\n");
+			/* FIXME: handle the error */
+			exit(-1);
+		}
 	}
 	if ((type->long_type) > 1) {
 		int i = 0;
@@ -442,9 +610,14 @@ int parse_float(decl_t* decl) {
 			(type->bool_type) || (type->struct_type) || (type->layout_type) ||
 			(type->bitfields_type) || (type->typeof_type) || (type->enum_type) ||
 			(type->union_type)) {
-		fprintf(stderr, "error: two or more data types in declaration specifiers\n");
-		/* FIXME: handle the error */
-		exit(-1);
+		if (decl->type->typedef_type) {
+			create_var_list(decl, "float");
+		}
+		else {
+			fprintf(stderr, "error: two or more data types in declaration specifiers\n");
+			/* FIXME: handle the error */
+			exit(-1);
+		}
 	}
 	else if (type->long_type) {
 		fprintf(stderr, "error: both ‘long’ and ‘float’ in declaration specifiers\n");
@@ -466,9 +639,14 @@ int parse_int(tree_t* node, decl_t* decl) {
 			(type->int_type) || (type->void_type) || (type->bool_type) ||
 			(type->struct_type) || (type->layout_type) || (type->bitfields_type) ||
 			(type->typeof_type) || (type->enum_type) || (type->union_type)) {
-		fprintf(stderr, "error: two or more data types in declaration specifiers\n");
-		/* FIXME: handle the error */
-		exit(-1);
+		if (decl->type->typedef_type) {
+			create_var_list(decl, "int");
+		}
+		else {
+			fprintf(stderr, "error: two or more data types in declaration specifiers\n");
+			/* FIXME: handle the error */
+			exit(-1);
+		}
 	}
 	else if ((type->long_type) > 2) {
 		int i = 0;
@@ -497,9 +675,14 @@ int parse_long(decl_t* decl) {
 	if ((type->char_type) || (type->float_type) || (type->void_type) || (type->bool_type) ||
 			(type->struct_type) || (type->layout_type) || (type->bitfields_type) ||
 			(type->typeof_type) || (type->enum_type) || (type->union_type)) {
-		fprintf(stderr, "error: two or more data types in declaration specifiers\n");
-		/* FIXME: handle the error */
-		exit(-1);
+		if (decl->type->typedef_type) {
+			create_var_list(decl, "long");
+		}
+		else {
+			fprintf(stderr, "error: two or more data types in declaration specifiers\n");
+			/* FIXME: handle the error */
+			exit(-1);
+		}
 	}
 	else if ((type->int_type) && ((type->long_type) > 1)) {
 		int i = 0;
@@ -538,9 +721,14 @@ int parse_short(decl_t* decl) {
 			(type->short_type) || (type->void_type) || (type->bool_type) ||
 			(type->struct_type) || (type->layout_type) || (type->bitfields_type) ||
 			(type->typeof_type) || (type->enum_type) || (type->union_type)) {
-		fprintf(stderr, "error: two or more data types in declaration specifiers\n");
-		/* FIXME: handle the error */
-		exit(-1);
+		if (decl->type->typedef_type) {
+			create_var_list(decl, "short");
+		}
+		else {
+			fprintf(stderr, "error: two or more data types in declaration specifiers\n");
+			/* FIXME: handle the error */
+			exit(-1);
+		}
 	}
 	else if (type->long_type) {
 		fprintf(stderr, "error: both ‘long’ and ‘short’ in declaration specifiers\n");
@@ -561,9 +749,14 @@ int parse_signed_unsigned(decl_t* decl, int is_signed) {
 	decl_type_t* type = decl->type;
 	if ((type->struct_type) || (type->layout_type) || (type->bitfields_type) ||
 			(type->typeof_type) || (type->enum_type) || (type->union_type)) {
-		fprintf(stderr, "error: two or more data types in declaration specifiers\n");
-		/* FIXME: handle the error */
-		exit(-1);
+		if (decl->type->typedef_type) {
+			create_var_list(decl, "unsigned");
+		}
+		else {
+			fprintf(stderr, "error: two or more data types in declaration specifiers\n");
+			/* FIXME: handle the error */
+			exit(-1);
+		}
 	}
 	else if (type->signed_type) {
 		fprintf(stderr, "error: duplicate ‘unsigned’\n");
@@ -598,10 +791,15 @@ int parse_void(decl_t* decl) {
 			(type->unsigned_type) || (type->signed_type) || (type->bool_type)
 			|| (type->vect_type) || (type->struct_type) || (type->layout_type)
 			||(type->bitfields_type) || (type->typeof_type) || (type->enum_type)
-			|| (type->union_type) || (type->typedef_type)) {
-		fprintf(stderr, "error: two or more data types in declaration specifiers\n");
-		/* FIXME: handle the error */
-		exit(-1);
+			|| (type->union_type)) {
+		if (decl->type->typedef_type) {
+			create_var_list(decl, "void");
+		}
+		else {
+			fprintf(stderr, "error: two or more data types in declaration specifiers\n");
+			/* FIXME: handle the error */
+			exit(-1);
+		}
 	}
 	else if (type->void_type) {
 		fprintf(stderr, "error: duplicate ‘void’\n");
@@ -865,8 +1063,12 @@ int parse_array(tree_t* node, symtab_t table, decl_t* decl) {
 		}
 	}
 
-	array_decl->expr = parse_array_expression(node->array.expr, table);
-	array_decl->expr_end = parse_array_expression(node->array.expr_end, table);
+	if (node->array.expr) {
+		array_decl->expr = parse_array_expression(node->array.expr, table);
+	}
+	if (node->array.expr_end) {
+		array_decl->expr_end = parse_array_expression(node->array.expr_end, table);
+	}
 
 	if ((decl->type->array_decl) == NULL) {
 		decl->type->array_decl = array_decl;
@@ -1006,6 +1208,45 @@ func_param_t* parse_function_params(tree_t* node, symtab_t table) {
 	return param;
 }
 
+tree_t* change_decl(decl_t* decl_dest, decl_t* decl_src) {
+	assert(decl_dest != NULL);
+	assert(decl_src != NULL);
+
+	decl_dest->decl_str = decl_src->decl_str;
+	decl_dest->is_defined = decl_src->is_defined;
+	decl_dest->defined_name = decl_src->defined_name;
+	decl_dest->type = decl_src->type;
+	decl_dest->value = decl_src->value;
+	decl_dest->var = decl_src->var;
+
+	return decl_dest;
+}
+
+function_t* get_func_infor(char* func_name, tree_t* func_params, symtab_t table, decl_t* decl) {
+	assert(func_name != NULL);
+	assert(table != NULL);
+	assert(decl != NULL);
+
+	decl_t* ret_decl = (decl_t*)gdml_zmalloc(sizeof(decl_t));
+	ret_decl = change_decl(ret_decl, decl);
+
+	function_t* func = (function_t*)gdml_zmalloc(sizeof(function_t));
+	func->func_name = func_name;
+	if(strcmp(func->func_name, "this") == 0) {
+		fprintf(stderr, "synax error at 'this'\n");
+		/* TODO: handle the error */
+		exit(-1);
+	}
+	func->ret_decl = ret_decl;
+	DEBUG_DECL("ret param: %s\n", decl->decl_str);
+	if (func_params) {
+		func->argc = get_param_num(func_params);
+		func->param = parse_function_params(func_params, table);
+	}
+
+	return func;
+}
+
 int parse_c_function(tree_t* node, symtab_t table, decl_t* decl) {
 	assert(node != NULL);
 	assert(table != NULL);
@@ -1017,26 +1258,51 @@ int parse_c_function(tree_t* node, symtab_t table, decl_t* decl) {
 
 	if ((func_node->common.type == IDENT_TYPE)
 			|| (func_node->common.type == DML_KEYWORD_TYPE)) {
-		function_t* func = (function_t*)gdml_zmalloc(sizeof(function_t));
-		func->func_name = func_node->ident.str;
-		if(strcmp(func->func_name, "this") == 0) {
-			fprintf(stderr, "synax error at 'this'\n");
-			/* TODO: handle the error */
-			exit(-1);
-		}
-		func->ret_decl = decl;
-		func->argc = get_param_num(func_params);
-		func->param = parse_function_params(func_params, table);
-		if ((decl->type->is_extern) != 1) {
-			fprintf(stderr, "The c function : %s should defined in c file\n", func->func_name);
+		decl_t* new_decl = create_cdecl_struct();
+		function_t* func = get_func_infor(func_node->ident.str, func_params, table, decl);
+		new_decl->type->is_func = 1;
+		new_decl->type->func_decl = func;
+		decl = change_decl(decl, new_decl);
+	}
+	else if (func_node->common.type == CDECL_BRACK_TYPE) {
+		tree_t* cdecl_node = func_node->cdecl_brack.cdecl;
+		tree_t* list_node = func_node->cdecl_brack.decl_list;
+		if ( cdecl_node && list_node) {
 			/* FIXME: handle the error */
+			fprintf(stderr, "cdecl name collision on '%s', node type: %s(%d)\n",
+				cdecl_node->ident.str, cdecl_node->common.name, cdecl_node->common.type);
 			exit(-1);
 		}
-		decl->type->is_func = 1;
-		decl->type->func_decl = func;
+		else if (list_node) {
+			/* void(*func)(type param1, type param2)*/
+			/* (int)(a) */
+			decl_t* new_decl = create_cdecl_struct();
+			parse_cdecl2(list_node, table, new_decl);
+			if ((new_decl->decl_str)[0] == '*') {
+				char* name = NULL;
+				if (new_decl->var) {
+					name  = new_decl->var->var_name;
+				}
+				else {
+					name = new_decl->type->pre_dml_name;
+				}
+				function_t* func = get_func_infor(name, func_params, table, decl);
+
+				new_decl->type->is_func_pointer = 1;
+				new_decl->type->func_decl = func;
+				decl = change_decl(decl, new_decl);
+			}/* function pointer */
+			else {
+				decl->type = new_decl->type ;
+				/* TODO: fix the cast type*/
+				fprintf(stderr, "cast type!\n");
+				exit(-1);
+			} /* type cast */
+		}
 	}
 	else {
-		fprintf(stderr, "name collision on '%s'\n", func_node->ident.str);
+		fprintf(stderr, "name collision on '%s', node type: %s(%d)\n",
+				func_node->ident.str, node->common.name, node->common.type);
 		/* TODO: handle the error */
 		exit(-1);
 	}
@@ -1138,6 +1404,38 @@ int parse_cdecl2(tree_t* node, symtab_t table, decl_t* decl) {
 	return 0;
 }
 
+int parse_base_aggregate(tree_t* node, symtab_t table, decl_t* decl) {
+	assert(node != NULL);
+	assert(table != NULL);
+	assert(decl != NULL);
+
+	tree_t* base_node = node->cdecl.basetype;
+	if (node->cdecl.decl) {
+		parse_cdecl2(node->cdecl.decl, table, decl);
+	}
+
+	switch (base_node->common.type) {
+		case STRUCT_TYPE:
+			parse_struct(base_node, table, decl);
+			break;
+		case LAYOUT_TYPE:
+			parse_layout(base_node, table, decl);
+			break;
+		case BITFIELDS_TYPE:
+			parse_bitfields(base_node, table, decl);
+			break;
+		case TYPEOF_TYPE:
+			parse_typeof(base_node, table, decl);
+			break;
+		default:
+			fprintf(stderr, "wrong dml struct type(%d)\n", base_node->common.type);
+			/* TODO: handle the error */
+			exit(-1);
+	}
+
+	return 0;
+}
+
 int parse_cdecl(tree_t* node, symtab_t table, decl_t* decl) {
 	assert(node != NULL);
 	assert(table != NULL);
@@ -1154,21 +1452,32 @@ int parse_cdecl(tree_t* node, symtab_t table, decl_t* decl) {
 				__func__, __LINE__, decl->decl_str);
 	}
 
-	if (node->cdecl.basetype) {
-		parse_basetype(node->cdecl.basetype, table, decl);
-	}
-	DEBUG_DECL("In %s, line = %d, decl_str: %s\n",
-			__func__, __LINE__, decl->decl_str);
+	tree_t* base_node = node->cdecl.basetype;
+	int basetype = base_node->common.type;
 
-	if (node->cdecl.decl) {
-		parse_cdecl2(node->cdecl.decl, table, decl);
+	if ((basetype == STRUCT_TYPE) || (basetype == LAYOUT_TYPE)
+			|| (basetype == BITFIELDS_TYPE) || (basetype == TYPEOF_TYPE)) {
+		parse_base_aggregate(node, table, decl);
+	}
+	else {
+		if (node->cdecl.basetype) {
+			parse_typeident(node->cdecl.basetype, table, decl);
+			//parse_basetype(node->cdecl.basetype, table, decl);
+		}
+		DEBUG_DECL("In %s, line = %d, decl_str: %s\n",
+				__func__, __LINE__, decl->decl_str);
+
+		if (node->cdecl.decl) {
+			parse_cdecl2(node->cdecl.decl, table, decl);
+		}
 	}
 
 	return 0;
 }
 
-int charge_integer_expr(decl_type_t* type) {
-	assert(type != NULL);
+int charge_integer_expr(symtab_t table, decl_t* decl) {
+	assert(decl != NULL);
+	decl_type_t* type = decl->type;
 	if ((type->char_type) || (type->int_type) || (type->double_type) ||
 			(type->float_type) || (type->short_type) || (type->long_type) ||
 			(type->unsigned_type) || (type->signed_type) || (type->bool_type)
@@ -1180,6 +1489,12 @@ int charge_integer_expr(decl_type_t* type) {
 		/* FIXME: handle the error */
 		exit(-1);
 		return 1;
+	}
+	else if (type->typedef_type) {
+		symbol_t symbol = symbol_find(table, type->typedef_name, TYPEDEF_TYPE);
+		typedef_attr_t* attr = symbol->attr;
+		//int typedef_type = attr->base_type;
+		return charge_integer_expr(table, attr->decl);
 	}
 	else {
 		fprintf(stderr, "Line: %d, error: invalid initializer\n", __LINE__);
@@ -1209,7 +1524,22 @@ int charge_float_expr(decl_type_t* type) {
 	return 0;
 }
 
-int charge_decl_expr_type(decl_t* decl, expression_t* expr) {
+int charge_pointer_expr(decl_type_t* type) {
+	assert(type != NULL);
+
+	if (type->point_type) {
+		return 0;
+	}
+	else {
+		fprintf(stderr, "warning: initialization from pointer without a cast\n");
+		/* FIXME: handle the warning */
+		return -1;
+	}
+
+	return 0;
+}
+
+int charge_decl_expr_type(symtab_t table, decl_t* decl, expression_t* expr) {
 	assert(decl != NULL);
 	assert(expr != NULL);
 
@@ -1218,16 +1548,19 @@ int charge_decl_expr_type(decl_t* decl, expression_t* expr) {
 	switch (expr->final_type) {
 		case INTEGER_TYPE:
 		case INT_TYPE:
-			ret = charge_integer_expr(decl->type);
+			ret = charge_integer_expr(table, decl);
 			break;
 		case FLOAT_TYPE:
 			ret = charge_float_expr(decl->type);
 			break;
 		case BOOL_TYPE:
-			ret = charge_integer_expr(decl->type);
+			ret = charge_integer_expr(table, decl);
 			break;
 		case NO_TYPE:
 			//ret = charge_notype_expr(decl->type);
+			break;
+		case POINTER_TYPE:
+			ret = charge_pointer_expr(decl->type);
 			break;
 		default:
 			fprintf(stderr, "other expression type: %d\n", expr->final_type);
@@ -1246,13 +1579,22 @@ void insert_ident_decl(symtab_t table, decl_t* decl) {
 
 	int i = 0;
 	char* name = NULL;
-	int type = get_decl_type(decl);
 
-	var_name_t* var = decl->var;
-	while (var) {
-		name = (char*)(var->var_name);
-		symbol_insert(table, name, type, decl);
-		var = var->next;
+	if (decl->type->func_decl) {
+		int type = 0;
+		type = (decl->type->is_func) ? FUNCTION_TYPE : FUNCTION_POINTER_TYPE;
+		function_t* func = (function_t*)(decl->type->func_decl);
+		symbol_insert(table, func->func_name, type, func);
+	}
+	else {
+		int type = get_decl_type(decl);
+		var_name_t* var = decl->var;
+		//printf("\nLine: %d name: %s, type: %d\n", __LINE__, var->var_name, type);
+		while (var) {
+			name = (char*)(var->var_name);
+			symbol_insert(table, name, type, decl);
+			var = var->next;
+		}
 	}
 
 	return;
@@ -1316,19 +1658,31 @@ void parse_local_decl(tree_t* node, symtab_t table) {
 
 	parse_cdecl(node->local_tree.cdecl, table, decl);
 
-	DEBUG_DECL("In %s, line = %d, decl_str: %s, var_name: %s\n",
+	if (decl->var) {
+		DEBUG_DECL("\nIn %s, line = %d, decl_str: %s, var_name: %s\n\n",
 			__func__, __LINE__, decl->decl_str, decl->var->var_name);
+	}
+	else {
+		DEBUG_DECL("\nIn %s, line = %d, decl_str: %s\n\n",
+			__func__, __LINE__, decl->decl_str);
+	}
 
 	if (node->local_tree.expr) {
 		expression_t* expr = parse_expression(&(node->local_tree.expr), table);
-		if (charge_decl_expr_type(decl, expr) != 0) {
+		if (charge_decl_expr_type(table, decl, expr) != 0) {
 			fprintf(stderr, "Line: %d, error: invalid initializer\n", __LINE__);
 			return;
 		}
 		decl->value =  expr;
 	}
 
-	insert_ident_decl(table, decl);
+	if (decl->type->aggregate_defined == 0) {
+		insert_ident_decl(table, decl);
+	}
+	if (decl->is_defined) {
+		int type = get_decl_type(decl);
+		symbol_insert(table, decl->defined_name, type, decl);
+	}
 
 	return;
 }
@@ -1433,6 +1787,9 @@ decl_t*  parse_extern_cdecl_or_ident(tree_t* node, symtab_t table) {
 			exit(-1);
 		}
 	}
+	else if (decl->type->aggregate_defined) {
+		/* do nothing as we insert it as declare */
+	}
 	else {
 		DEBUG_DECL("In %s, line = %d, decl_str: %s\n",
 				__func__, __LINE__, decl->decl_str);
@@ -1447,3 +1804,148 @@ decl_t*  parse_extern_cdecl_or_ident(tree_t* node, symtab_t table) {
 	return decl;
 }
 
+int parse_base_aggregate_block(tree_t* node, symtab_t table) {
+	assert(table != NULL);
+	assert(node != NULL);
+
+	decl_t* decl = NULL;
+	decl_type_t* type = NULL;
+	tree_t* tmp_node = node;
+
+	while (tmp_node != NULL) {
+		decl = (decl_t*)gdml_zmalloc(sizeof(decl_t));
+		type = (decl_type_t*)gdml_zmalloc(sizeof(decl_type_t));
+		decl->type = type;
+
+		parse_cdecl(tmp_node, table, decl);
+		insert_ident_decl(table, decl);
+
+		tmp_node = tmp_node->common.sibling;
+	}
+
+	return 0;
+}
+
+int parse_struct_decls(tree_t* node, symtab_t table) {
+	assert(table != NULL);
+
+	if (node != NULL) {
+		parse_base_aggregate_block(node, table);
+	}
+
+	return 0;
+}
+
+int parse_layout_decls(tree_t* node, symtab_t table) {
+	assert(table != NULL);
+
+	if (node != NULL) {
+		parse_base_aggregate_block(node, table);
+	}
+
+	return 0;
+}
+
+int parse_bitfields_decls(tree_t* node, symtab_t table) {
+	assert(table != NULL);
+	if (node == NULL) {
+		return 0;
+	}
+
+	decl_t* decl = NULL;
+	decl_type_t* type = NULL;
+	bitfield_decl_attr_t* attr = NULL;
+	int var_type = 0;
+	char* var_name = NULL;
+
+	while (node != NULL) {
+		decl = (decl_t*)gdml_zmalloc(sizeof(decl_t));
+		type = (decl_type_t*)gdml_zmalloc(sizeof(decl_type_t));
+		attr = (bitfield_decl_attr_t*)gdml_zmalloc(sizeof(bitfield_decl_attr_t));
+
+		parse_cdecl(node->bitfields_dec.decl, table, decl);
+		var_type = get_decl_type(decl);
+		var_name = (char*)(decl->var->var_name);
+
+		attr->decl = decl;
+		attr->var_name = (char*)(decl->var->var_name);
+		attr->start_expr = parse_expression(&(node->bitfields_dec.start), table);
+		attr->end_expr = parse_expression(&(node->bitfields_dec.end), table);
+
+		symbol_insert(table, var_name, var_type, attr);
+
+		node = node->common.sibling;
+	}
+
+	return 0;
+}
+
+int parse_typedef(tree_t* node, symtab_t table) {
+	assert(node != NULL);
+	assert(table != NULL);
+
+	decl_t* decl = (decl_t*)gdml_zmalloc(sizeof(decl_t));
+	decl_type_t* type = (decl_type_t*)gdml_zmalloc(sizeof(decl_type_t));
+	decl->type = type;
+
+	if (node->cdecl.is_extern) {
+		type->is_extern += 1;
+		decl->decl_str = add_type_str(decl->decl_str, "extern");
+	}
+
+	type->typedef_type += 1;
+	decl->decl_str = add_type_str(decl->decl_str, "typedef");
+
+	parse_cdecl(node->cdecl.decl, table, decl);
+
+	if (decl->type->aggregate_defined) {
+		return 0;
+	}
+	else if (decl->type->func_decl) {
+		function_t* func = (function_t*)(decl->type->func_decl);
+		symbol_insert(table, func->func_name, FUNCTION_POINTER_TYPE, func);
+		return 0;
+	}
+
+	var_name_t* var = decl->var;
+
+	if ((var) && (var->var_num) > 1) {
+		fprintf(stderr, "typdef more than one type\n");
+		/* TODO: handle the error */
+		exit(-1);
+	}
+
+	int decl_type = get_decl_type(decl);
+	typedef_attr_t* attr = (typedef_attr_t*)gdml_zmalloc(sizeof(typedef_attr_t));
+	if ((decl->type->pre_dml_name) &&
+			((decl->type->pre_dml_type) == TYPEDEF_TYPE) &&
+			(var == NULL)) {
+		attr->name = decl->type->pre_dml_name;
+
+		decl_t* new_decl = create_cdecl_struct();
+		tree_t* node_typedef = node->cdecl.decl;
+		tree_t* decl_node = node_typedef->cdecl.decl;
+		/* assign the decl to NULL to get the typedef base type */
+		node_typedef->cdecl.decl = NULL;
+		parse_cdecl(node_typedef, table, new_decl);
+		/* restore the node */
+		node_typedef->cdecl.decl = decl_node;
+		free(decl->type);
+		decl->type = new_decl->type;
+		new_decl->type = NULL;
+		free(new_decl);
+		decl_type =  get_decl_type(decl);
+	}
+	else {
+		attr->name = var->var_name;
+	}
+
+	attr->base_type = decl_type;
+	attr->decl = decl;
+
+	symbol_insert(table, attr->name, TYPEDEF_TYPE, attr);
+	DEBUG_DECL("In %s, line = %d, typedef name: %s\n",
+			__func__, __LINE__, attr->name);
+
+	return 0;
+}

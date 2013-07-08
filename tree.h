@@ -568,6 +568,7 @@ struct tree_struct {
 	struct tree_common common;
 	const char* name;
 	tree_t* block;
+	symtab_t table;
 };
 
 /**
@@ -577,7 +578,9 @@ struct tree_struct {
 struct tree_layout {
 	struct tree_common common;
 	const char* name;
+	const char* desc;
 	tree_t* block;
+	symtab_t table;
 };
 
 /**
@@ -595,8 +598,11 @@ struct tree_typeof {
  */
 struct tree_bitfields {
 	struct tree_common common;
+	const char* size_str;
 	const char* name;
+	int size;
 	tree_t* block;
+	symtab_t table;
 };
 
 /**

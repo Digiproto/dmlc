@@ -35,6 +35,7 @@
 #include <assert.h>
 #include "symbol.h"
 #include "stack.h"
+#include "ast.h"
 #ifdef SYMBOL_DEBUG
 #define DBG(fmt, ...) do { fprintf(stderr, fmt, ## __VA_ARGS__); } while (0)
 #else
@@ -62,6 +63,50 @@ static int str_hash (const char *str)
 		+ (s[2] % 10) * 10 + s[3] % 10;
 	//printf("hash of %s is %d\n", str, hash_value);
 	return hash_value;
+}
+
+static pre_parse_symbol_t* pre_symbol_table[MAX_SYMBOLS];
+
+pre_parse_symbol_t* pre_symbol_find(const char* name) {
+	assert(name != NULL);
+	pre_parse_symbol_t* symbol = pre_symbol_table[str_hash(name)];
+	if (symbol) {
+		while((symbol != NULL) && (strcmp(symbol->name, name) != 0)) {
+			symbol = symbol->next;
+		}
+		if (symbol != NULL) {
+			return symbol;
+		}
+	}
+
+	return NULL;
+}
+
+int pre_symbol_insert(pre_dml_t pre_dml) {
+	char* name = pre_dml.name;
+
+	pre_parse_symbol_t* rt = pre_symbol_find(name);
+	if (rt) {
+		return -1;
+	}
+
+	pre_parse_symbol_t* new_symbol = (pre_parse_symbol_t*)gdml_zmalloc(sizeof(pre_parse_symbol_t));
+	new_symbol->name = strdup(name);
+	new_symbol->type = pre_dml.type;
+
+	int index = str_hash(name);
+	pre_parse_symbol_t* s = pre_symbol_table[index];
+	if (s == NULL) {
+		pre_symbol_table[index] = new_symbol;
+	}
+	else {
+		while (s->next != NULL) {
+			s = s->next;
+		}
+		s->next = new_symbol;
+	}
+
+	return 0;
 }
 
 /**

@@ -323,6 +323,20 @@ int charge_type(int type1, int type2) {
 		case UNDEFINED_TYPE:
 			return type2;
 			break;
+		case STRUCT_TYPE:
+			if (type2 == STRUCT_TYPE) {
+				/* FIXME: should charge the struct name */
+				return type1;
+			}
+			else if (type2 == NO_TYPE) {
+				return type1;
+			}
+			else {
+				fprintf(stderr, "Line: %d, error: incompatible types when assigning to type %d\n", __LINE__, type2);
+				/* FIXME: handle the error */
+				exit(-1);
+				return -1;
+			}
 		default:
 			/* TODO: the UNDEFINED_TYPE */
 			fprintf(stderr, "In %s, line = %d, other type: %d\n", __func__, __LINE__, type1);
@@ -1341,7 +1355,36 @@ int get_foreach_type(symbol_t symbol) {
 	return (expr->final_type);
 }
 
-int get_c_type(symbol_t symbol) {
+int get_typedef_type(symtab_t table, char* name) {
+	assert(table != NULL);
+	assert(name != NULL);
+
+	int type = 0;
+
+	symbol_t symbol = symbol_find(table, name, TYPEDEF_TYPE);
+
+
+	if (symbol == NULL) {
+		fprintf(stderr, "%s not typdef\n");
+		/* TODO: handle the error */
+		exit(-1);
+	}
+
+	typedef_attr_t* attr = symbol->attr;
+
+	if (attr->base_type == TYPEDEF_TYPE) {
+		char* type_name = attr->decl->type->typedef_name;
+		type = get_typedef_type(table, type_name);
+	}
+	else {
+		type = attr->base_type;
+	}
+
+	return type;
+}
+
+int get_c_type(symtab_t table, symbol_t symbol) {
+	assert(table != NULL);
 	assert(symbol != NULL);
 	DEBUG_EXPR("In %s, line = %d, symbol name: %s, type: %d\n",
 			__FUNCTION__, __LINE__, symbol->name, symbol->type);
@@ -1376,8 +1419,31 @@ int get_c_type(symbol_t symbol) {
 				fprintf(stderr, "other identifier: %s\n", symbol->name);
 			}
 			break;
-		case METHOD_TYPE:
 		case FUNCTION_TYPE:
+			{
+				function_t* func = symbol->attr;
+				decl_t* ret_decl = func->ret_decl;
+				type = get_decl_type(ret_decl);
+				if (type == TYPEDEF_TYPE) {
+					type = get_typedef_type(table, ret_decl->type->typedef_name);
+					DEBUG_EXPR("In %s, line = %d, ret_decl: %s, type: %d\n",
+							__func__, __LINE__, ret_decl->type->typedef_name, type);
+				}
+				else {
+					DEBUG_EXPR("In %s, line = %d, function return name: %s, type: %d\n",
+							__func__, __LINE__, func->ret_decl->type->pre_dml_name, type);
+				}
+			}
+			break;
+		case TYPEDEF_TYPE:
+			{
+				decl_t* decl = symbol->attr;
+				type = get_typedef_type(table, decl->type->typedef_name);
+				DEBUG_EXPR("In %s, line = %d, symbol name : %s, typedef_name: %s, type: %d\n",
+					__func__, __LINE__, symbol->name, decl->type->typedef_name, type);
+			}
+			break;
+		case METHOD_TYPE:
 		case LOGGROUP_TYPE:
 		case TEMPLATE_TYPE:
 			type = NO_TYPE;
@@ -1441,7 +1507,7 @@ expression_t* get_ident_value(tree_t** node, symtab_t table,  expression_t* expr
 		}
 		else {
 			/* TODO: should get the c type */
-			expr->final_type = get_c_type(symbol);
+			expr->final_type = get_c_type(table, symbol);
 		}
 	}
 	else {
@@ -1453,14 +1519,6 @@ expression_t* get_ident_value(tree_t** node, symtab_t table,  expression_t* expr
 		}
 		else if (strcmp((*node)->ident.str, "NULL") == 0) {
 			expr->final_type = POINTER_TYPE;
-		}
-		else if (strncmp((*node)->ident.str, "SIM", 3) == 0) {
-			/* TODO: handle the function return value */
-			expr->final_type = NO_TYPE;
-		}
-		else if (strncmp((*node)->ident.str, "Sim", 3) == 0) {
-			/* FIXME: in fact, it it enum type */
-			expr->final_type = INT_TYPE;
 		}
 		else if (table->no_check) {
 			DEBUG_TEMPLATE_SYMBOL("warning: %s no undeclared in template\n", (*node)->ident.str);
@@ -1518,24 +1576,21 @@ expression_t* get_new_expr(tree_t** node, symtab_t table,  expression_t* expr) {
 	return expr;
 }
 
+decl_t* clear_decl_type(decl_t* decl) {
+	assert(decl != NULL);
+	decl_type_t* new_type = (decl_type_t*)gdml_zmalloc(sizeof(decl_type_t));
+	free(decl->type);
+	decl->type =  new_type;
+
+	return decl;
+}
+
 expression_t* get_brack_expr(tree_t** node, symtab_t table,  expression_t* expr) {
 	assert(*node != NULL);
 	assert(table != NULL);
 	assert(expr != NULL);
 	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
 			__func__, __LINE__, (*node)->common.name);
-	/* expression (expression_list)*/
-	if ((*node)->expr_brack.expr) {
-		tree_t* out_node = (*node)->expr_brack.expr;
-		if (charge_node_is_const(out_node)) {
-			fprintf(stderr, "The expression is wrong!\n");
-			/* FIXME: handle the error */
-			exit(-1);
-		}
-		else {
-			cal_expression(&((*node)->expr_brack.expr), table, expr);
-		}
-	}
 	/* (expression)*/
 	if ((*node)->expr_brack.expr_in_brack) {
 		tree_t* in_node = (*node)->expr_brack.expr_in_brack;
@@ -1550,6 +1605,19 @@ expression_t* get_brack_expr(tree_t** node, symtab_t table,  expression_t* expr)
 			else {
 				expr->node = in_node;
 			}
+		}
+	}
+
+	/* expression (expression_list)*/
+	if ((*node)->expr_brack.expr) {
+		tree_t* out_node = (*node)->expr_brack.expr;
+		if (charge_node_is_const(out_node)) {
+			fprintf(stderr, "The expression is wrong!\n");
+			/* FIXME: handle the error */
+			exit(-1);
+		}
+		else {
+			cal_expression(&((*node)->expr_brack.expr), table, expr);
 		}
 	}
 	return expr;

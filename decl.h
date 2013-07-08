@@ -69,8 +69,10 @@ typedef struct type {
 	unsigned is_auto : 1;
 	unsigned is_static : 1;
 
-	unsigned is_func : 4;
-	//unsigned is_const : 4;
+	unsigned is_func : 2;
+	unsigned is_func_pointer : 1;
+	/* aggregate type defined: struct, layout, etc. */
+	unsigned aggregate_defined : 1;
 
 	char* struct_name;
 	char* layout_name;
@@ -79,6 +81,9 @@ typedef struct type {
 	char* enum_name;
 	char* union_name;
 	char* typedef_name;
+	char* pre_dml_name;
+	char* func_point_name;
+	int pre_dml_type;
 	array_decl_t* array_decl;
 	void* func_decl;
 }decl_type_t;
@@ -163,6 +168,10 @@ int parse_typeident(tree_t* node, symtab_t table, decl_t* decl);
 int parse_cdecl(tree_t* node, symtab_t table, decl_t* decl);
 int parse_cdecl2(tree_t* node, symtab_t table, decl_t* decl);
 int parse_cdecl3(tree_t* node, symtab_t table, decl_t* decl);
+int parse_struct_decls(tree_t* node, symtab_t table);
+int parse_layout_decls(tree_t* node, symtab_t table);
+int parse_bitfields_decls(tree_t* node, symtab_t table);
+int parse_typedef(tree_t* node, symtab_t table);
 
 //#define DEBUG_DECLARE
 

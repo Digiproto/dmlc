@@ -75,6 +75,9 @@ typedef struct loggroup_attr
 
 typedef struct typedef_attr
 {
+	const char* name;
+	decl_t* decl;
+	int base_type;
 } typedef_attr_t;
 typedef struct constant_attr
 {
@@ -86,6 +89,7 @@ typedef struct struct_attr
 {
     struct symbol_common common;
     const char* name;
+	decl_t* decl;
     symtab_t table;
 } struct_attr_t;
 typedef struct object_stmt_node
@@ -199,8 +203,17 @@ typedef struct try_catch_attr {
 typedef struct bitfield_attr {
     struct symbol_common common;
     const char* name;
+	const char* size_str;
+	int size;
     symtab_t table;
 }bitfield_attr_t;
+
+typedef struct bifield_decl_attr{
+	char* var_name;
+	decl_t* decl;
+	expression_t* start_expr;
+	expression_t* end_expr;
+}bitfield_decl_attr_t;
 
 typedef struct register_array_attr
 {
@@ -332,7 +345,9 @@ typedef struct device_attr
 
 typedef struct layout_attr {
     struct symbol_common common;
-    char* str;
+	const char* name;
+    const char* desc;
+	decl_t* decl;
     symtab_t table;
 } layout_attr_t;
 

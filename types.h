@@ -26,6 +26,7 @@
 */
 #ifndef __TYPES_H__
 #define __TYPES_H__
+#include "types.h"
 typedef enum
 {
 	NO_TYPE = 1,
@@ -39,6 +40,9 @@ typedef enum
 	METHOD_TYPE,
 	/* c function  */
 	FUNCTION_TYPE,
+	/* c function pointer type*/
+	FUNCTION_POINTER_TYPE,
+	FUNCTION_POINTER_VAR,
 	/* bank */
 	BANK_TYPE,
 	/* register */
@@ -227,10 +231,12 @@ typedef enum
 	VIRTUAL_TYPE,
 	VOLATILE_TYPE,
 	FOOTER_TYPE,
-	THIS_TYPE
+	THIS_TYPE,
+	TYPE_END
 } type_t;
 
 typedef enum {
+	TYPE_START = TYPE_END,
 	/*-----expr assign type----*/
 	/* += */
 	ADD_ASSIGN_TYPE,
