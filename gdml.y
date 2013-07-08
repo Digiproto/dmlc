@@ -27,6 +27,7 @@ typedef struct YYLTYPE
 #include "Lexer.h"
 
 extern int  yylex(YYSTYPE *yylval_param, yyscan_t yyscanner);
+extern tree_t* parse_auto_api(void);
 void yyerror(yyscan_t* scanner, void* v, char *s);
 extern char* builtin_filename;
 symtab_t root_table;
@@ -71,7 +72,7 @@ tree_t* current_object_node = NULL;
 %token METHOD_RETURN RANGE_SIGN
 
 %token PARAMETER BANK FIELD DATA CONNECT INTERFACE ATTRIBUTE EVENT GROUP
-%token IN TEMPLATE HEADER FOOTER LOGGROUP IMPORT SIZE LAYOUT BITFIELDS
+%token IN TEMPLATE HEADER HEADER_KEYWORD FOOTER LOGGROUP IMPORT SIZE LAYOUT BITFIELDS
 %token USING PORT PUBLIC PROTECTED PRIVATE STRICT THIS SELECT IS IMPLEMENT VECT WHERE
 %token DEVICE DEFINED AFTER ASSERT BITORDER CATCH TRY THROW CLASS LOG METHOD
 %token CALL CAST CONSTANT ERROR FOREACH INLINE LOCAL NAMESPACE 
@@ -218,13 +219,17 @@ dml
 		attr->common.node = node;
 		node->common.attr = attr;
 
+		tree_t* api_node = parse_auto_api();
+
+		create_node_list(node, api_node);
+
 		$<tree_type>$ = node;
 	}
 	syntax_modifiers device_statements {
 		tree_t* import_ast = NULL;
 		if(builtin_filename != NULL) {
 			import_ast = (tree_t*)get_ast(builtin_filename);
-			printf("builtin_filename: %s\n", builtin_filename);
+			printf("\n\nbuiltin_filename: %s\n\n", builtin_filename);
 			if(import_ast->common.child != NULL) {
 				create_node_list($<tree_type>4, import_ast->common.child);
 				//create_node_list(node, import_ast);
@@ -1015,7 +1020,7 @@ toplevel
 		$$ = node;
 	}
 	| EXTERN cdecl_or_ident ';' {
-		DBG("\nPay attention: we should find the name of extern\n\n");
+		//printf("\nPay attention: we should find the name of extern\n\n");
 		parse_extern_cdecl_or_ident($2, current_table);
 
 		tree_t* node = (tree_t*)create_node("cdecl", CDECL_TYPE, sizeof(struct tree_cdecl));
@@ -1025,18 +1030,13 @@ toplevel
 		$$ = node;
 	}
 	| TYPEDEF cdecl ';' {
-		/* FIXME: we should find the name cdecl */
-		DBG("\nPay attention: we should find the name of typedef cdecl\n\n");
-		//$$ = create_node("UNIMP", TYPEDEF_TYPE);
-		#if 0
-		cdecl_attr_t* attr = (cdecl_attr_t*)gdml_zmalloc(sizeof(cdecl_attr_t));
-		attr->is_typedef = 1;
-		#endif
-
 		tree_t* node = (tree_t*)create_node("cdecl", CDECL_TYPE, sizeof(struct tree_cdecl));
 		node->cdecl.is_typedef = 1;
 		node->cdecl.decl = $2;
 		node->common.print_node = print_cdecl;
+
+		parse_typedef(node, current_table);
+
 		$$ = node;
 	}
 	| EXTERN TYPEDEF cdecl ';' {
@@ -1045,25 +1045,34 @@ toplevel
 		node->cdecl.is_typedef = 1;
 		node->cdecl.decl = $3;
 		node->common.print_node = print_cdecl;
+
+		parse_typedef(node, current_table);
+
 		$$ = node;
 	}
 	| STRUCT ident '{' {
 		struct_attr_t* attr = (struct_attr_t*)gdml_zmalloc(sizeof(struct_attr_t));
 		attr->name = $2->ident.str;
-		//symbol_insert(current_table, $2->ident.str, STRUCT_TYPE, attr);
+		attr->common.table_num = current_table->table_num;
+		symbol_insert(current_table, $2->ident.str, STRUCT_TYPE, attr);
 
 		current_table = change_table(current_table, table_stack, &current_table_num, STRUCT_TYPE);
 		attr->table = current_table;
 
 		tree_t* node = (tree_t*)create_node("struct", STRUCT_TYPE, sizeof(struct tree_struct));
 		node->struct_tree.name = $2->ident.str;
+		node->struct_tree.table = current_table;
 		node->common.print_node = print_struct;
 		node->common.attr = attr;
+
+		attr->common.node = node;
 		$<tree_type>$ = node;
 	}
 	struct_decls '}' {
 		tree_t* node = $<tree_type>4;
 		node->struct_tree.block = $5;
+
+		parse_struct_decls($5, current_table);
 		current_table = pop(table_stack);
 		$$ = node;
 	}
@@ -1500,7 +1509,7 @@ cdecl
 
 basetype
 	: typeident {
-		DBG("typeident: %s\n", $1->common.name);
+		DBG("Line = %d typeident: %s : %s\n", __LINE__, $1->common.name, $1->ident.str);
 		$$ = $1;
 	}
 	| struct {
@@ -1547,7 +1556,7 @@ cdecl2
 
 cdecl3
 	: typeident {
-		DBG("typeident: %s\n", $1->common.name);
+		DBG("Line = %d typeident: %s : %s\n", __LINE__, $1->common.name, $1->ident.str);
 		$$ = $1;
 	}
 	| {
@@ -1652,7 +1661,7 @@ cdecl_or_ident_list2
 
 typeof
 	: TYPEOF expression {
-		tree_t* node = (tree_t*)create_node("typeof", TYPEOF_TYPE, sizeof(struct tree_struct));
+		tree_t* node = (tree_t*)create_node("typeof", TYPEOF_TYPE, sizeof(struct tree_typeof));
 		node->typeof_tree.expr = $2;
 		node->common.print_node = print_typeof;
 		$$ = node;
@@ -1660,23 +1669,33 @@ typeof
 	;
 
 struct
-	: STRUCT '{' struct_decls '}' {
+	: STRUCT '{' {
 		tree_t* node = (tree_t*)create_node("struct", STRUCT_TYPE, sizeof(struct tree_struct));
-		node->struct_tree.block = $3;
+		current_table = change_table(current_table, table_stack, &current_table_num, STRUCT_TYPE);
 		node->common.print_node = print_struct;
+		node->struct_tree.table = current_table;
+		$<tree_type>$ = node;
+	}
+	struct_decls '}' {
+		tree_t* node = $<tree_type>3;
+		node->struct_tree.block = $4;
+
+		parse_struct_decls($4, current_table);
+		current_table = pop(table_stack);
+
 		$$ = node;
 	}
 	;
 
 struct_decls
 	: struct_decls cdecl ';' {
-		if ($1 == NULL) {
-			$$ = $2;
+		if ($1 != NULL) {
+			create_node_list($1, $2);
+			$$ = $1;
 		}
 		else {
-			create_node_list($1, $2);
+			$$ = $2;
 		}
-		$$ = $1;
 	}
 	| {
 		$$ = NULL;
@@ -1685,25 +1704,29 @@ struct_decls
 
 layout
 	:LAYOUT STRING_LITERAL '{' {
+	#if 0
 		layout_attr_t* attr = (layout_attr_t*)gdml_zmalloc(sizeof(layout_attr_t));
 		attr->str = $2;
 		symbol_insert(current_table, $2, LAYOUT_TYPE, attr);
+		attr->table  = current_table;
+		attr->common.node = node;
+	#endif
 
 		current_table = change_table(current_table, table_stack, &current_table_num, LAYOUT_TYPE);
-		attr->table  = current_table;
 
 		tree_t* node = (tree_t*)create_node("layout", LAYOUT_TYPE, sizeof(struct tree_layout));
-		node->layout.name = $2;
+		node->layout.desc = $2;
+		node->layout.table = current_table;
 		node->common.print_node = print_layout;
-		node->common.attr = attr;
-
-		attr->common.node = node;
+		//node->common.attr = attr;
 
 		$<tree_type>$ = node;
 	}
 	layout_decls '}' {
 		tree_t* node = $<tree_type>4;
 		node->layout.block = $5;
+
+		parse_layout_decls($5, current_table);
 		current_table = pop(table_stack);
 		$$ = node;
 	}
@@ -1721,24 +1744,29 @@ layout_decls
 
 bitfields
 	: BITFIELDS INTEGER_LITERAL '{' {
+	#if 0
 		bitfield_attr_t* attr = (bitfield_attr_t*)gdml_zmalloc(sizeof(bitfield_attr_t));
 		attr->name = $2;
 		symbol_insert(current_table, $2, BITFIELDS_TYPE, attr);
+		attr->table = current_table;
+		attr->common.node = node;
+	#endif
 
 		current_table = change_table(current_table, table_stack, &current_table_num, BITFIELDS_TYPE);
-		attr->table = current_table;
 
 		tree_t* node = (tree_t*)create_node("bitfields", BITFIELDS_TYPE, sizeof(struct tree_bitfields));
-		node->bitfields.name = $2;
+		node->bitfields.size_str = $2;
+		node->bitfields.size = strtoi($2);
+		node->bitfields.table = current_table;
 		node->common.print_node = print_bitfields;
-		node->common.attr = attr;
+		//node->common.attr = attr;
 
-		attr->common.node = node;
 		$<tree_type>$ = node;
 	}
 	bitfields_decls '}' {
 		tree_t* node = $<tree_type>4;
 		node->bitfields.block = $5;
+		parse_bitfields_decls($5, current_table);
 		current_table = pop(table_stack);
 		$$ = node;
 	}
@@ -3049,6 +3077,11 @@ ident
 		node->ident.type = GROUP_TYPE;
 		$$ = node;
 	}
+	| HEADER_KEYWORD {
+		tree_t* node = (tree_t*)dml_keyword_node("header");
+		node->ident.type = HEADER_TYPE;
+		$$ = node;
+	}
 	| IMPLEMENT {
 		tree_t* node = (tree_t*)dml_keyword_node("implement");
 		node->ident.type = IMPLEMENT_TYPE;
@@ -3152,4 +3185,36 @@ void yyerror(yyscan_t* scanner, void* v, char *s) {
 	fflush(stdout);
 	fprintf(stderr,"Syntax error on line #%d, column #%d: %s\n", lineno, column, s);
 	exit(1);
+}
+
+tree_t* parse_auto_api(void) {
+	char* filename = "simics-auto-api-4_0.dml";
+	char fullname[1024];
+	int dir_len = strlen(dir);
+	int file_len = strlen(filename);
+
+	assert((dir_len + file_len) < 1024);
+	strncpy(fullname, dir, dir_len);
+	strcat(fullname, filename);
+	printf("auto api file name: %s\n", fullname);
+
+	FILE *file = fopen(fullname, "r");
+	if (file == NULL) {
+		printf("Can't open imported file %s.\n", fullname);
+		exit(EXIT_FAILURE);
+	}
+
+	yyscan_t scanner;
+	tree_t* root = (tree_t*)create_node(filename, IMPORT_TYPE, sizeof(struct tree_import));
+	root->import.file_name = strdup(fullname);
+	printf("Begin parse the import file %s\n", fullname);
+	tree_t* ast = NULL;
+	yylex_init(&scanner);
+	yyrestart(file, scanner);
+	yyparse(scanner, &ast);
+	yylex_destroy(scanner);
+	fclose(file);
+	printf("End of parse the import file %s\n", fullname);
+
+	return ast->common.child;
 }
