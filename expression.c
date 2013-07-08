@@ -1365,7 +1365,7 @@ int get_typedef_type(symtab_t table, char* name) {
 
 
 	if (symbol == NULL) {
-		fprintf(stderr, "%s not typdef\n");
+		fprintf(stderr, "%s not typdef\n", name);
 		/* TODO: handle the error */
 		exit(-1);
 	}
