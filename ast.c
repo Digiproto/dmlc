@@ -121,21 +121,28 @@ long long strtoi (char *str)
 		return -1;
 	}
 
-	if (((first_pos = strstr (str, "0x")) != NULL) ||
-		((first_pos = strstr (str, "0X")) != NULL)) {
-		DBG ("Value: %s\n", str);
+	if ((strncmp(str, "0x", 2) == 0) ||
+			(strncmp(str, "0X", 2) == 0)) {
 		value = get_digits (str, 16);
-	}							//hex
-	else if (((first_pos = strchr (str, '0')) != NULL) &&
-			 ((str[first_pos - str + 1]) >= '0') &&
-			 ((str[first_pos - str + 1]) < '9')) {
-		DBG ("Value: %s\n", str);
-		value = get_digits (str, 8);
-	}							// Octal
+	}//hex
+	else if ((strncmp(str, "0b", 2) == 0) ||
+			(strncmp(str, "0B", 2) == 0)) {
+		value = get_digits (&(str[2]), 2);
+	}//binary
+	else if (str[0] == '0') {
+		int i = 1;
+		for(i = 0; i < strlen(str); i++) {
+			if ((str[i] < '0') || (str[i] > '7')) {
+				fprintf(stderr, "Wrong Octal : %s\n", str);
+				/* TODO: handle the error */
+				exit(-1);
+			}
+		}
+		value = get_digits(str, 8);
+	}//octal
 	else {
-		DBG ("Value: %s\n", str);
 		value = get_digits (str, 10);
-	}							//decimal
+	}//decimal
 
 	return value;
 }
