@@ -24,6 +24,11 @@
 #ifndef __PRE_PARSE_DML_H__
 #define __PRE_PARSE_DML_H__
 
+typedef struct {
+	char* name;
+	int type;
+} pre_dml_t;
+
 int insert_pre_dml_struct(void);
 int find_all_pre_dml_struct(void);
 

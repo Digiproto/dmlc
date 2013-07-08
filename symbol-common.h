@@ -25,6 +25,7 @@
 #define __SYMBOL_COMMON_H__
 
 #include "types.h"
+#include "pre_parse_dml.h"
 
 #define MAX_SYMBOLS 10000
 #define SYMBOL_DEBUG
@@ -68,6 +69,12 @@ typedef struct symbol_list {
 	symbol_t sym;
 } symbol_list_t;
 
+typedef struct pre_parse_symbol {
+	char* name;
+	type_t type;
+	struct pre_parse_symbol* next;
+}pre_parse_symbol_t;
+
 /* find and insert symbol from the symbol table.  */
 symbol_t symbol_find(symtab_t symtab, const char* name, type_t type);
 symbol_t symbol_find_curr(symtab_t symtab, const char* name, type_t type);
@@ -81,6 +88,10 @@ symtab_t symtab_create(type_t type);
 symtab_t symtab_insert_sibling(symtab_t symtab, symtab_t newtab);
 symtab_t symtab_insert_child(symtab_t symtab, symtab_t newtab);
 void symtab_free(symtab_t symtab, int table_num);
+
+int pre_symbol_insert(pre_dml_t pre_dml);
+pre_parse_symbol_t* pre_symbol_find(const char* name);
+
 #ifdef SYMBOL_DEBUG
 typedef void (*symbol_callback)(symbol_t symbol);
 void get_all_symbol(symtab_t symtab, symbol_callback f);
