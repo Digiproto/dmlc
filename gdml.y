@@ -382,8 +382,8 @@ object
 		attr->is_array = 0;
 		attr->size = get_size($3);
 		attr->offset = get_offset($4);
-		attr->templates = get_templates($3);
-		attr->templates_num = get_list_num($3);
+		attr->templates = get_templates($5);
+		attr->templates_num = get_list_num($5);
 		symbol_insert(current_table, $2->ident.str, REGISTER_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("register", REGISTER_TYPE, sizeof(struct tree_register));
@@ -672,6 +672,7 @@ object
 		node->common.print_node = print_port;
 		node->common.attr = attr;
 		current_object_node = node;
+		object_spec_type = PORT_TYPE;
 
 		attr->common.node = node;
 		$<tree_type>$ = node;
@@ -697,6 +698,7 @@ object
 		node->common.print_node = print_implement;
 		node->common.attr = attr;
 		current_object_node = node;
+		object_spec_type = IMPLEMENT_TYPE;
 
 		attr->common.node = node;
 		DBG("objident: %s\n", $2->ident.str);
@@ -708,6 +710,7 @@ object
 		node->implement.spec = $5;
 		attr->desc = get_obj_desc($5);
 		attr->table = get_obj_block_table($5);
+		object_spec_type = -1;
 		$$ = node;
 	}
 	| ATTRIBUTE objident '[' arraydef ']' istemplate {
@@ -726,6 +729,7 @@ object
 		node->common.print_node = print_attribute;
 		node->common.attr = attr;
 		current_object_node = node;
+		object_spec_type = ATTRIBUTE_TYPE;
 
 		attr->common.node = node;
 
@@ -1196,6 +1200,11 @@ object_spec
 	symtab_t table = NULL;
 		if (object_spec_type == TEMPLATE_TYPE) {
 			table = symtab_create(TEMPLATE_TYPE);
+			table->no_check = 1;
+		}
+		else if (object_spec_type == IMPLEMENT_TYPE) {
+			table = symtab_create(IMPLEMENT_TYPE);
+			table->no_check = 1;
 		}
 		else {
 			table = symtab_create(SPEC_TYPE);

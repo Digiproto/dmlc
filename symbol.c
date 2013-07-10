@@ -167,9 +167,11 @@ static symtab_t table_malloc(type_t type)
     assert(new_symtab != NULL);
     bzero(new_symtab, sizeof(struct symtab));
 	new_symtab->type = type;
+#if 0
 	if (type == TEMPLATE_TYPE) {
 		new_symtab->no_check = 1;
 	}
+#endif
     return new_symtab;
 }
 

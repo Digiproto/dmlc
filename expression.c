@@ -1383,6 +1383,93 @@ int get_typedef_type(symtab_t table, char* name) {
 	return type;
 }
 
+int get_allocate_type(symbol_t symbol) {
+	assert(symbol != NULL);
+
+	char* str = NULL;
+	int type = 0;
+	parameter_attr_t* attr = symbol->attr;
+	paramspec_t* spec = attr->spec;
+
+	if (spec->type != CONST_STRING_TYPE) {
+		fprintf(stderr, "error: allocate_type of attribute should be string\n");
+		/* TODO: handle the error */
+		exit(-1);
+	}
+
+	str = spec->str;
+
+	if ((strcmp(str, "\"double\"") == 0) ||
+				(strcmp(str, "\"f\"") == 0)) {
+		type = DOUBLE_TYPE;
+	}
+	else if((strstr(str, "int")) != NULL) {
+		if (((strstr(str, "uint") != NULL) && (strcmp(str, "\"uint32\"") > 0)) ||
+				((strstr(str, "uint") == NULL) && (strcmp(str, "\"int32\"") > 0))) {
+			type = LONG_TYPE;
+		}
+		else {
+			type = INT_TYPE;
+		}
+	}
+	else if (strcmp(str, "\"i\"") == 0) {
+		type = INT_TYPE;
+	}
+	else if ((strcmp(str, "\"string\"") == 0) ||
+			(strcmp(str, "\"s\"") == 0)) {
+		type = CONST_STRING_TYPE;
+	}
+	else if ((strcmp(str, "\"bool\"") == 0) ||
+			(strcmp(str, "\"b\"") == 0)) {
+		type = BOOL_TYPE;
+	}
+	else if (strcmp(str, "\"d\"") == 0) {
+		type = DATA_TYPE;
+	}
+	else if (strcmp(str, "\"o\"") == 0) {
+		type = OBJECT_TYPE;
+	}
+	else if (strcmp(str, "\"D\"") == 0) {
+		type = DICTIONARY_TYPE;
+	}
+	else if (strcmp(str, "\"n\"") == 0) {
+		type = NIL_TYPE;
+	}
+	else if (strcmp(str, "\"a\"") == 0) {
+		type = NO_TYPE;
+	}
+	else {
+		fprintf(stderr, "Warning: other attribute type: %s\n", str);
+		/* TODO: handle the error, this is only for debugging */
+		exit(-1);
+	}
+
+	return type;
+}
+
+int get_attribute_type(symbol_t symbol) {
+	assert(symbol);
+	int type = 0;
+
+	attribute_attr_t* attr = symbol->attr;
+	symtab_t tmp_table = attr->table;
+	symbol_t type_symbol = symbol_find_curr(tmp_table, "type", PARAMETER_TYPE);
+	symbol_t allocate_type = symbol_find_curr(tmp_table, "allocate_type", PARAMETER_TYPE);
+	if (allocate_type) {
+		type  = get_allocate_type(allocate_type);
+	}
+	else if (type_symbol){
+		type = get_allocate_type(type_symbol);
+	}
+	else {
+		fprintf(stderr, "The attribute has no type\n");
+		/* TODO: The attribute is ok with no type? */
+		exit(-1);
+	}
+
+	return type;
+}
+
 int get_c_type(symtab_t table, symbol_t symbol) {
 	assert(table != NULL);
 	assert(symbol != NULL);
@@ -1457,6 +1544,9 @@ int get_c_type(symtab_t table, symbol_t symbol) {
 			else {
 				type = STRUCT_TYPE;
 			}
+			break;
+		case ATTRIBUTE_TYPE:
+			type = get_attribute_type(symbol);
 			break;
 		default:
 			fprintf(stderr, "In %s, line = %d, other dml type: %d\n",

@@ -232,6 +232,12 @@ typedef enum
 	VOLATILE_TYPE,
 	FOOTER_TYPE,
 	THIS_TYPE,
+	/* object */
+	OBJECT_TYPE,
+	/* dictionary */
+	DICTIONARY_TYPE,
+	/* nil */
+	NIL_TYPE,
 	TYPE_END
 } type_t;
 
