@@ -102,6 +102,13 @@ int main (int argc, char *argv[])
 	char *filename = argv[1];
 	tree_t* ast = get_ast (filename);
 	assert (ast != NULL);
+	if (root_table->type != DEVICE_TYPE) {
+		fprintf(stderr, "a module should have device\n");
+		exit(-1);
+	}
+	else {
+		parse_undef_node(root_table);
+	}
 	printf("node name: %s\n", ast->common.name);
 	print_ast (ast);
 	printf("Print the syntax tree ok!\n");

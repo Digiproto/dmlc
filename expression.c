@@ -352,6 +352,10 @@ int charge_left_right_expr_type(expression_t* left_expr, expression_t* right_exp
 	assert(left_expr != NULL);
 	assert(right_expr != NULL);
 
+	if ((left_expr->is_undeclare) || (right_expr->is_undeclare)) {
+		return 0;
+	}
+
 	return charge_type(left_expr->final_type, right_expr->final_type);
 }
 
@@ -367,6 +371,10 @@ void cal_assign_left(tree_t** node, symtab_t table, expression_t* left_expr, exp
 		fprintf(stderr, "error: value required as left operand of assignment\n");
 		/* FIXME: should handle the error */
 		exit(-1);
+	}
+
+	if ((left_expr->is_undeclare) || (right_expr->is_undeclare)) {
+		return ;
 	}
 
 	/* FIXME: there is some problems */
@@ -536,6 +544,9 @@ expression_t* cal_ternary_expr(tree_t** node, symtab_t table, expression_t* expr
 	true_type = expr->final_type;
 	cal_expression(&((*node)->ternary.expr_false), table, expr);
 	false_type = expr->final_type;
+	if (expr->is_undeclare) {
+		return expr;
+	}
 	/* TODO: the expression type node defined */
 	if (true_type == false_type) {
 		expr->final_type = true_type;
@@ -699,6 +710,10 @@ expression_t* cal_add_expr(tree_t** node, symtab_t table, expression_t* expr) {
 		right = (*node)->expr_assign.right;
 	}
 
+	if (expr->is_undeclare) {
+		return expr;
+	}
+
 	if (charge_node_is_const(left) && charge_node_is_const(right)) {
 		tree_t* new_node = NULL;
 		if ((left->common.type == CONST_STRING_TYPE) &&
@@ -778,6 +793,9 @@ expression_t* binary_expr_common(tree_t** node, symtab_t table, expression_t* ex
 		right = (*node)->expr_assign.right;
 		op_type = (*node)->expr_assign.type;
 	}
+	if (expr->is_undeclare) {
+		return expr;
+	}
 
 	if (charge_node_is_const(left) && (charge_node_is_const(right))) {
 		 tree_t* new_node = NULL;
@@ -844,6 +862,10 @@ expression_t* binary_expr_int(tree_t** node, symtab_t table, expression_t* expr)
 		left = (*node)->expr_assign.left;
 		right = (*node)->expr_assign.right;
 		op_type = (*node)->expr_assign.type;
+	}
+
+	if (expr->is_undeclare) {
+		return expr;
 	}
 
 	if (charge_node_is_const(left) && charge_node_is_const(right)) {
@@ -1028,6 +1050,10 @@ expression_t* unary_bit_non(tree_t** node, symtab_t table, expression_t* expr) {
 	cal_expression(&((*node)->unary.expr), table, expr);
 	tree_t* unary_expr = (*node)->unary.expr;
 
+	if (expr->is_undeclare) {
+		return expr;
+	}
+
 	if (charge_node_is_const(unary_expr)) {
 		if (unary_expr->common.type != INTEGER_TYPE) {
 			fprintf(stderr, "The bit non operation expression should int\n");
@@ -1066,6 +1092,10 @@ expression_t* unary_expr_common(tree_t** node, symtab_t table, expression_t* exp
 
 	cal_expression(&((*node)->unary.expr), table, expr);
 	tree_t* unary_expr = (*node)->unary.expr;
+
+	if (expr->is_undeclare) {
+		return expr;
+	}
 
 	if (charge_node_is_const(unary_expr)) {
 		if ((unary_expr->common.type == CONST_STRING_TYPE)
@@ -1196,6 +1226,10 @@ expression_t* cal_unary_expr(tree_t** node, symtab_t table,  expression_t* expr)
 			/* defined */
 		case DEFINED_TYPE:
 			cal_expression(&((*node)->unary.expr), table, expr);
+			if (expr->is_undeclare) {
+				expr->node = *node;
+				break;
+			}
 			if (charge_node_is_const((*node)->unary.expr)) {
 				fprintf(stderr, "The unary operation expression can not constant\n");
 					/* FIXME: should handle the error */
@@ -1231,6 +1265,10 @@ expression_t* cal_cast_expr(tree_t** node, symtab_t table, expression_t* expr) {
 
 	cal_expression(&((*node)->cast.expr), table, expr);
 
+	if (expr->is_undeclare) {
+		return expr;
+	}
+
 	/* FIXME: should find the type symbol from symbol table */
 	(*node)->cast.decl = parse_ctypedecl((*node)->cast.ctype, table);
 	expr->node = *node;
@@ -1257,6 +1295,9 @@ expression_t* cal_sizeof_expr(tree_t** node, symtab_t table,  expression_t* expr
 		exit(-1);
 	}
 	cal_expression(&((*node)->sizeof_tree.expr), table, expr);
+	if (expr->is_undeclare) {
+		return expr;
+	}
 	expr->final_type = INT_TYPE;
 
 	expr->node = *node;
@@ -1548,6 +1589,10 @@ int get_c_type(symtab_t table, symbol_t symbol) {
 		case ATTRIBUTE_TYPE:
 			type = get_attribute_type(symbol);
 			break;
+		case REGISTER_TYPE:
+			/* FIXME: register may be other type */
+			type = INT_TYPE;
+			break;
 		default:
 			fprintf(stderr, "In %s, line = %d, other dml type: %d\n",
 					__FUNCTION__, __LINE__, symbol->type);
@@ -1590,6 +1635,7 @@ expression_t* get_ident_value(tree_t** node, symtab_t table,  expression_t* expr
 	/* FIXME: should find the symbol, if it is in the symbol table,
 	 * should insert it*/
 	symbol_t symbol = symbol_find_notype(table, (*node)->ident.str);
+	pre_parse_symbol_t* pre_symbol =  pre_symbol_find((*node)->ident.str);
 	if ((symbol != NULL)) {
 		DEBUG_EXPR("symbol name: %s, type: %d\n", symbol->name, symbol->type);
 		if (is_c_type(symbol->type) == 1) {
@@ -1598,6 +1644,14 @@ expression_t* get_ident_value(tree_t** node, symtab_t table,  expression_t* expr
 		else {
 			/* TODO: should get the c type */
 			expr->final_type = get_c_type(table, symbol);
+		}
+	}
+	else if (pre_symbol != NULL) {
+		if (pre_symbol->type == AUTO_TYPE) {
+			expr->final_type = NO_TYPE;
+		}
+		else {
+			expr->final_type = pre_symbol->type;
 		}
 	}
 	else {
@@ -1616,9 +1670,10 @@ expression_t* get_ident_value(tree_t** node, symtab_t table,  expression_t* expr
 			expr->final_type = NO_TYPE;
 		}
 		else {
-			fprintf(stderr, "%s no undeclared (first use)\n", (*node)->ident.str);
-			/*FIXME: please handle the error  */
-			exit(-1);
+			expr->is_undeclare = 1;
+			expr->undecl_name = (*node)->ident.str;
+			/* insert the undeclared variable to table list */
+			//fprintf(stderr, "%s no undeclared (first use)\n", (*node)->ident.str);
 		}
 	}
 	expr->node = *node;
@@ -1710,6 +1765,7 @@ expression_t* get_brack_expr(tree_t** node, symtab_t table,  expression_t* expr)
 			cal_expression(&((*node)->expr_brack.expr), table, expr);
 		}
 	}
+
 	return expr;
 }
 
@@ -1755,6 +1811,9 @@ expression_t* get_bit_slic_expr(tree_t** node, symtab_t table,  expression_t* ex
 	cal_expression(&((*node)->bit_slic.bit_end), table, expr);
 
 	expr->is_const = 0;
+	if (expr->is_undeclare) {
+		return expr;
+	}
 
 	tree_t* endian = (*node)->bit_slic.endian;
 	if (endian) {
@@ -1852,6 +1911,10 @@ expression_t* parse_expression(tree_t** node, symtab_t table) {
 	expression_t* expr = (expression_t*)gdml_zmalloc(sizeof(expression_t));
 	cal_expression(node, table, expr);
 	expr->node = *node;
+
+	if (expr->is_undeclare) {
+		undef_var_insert(table, *node);
+	}
 
 	DEBUG_EXPR("In %s, line = %d, expr final_type: %d\n",
 			__func__, __LINE__, expr->final_type);

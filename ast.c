@@ -229,6 +229,51 @@ tree_t* create_node (char *name, int type, int size)
 	return node;
 }
 
+void parse_undef(symtab_t table, undef_var_t* undef_head) {
+	assert(table);
+	assert(undef_head);
+
+	expression_t* expr = NULL;
+	tree_t* node = NULL;
+	undef_var_t* undef = undef_head;
+
+	while (undef != NULL) {
+		node = (tree_t*)(undef->node);
+		expr = parse_expression(&node, table);
+		if (expr->is_undeclare) {
+			fprintf(stderr, "%s no declare(firs use)\n", expr->undecl_name);
+			/* TODO: handle the error */
+			exit(-1);
+		}
+		undef = undef->next;
+	}
+
+
+	return;
+}
+
+void parse_undef_node(symtab_t table) {
+	assert(table);
+
+	if (table->undef_list) {
+		parse_undef(table, table->undef_list);
+	}
+
+	if ((table->sibling == NULL) && (table->child == NULL)) {
+		return;
+	}
+
+	if (table->sibling) {
+
+		parse_undef_node(table->sibling);
+	}
+	if (table->child) {
+		parse_undef_node(table->child);
+	}
+
+	return;
+}
+
 /**
  * @brief dml_keyword_node : make a node for dml keyword
  *

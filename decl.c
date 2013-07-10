@@ -922,24 +922,12 @@ params_t* get_param_decl(tree_t* node, symtab_t table) {
 	param->decl = decl;
 
 	parse_cdecl(node, table, decl);
-	if (((decl->var) != NULL) && ((decl->var->var_num) > 1)) {
-		var_name_t* var = decl->var;
-		DEBUG_DECL("the method parameter some problem num: %d : %s\n",
-				decl->var->var_num, var->var_name);
-		if ((strcmp(var->var_name, "attr_value_t") == 0)
-				|| (strcmp(var->var_name, "set_error_t") == 0)
-				|| (strcmp(var->var_name, "generic_transaction_t") == 0)) {
-			param->var_name = (char*)(var->next->var_name);
-			/* FIXME: in fact the type it struct type */
-			param->is_notype = 1;
-		}
-		else {
-			/* FIXME: handle the error */
-			exit(-1);
-		}
-	}
-	else if (decl->is_defined) {
+	if (decl->is_defined) {
 		param->var_name = decl->defined_name;
+	}
+	else if ((decl->var == NULL) && (decl->type->pre_dml_name)) {
+		param->var_name = decl->type->pre_dml_name;
+		param->is_notype = 1;
 	}
 	else {
 		param->var_name = (char*)(decl->var->var_name);

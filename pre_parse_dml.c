@@ -905,6 +905,23 @@ pre_dml_t pre_dml_struct[] = {
 	{"Sim_Reg_Type_Integer", CONSTANT_TYPE},
 	{"Sim_Reg_Type_Floating", CONSTANT_TYPE},
 	{"Sim_Reg_Type_Control", CONSTANT_TYPE},
+
+	/*---------------------- auto type ---------------*/
+	{"parent", AUTO_TYPE},
+	{"name", AUTO_TYPE},
+	{"qname", AUTO_TYPE},
+	{"banks", AUTO_TYPE},
+	{"obj", AUTO_TYPE},
+	{"logobj", AUTO_TYPE},
+	{"mapped_registers", AUTO_TYPE},
+	{"unmapped_registers", AUTO_TYPE},
+	{"numbered_registers", AUTO_TYPE},
+	{"fields", AUTO_TYPE},
+	{"explicit", AUTO_TYPE},
+	{"interfaces", AUTO_TYPE},
+	{"_regname", AUTO_TYPE},
+	{"explicit", AUTO_TYPE},
+	{"evclass", AUTO_TYPE},
 };
 
 int insert_pre_dml_struct(void) {

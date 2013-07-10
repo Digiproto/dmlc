@@ -48,7 +48,11 @@ typedef struct const_expr {
 typedef struct expression {
     int is_const;
 	int final_type;
+	/* undefined type */
     int is_undefined;
+	/* user undeclared variable */
+	int is_undeclare;
+	const char* undecl_name;
     const_expr_t* const_expr;
     tree_t* node;
 	struct expression* next;

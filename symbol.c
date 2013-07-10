@@ -712,6 +712,27 @@ symtab_t change_table(symtab_t current_table, stack_t* table_stack, long int* cu
 	return table;
 }
 
+void undef_var_insert(symtab_t table, tree_t* node) {
+	assert(table != NULL);
+	assert(node != NULL);
+
+	undef_var_t* var = (undef_var_t*)gdml_zmalloc(sizeof(undef_var_t));
+	var->node= node;
+
+	if (table->undef_list == NULL) {
+		table->undef_list = var;
+	}
+	else {
+		undef_var_t* tmp = table->undef_list;
+		while (tmp->next != NULL) {
+			tmp = tmp->next;
+		}
+		tmp->next = var;
+	}
+
+	return;
+}
+
 #ifdef SYMBOL_DEBUG
 /* only for debug.  */
 static void tree_travel(symtab_t node)

@@ -39,6 +39,7 @@ long long strtoi (char *str);
 void print_ast (tree_t* root);
 int get_param_num(tree_t* node);
 int get_list_num (tree_t* root);
+void parse_undef_node(symtab_t table);
 
 void print_dml(tree_t* node, int pos);
 void print_device(tree_t* node, int pos);

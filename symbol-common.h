@@ -50,6 +50,12 @@ struct template_table {
 	struct template_table *next;
 };
 
+typedef struct undef_var {
+	//const char* var_name;
+	void* node;
+	struct undef_var* next;
+}undef_var_t;
+
 /* a hash table for storing symbols. it have a pointer to a brother,
  * have a pointer to a child.  */
 struct symtab {
@@ -59,6 +65,7 @@ struct symtab {
 	struct template_table* template_table;
 	symbol_t list;
     symbol_t table[MAX_SYMBOLS];
+	undef_var_t* undef_list;
 	int table_num;
 	type_t type;
 	int no_check;

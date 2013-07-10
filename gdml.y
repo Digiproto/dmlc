@@ -30,7 +30,7 @@ extern int  yylex(YYSTYPE *yylval_param, yyscan_t yyscanner);
 extern tree_t* parse_auto_api(void);
 void yyerror(yyscan_t* scanner, void* v, char *s);
 extern char* builtin_filename;
-symtab_t root_table;
+extern symtab_t root_table;
 stack_t* table_stack;
 int object_spec_type = -1;
 static symtab_t current_table = NULL;
