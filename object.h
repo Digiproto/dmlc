@@ -38,14 +38,24 @@
 #include "symbol-common.h"
 #include "symbol.h"
 #include "ast.h"
+#include "parameter_type.h"
 
 #define default_attr_type "container"
+
+typedef enum object_type {
+	Obj_Type_None,
+	Obj_Type_Device,
+	Obj_Type_Bank,
+	Obj_Type_Register,
+	Obj_Type_Field
+} object_type_t;
 
 typedef struct object {
 	const char *name;
 	const char *qname;
 	const char *dotname;
-	const char *obj_type;
+	const char *obj_type;	
+	object_type_t encoding;
 	tree_t *node;
 	struct object *parent;
 	const char *desc;
@@ -64,16 +74,19 @@ typedef struct device {
     struct list_head constants;
     struct list_head attributes;
     struct list_head connects;
-    struct list_head banks;
     struct list_head implements;
     struct list_head events;
     struct list_head data;
+	int bank_count;
+	object_t **banks;
 }device_t;
 
 typedef struct bank_def {
     object_t obj;
     int register_size;
 	int size;
+	int reg_count;
+	object_t **regs;
 }bank_t;
 
 typedef struct register_def {
@@ -82,6 +95,8 @@ typedef struct register_def {
     int offset;
 	int is_array;
 	int array_size;
+	int field_count;
+	object_t **fields;
 } dml_register_t;
 
 typedef struct field {
@@ -89,6 +104,7 @@ typedef struct field {
     int low;
     int high;
     int len;
+	int is_dummy;
 }field_t;
 
 typedef struct template_def {
@@ -116,6 +132,7 @@ struct generated_template_method_instance {
 struct template_name {
 	const char *name;
 	struct template_def *def;
+	tree_t *node;
 	struct list_head entry;
 };
 
@@ -135,6 +152,23 @@ typedef struct method {
 	int external; 	 
 	symtab_t *symtab;
 }method_t;
+
+typedef struct connect {
+	object_t obj;
+	struct list_head ifaces;
+} connect_t;
  
+typedef struct iface {
+	object_t obj;
+} interface_t;
+
 device_t *create_device_tree(tree_t *root);
+void add_object_method(object_t *obj, const char *name);
+void add_object_generated_method(object_t *obj);
+int object_method_generated(object_t *obj, struct method_name *m);
+void print_device_tree(device_t *dev);
+void print_object_tree(device_t *dev);
+void device_realize(device_t *dev);
+const char *get_obj_ref(object_t *obj);
+const char *get_obj_qname(object_t *obj);
 #endif
