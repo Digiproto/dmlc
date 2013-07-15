@@ -48,6 +48,7 @@ struct indentifier {
 	struct indentifier* next;
 };
 
+typedef void (*translate_t)(tree_t *t);
 /**
  * @brief : the common part about tree node
  */
@@ -57,6 +58,7 @@ struct tree_common
 	tree_t* sibling;
 	tree_t* chain;
 	print_node_t print_node;
+	translate_t translate;
 	void* attr;
 	int type;
 	const char* name;
@@ -435,6 +437,11 @@ struct tree_switch {
 	struct tree_common common;
 	tree_t* cond;				// condition aoubt switch
 	tree_t* block;				// block about switch
+};
+
+struct tree_expr_statement {
+	struct tree_common common;
+	tree_t *expr;
 };
 
 /**
@@ -907,6 +914,7 @@ union tree_node
 	struct tree_local_keyword local_keyword;
 	struct tree_group group;
 	struct tree_port port;
+	struct tree_expr_statement expr_statement;
  };
 
 #endif /* __TREE_H__ */

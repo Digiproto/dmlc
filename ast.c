@@ -206,6 +206,9 @@ void add_child (tree_t* parent, tree_t* child)
 	parent->common.child = child;
 }
 
+void dummy_translate(tree_t *node) {
+	printf("not correct, should call you own translate function, node name %s\n", node->common.name);
+}
 static int node_num = 0;
 /**
  * @brief create_node : create a tree node
@@ -222,6 +225,7 @@ tree_t* create_node (char *name, int type, int size)
 	node->common.name = strdup (name);
 	node->common.sibling = NULL;
 	node->common.child = NULL;
+	node->common.translate = dummy_translate;
 	DEBUG_CREATE_NODE ("In %s, node: 0x%x, name=%s, type = %d\n", __FUNCTION__, node, name, type);
 	node->common.type = type;
 	node_num++;
@@ -578,7 +582,7 @@ void print_templates(symtab_t table) {
 
 	return;
 }
-
+extern symtab_t root_table;
 void add_template_to_table(symtab_t table, const char* template) {
 	assert(table != NULL);
 	assert(template != NULL);
@@ -604,7 +608,7 @@ void add_template_to_table(symtab_t table, const char* template) {
 
 	new_table = (struct template_table*)gdml_zmalloc(sizeof(struct template_table));
 
-	symbol_t symbol = symbol_find(table, template, TEMPLATE_TYPE);
+	symbol_t symbol = symbol_find(root_table, template, TEMPLATE_TYPE);
 	if (symbol == NULL) {
 		fprintf(stderr, "can not find the template: %s\n", template);
 		/* FIXME: should handle the error */
