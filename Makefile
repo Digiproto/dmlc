@@ -2,8 +2,13 @@
 
 CFLAGS= -g -O2 -Werror-implicit-function-declaration -Werror=return-type -Wmissing-field-initializers -Wuninitialized
 //CFLAGS=
-dmlc:Parser.c Lexer.c symbol.c ast.c dmlc.c qemu_code_gen.c debug_color.c stack.c expression.c decl.c parse_str.c pre_parse_dml.c object.c
-	gcc $(CFLAGS) -g -o dmlc Parser.c Lexer.c symbol.c ast.c dmlc.c qemu_code_gen.c debug_color.c stack.c expression.c decl.c parse_str.c pre_parse_dml.c object.c
+dmlc:c_files
+	gcc $(CFLAGS) -g -o dml  Parser.c Lexer.c symbol.c ast.c  dmlc.c qemu_code_gen.c debug_color.c stack.c expression.c decl.c parse_str.c \
+		object.c qemu_platform.c gen_common.c ref.c qemu_object_headfile.c  gen_once_noplatform.c gen_object.c gen_utility.c gen_expression.c \
+		gen_method_protos.c pre_parse_dml.c
+
+c_files: Parser.c Lexer.c symbol.c ast.c  dmlc.c qemu_code_gen.c debug_color.c stack.c expression.c decl.c parse_str.c object.c \
+		 gen_common.c qemu_platform.c ref.c qemu_object_headfile.c gen_once_noplatform.c gen_object.c gen_utility.c pre_parse_dml.c
 Lexer.c:gdml.lex
 	flex gdml.lex
 Parser.c:gdml.y
