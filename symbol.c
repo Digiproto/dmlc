@@ -118,7 +118,7 @@ int pre_symbol_insert(pre_dml_t pre_dml) {
  *
  * @return return symbol structure pointer or NULL on error.
  */
-static symbol_t _symbol_find(symbol_t* symbol_table, const char* name, type_t type) {
+symbol_t _symbol_find(symbol_t* symbol_table, const char* name, type_t type) {
     symbol_t symbol = symbol_table[str_hash(name)];
 	if (symbol) {
 		/* hash conflict */
@@ -141,7 +141,7 @@ static symbol_t _symbol_find(symbol_t* symbol_table, const char* name, type_t ty
  *
  * @return return symbol structure pointer or NULL on error.
  */
-static symbol_t _symbol_find_notype(symbol_t* symbol_table, const char* name) {
+symbol_t _symbol_find_notype(symbol_t* symbol_table, const char* name) {
 
     symbol_t symbol = symbol_table[str_hash(name)];
 	if (symbol) {
@@ -163,7 +163,7 @@ static symbol_t _symbol_find_notype(symbol_t* symbol_table, const char* name) {
  */
 static symtab_t table_malloc(type_t type)
 {
-    symtab_t new_symtab = (symtab_t) malloc(sizeof(struct symtab));
+	symtab_t new_symtab = (symtab_t) gdml_zmalloc(sizeof(struct symtab));
     assert(new_symtab != NULL);
     bzero(new_symtab, sizeof(struct symtab));
 	new_symtab->type = type;
@@ -186,7 +186,7 @@ static symtab_t table_malloc(type_t type)
  */
 static symbol_t symbol_new(const char *name, type_t type, void *attr)
 {
-    symbol_t new_undef = (symbol_t) malloc(sizeof(struct symbol));
+	symbol_t new_undef = (symbol_t) gdml_zmalloc(sizeof(struct symbol));
     assert(new_undef != NULL);
     if(name) {
         new_undef->name = strdup(name);
@@ -222,23 +222,33 @@ symbol_t symbol_find_from_templates(struct template_table* templates, const char
  *
  * @return the pointer of the symbol with information.
  */
-symbol_t symbol_find(symtab_t symtab, const char* name, type_t type)
+symbol_t default_symbol_find(symtab_t symtab, const char* name, type_t type)
 {
     assert(symtab != NULL && name != NULL);
     symtab_t tmp = symtab;
     symbol_t rt;
-    while(tmp != NULL) {
+    if(tmp != NULL) {
+		printf("before search self table %s\n", name);
         rt = _symbol_find(tmp->table, name, type);
         if(rt) {
             return rt;
         }
+		printf("try to search template %s\n", name);
 		rt = symbol_find_from_templates(symtab->template_table, name, type);
 		if (rt) {
 			return rt;
 		}
+		printf("goto parent table %s\n", name);
         tmp = tmp->parent;
+		if(tmp) {
+			return symbol_find(tmp, name, type);
+		}
     }
     return NULL;
+}
+
+symbol_t symbol_find(symtab_t symtab, const char *name, type_t type) {
+	return symtab->cb(symtab, name, type);
 }
 
 /**
@@ -293,12 +303,12 @@ symbol_t symbol_find_from_templates_notype(struct template_table* templates, con
  *
  * @return the pointer of the symbol with information.
  */
-symbol_t symbol_find_notype(symtab_t symtab, const char *name)
+symbol_t default_symbol_find_notype(symtab_t symtab, const char *name)
 {
     assert(symtab != NULL && name != NULL);
     symtab_t tmp = symtab;
     symbol_t rt;
-    while(tmp != NULL) {
+    if(tmp != NULL) {
         rt = _symbol_find_notype(tmp->table, name);
         if(rt) {
             return rt;
@@ -308,8 +318,15 @@ symbol_t symbol_find_notype(symtab_t symtab, const char *name)
 			return rt;
 		}
         tmp = tmp->parent;
+		if(tmp) {
+			return symbol_find_notype(tmp, name);
+		}
     }
     return NULL;
+}
+
+symbol_t symbol_find_notype(symtab_t symtab, const char *name) {
+	return symtab->notype_cb(symtab, name);
 }
 
 /**
@@ -427,6 +444,19 @@ int symbol_insert(symtab_t symtab, const char* name, type_t type, void* attr)
     return 0;
 }
 
+void symbol_set_value(symbol_t sym, void *attr) {
+	if(sym) {
+		sym->attr = attr;
+	}
+}
+
+void symbol_set_type(symbol_t sym, type_t type) {
+	if(sym) {
+		sym->type = type;
+	}
+}
+
+
 /**
  * @brief create a symbol table root.
  *
@@ -434,7 +464,26 @@ int symbol_insert(symtab_t symtab, const char* name, type_t type, void* attr)
  */
 symtab_t symtab_create(type_t type)
 {
-    return table_malloc(type);
+	symtab_t table;
+
+    table = table_malloc(type);
+	if(table) {
+		table->cb = default_symbol_find;
+		table->notype_cb = default_symbol_find_notype;
+	}
+	return table;
+}
+
+symtab_t symtab_create_with_cb(type_t type, symbol_find_fn_t cb, symbol_find_notype_fn_t notype_cb)
+{
+	symtab_t table;
+
+    table = table_malloc(type);
+	if(table) {
+		table->cb = cb;
+		table->notype_cb = notype_cb;
+	}
+	return table;
 }
 
 void sibling_table_free(symtab_t symtab, int table_num) {

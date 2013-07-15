@@ -35,6 +35,8 @@ typedef struct symtab *symtab_t;
 /* store identifier name, type and pointer to attribute_node.  */
 typedef struct symbol {
     char          *name;  /* identifier name.  */
+	char *alias_name;
+	void *owner;
     type_t         type;  /* identifier type.  */
     struct symbol *next;  /* the other symbol with the same hash value */
 	struct symbol *lnext; /* the symbol list for output. */
@@ -56,6 +58,8 @@ typedef struct undef_var {
 	struct undef_var* next;
 }undef_var_t;
 
+typedef symbol_t (*symbol_find_fn_t)(symtab_t tab, const char *name, type_t type);
+typedef symbol_t (*symbol_find_notype_fn_t)(symtab_t tab, const char *name);
 /* a hash table for storing symbols. it have a pointer to a brother,
  * have a pointer to a child.  */
 struct symtab {
@@ -69,6 +73,9 @@ struct symtab {
 	int table_num;
 	type_t type;
 	int no_check;
+	void *obj;
+	symbol_find_fn_t cb;
+	symbol_find_notype_fn_t notype_cb;
 };
 
 typedef struct symbol_list {
@@ -83,7 +90,11 @@ typedef struct pre_parse_symbol {
 }pre_parse_symbol_t;
 
 /* find and insert symbol from the symbol table.  */
+symbol_t default_symbol_find(symtab_t symtab, const char* name, type_t type);
 symbol_t symbol_find(symtab_t symtab, const char* name, type_t type);
+symbol_t _symbol_find(symbol_t *table, const char* name, type_t type);
+symbol_t _symbol_find_notype(symbol_t* symbol_table, const char* name);
+symbol_t symbol_find_from_templates(struct template_table *table, const char *name, type_t type);
 symbol_t symbol_find_curr(symtab_t symtab, const char* name, type_t type);
 symbol_t symbol_find_notype(symtab_t symtab, const char* name);
 symbol_t symbol_find_curr_notype(symtab_t symtab, const char* name);
@@ -91,8 +102,11 @@ symbol_list_t *symbol_list_find(symtab_t tab, type_t type);
 void symbol_list_free(symbol_list_t *list);
 int symbol_find_type_curr(symtab_t symtab, type_t type, symbol_t **result);
 int symbol_insert(symtab_t symtab, const char* name, type_t type, void* attr);
+void symbol_set_value(symbol_t sym, void *attr);
+void symbol_set_type(symbol_t sym, type_t type);
 /* operate the symbol tables.  */
 symtab_t symtab_create(type_t type);
+symtab_t symtab_create_with_cb(type_t type, symbol_find_fn_t cb, symbol_find_notype_fn_t notype);
 symtab_t symtab_insert_sibling(symtab_t symtab, symtab_t newtab);
 symtab_t symtab_insert_child(symtab_t symtab, symtab_t newtab);
 void symtab_free(symtab_t symtab, int table_num);

@@ -30,6 +30,7 @@
 #include "tree.h"
 #include "expression.h"
 #include "decl.h"
+#include "parameter_type.h"
 
 struct symbol_common {
    tree_t* node;
@@ -102,6 +103,7 @@ typedef struct paramspec {
 	int type;
 	const char* str;
 	expression_t *expr;
+	param_value_t val;
 }paramspec_t;
 
 typedef struct parameter_attr
