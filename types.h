@@ -32,6 +32,8 @@ typedef enum
 	NO_TYPE = 1,
 	/* dml */
 	DML_TYPE,
+	/*object type*/
+	OBJECT_TYPE,
 	/* device */
 	DEVICE_TYPE,
 	/* parameter */
@@ -232,8 +234,6 @@ typedef enum
 	VOLATILE_TYPE,
 	FOOTER_TYPE,
 	THIS_TYPE,
-	/* object */
-	OBJECT_TYPE,
 	/* dictionary */
 	DICTIONARY_TYPE,
 	/* nil */
@@ -341,6 +341,7 @@ typedef enum {
 static const char *sym_type2str[] = {
 	[NO_TYPE] = "none",
 	[DML_TYPE] = "dml",
+	[OBJECT_TYPE] = "object",
 	[DEVICE_TYPE] = "device",
 	[PARAMETER_TYPE] = "parameter",
 	[METHOD_TYPE]    = "method",
