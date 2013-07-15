@@ -234,6 +234,8 @@ typedef enum
 	VOLATILE_TYPE,
 	FOOTER_TYPE,
 	THIS_TYPE,
+	TMP_TYPE,
+	EXPR_STATEMENT,
 	/* dictionary */
 	DICTIONARY_TYPE,
 	/* nil */
@@ -352,6 +354,10 @@ static const char *sym_type2str[] = {
 	[IMPORT_TYPE]    = "import",
 	[TEMPLATE_TYPE]  = "template",
 	[BITORDER_TYPE]  = "bitorder",
+	[IDENT_TYPE]     = "ident",
+	[DML_KEYWORD_TYPE] = "dml keyword",
+	[C_KEYWORD_TYPE]  = "c keyword",
+	[IF_ELSE_TYPE]    = "if...esle...",
 	[THIS_TYPE]      = "this",
 };
 #endif
