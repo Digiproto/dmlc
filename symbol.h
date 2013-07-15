@@ -384,6 +384,7 @@ void params_insert_table(symtab_t table, method_params_t* method_params);
 paramspec_t* get_paramspec(tree_t* node, symtab_t table);
 void parse_comma_expression(tree_t** node, symtab_t table);
 void undef_var_insert(symtab_t table, tree_t* name);
+void print_all_symbol(symtab_t symtab);
 
 //#define DEBUG_SYMBOLS
 
