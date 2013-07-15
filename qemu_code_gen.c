@@ -34,6 +34,8 @@
 #include "symbol.h"
 #include "symbol-common.h"
 #include "object.h"
+#include "qemu_object_headfile.h"
+#include "qemu_platform.h"
 
 static char tab[16][32] =
 	{ {"\t"}, {"\t\t"}, {"\t\t\t"}, {"\t\t\t\t"}, {"\t\t\t\t\t"} };
@@ -92,7 +94,7 @@ static void gen_header_file (device_attr_t * dev, FILE * f)
 	b_list = dev->banks;
 	for (; b_list; b_list = b_list->next) {
 		b = b_list->bank;
-		fprintf (f, "\n\tMemoryRegion %_mr;\n", b->name);
+		fprintf (f, "\n\tMemoryRegion %s_mr;\n", b->name);
 	}
 	b_list = dev->banks;
 	for (; b_list; b_list = b_list->next) {
@@ -171,10 +173,10 @@ static void gen_bank_read_access (device_attr_t * dev, bank_attr_t * b,
 
 	int shift = cal_shift (b->register_size);
 	fprintf (f, "\nstatic uint64_t %s_read(void *p,hwaddr addr,unsigned size){\
-			\n\t%_t *_dev = (%s_t *)p;\
+			\n\t%s_t *_dev = (%s_t *)p;\
 			\n\tunsigned int index = addr >> (%d);\
 			\n\tswitch(index){\
-			\n", b->name, dev->name, dev->name, shift);
+			\n", b->name, dev->name, dev->name, dev->name, shift);
 	register_attr_t *reg;
 	register_list_node_t *l = b->registers;
 	for (; l; l = l->next) {
@@ -196,10 +198,10 @@ static void gen_bank_write_access (device_attr_t * dev, bank_attr_t * b,
 
 	int shift = cal_shift (b->register_size);
 	fprintf (f, "\nstatic void %s_write(void *p,hwaddr addr,uint64_t val,unsigned size){\
-			\n\t%_t *_dev = (%s_t *)p;\
+			\n\t%s_t *_dev = (%s_t *)p;\
 			\n\tunsigned int index = addr >> (%d);\
 			\n\tswitch(index){\
-			\n", b->name, dev->name, dev->name,
+			\n", b->name, dev->name, dev->name, dev->name,
 			 shift);
 	register_attr_t *reg;
 	register_list_node_t *l = b->registers;
@@ -238,9 +240,7 @@ static void gen_memory_region (device_attr_t * dev, FILE * f)
 	bank_attr_t *b;
 	bank_list_node_t *l = dev->banks;
 	gen_bank_accesses (dev, f);
-	char *endian =
-		(dev->endian ==
-		 LITTLE_ENDIAN_T) ? "DEVICE_LITTLE_ENDIAN" : "DEVICE_BIG_ENDIAN";
+	char *endian = "DEVICE_NATIVE_ENDIAN";
 	for (; l; l = l->next) {
 		b = l->bank;
 		fprintf (f, "static const MemoryRegionOps %s_mmio_ops = {\
@@ -321,11 +321,11 @@ static void gen_device_init (device_attr_t * dev, FILE * f)
 	gen_banks_init (dev, f);
 	gen_banks_mr_init (dev, f);
 	fprintf (f, "\nstatic %s_init(SysBusDevice *dev){\
-			\n\t%s_t *_dev = FROM_SYSBUS(%_t,dev);\
+			\n\t%s_t *_dev = FROM_SYSBUS(%s_t,dev);\
 			\n\t%s_regs_init(_dev);\
 			\n\t%s_regs_mr_init(_dev);\
 			\n\treturn 0;\
-			\n}\n", dev->name, dev_name, dev_name);
+			\n}\n", dev->name, dev_name, dev_name, dev_name);
 
 }
 
@@ -436,8 +436,14 @@ void gen_qemu_code (tree_t * root, const char *name)
 		exit(-1);
 	}
 	sym = list->sym;	
+	symbol_list_free(list);
 	dev = (device_attr_t *)sym->attr;
 	dev_obj = create_device_tree(root);
+	print_device_tree(dev_obj);
+	device_realize(dev_obj);
+	print_device_tree(dev_obj);
+	gen_qemu_headerfiles(dev_obj, name);
+	gen_qemu_cfile(dev_obj, name);
 #define PATH_SIZE 256
 	char tmp[PATH_SIZE];
 
@@ -464,4 +470,5 @@ void gen_qemu_code (tree_t * root, const char *name)
 		fprintf (stderr, "cannot open file %s\n", tmp);
 		exit (-1);
 	}
+#undef PATH_SIZE 
 }
