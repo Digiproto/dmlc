@@ -81,6 +81,7 @@ static void gen_bank_write_access(object_t *obj, FILE *f) {
 	fprintf(f, "\t%s_t *_dev = (%s_t *)opaque;\n", dev_name, dev_name);
 	fprintf(f, "\tgeneric_transaction_t v%d_memop;\n", index);
 	fprintf(f, "\tbool v%d_ret = 0;\n ", index2);
+	fprintf(f, "\tUNUSED(v%d_ret);\n", index2);
 	fprintf(f, "\n");
 	fprintf(f, "\tmemset(&v%d_memop, 0, sizeof(v%d_memop));\n", index, index);
 	fprintf(f, "\tSIM_set_mem_op(&v%d_memop, %s);\n", index, "SIM_Trans_Store");
@@ -150,6 +151,7 @@ static void  gen_hard_reset(device_t *dev, FILE *f) {
 	add_object_method(&dev->obj, "hard_reset");
 	fprintf(f, "\nvoid %s_hard_reset(%s_t *obj) {\n", name, name);
 	fprintf(f, "\tbool v%d_exec;\n", index);
+	fprintf(f, "\tUNUSED(v%d_exec);\n", index);
 	fprintf(f, "\n");
 	fprintf(f, "\tv%d_exec = _DML_M_hard_reset(obj);\n",index, name);
 	fprintf(f, "}\n");
@@ -162,6 +164,7 @@ static void  gen_soft_reset(device_t *dev, FILE *f) {
 	add_object_method(&dev->obj, "soft_reset");
 	fprintf(f, "\nvoid %s_soft_reset(%s_t *obj) {\n", name, name);
 	fprintf(f, "\tbool v%d_exec;\n", index);
+	fprintf(f, "\tUNUSED(v%d_exec);\n", index);
 	fprintf(f, "\n");
 	fprintf(f, "\tv%d_exec = _DML_M_soft_reset(obj);\n", index, name);
 	fprintf(f, "}\n");
@@ -182,6 +185,7 @@ static void gen_device_init(device_t *dev, FILE *f) {
 	fprintf(f, "\nstatic int %s_init(SysBusDevice *dev) {\n", dev_name);
 	fprintf(f, "\t%s_t *_dev = DO_UPCAST(%s_t, obj, dev);\n", dev_name, dev_name);
 	fprintf(f, "\tbool v%d_exec = 0;\n", index);
+	fprintf(f, "\tUNUSED(v%d_exec);\n", index);
 	fprintf(f, "\n\t%s_hard_reset(_dev);\n", dev_name);
 	fprintf(f, "\tv%d_exec = _DML_M_init(_dev);\n", index);
 	fprintf(f, "\t%s_mmio_setup(_dev);\n", dev_name);
