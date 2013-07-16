@@ -6,6 +6,8 @@
 #include "stack.h"
 #include "ast.h"
 #include "Parser.h"
+#include "gen_common.h"
+#include "gen_expression.h"
 #define YYDEBUG 1
 const char* dir = "/opt/virtutech/simics-4.0/simics-model-builder-4.0.16/amd64-linux/bin/dml/1.0/";
 
@@ -1504,6 +1506,7 @@ cdecl
 		node->cdecl.basetype = $1;
 		node->cdecl.decl = $2;
 		node->common.print_node = print_cdecl;
+		node->common.translate = translate_cdecl;
 		$$ = node;
 	}
 	| CONST basetype cdecl2 {
@@ -1512,6 +1515,7 @@ cdecl
 		node->cdecl.basetype = $2;
 		node->cdecl.decl = $3;
 		node->common.print_node = print_cdecl;
+		node->common.translate = translate_cdecl2;
 		$$ = node;
 	}
 	;
@@ -1552,6 +1556,7 @@ cdecl2
 		node->cdecl.is_point = 1;
 		node->cdecl.decl = $2;
 		node->common.print_node = print_cdecl;
+		node->common.translate = translate_cdecl2;
 		$$ = node;
 	}
 	| VECT cdecl2 {
@@ -1673,6 +1678,7 @@ typeof
 		tree_t* node = (tree_t*)create_node("typeof", TYPEOF_TYPE, sizeof(struct tree_typeof));
 		node->typeof_tree.expr = $2;
 		node->common.print_node = print_typeof;
+		node->common.translate = translate_typeof;
 		$$ = node;
 	}
 	;
@@ -1878,6 +1884,7 @@ typeident
 	| BOOL {
 		tree_t* node = (tree_t*)c_keyword_node("bool");
 		node->ident.type = BOOL_TYPE;
+		node->common.translate = translate_c_keyword;
 		$$ = node;
 	}
 	| CHAR {
@@ -1898,6 +1905,7 @@ typeident
 	| INT {
 		tree_t* node = (tree_t*)c_keyword_node($1);
 		node->ident.type = INT_TYPE;
+		node->common.translate = translate_c_keyword;
 		$$ = node;
 	}
 	| LONG {
@@ -1947,6 +1955,7 @@ expression
 		node->expr_assign.left = $1;
 		node->expr_assign.right = $3;
 		node->common.print_node = print_expr_assign;
+		node->common.translate = translate_assign;
 		$$ = node;
 	}
 	| expression ADD_ASSIGN expression {
@@ -2063,6 +2072,7 @@ expression
 		node->binary.left = $1;
 		node->binary.right = $3;
 		node->common.print_node = print_binary;
+		node->common.translate = translate_binop_expr;
 		$$ = node;
 	}
 	| expression '*' expression {
@@ -2144,6 +2154,7 @@ expression
 		node->binary.left = $1;
 		node->binary.right = $3;
 		node->common.print_node = print_binary;
+		node->common.translate = translate_binop_expr;
 		$$ = node;
 	}
 	| expression LE_OP expression {
@@ -2323,6 +2334,7 @@ expression
 		node->expr_brack.expr = $1;
 		node->expr_brack.expr_in_brack = $3;
 		node->common.print_node = print_expr_brack;
+		node->common.translate = translate_expr_brack_direct;
 		$$ = node;
 	}
 	| INTEGER_LITERAL {
@@ -2336,6 +2348,7 @@ expression
 			node->int_cst.out_64bit = 1;
 		}
 		node->common.print_node = print_interger;
+		node->common.translate = translate_integer_literal;
 		$$= node;
 	}
 	| FLOAT_LITERAL {
@@ -2363,6 +2376,7 @@ expression
 		tree_t* node = (tree_t*)create_node("quote", QUOTE_TYPE, sizeof(struct tree_quote));
 		node->quote.ident = $2;
 		node->common.print_node = print_quote;
+		node->common.translate = translate_quote;
 		$$ = node;
 	}
 	| ident {
@@ -2454,6 +2468,7 @@ expression
 		node->bit_slic.bit_end = $5;
 		node->bit_slic.endian = $6;
 		node->common.print_node = print_bit_slic;
+		node->common.translate = translate_bit_slic;
 		$$ = node;
 	}
 	;
@@ -2517,6 +2532,7 @@ if_statement
 		tree_t* node = $<tree_type>5;
 		node->if_else.if_block = $6;
 		node->common.print_node = print_if_else;
+		node->common.translate = translate_if_else;
 		current_table = pop(table_stack);
 		$$ = node;
 	}
@@ -2684,6 +2700,7 @@ statement
 		node->call_inline.expr = $2;
 		node->call_inline.ret_args = $3;
 		node->common.print_node = print_call_inline;
+		node->common.translate = translate_call;
 		parse_expression(&($2), current_table);
 		DBG("CALL statement\n");
 		$$ = node;
@@ -2693,6 +2710,7 @@ statement
 		node->call_inline.expr = $2;
 		node->call_inline.ret_args = $3;
 		node->common.print_node = print_call_inline;
+		node->common.translate  = translate_inline;
 		parse_expression(&($2), current_table);
 		DBG("inline statement\n");
 		$$ = node;
@@ -2720,6 +2738,7 @@ statement
 
 		node->log.log_info = parse_log(node);
 		node->common.print_node = print_log;
+		 node->common.translate = translate_log;
 
 		$$ = node;
 	}
@@ -2735,6 +2754,7 @@ statement
 
 		node->log.log_info = parse_log(node);
 		node->common.print_node = print_log;
+		node->common.translate = translate_log;
 
 		$$ = node;
 	}
@@ -2749,6 +2769,7 @@ statement
 
 		node->log.log_info = parse_log(node);
 		node->common.print_node = print_log;
+		node->common.translate = translate_log;
 
 		$$ = node;
 	}
@@ -2796,6 +2817,7 @@ statement
 		node->foreach.in_expr = $5;
 		node->common.print_node = print_foreach;
 		node->common.attr = attr;
+		node->common.translate = translate_foreach;
 
 		attr->common.node = node;
 		DBG("FOREACH in statement\n");
@@ -2903,11 +2925,13 @@ log_args
 compound_statement
 	: '{' statement_list '}' {
 		tree_t* node = (tree_t*)create_node("block", BLOCK_TYPE, sizeof(struct tree_block));
+		node->common.translate = translate_block;
 		node->block.statement = $2;
 		$$ = node;
 	}
 	| '{' '}' {
 		tree_t* node = (tree_t*)create_node("block", BLOCK_TYPE, sizeof(struct tree_block));
+		node->common.translate = translate_block;
 		node->block.statement = NULL;
 		$$ = NULL;
 	}
@@ -2949,6 +2973,7 @@ local
 		node->local_tree.local_keyword = $1;
 		node->local_tree.cdecl = $2;
 		node->common.print_node = print_local;
+		node->common.translate = translate_local;
 		$$ = node;
 	}
 	| STATIC cdecl ';' {
@@ -2965,6 +2990,7 @@ local
 		node->local_tree.cdecl = $2;
 		node->local_tree.expr = $4;
 		node->common.print_node = print_local;
+		node->common.translate = translate_local;
 		$$ = node;
 	}
 	| STATIC cdecl '=' expression ';' {
@@ -3029,6 +3055,7 @@ ident
 		ident->ident.str = (char*)($1);
 		ident->ident.len = strlen(((char*)($1)));
 		ident->common.print_node = print_ident;
+		ident->common.translate = translate_ident;
 		$$ = ident;
 	}
 	| ATTRIBUTE {
@@ -3124,6 +3151,7 @@ ident
 	| SIZE {
 		tree_t* node = (tree_t*)dml_keyword_node("size");
 		node->ident.type = SIZE_TYPE;
+		node->common.translate = translate_dml_keyword;
 		$$ = node;
 	}
 	| CLASS {
