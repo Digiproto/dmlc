@@ -18,9 +18,15 @@ void count(yyscan_t scanner);
 #define MAX_HEAD_LEN 1024
 %}  
 
+%{
+#define YY_USER_ACTION yylloc->first_line = yylloc->last_line = yylineno;         \
+	yylloc->first_column = yycolumn; yylloc->last_column = yycolumn + yyleng - 1; \
+	yycolumn += yyleng; yylloc->file = filestack_top;
+%}
+
 %option outfile="Lexer.c" header-file="Lexer.h"
 
-%option bison-bridge
+%option bison-bridge bison-locations
 %option case-insensitive never-interactive
 %option nounistd noyywrap
 %option reentrant

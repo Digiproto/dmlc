@@ -5,7 +5,7 @@
 #include "symbol.h"
 #include "stack.h"
 #include "ast.h"
-#include "Parser.h"
+//#include "Parser.h"
 #include "gen_common.h"
 #include "gen_expression.h"
 #define YYDEBUG 1
@@ -13,11 +13,27 @@ const char* dir = "/opt/virtutech/simics-4.0/simics-model-builder-4.0.16/amd64-l
 
 //#define PARSE_DEBUG
 #ifdef PARSE_DEBUG
-#define DBG debug_black
+//#define DBG debug_black
 //#define DBG(fmt, ...) do { fprintf(stderr, fmt, ## __VA_ARGS__); } while (0)
+#define DBG(fmt, ...) do { \
+		fprintf(stderr, "======================================================================================\n"); \
+		fprintf(stderr, ">>>> file: %s <<<<\n", yylloc.file->name); \
+		fprintf(stderr, ">>>> line: %d, column: %d <<<<\n", yylloc.first_line, yylloc.first_column); \
+		fprintf(stderr, fmt, ## __VA_ARGS__); \
+		fprintf(stderr, "======================================================================================\n"); \
+	} while (0)
 #else
 #define DBG(fmt, ...) do { } while (0)
 #endif
+%}
+
+%output  "Parser.c"
+%defines "Parser.h"
+
+%code requires {
+#include "import.h"
+
+struct file_stack* filestack_top;
 
 typedef struct YYLTYPE
 {
@@ -25,31 +41,36 @@ typedef struct YYLTYPE
 	int first_column;
 	int last_line;
 	int last_column;
+	struct file_stack* file;
 } YYLTYPE;
-#include "Lexer.h"
 
-extern int  yylex(YYSTYPE *yylval_param, yyscan_t yyscanner);
-extern tree_t* parse_auto_api(void);
-void yyerror(yyscan_t* scanner, void* v, char *s);
-extern char* builtin_filename;
-extern symtab_t root_table;
-stack_t* table_stack;
-int object_spec_type = -1;
-object_attr_t* object_comm_attr = NULL;
-static symtab_t current_table = NULL;
-static symtab_t prefix_table = NULL;
-static long int current_table_num = 0;
-tree_t* current_object_node = NULL;
-%}
+#define YYLTYPE_IS_DECLARED 1
 
-%output  "Parser.c"
-%defines "Parser.h"
+#define YYLLOC_DEFAULT(Current, Rhs, N)                                \
+	do{                                                                \
+		if (N)                                                         \
+		{                                                              \
+			(Current).first_line = YYRHSLOC (Rhs, 1).first_line;       \
+			(Current).first_column = YYRHSLOC (Rhs, 1).first_column;   \
+			(Current).last_line = YYRHSLOC (Rhs, N).last_line;         \
+			(Current).last_column = YYRHSLOC (Rhs, N).last_column;     \
+			(Current).file = YYRHSLOC (Rhs, 1).file;                   \
+		}else{                                                         \
+			(Current).first_line = (Current).last_line =               \
+					YYRHSLOC (Rhs, 0).last_line;                       \
+			(Current).first_column = (Current).last_column =           \
+					YYRHSLOC (Rhs, 0).last_column;                     \
+			(Current).file = NULL;                                     \
+		}                                                              \
+	}while(0)
+}
 
 %define api.pure
 
 %lex-param   { yyscan_t scanner }
 %parse-param { yyscan_t scanner }
 %parse-param { tree_t** root_ptr }
+%locations
 
 %union  {
 	int ival;
@@ -60,6 +81,22 @@ tree_t* current_object_node = NULL;
 	//enum tree_code code;
 	location_t location;
 }
+
+%{
+#include "Lexer.h"
+//extern int  yylex(YYSTYPE *yylval_param, yyscan_t yyscanner);
+extern tree_t* parse_auto_api(void);
+void yyerror(YYLTYPE* location, yyscan_t* scanner, tree_t** root_ptr, char *s);
+extern char* builtin_filename;
+extern symtab_t root_table;
+stack_t* table_stack;
+int object_spec_type = -1;
+object_attr_t* object_comm_attr = NULL;
+static symtab_t current_table = NULL;
+static symtab_t prefix_table = NULL;
+static long int current_table_num = 0;
+tree_t* current_object_node = NULL;
+%}
 
 %token DML IDENTIFIER INTEGER_LITERAL FLOAT_LITERAL STRING_LITERAL SIZEOF
 %token INC_OP DEC_OP LEFT_OP RIGHT_OP LE_OP GE_OP EQ_OP NE_OP
@@ -1196,7 +1233,9 @@ import
 		tree_t* ast = NULL;
 		yylex_init(&scanner);
 		yyrestart(file, scanner);
+		filestack_top = push_file_stack(filestack_top, fullname);  // <<<<< push new file name
 		yyparse(scanner, &ast);
+		filestack_top = pop_file_stack(filestack_top);             // <<<<< pop top file name
 		yylex_destroy(scanner);
 		fclose(file);
 		DBG("End of parse the import file %s\n", fullname);
@@ -3270,9 +3309,15 @@ ident
 extern int column;
 int lineno  = 1;    /* number of current source line */
 
-void yyerror(yyscan_t* scanner, void* v, char *s) {
+void yyerror(YYLTYPE* location, yyscan_t* scanner, tree_t** root_ptr, char *s) {
 	fflush(stdout);
-	fprintf(stderr,"Syntax error on line #%d, column #%d: %s\n", lineno, column, s);
+	if(location->file) {
+		fprintf(stderr,"Syntax error on file: %s\n"
+						"line #%d, column #%d\n"
+						"reason: %s\n", location->file->name, location->first_line, location->first_column, s);
+	}else{
+		fprintf(stderr,"Syntax error on line #%d, column #%d: %s\n", location->first_line, location->first_column, s);
+	}
 	exit(1);
 }
 
@@ -3300,7 +3345,9 @@ tree_t* parse_auto_api(void) {
 	tree_t* ast = NULL;
 	yylex_init(&scanner);
 	yyrestart(file, scanner);
+	filestack_top = push_file_stack(filestack_top, fullname);  // <<<<< push new file name
 	yyparse(scanner, &ast);
+	filestack_top = pop_file_stack(filestack_top);             // <<<<< pop top file name
 	yylex_destroy(scanner);
 	fclose(file);
 	printf("End of parse the import file %s\n", fullname);

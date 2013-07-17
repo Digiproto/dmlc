@@ -71,7 +71,9 @@ tree_t* get_ast (char *filename)
 	tree_t* root = NULL;
 	yylex_init (&scanner);
 	yyrestart (file, scanner);
+	filestack_top = push_file_stack(filestack_top, filename);  // <<<<< push new file name
 	yyparse (scanner, &root);
+	filestack_top = pop_file_stack(filestack_top);             // <<<<< pop top file name
 	yylex_destroy (scanner);
 
 	fclose (file);
@@ -79,6 +81,7 @@ tree_t* get_ast (char *filename)
 	return root;
 }
 
+struct file_stack* filestack_top = NULL;
 char *builtin_filename = NULL;
 symtab_t root_table = NULL;
 extern void gen_qemu_code(tree_t *root, const char *out_dir);
