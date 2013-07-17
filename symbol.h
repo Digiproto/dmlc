@@ -119,11 +119,6 @@ typedef struct params {
 	int is_notype;
 	decl_t* decl;
 	char* var_name;
-#if 0
-	decl_type_t* decl_type;
-	char* decl_str;
-	expression_t *value;
-#endif
 }params_t;
 
 typedef struct method_params {
@@ -158,23 +153,31 @@ typedef struct arraydef_attr {
 typedef struct foreach_attr {
 	struct symbol_common common;
 	const char* ident;
+	int type;
 	expression_t* expr;
 	symtab_t table;
 }foreach_attr_t;
 
+struct object_common {
+   tree_t* node;
+   symtab_t table;
+   int table_num;
+   const char *name;
+   const char* desc;
+   char** templates;
+   int templates_num;
+};
+
+struct bank_attr;
+
 typedef struct register_attr
 {
-	struct symbol_common common;
-	const char *name;
+	struct object_common common;
 	int is_array;
 	int size;
 	int offset;
-	char** templates;
-	int templates_num;
-	char* desc;
 	arraydef_attr_t* arraydef;
 	struct bank_attr *bank;
-	symtab_t table;
 } register_attr_t;
 
 typedef struct register_list_node
@@ -185,14 +188,9 @@ typedef struct register_list_node
 
 typedef struct bank_attr
 {
-	struct symbol_common common;
-	char** templates;
-	const char *name;
-	const char* desc;
-	int template_num;
+	struct object_common common;
 	int register_size;
 	int size;
-	symtab_t table;
 	register_list_node_t *registers;
 } bank_attr_t;
 
@@ -230,14 +228,9 @@ typedef struct bitrange_attr{
 
 typedef struct field_attr
 {
-	struct symbol_common common;
-	const char *name;
-	const char* desc;
-	char** templates;
-	int template_num;
+	struct object_common common;
 	int is_range;
 	bitrange_attr_t* bitrange;
-	symtab_t table;
 } field_attr_t;
 
 typedef struct data_attr
@@ -246,14 +239,9 @@ typedef struct data_attr
 } data_attr_t;
 typedef struct connect_attr
 {
-	struct symbol_common common;
-	const char* name;
-	const char* desc;
-	char** templates;
-	int template_num;
+	struct object_common common;
 	int is_array;
 	arraydef_attr_t* arraydef;
-	symtab_t table;
 } connect_attr_t;
 
 typedef struct connect_array_attr
@@ -262,49 +250,29 @@ typedef struct connect_array_attr
 
 typedef struct interface_attr
 {
-	struct symbol_common common;
-	const char* name;
-	const char* desc;
-	char** templates;
-	int template_num;
-	symtab_t table;
+	struct object_common common;
 } interface_attr_t;
 
 typedef struct attribute_attr
 {
-	struct symbol_common common;
-	const char* name;
-	const char* desc;
-	char** templates;
+	struct object_common common;
 	int is_array;
-	int template_num;
 	arraydef_attr_t* arraydef;
-	symtab_t table;
 } attribute_attr_t;
 typedef struct attribute_array_attr
 {
 } attribute_array_attr_t;
 
-typedef struct event_attr_t
+typedef struct event_attr
 {
-	struct symbol_common common;
-	const char* name;
-	const char* desc;
-	char** templates;
-	int template_num;
-	symtab_t table;
+	struct object_common common;
 } event_attr_t;
 
 typedef struct group_attr
 {
-	struct symbol_common common;
-	const char* name;
-	const char* desc;
-	char** templates;
-	int template_num;
+	struct object_common common;
 	int is_array;
 	arraydef_attr_t* arraydef;
-	symtab_t table;
 } group_attr_t;
 
 typedef struct group_array_attr
@@ -313,21 +281,12 @@ typedef struct group_array_attr
 
 typedef struct port_attr
 {
-	struct symbol_common common;
-	const char* name;
-	const char* desc;
-	char** templates;
-	int template_num;
-	symtab_t table;
+	struct object_common common;
 } port_attr_t;
+
 typedef struct implement_attr
 {
-	struct symbol_common common;
-	const char* name;
-	const char* desc;
-	char** templates;
-	int template_num;
-	symtab_t table;
+	struct object_common common;
 } implement_attr_t;
 
 typedef struct bank_list_node
@@ -343,6 +302,7 @@ typedef struct device_attr
 	int endian;
 	bank_list_node_t *banks;
 	tree_t* node;
+	symtab_t root_table;
 } device_attr_t;
 
 typedef struct layout_attr {
@@ -381,6 +341,20 @@ typedef struct c_array {
 	decl_t* decl;
 	expression_t* expr;
 }c_array_t;
+
+typedef union object_attr {
+	struct object_common common;
+	struct bank_attr bank;
+	struct register_attr reg;
+	struct field_attr field;
+	struct connect_attr connect;
+	struct interface_attr interface;
+	struct attribute_attr attribute;
+	struct event_attr event;
+	struct group_attr group;
+	struct port_attr port;
+	struct implement_attr implement;
+}object_attr_t;
 
 void params_insert_table(symtab_t table, method_params_t* method_params);
 paramspec_t* get_paramspec(tree_t* node, symtab_t table);

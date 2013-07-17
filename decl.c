@@ -1210,7 +1210,7 @@ decl_t* change_decl(decl_t* decl_dest, decl_t* decl_src) {
 	return decl_dest;
 }
 
-function_t* get_func_infor(const char* func_name, tree_t* func_params, symtab_t table, decl_t* decl) {
+function_t* get_func_infor(const char* func_name, tree_t* func_params, symtab_t table, decl_t* decl, int is_pointer) {
 	assert(func_name != NULL);
 	assert(table != NULL);
 	assert(decl != NULL);
@@ -1230,6 +1230,18 @@ function_t* get_func_infor(const char* func_name, tree_t* func_params, symtab_t 
 	if (func_params) {
 		func->argc = get_param_num(func_params);
 		func->param = parse_function_params(func_params, table);
+		if (func->argc == 1) {
+				if ((func->param->is_ellipsis) ||
+				(strcmp(func->param->decl->decl_str, "void ") == 0)) {
+				func->argc = 0;
+			}
+		}
+		if ((is_pointer == 1) && ((func->argc > 0) && (func->param->is_ellipsis == 0))) {
+			if (strncmp(func->param->decl->decl_str, "conf_object_t * obj", strlen("conf_object_t * obj")) == 0) {
+				func->argc -= 1;
+				func->param = func->param->next;
+			}
+		}
 	}
 
 	return func;
@@ -1247,7 +1259,7 @@ int parse_c_function(tree_t* node, symtab_t table, decl_t* decl) {
 	if ((func_node->common.type == IDENT_TYPE)
 			|| (func_node->common.type == DML_KEYWORD_TYPE)) {
 		decl_t* new_decl = create_cdecl_struct();
-		function_t* func = get_func_infor((char*)(func_node->ident.str), func_params, table, decl);
+		function_t* func = get_func_infor((char*)(func_node->ident.str), func_params, table, decl, 0);
 		new_decl->type->is_func = 1;
 		new_decl->type->func_decl = func;
 		decl = change_decl(decl, new_decl);
@@ -1274,7 +1286,7 @@ int parse_c_function(tree_t* node, symtab_t table, decl_t* decl) {
 				else {
 					name = new_decl->type->pre_dml_name;
 				}
-				function_t* func = get_func_infor(name, func_params, table, decl);
+				function_t* func = get_func_infor(name, func_params, table, decl, 1);
 
 				new_decl->type->is_func_pointer = 1;
 				new_decl->type->func_decl = func;

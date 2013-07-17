@@ -66,7 +66,7 @@ static void gen_register_struct (device_attr_t * dev, register_attr_t * reg,
 								 FILE * f)
 {
 	char *type = "uint32_t";
-	fprintf (f, "\t\t%s %s;\n", type, reg->name);
+	fprintf (f, "\t\t%s %s;\n", type, reg->common.name);
 }
 
 static void gen_bank_struct (device_attr_t * dev, bank_attr_t * b, FILE * f)
@@ -79,7 +79,7 @@ static void gen_bank_struct (device_attr_t * dev, bank_attr_t * b, FILE * f)
 		gen_register_struct (dev, reg, f);
 	}
 
-	fprintf (f, "\n\t} %s;\n", b->name);
+	fprintf (f, "\n\t} %s;\n", b->common.name);
 
 }
 
@@ -94,7 +94,7 @@ static void gen_header_file (device_attr_t * dev, FILE * f)
 	b_list = dev->banks;
 	for (; b_list; b_list = b_list->next) {
 		b = b_list->bank;
-		fprintf (f, "\n\tMemoryRegion %s_mr;\n", b->name);
+		fprintf (f, "\n\tMemoryRegion %s_mr;\n", b->common.name);
 	}
 	b_list = dev->banks;
 	for (; b_list; b_list = b_list->next) {
@@ -142,7 +142,7 @@ static void gen_register_read_access (device_attr_t * dev,
 
 	fprintf (f, "\nstatic uint64_t %s_%s_read(%s_t *_dev,unsigned size){\
 			\n\treturn _dev->%s.%s;\
-			\n}\n", reg->bank->name, reg->name, dev->name, reg->bank->name, reg->name);
+			\n}\n", reg->bank->common.name, reg->common.name, dev->name, reg->bank->common.name, reg->common.name);
 }
 
 static void gen_register_write_access (device_attr_t * dev,
@@ -151,8 +151,8 @@ static void gen_register_write_access (device_attr_t * dev,
 
 	fprintf (f, "\nstatic void %s_%s_write(%s_t *_dev,uint64_t val,unsigned size){\
 			\n\t_dev->%s.%s = val;\
-			\n}\n", reg->bank->name, reg->name, dev->name, reg->bank->name,
-			 reg->name);
+			\n}\n", reg->bank->common.name, reg->common.name, dev->name, reg->bank->common.name,
+			 reg->common.name);
 }
 
 static void gen_registers_access (device_attr_t * dev, bank_attr_t * b,
@@ -176,14 +176,14 @@ static void gen_bank_read_access (device_attr_t * dev, bank_attr_t * b,
 			\n\t%s_t *_dev = (%s_t *)p;\
 			\n\tunsigned int index = addr >> (%d);\
 			\n\tswitch(index){\
-			\n", b->name, dev->name, dev->name, dev->name, shift);
+			\n", b->common.name, dev->name, dev->name, dev->name, shift);
 	register_attr_t *reg;
 	register_list_node_t *l = b->registers;
 	for (; l; l = l->next) {
 		reg = l->reg;
 		fprintf (f, "\n\t\tcase 0x%x:\n", (reg->offset >> shift));
-		fprintf (f, "\n\t\t\treturn %s_%s_read(_dev,size);\n", b->name,
-				 reg->name);
+		fprintf (f, "\n\t\t\treturn %s_%s_read(_dev,size);\n", b->common.name,
+				 reg->common.name);
 	}
 	fprintf (f, "\n\t\tdefault:\
 			\n\t\t\tprintf(\"fault addr 0x%%x\\n\",index);");
@@ -201,15 +201,15 @@ static void gen_bank_write_access (device_attr_t * dev, bank_attr_t * b,
 			\n\t%s_t *_dev = (%s_t *)p;\
 			\n\tunsigned int index = addr >> (%d);\
 			\n\tswitch(index){\
-			\n", b->name, dev->name, dev->name, dev->name,
+			\n", b->common.name, dev->name, dev->name, dev->name,
 			 shift);
 	register_attr_t *reg;
 	register_list_node_t *l = b->registers;
 	for (; l; l = l->next) {
 		reg = l->reg;
 		fprintf (f, "\n\t\tcase 0x%x:\n", (reg->offset >> shift));
-		fprintf (f, "\n\t\t\t%s_%s_write(_dev,val,size);\n", b->name,
-				 reg->name);
+		fprintf (f, "\n\t\t\t%s_%s_write(_dev,val,size);\n", b->common.name,
+				 reg->common.name);
 		fprintf (f, "\n\t\t\tbreak;\n");
 	}
 	fprintf (f, "\n\t\tdefault:\
@@ -251,7 +251,7 @@ static void gen_memory_region (device_attr_t * dev, FILE * f)
 				\n\t\t.min_access_size = 1;\
 				\n\t\t.max_access_size = %d;\
 				\n\t},\
-				\n};\n", b->name, b->name, b->name, endian, b->register_size);
+				\n};\n", b->common.name, b->common.name, b->common.name, endian, b->register_size);
 	}
 
 }
@@ -306,10 +306,10 @@ static void gen_banks_mr_init (device_attr_t * dev, FILE * f)
 	for (; l; l = l->next) {
 		b = l->bank;
 		fprintf (f, "\n\tmemory_region_init_io(&_dev->%s_mr,%s_mmio_ops,_dev,0x%x);\
-				\n", b->name, b->name,
+				\n", b->common.name, b->common.name,
 				 b->size);
 		fprintf (f, "\n\tsysbus_init_mmio(_dev,&_dev->%s_mr);\
-				\n", b->name);
+				\n", b->common.name);
 	}
 	fprintf (f, "\n}\n");
 }
@@ -337,7 +337,7 @@ static void gen_register_reset (device_attr_t * dev, register_attr_t * reg,
 	fprintf (f, "\n%s{\n", tab);
 
 	char *tab2 = get_tab (n + 1);
-	fprintf (f, "%s_dev->%s.%s = 0;\n", tab2, reg->bank->name, reg->name);
+	fprintf (f, "%s_dev->%s.%s = 0;\n", tab2, reg->bank->common.name, reg->common.name);
 
 	fprintf (f, "\n%s}\n", tab);
 

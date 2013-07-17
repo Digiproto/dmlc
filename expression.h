@@ -56,7 +56,14 @@ typedef struct expression {
     const_expr_t* const_expr;
     tree_t* node;
 	struct expression* next;
+	void* func;
 } expression_t;
+
+typedef struct reference {
+	const char* name;
+	unsigned is_pointer;
+	struct reference* next;
+} reference_t;
 
 expression_t* parse_expression(tree_t** node, symtab_t table);
 void parse_log_args(tree_t** node, symtab_t table);

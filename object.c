@@ -228,7 +228,7 @@ static void create_field_object(symbol_t sym){
 	printf("found %s in register %s\n", sym->name, OBJ->name);
 	field_t *fld = gdml_zmalloc(sizeof(*fld));
 	field_attr_t *field_attr = (field_attr_t *)sym->attr;
-	init_object(&fld->obj,sym->name,"field",field_attr->common.node, field_attr->table);
+	init_object(&fld->obj,sym->name,"field",field_attr->common.node, field_attr->common.table);
 }
 
 
@@ -264,7 +264,7 @@ static void create_register_object(symbol_t sym){
 	printf("register %s found in bank %s\n", sym->name, OBJ->name);
 	dml_register_t *reg = (dml_register_t *)gdml_zmalloc(sizeof(*reg));
 	register_attr_t *reg_attr = (register_attr_t *)(sym->attr);
-	symtab_t table = reg_attr->table;
+	symtab_t table = reg_attr->common.table;
 
 	init_object(&reg->obj,sym->name,"register",reg_attr->common.node, table);
 	OBJ = &reg->obj;
@@ -278,7 +278,7 @@ static void create_iface_object(symbol_t sym) {
 	printf("iface %s found in connect %s\n", sym->name, OBJ->name);
 	interface_t *iface = (interface_t *)gdml_zmalloc(sizeof(*iface));
 	interface_attr_t *attr = (interface_attr_t *)sym->attr;
-	symtab_t table = attr->table;
+	symtab_t table = attr->common.table;
 
 	init_object(&iface->obj, sym->name, "interface_t", attr->common.node, table);
 }
@@ -305,7 +305,7 @@ static void create_connect_object(symbol_t sym) {
 	printf("connect %s found in device %s", sym->name, OBJ->name);
 	connect_t *con = (connect_t *)gdml_zmalloc(sizeof(*con));
 	connect_attr_t *attr = (connect_attr_t *)(sym->attr);
-	symtab_t table = attr->table;
+	symtab_t table = attr->common.table;
 
 	init_object(&con->obj, sym->name, "connect", attr->common.node, table);
 	OBJ = &con->obj;
@@ -348,7 +348,7 @@ static void create_bank_object(symbol_t sym){
 	bank_t *bank = gdml_zmalloc(sizeof(*bank));
 	printf("bank %s found in device %s\n",sym->name, OBJ->name);
 	bank_attr_t *b = (bank_attr_t *)(sym->attr);
-	symtab_t table = b->table;
+	symtab_t table = b->common.table;
 	init_object(&bank->obj,sym->name,"bank",b->common.node, table);		
 	OBJ = &bank->obj;
 	create_register_objs(table);

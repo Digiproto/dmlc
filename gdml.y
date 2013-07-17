@@ -35,6 +35,7 @@ extern char* builtin_filename;
 extern symtab_t root_table;
 stack_t* table_stack;
 int object_spec_type = -1;
+object_attr_t* object_comm_attr = NULL;
 static symtab_t current_table = NULL;
 static symtab_t prefix_table = NULL;
 static long int current_table_num = 0;
@@ -222,22 +223,20 @@ dml
 		node->common.attr = attr;
 
 		tree_t* api_node = parse_auto_api();
-
 		create_node_list(node, api_node);
 
-		$<tree_type>$ = node;
-	}
-	syntax_modifiers device_statements {
 		tree_t* import_ast = NULL;
 		if(builtin_filename != NULL) {
 			import_ast = (tree_t*)get_ast(builtin_filename);
 			printf("\n\nbuiltin_filename: %s\n\n", builtin_filename);
 			if(import_ast->common.child != NULL) {
-				create_node_list($<tree_type>4, import_ast->common.child);
-				//create_node_list(node, import_ast);
+				create_node_list(node, import_ast->common.child);
 			}
 		}
 
+		$<tree_type>$ = node;
+	}
+	syntax_modifiers device_statements {
 		if($5 != NULL)	{
 			printf("\ndevice list: name: %s\n\n", $5->common.name);
 			create_node_list($<tree_type>4, $5);
@@ -349,11 +348,11 @@ object
 		}
 		DBG("BANK is %s\n", $2->ident.str);
 
-		bank_attr_t* attr = (bank_attr_t*)gdml_zmalloc(sizeof(bank_attr_t));
-		attr->name = $2->ident.str;
+		object_attr_t* attr = (object_attr_t*)gdml_zmalloc(sizeof(struct bank_attr));
+		attr->common.name = $2->ident.str;
 		attr->common.table_num = current_table->table_num;
-		attr->templates = get_templates($3);
-		attr->template_num = get_list_num($3);
+		attr->common.templates = get_templates($3);
+		attr->common.templates_num = get_list_num($3);
 
 		tree_t* node = (tree_t*)create_node("bank", BANK_TYPE, sizeof(struct tree_bank));
 		node->bank.name = $2->ident.str;
@@ -365,6 +364,7 @@ object
 
 		symbol_insert(current_table, $2->ident.str, BANK_TYPE, attr);
 		object_spec_type = BANK_TYPE;
+		object_comm_attr = attr;
 
 		$<tree_type>$ = node;
 	}
@@ -372,20 +372,21 @@ object
 		$<tree_type>4->bank.spec = $5;
 		$<tree_type>4->common.print_node = print_bank;
 		bank_attr_t* attr = (bank_attr_t*)($<tree_type>4->common.attr);
-		attr->desc = get_obj_desc($5);
-		attr->table = get_obj_block_table($5);
+		attr->common.desc = get_obj_desc($5);
+		//attr->common.table = get_obj_block_table($5);
 		object_spec_type = -1;
+		object_comm_attr = NULL;
 		$$ = $<tree_type>4;
 	}
 	| REGISTER objident sizespec offsetspec istemplate {
 		DBG("register is %s\n", $2->ident.str);
-		register_attr_t* attr = (register_attr_t*)gdml_zmalloc(sizeof(register_attr_t));
-		attr->name = $2->ident.str;
-		attr->is_array = 0;
-		attr->size = get_size($3);
-		attr->offset = get_offset($4);
-		attr->templates = get_templates($5);
-		attr->templates_num = get_list_num($5);
+		object_attr_t* attr = (object_attr_t*)gdml_zmalloc(sizeof(register_attr_t));
+		attr->common.name = $2->ident.str;
+		attr->reg.is_array = 0;
+		attr->reg.size = get_size($3);
+		attr->reg.offset = get_offset($4);
+		attr->common.templates = get_templates($5);
+		attr->common.templates_num = get_list_num($5);
 		symbol_insert(current_table, $2->ident.str, REGISTER_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("register", REGISTER_TYPE, sizeof(struct tree_register));
@@ -399,27 +400,29 @@ object
 
 		attr->common.node = node;
 		object_spec_type = REGISTER_TYPE;
+		object_comm_attr = attr;
 		$<tree_type>$ = node;
 	}
 	object_spec {
 		tree_t* node = $<tree_type>6;
 		register_attr_t* attr = (register_attr_t*)(node->common.attr);
-		attr->desc = get_obj_desc($7);
-		attr->table = get_obj_block_table($7);
+		attr->common.desc = get_obj_desc($7);
+		//attr->common.table = get_obj_block_table($7);
 		node->reg.spec = $7;
 		object_spec_type = -1;
+		object_comm_attr = NULL;
 		$$ = node;
 	}
 	| REGISTER objident '[' arraydef ']' sizespec offsetspec istemplate {
 		DBG("Register is %s\n", $2->ident.str);
-		register_attr_t* attr = (register_attr_t*)gdml_zmalloc(sizeof(register_attr_t));
-		attr->name = $2->ident.str;
-		attr->is_array = 1;
-		attr->size = get_size($6);
-		attr->offset = get_offset($7);
-		attr->arraydef = get_arraydef($4);
-		attr->templates = get_templates($8);
-		attr->templates_num = get_list_num($8);
+		object_attr_t* attr = (object_attr_t*)gdml_zmalloc(sizeof(register_attr_t));
+		attr->common.name = $2->ident.str;
+		attr->reg.is_array = 1;
+		attr->reg.size = get_size($6);
+		attr->reg.offset = get_offset($7);
+		attr->reg.arraydef = get_arraydef($4);
+		attr->common.templates = get_templates($8);
+		attr->common.templates_num = get_list_num($8);
 		symbol_insert(current_table, $2->ident.str, REGISTER_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("register", REGISTER_TYPE, sizeof(struct tree_register));
@@ -434,15 +437,17 @@ object
 
 		attr->common.node = node;
 		object_spec_type = REGISTER_TYPE;
+		object_comm_attr = attr;
 		$<tree_type>$ = node;
 	}
 	object_spec {
 		tree_t* node = $<tree_type>9;
 		register_attr_t* attr = (register_attr_t*)(node->common.attr);
 		node->reg.spec = $10;
-		attr->desc = get_obj_desc($10);
-		attr->table = get_obj_block_table($10);
+		attr->common.desc = get_obj_desc($10);
+		//attr->common.table = get_obj_block_table($10);
 		object_spec_type = -1;
+		object_comm_attr = NULL;
 		$$ = node;
 	}
 	| FIELD objident bitrange istemplate {
@@ -450,13 +455,13 @@ object
 			fprintf(stderr, "need the identifier of field\n");
 			exit(-1);
 		}
-		field_attr_t* attr = (field_attr_t*)gdml_zmalloc(sizeof(field_attr_t));
-		attr->name = $2->ident.str;
-		attr->is_range = 1;
-		attr->templates = get_templates($4);
-		attr->template_num = get_list_num($4);
+		object_attr_t* attr = (object_attr_t*)gdml_zmalloc(sizeof(field_attr_t));
+		attr->common.name = $2->ident.str;
+		attr->field.is_range = 1;
+		attr->common.templates = get_templates($4);
+		attr->common.templates_num = get_list_num($4);
 		/* FIXME: should parsing bitrange */
-		attr->bitrange = $3->common.attr;
+		attr->field.bitrange = $3->common.attr;
 		symbol_insert(current_table, $2->ident.str, FIELD_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("field", FIELD_TYPE, sizeof(struct tree_field));
@@ -468,6 +473,8 @@ object
 		current_object_node = node;
 
 		attr->common.node = node;
+		object_spec_type = FIELD_TYPE;
+		object_comm_attr = attr;
 
 		$<tree_type>$ = node;
 	}
@@ -475,8 +482,10 @@ object
 		tree_t* node = $<tree_type>5;
 		field_attr_t* attr = (field_attr_t*)(node->common.attr);
 		node->field.spec = $6;
-		attr->desc = get_obj_desc($6);
-		attr->table = get_obj_block_table($6);
+		attr->common.desc = get_obj_desc($6);
+		//attr->common.table = get_obj_block_table($6);
+		object_spec_type = -1;
+		object_comm_attr = NULL;
 		$$ = node;
 	}
 	| FIELD objident istemplate {
@@ -484,11 +493,11 @@ object
 			fprintf(stderr, "need the identifier of field\n");
 			exit(-1);
 		}
-		field_attr_t* attr = (field_attr_t*)gdml_zmalloc(sizeof(field_attr_t));
-		attr->name = $2->ident.str;
-		attr->is_range = 0;
-		attr->templates = get_templates($3);
-		attr->template_num = get_list_num($3);
+		object_attr_t* attr = (object_attr_t*)gdml_zmalloc(sizeof(field_attr_t));
+		attr->common.name = $2->ident.str;
+		attr->field.is_range = 0;
+		attr->common.templates = get_templates($3);
+		attr->common.templates_num = get_list_num($3);
 		symbol_insert(current_table, $2->ident.str, FIELD_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("field", FIELD_TYPE, sizeof(struct tree_field));
@@ -500,14 +509,18 @@ object
 		current_object_node = node;
 
 		attr->common.node = node;
+		object_spec_type = FIELD_TYPE;
+		object_comm_attr = attr;
 		$<tree_type>$ = node;
 	}
 	object_spec {
 		tree_t* node = $<tree_type>4;
 		field_attr_t* attr = (field_attr_t*)(node->common.attr);
 		node->field.spec = $5;
-		attr->desc = get_obj_desc($5);
-		attr->table = get_obj_block_table($5);
+		attr->common.desc = get_obj_desc($5);
+		//attr->common.table = get_obj_block_table($5);
+		object_spec_type = -1;
+		object_comm_attr = NULL;
 		$$ = node;
 	}
 	| DATA cdecl ';' {
@@ -524,11 +537,11 @@ object
 			fprintf(stderr, "need the identifier of field\n");
 			exit(-1);
 		}
-		connect_attr_t* attr = (connect_attr_t*)gdml_zmalloc(sizeof(connect_attr_t));
-		attr->name = $2->ident.str;
-		attr->is_array = 0;
-		attr->templates = get_templates($3);
-		attr->template_num = get_list_num($3);
+		object_attr_t* attr = (object_attr_t*)gdml_zmalloc(sizeof(connect_attr_t));
+		attr->common.name = $2->ident.str;
+		attr->connect.is_array = 0;
+		attr->common.templates = get_templates($3);
+		attr->common.templates_num = get_list_num($3);
 		symbol_insert(current_table, $2->ident.str, CONNECT_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("connect", CONNECT_TYPE, sizeof(struct tree_connect));
@@ -539,6 +552,8 @@ object
 		current_object_node = node;
 
 		attr->common.node = node;
+		object_spec_type = CONNECT_TYPE;
+		object_comm_attr = attr;
 		DBG("CONNECT_TYPE: %s\n", $2->ident.str);
 		$<tree_type>$ = node;
 	}
@@ -546,8 +561,10 @@ object
 		tree_t* node = $<tree_type>4;
 		connect_attr_t* attr = (connect_attr_t*)(node->common.attr);
 		node->connect.spec = $5;
-		attr->desc = get_obj_desc($5);
-		attr->table = get_obj_block_table($5);
+		attr->common.desc = get_obj_desc($5);
+		//attr->common.table = get_obj_block_table($5);
+		object_spec_type = -1;
+		object_comm_attr = NULL;
 		$$ = node;
 	}
 	| INTERFACE objident istemplate {
@@ -555,10 +572,10 @@ object
 			fprintf(stderr, "need the identifier of field\n");
 			exit(-1);
 		}
-		interface_attr_t* attr = (interface_attr_t*)gdml_zmalloc(sizeof(interface_attr_t));
-		attr->name = $2->ident.str;
-		attr->templates = get_templates($3);
-		attr->template_num = get_list_num($3);
+		object_attr_t* attr = (object_attr_t*)gdml_zmalloc(sizeof(interface_attr_t));
+		attr->common.name = $2->ident.str;
+		attr->common.templates = get_templates($3);
+		attr->common.templates_num = get_list_num($3);
 		symbol_insert(current_table, $2->ident.str, INTERFACE_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("interface", INTERFACE_TYPE, sizeof(struct tree_interface));
@@ -569,6 +586,8 @@ object
 		current_object_node = node;
 
 		attr->common.node = node;
+		object_spec_type = INTERFACE_TYPE;
+		object_comm_attr = attr;
 		DBG("Interface_type: %s\n", $2->ident.str);
 		$<tree_type>$ = node;
 	}
@@ -576,8 +595,10 @@ object
 		tree_t* node = $<tree_type>4;
 		interface_attr_t* attr = (interface_attr_t*)(node->common.attr);
 		node->interface.spec = $5;
-		attr->desc = get_obj_desc($5);
-		attr->table = get_obj_block_table($5);
+		attr->common.desc = get_obj_desc($5);
+		//attr->common.table = get_obj_block_table($5);
+		object_spec_type = -1;
+		object_comm_attr = NULL;
 		$$ = node;
 	}
 	| ATTRIBUTE objident istemplate {
@@ -585,11 +606,11 @@ object
 			fprintf(stderr, "need the identifier of field\n");
 			exit(-1);
 		}
-		attribute_attr_t* attr = (attribute_attr_t*)gdml_zmalloc(sizeof(attribute_attr_t));
-		attr->name = $2->ident.str;
-		attr->arraydef = 0;
-		attr->templates =  get_templates($3);
-		attr->template_num = get_list_num($3);
+		object_attr_t* attr = (object_attr_t*)gdml_zmalloc(sizeof(attribute_attr_t));
+		attr->common.name = $2->ident.str;
+		attr->attribute.arraydef = 0;
+		attr->common.templates =  get_templates($3);
+		attr->common.templates_num = get_list_num($3);
 		symbol_insert(current_table, $2->ident.str, ATTRIBUTE_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("attribute", ATTRIBUTE_TYPE, sizeof(struct tree_attribute));
@@ -600,6 +621,8 @@ object
 		current_object_node = node;
 
 		attr->common.node = node;
+		object_spec_type = ATTRIBUTE_TYPE;
+		object_comm_attr = attr;
 		DBG("Attribute: %s\n", $2->ident.str);
 		$<tree_type>$ = node;
 	}
@@ -607,15 +630,17 @@ object
 		tree_t* node = $<tree_type>4;
 		attribute_attr_t* attr = (attribute_attr_t*)(node->common.attr);
 		node->attribute.spec = $5;
-		attr->desc = get_obj_desc($5);
-		attr->table = get_obj_block_table($5);
+		attr->common.desc = get_obj_desc($5);
+		//attr->common.table = get_obj_block_table($5);
+		object_spec_type = -1;
+		object_comm_attr = NULL;
 		$$ = node;
 	}
 	| EVENT objident istemplate {
-		event_attr_t* attr = (event_attr_t*)gdml_zmalloc(sizeof(event_attr_t));
-		attr->name = $2->ident.str;
-		attr->templates = get_templates($3);
-		attr->template_num = get_list_num($3);
+		object_attr_t* attr = (object_attr_t*)gdml_zmalloc(sizeof(event_attr_t));
+		attr->common.name = $2->ident.str;
+		attr->common.templates = get_templates($3);
+		attr->common.templates_num = get_list_num($3);
 		symbol_insert(current_table, $2->ident.str, EVENT_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("event", EVENT_TYPE, sizeof(struct tree_event));
@@ -626,21 +651,24 @@ object
 		current_object_node = node;
 
 		attr->common.node = node;
+		object_spec_type = EVENT_TYPE;
+		object_comm_attr = attr;
 		$<tree_type>$ = node;
 	}
 	object_spec {
 		tree_t* node = $<tree_type>4;
 		event_attr_t* attr = (event_attr_t*)(node->common.attr);
 		node->event.spec = $5;
-		attr->desc = get_obj_desc($5);
-		attr->table = get_obj_block_table($5);
+		attr->common.desc = get_obj_desc($5);
+		//attr->common.table = get_obj_block_table($5);
+		object_spec_type = -1;
 		$$ = node;
 	}
 	| GROUP objident istemplate {
-		group_attr_t* attr = (group_attr_t*)gdml_zmalloc(sizeof(group_attr_t));
-		attr->name = $2->ident.str;
-		attr->templates = get_templates($3);
-		attr->template_num = get_list_num($3);
+		object_attr_t* attr = (object_attr_t*)gdml_zmalloc(sizeof(group_attr_t));
+		attr->common.name = $2->ident.str;
+		attr->common.templates = get_templates($3);
+		attr->common.templates_num = get_list_num($3);
 		symbol_insert(current_table, $2->ident.str, GROUP_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("group", GROUP_TYPE, sizeof(struct tree_group));
@@ -651,21 +679,25 @@ object
 		current_object_node = node;
 
 		attr->common.node = node;
+		object_spec_type = GROUP_TYPE;
+		object_comm_attr = attr;
 		$<tree_type>$ = node;
 	}
 	object_spec {
 		tree_t* node = $<tree_type>4;
 		group_attr_t* attr = (group_attr_t*)(node->common.attr);
 		node->group.spec = $5;
-		attr->desc = get_obj_desc($5);
-		attr->table = get_obj_block_table($5);
+		attr->common.desc = get_obj_desc($5);
+		//attr->common.table = get_obj_block_table($5);
+		object_spec_type = -1;
+		object_comm_attr = NULL;
 		$$ = node;
 	}
 	| PORT objident istemplate {
-		port_attr_t* attr = (port_attr_t*)gdml_zmalloc(sizeof(port_attr_t));
-		attr->name = $2->ident.str;
-		attr->templates = get_templates($3);
-		attr->template_num = get_list_num($3);
+		object_attr_t* attr = (object_attr_t*)gdml_zmalloc(sizeof(port_attr_t));
+		attr->common.name = $2->ident.str;
+		attr->common.templates = get_templates($3);
+		attr->common.templates_num = get_list_num($3);
 		symbol_insert(current_table, $2->ident.str, IMPLEMENT_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("port", PORT_TYPE, sizeof(struct tree_port));
@@ -674,24 +706,27 @@ object
 		node->common.print_node = print_port;
 		node->common.attr = attr;
 		current_object_node = node;
-		object_spec_type = PORT_TYPE;
 
 		attr->common.node = node;
+		object_spec_type = PORT_TYPE;
+		object_comm_attr = attr;
 		$<tree_type>$ = node;
 	}
 	object_spec {
 		tree_t* node = $<tree_type>4;
 		port_attr_t* attr = (port_attr_t*)(node->common.attr);
 		node->port.spec = $5;
-		attr->desc = get_obj_desc($5);
-		attr->table = get_obj_block_table($5);
+		attr->common.desc = get_obj_desc($5);
+		//attr->common.table = get_obj_block_table($5);
+		object_spec_type = -1;
+		object_comm_attr = NULL;
 		$$ = node;
 	}
 	| IMPLEMENT objident istemplate {
-		implement_attr_t* attr = (implement_attr_t*)gdml_zmalloc(sizeof(implement_attr_t));
-		attr->name = $2->ident.str;
-		attr->templates = get_templates($3);
-		attr->template_num = get_list_num($3);
+		object_attr_t* attr = (object_attr_t*)gdml_zmalloc(sizeof(implement_attr_t));
+		attr->common.name = $2->ident.str;
+		attr->common.templates = get_templates($3);
+		attr->common.templates_num = get_list_num($3);
 		symbol_insert(current_table, $2->ident.str, IMPLEMENT_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("implement", IMPLEMENT_TYPE, sizeof(struct tree_implement));
@@ -700,9 +735,10 @@ object
 		node->common.print_node = print_implement;
 		node->common.attr = attr;
 		current_object_node = node;
-		object_spec_type = IMPLEMENT_TYPE;
 
 		attr->common.node = node;
+		object_spec_type = IMPLEMENT_TYPE;
+		object_comm_attr = attr;
 		DBG("objident: %s\n", $2->ident.str);
 		$<tree_type>$ = node;
 	}
@@ -710,18 +746,19 @@ object
 		tree_t* node = $<tree_type>4;
 		implement_attr_t* attr = (implement_attr_t*)(node->common.attr);
 		node->implement.spec = $5;
-		attr->desc = get_obj_desc($5);
-		attr->table = get_obj_block_table($5);
+		attr->common.desc = get_obj_desc($5);
+		//attr->common.table = get_obj_block_table($5);
 		object_spec_type = -1;
+		object_comm_attr = NULL;
 		$$ = node;
 	}
 	| ATTRIBUTE objident '[' arraydef ']' istemplate {
-		attribute_attr_t* attr = (attribute_attr_t*)gdml_zmalloc(sizeof(attribute_attr_t));
-		attr->name = $2->ident.str;
-		attr->is_array = 1;
-		attr->arraydef = get_arraydef($4);
-		attr->templates =  get_templates($6);
-		attr->template_num = get_list_num($6);
+		object_attr_t* attr = (object_attr_t*)gdml_zmalloc(sizeof(attribute_attr_t));
+		attr->common.name = $2->ident.str;
+		attr->attribute.is_array = 1;
+		attr->attribute.arraydef = get_arraydef($4);
+		attr->common.templates =  get_templates($6);
+		attr->common.templates_num = get_list_num($6);
 		symbol_insert(current_table, $2->ident.str, ATTRIBUTE_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("attribute", ATTRIBUTE_TYPE, sizeof(struct tree_attribute));
@@ -731,9 +768,10 @@ object
 		node->common.print_node = print_attribute;
 		node->common.attr = attr;
 		current_object_node = node;
-		object_spec_type = ATTRIBUTE_TYPE;
 
 		attr->common.node = node;
+		object_spec_type = ATTRIBUTE_TYPE;
+		object_comm_attr = attr;
 
 		$<tree_type>$ = node;
 	}
@@ -741,17 +779,19 @@ object
 		tree_t* node = $<tree_type>7;
 		attribute_attr_t* attr = (attribute_attr_t*)(node->common.attr);
 		node->attribute.spec = $8;
-		attr->desc = get_obj_desc($8);
-		attr->table = get_obj_block_table($8);
+		attr->common.desc = get_obj_desc($8);
+		//attr->common.table = get_obj_block_table($8);
+		object_spec_type = -1;
+		object_comm_attr = NULL;
 		$$ = node;
 	}
 	| GROUP objident '[' arraydef ']' istemplate {
-		group_attr_t* attr = (group_attr_t*)gdml_zmalloc(sizeof(group_attr_t));
-		attr->name = $2->ident.str;
-		attr->is_array = 1;
-		attr->arraydef = get_arraydef($4);
-		attr->templates = get_templates($6);
-		attr->template_num = get_list_num($6);
+		object_attr_t* attr = (object_attr_t*)gdml_zmalloc(sizeof(group_attr_t));
+		attr->common.name = $2->ident.str;
+		attr->group.is_array = 1;
+		attr->group.arraydef = get_arraydef($4);
+		attr->common.templates = get_templates($6);
+		attr->common.templates_num = get_list_num($6);
 
 		tree_t* node = (tree_t*)create_node("group", GROUP_TYPE, sizeof(struct tree_group));
 		node->group.name = $2->ident.str;
@@ -763,23 +803,27 @@ object
 		current_object_node = node;
 
 		attr->common.node = node;
+		object_spec_type = GROUP_TYPE;
+		object_comm_attr = attr;
 		$<tree_type>$ = node;
 	}
 	object_spec {
 		tree_t* node = $<tree_type>7;
 		group_attr_t* attr = (group_attr_t*)(node->common.attr);
 		node->group.spec = $8;
-		attr->desc = get_obj_desc($8);
-		attr->table = get_obj_block_table($8);
+		attr->common.desc = get_obj_desc($8);
+		//attr->common.table = get_obj_block_table($8);
+		object_spec_type = -1;
+		object_comm_attr = NULL;
 		$$ = node;
 	}
 	| CONNECT objident '[' arraydef ']' istemplate {
-		connect_attr_t* attr = (connect_attr_t*)gdml_zmalloc(sizeof(connect_attr_t));
-		attr->name = $2->ident.str;
-		attr->is_array = 1;
-		attr->arraydef = get_arraydef($4);
-		attr->templates = get_templates($6);
-		attr->template_num = get_list_num($6);
+		object_attr_t* attr = (object_attr_t*)gdml_zmalloc(sizeof(connect_attr_t));
+		attr->common.name = $2->ident.str;
+		attr->connect.is_array = 1;
+		attr->connect.arraydef = get_arraydef($4);
+		attr->common.templates = get_templates($6);
+		attr->common.templates_num = get_list_num($6);
 		symbol_insert(current_table, $2->ident.str, CONNECT_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("connect", CONNECT_TYPE, sizeof(struct tree_connect));
@@ -791,6 +835,8 @@ object
 		current_object_node = node;
 
 		attr->common.node = node;
+		object_spec_type = CONNECT_TYPE;
+		object_comm_attr = attr;
 
 		$<tree_type>$ = node;
 	}
@@ -798,8 +844,10 @@ object
 		tree_t* node = $<tree_type>7;
 		connect_attr_t* attr = (connect_attr_t*)(node->common.attr);
 		node->connect.spec = $8;
-		attr->desc = get_obj_desc($8);
-		attr->table = get_obj_block_table($8);
+		attr->common.desc = get_obj_desc($8);
+		//attr->common.table = get_obj_block_table($8);
+		object_spec_type = -1;
+		object_comm_attr = NULL;
 		$$ = node;
 	}
 	;
@@ -1216,6 +1264,9 @@ object_spec
 		//prefix_table = current_table;
 		push(table_stack, current_table);
 		current_table = block->block.table;
+		if (object_comm_attr) {
+			object_comm_attr->common.table = current_table;;
+		}
 
 		node->spec.block = block;
 		node->common.print_node = print_object_spec;
@@ -2822,6 +2873,7 @@ statement
 		attr->common.node = node;
 		DBG("FOREACH in statement\n");
 		attr->expr = parse_expression(&($5), current_table);
+		attr->type = attr->expr->final_type;
 
 		$<tree_type>$ = node;
 	}

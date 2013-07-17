@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "symbol.h"
 #include "tree.h"
@@ -1493,7 +1494,7 @@ int get_attribute_type(symbol_t symbol) {
 	int type = 0;
 
 	attribute_attr_t* attr = symbol->attr;
-	symtab_t tmp_table = attr->table;
+	symtab_t tmp_table = attr->common.table;
 	symbol_t type_symbol = symbol_find_curr(tmp_table, "type", PARAMETER_TYPE);
 	symbol_t allocate_type = symbol_find_curr(tmp_table, "allocate_type", PARAMETER_TYPE);
 	if (allocate_type) {
@@ -1548,20 +1549,10 @@ int get_c_type(symtab_t table, symbol_t symbol) {
 			}
 			break;
 		case FUNCTION_TYPE:
-			{
-				function_t* func = symbol->attr;
-				decl_t* ret_decl = func->ret_decl;
-				type = get_decl_type(ret_decl);
-				if (type == TYPEDEF_TYPE) {
-					type = get_typedef_type(table, ret_decl->type->typedef_name);
-					DEBUG_EXPR("In %s, line = %d, ret_decl: %s, type: %d\n",
-							__func__, __LINE__, ret_decl->type->typedef_name, type);
-				}
-				else {
-					DEBUG_EXPR("In %s, line = %d, function return name: %s, type: %d\n",
-							__func__, __LINE__, func->ret_decl->type->pre_dml_name, type);
-				}
-			}
+			type = FUNCTION_TYPE;
+			break;
+		case FUNCTION_POINTER_TYPE:
+			type = FUNCTION_POINTER_TYPE;
 			break;
 		case TYPEDEF_TYPE:
 			{
@@ -1590,12 +1581,16 @@ int get_c_type(symtab_t table, symbol_t symbol) {
 			type = get_attribute_type(symbol);
 			break;
 		case REGISTER_TYPE:
+		case FIELD_TYPE:
 			/* FIXME: register may be other type */
 			type = INT_TYPE;
 			break;
+		case INTERFACE_TYPE:
+			type = INTERFACE_TYPE;
+			break;
 		default:
-			fprintf(stderr, "In %s, line = %d, other dml type: %d\n",
-					__FUNCTION__, __LINE__, symbol->type);
+			fprintf(stderr, "In %s, line = %d, other dml %s(%d)\n",
+					__FUNCTION__, __LINE__, symbol->name, symbol->type);
 			/* FIXME: only for debugging */
 			exit(-1);
 			break;
@@ -1644,6 +1639,9 @@ expression_t* get_ident_value(tree_t** node, symtab_t table,  expression_t* expr
 		else {
 			/* TODO: should get the c type */
 			expr->final_type = get_c_type(table, symbol);
+			if (expr->final_type == FUNCTION_TYPE) {
+				expr->func = symbol->attr;
+			}
 		}
 	}
 	else if (pre_symbol != NULL) {
@@ -1681,17 +1679,231 @@ expression_t* get_ident_value(tree_t** node, symtab_t table,  expression_t* expr
 	return expr;
 }
 
+reference_t*  get_bit_slic_ref(tree_t* node, reference_t* ref) {
+	assert(node != NULL);
+	assert(ref != NULL);
+
+	tree_t* expr_node = node->bit_slic.expr;
+	tree_t* ident_node = NULL;
+
+	switch(expr_node->common.type) {
+		case IDENT_TYPE:
+		case DML_KEYWORD_TYPE:
+			ref->name = node->ident.str;
+			break;
+		case QUOTE_TYPE:
+			ident_node = expr_node->quote.ident;
+			ref->name = ident_node->ident.str;
+			break;
+		default:
+			fprintf(stderr, "line: %d, other node type: %s\n", __LINE__, expr_node->common.name);
+			/* FIXME handle the error */
+			exit(-1);
+			break;
+	}
+
+	return ref;
+}
+
+reference_t* get_reference(tree_t* node, reference_t* ref) {
+	assert(node != NULL);
+	assert(ref != NULL);
+
+	tree_t* ident_node = NULL;
+	reference_t* new = (reference_t*)gdml_zmalloc(sizeof(reference_t));
+
+	switch (node->common.type) {
+		case COMPONENT_TYPE:
+			ident_node = node->component.ident;
+			new->name = ident_node->ident.str;
+			if (node->component.type == COMPONENT_POINTER_TYPE) {
+				new->is_pointer = 1;
+			}
+			/* insert it in head */
+			new->next = ref;
+			new = get_reference(node->component.expr, new);
+			break;
+		case BIT_SLIC_EXPR_TYPE:
+			new->next = ref;
+			new = get_bit_slic_ref(node, new);
+			break;
+		case QUOTE_TYPE:
+			ident_node = node->quote.ident;
+			new->name = ident_node->ident.str;
+			new->next = ref;
+			break;
+		case IDENT_TYPE:
+		case DML_KEYWORD_TYPE:
+			new->name = node->ident.str;
+			new->next = ref;
+			break;
+		default:
+			fprintf(stderr, "other node type: %s\n", node->common.name);
+			/* FIXME: handle the error */
+			exit(-1);
+			break;
+	}
+	return new;
+}
+
+void print_reference(reference_t* ref) {
+	assert(ref != NULL);
+
+	reference_t* tmp = ref;
+
+	while (tmp) {
+		DEBUG_EXPR("In %s, line = %d, reference name: %s---------------\n",
+				__func__, __LINE__, tmp->name);
+
+		tmp = tmp->next;
+	}
+
+	return;
+}
+
+symtab_t get_symbol_table(symbol_t symbol) {
+	assert(symbol != NULL);
+
+	symtab_t table = NULL;
+	void* attr = symbol->attr;
+
+	switch(symbol->type) {
+		case TEMPLATE_TYPE:
+			table = ((template_attr_t*)attr)->table;
+			break;
+		case STRUCT_TYPE:
+			table = ((struct_attr_t*)attr)->table;
+			break;
+		case BITFIELDS_TYPE:
+			table = ((bitfield_attr_t*)attr)->table;
+			break;
+		case LAYOUT_TYPE:
+			table = ((layout_attr_t*)attr)->table;
+			break;
+		case BANK_TYPE:
+		case REGISTER_TYPE:
+		case FIELD_TYPE:
+		case CONNECT_TYPE:
+		case INTERFACE_TYPE:
+		case ATTRIBUTE_TYPE:
+		case EVENT_TYPE:
+		case GROUP_TYPE:
+		case PORT_TYPE:
+		case IMPLEMENT_TYPE:
+			table = ((struct object_common*)attr)->table;
+			break;
+		default:
+			fprintf(stderr, "Othe symbol %s(%d)\n", symbol->name, symbol->type);
+			/* FIXME: handle the error */
+			exit(-1);
+	}
+
+	return table;
+}
+
+symtab_t get_default_symbol_tale(symtab_t table, const char* name) {
+	assert(name != NULL);
+	symtab_t tmp_table = NULL;
+	symbol_t symbol = NULL;
+	void* attr = NULL;
+
+	if (strcmp(name, "dev") == 0) {
+		symbol = symbol_find(table, "device", TEMPLATE_TYPE);
+		attr = symbol->attr;
+		table = ((template_attr_t*)attr)->table;
+	} // device
+	else {
+		fprintf(stderr, "Othe default name: %s\n", name);
+		/* FIXME: handle the error */
+		exit(-1);
+	}
+
+	return table;
+}
+
+int check_reference(symtab_t table, reference_t* ref, expression_t* expr) {
+	assert(table != NULL);
+	assert(ref != NULL);
+
+	reference_t* tmp = ref;
+	symbol_t symbol = NULL;
+	symbol_t ref_symbol = NULL;
+	symtab_t ref_table = NULL;
+	const int name_len = 256;
+	int type = 0;
+
+	if (table->no_check) {
+		return NO_TYPE;
+	}
+
+	while (tmp->next) {
+		symbol = symbol_find_notype(table, tmp->name);
+		if (symbol == NULL) {
+			/* some default symbol */
+			ref_table = get_default_symbol_tale(table, tmp->name);
+		}
+		else {
+			ref_table = get_symbol_table(symbol);
+		}
+
+		if (ref_table == NULL) {
+			fprintf(stderr, "%s not object or struct!\n", symbol->name);
+			/* FIXME: handle the error */
+			exit(-1);
+		}
+		ref_symbol = symbol_find_notype(ref_table, tmp->next->name);
+		if (ref_symbol == NULL) {
+			fprintf(stderr, "%s not element of %s\n", tmp->next->name, tmp->name);
+			/* FIXME: handle the error */
+			exit(-1);
+		}
+
+		/* get the type about symbol */
+		if (is_c_type(ref_symbol->type) == 1) {
+			type = ref_symbol->type;
+		}
+		else {
+			type = get_c_type(ref_table, ref_symbol);
+		}
+
+		if (type == INTERFACE_TYPE) {
+			char* name = (char*)gdml_zmalloc(name_len);
+			strcpy(name, tmp->next->name);
+			strcat(name, "_interface_t");
+			tmp->next->name = name;
+		}
+		if (type == FUNCTION_POINTER_TYPE) {
+			expr->final_type = FUNCTION_POINTER_TYPE;
+			expr->func = ref_symbol->attr;
+		}
+		tmp = tmp->next;
+	}
+
+	return type;
+}
+
 expression_t* get_component_expr(tree_t** node, symtab_t table,  expression_t* expr) {
 	assert(*node != NULL);
 	assert(table != NULL);
 	assert(expr != NULL);
 	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
 			__func__, __LINE__, (*node)->common.name);
-	//cal_expression(node->component.expr, table, expr);
-	//char* member = node->omponent.ident;
+	reference_t* reference = (reference_t*)gdml_zmalloc(sizeof(reference_t));
 	/* TODO: should find the member, check it */
-	expr->final_type = NO_TYPE;
+	if ((*node)->component.type == COMPONENT_POINTER_TYPE) {
+		reference->is_pointer = 1;
+	}
+	tree_t* ident = (*node)->component.ident;
+	reference->name = ident->ident.str;
+
+	reference = get_reference((*node)->component.expr, reference);
+	print_reference(reference);
+	expr->final_type = check_reference(table, reference, expr);
 	expr->node = *node;
+	if (table->no_check) {
+		//printf("\ninogore check about component!\n");
+		return expr;
+	}
 	return expr;
 }
 
@@ -1730,6 +1942,45 @@ decl_t* clear_decl_type(decl_t* decl) {
 	return decl;
 }
 
+type_t get_func_ret_type(symtab_t table, decl_t* decl) {
+	assert(table != NULL);
+	assert(decl != NULL);
+
+	type_t type = get_decl_type(decl);
+	if (type == TYPEDEF_TYPE) {
+		type = get_typedef_type(table, decl->type->typedef_name);
+		DEBUG_EXPR("In %s, line = %d, ret_decl: %s, type: %d\n",
+				__func__, __LINE__, decl->type->typedef_name, type);
+	}
+
+	return type;
+}
+
+void charge_func_param(tree_t** node, symtab_t table, function_t* func) {
+	/* function has no parameters */
+	if (*node == NULL) {
+		return;
+	}
+	tree_t* tmp_node = (*node);
+	func_param_t* param = func->param;
+
+	expression_t* expr = (expression_t*)gdml_zmalloc(sizeof(expression_t));
+	int type = 0;
+	int i = 0;
+	while (tmp_node) {
+		expr = cal_expression(&tmp_node, table, expr);
+		type = get_decl_type(param->decl);
+		if (type == TYPEDEF_TYPE) {
+			type = get_typedef_type(table, param->decl->type->typedef_name);
+		}
+		charge_type(expr->final_type, type);
+		tmp_node = tmp_node->common.sibling;
+		param = param->next;
+	}
+
+	return;
+}
+
 expression_t* get_brack_expr(tree_t** node, symtab_t table,  expression_t* expr) {
 	assert(*node != NULL);
 	assert(table != NULL);
@@ -1763,6 +2014,23 @@ expression_t* get_brack_expr(tree_t** node, symtab_t table,  expression_t* expr)
 		}
 		else {
 			cal_expression(&((*node)->expr_brack.expr), table, expr);
+		}
+		if ((expr->final_type == FUNCTION_TYPE) ||
+				(expr->final_type == FUNCTION_POINTER_TYPE)) {
+			function_t* func = (function_t*)(expr->func);
+			int arg_num = get_param_num((*node)->expr_brack.expr_in_brack);
+
+			if (arg_num != (func->argc)) {
+				fprintf(stderr, "error: too %s arguments to function : %s\n",
+						(arg_num < func->argc) ? "few": "many", func->func_name);
+				/* FIXME: handle the error */
+				exit(-1);
+			}
+			else {
+				charge_func_param(&(*node)->expr_brack.expr_in_brack, table, func);
+			}
+
+			expr->final_type = get_func_ret_type(table, func->ret_decl);
 		}
 	}
 

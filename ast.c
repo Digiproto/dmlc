@@ -660,78 +660,23 @@ void get_object_template_table(symtab_t table, tree_t* node) {
 	assert(node != NULL);
 	char** templates = NULL;
 	int template_num = 0;
+	struct object_common* attr = NULL;
 
 	switch(node->common.type) {
 		case BANK_TYPE:
-			{
-				bank_attr_t* attr = (bank_attr_t*)(node->common.attr);
-				templates = (char**)(attr->templates);
-				template_num = attr->template_num;
-				break;
-			}
 		case REGISTER_TYPE:
-			{
-				register_attr_t* attr = (register_attr_t*)(node->common.attr);
-				templates = attr->templates;
+		case FIELD_TYPE:
+		case CONNECT_TYPE:
+		case INTERFACE_TYPE:
+		case ATTRIBUTE_TYPE:
+		case EVENT_TYPE:
+		case GROUP_TYPE:
+		case PORT_TYPE:
+		case IMPLEMENT_TYPE:
+				attr = (struct object_common*)(node->common.attr);
+				templates = (char**)(attr->templates);
 				template_num = attr->templates_num;
 				break;
-			}
-		case FIELD_TYPE:
-			{
-				field_attr_t* attr = (field_attr_t*)(node->common.attr);
-				templates = (char**)(attr->templates);
-				template_num = attr->template_num;
-				break;
-			}
-		case CONNECT_TYPE:
-			{
-				connect_attr_t* attr = (connect_attr_t*)(node->common.attr);
-				templates = (char**)(attr->templates);
-				template_num = attr->template_num;
-				break;
-			}
-		case INTERFACE_TYPE:
-			{
-				interface_attr_t* attr = (interface_attr_t*)(node->common.attr);
-				templates = (char**)(attr->templates);
-				template_num = attr->template_num;
-				break;
-			}
-		case ATTRIBUTE_TYPE:
-			{
-				attribute_attr_t* attr = (attribute_attr_t*)(node->common.attr);
-				templates = (char**)(attr->templates);
-				template_num = attr->template_num;
-				break;
-			}
-		case EVENT_TYPE:
-			{
-				event_attr_t* attr = (event_attr_t*)(node->common.attr);
-				templates = (char**)(attr->templates);
-				template_num = attr->template_num;
-				break;
-			}
-		case GROUP_TYPE:
-			{
-				group_attr_t* attr = (group_attr_t*)(node->common.attr);
-				templates = (char**)(attr->templates);
-				template_num = attr->template_num;
-				break;
-			}
-		case PORT_TYPE:
-			{
-				port_attr_t* attr = (port_attr_t*)(node->common.attr);
-				templates = (char**)(attr->templates);
-				template_num = attr->template_num;
-				break;
-			}
-		case IMPLEMENT_TYPE:
-			{
-				implement_attr_t* attr = (implement_attr_t*)(node->common.attr);
-				templates = (char**)(attr->templates);
-				template_num = attr->template_num;
-				break;
-			}
 		case TEMPLATE_TYPE:
 			break;
 		default:
