@@ -144,43 +144,11 @@ static void gen_mmio_setup(device_t *dev, FILE *f) {
 	fprintf(f, "}\n");
 }
 
-static void  gen_hard_reset(device_t *dev, FILE *f) {
-	const char *name = dev->obj.name;
-	int index = get_local_index();
-	
-	add_object_method(&dev->obj, "hard_reset");
-	fprintf(f, "\nvoid %s_hard_reset(%s_t *obj) {\n", name, name);
-	fprintf(f, "\tbool v%d_exec;\n", index);
-	fprintf(f, "\tUNUSED(v%d_exec);\n", index);
-	fprintf(f, "\n");
-	fprintf(f, "\tv%d_exec = _DML_M_hard_reset(obj);\n",index, name);
-	fprintf(f, "}\n");
-}
-
-static void  gen_soft_reset(device_t *dev, FILE *f) {
-	const char *name = dev->obj.name;
-	int index = get_local_index();
-	
-	add_object_method(&dev->obj, "soft_reset");
-	fprintf(f, "\nvoid %s_soft_reset(%s_t *obj) {\n", name, name);
-	fprintf(f, "\tbool v%d_exec;\n", index);
-	fprintf(f, "\tUNUSED(v%d_exec);\n", index);
-	fprintf(f, "\n");
-	fprintf(f, "\tv%d_exec = _DML_M_soft_reset(obj);\n", index, name);
-	fprintf(f, "}\n");
-}
-
-static void gen_device_reset(device_t *dev, FILE *f) {
-	gen_hard_reset(dev, f);
-	gen_soft_reset(dev, f);
-}
-
 static void gen_device_init(device_t *dev, FILE *f) {
 	const char *dev_name = dev->obj.name;
 	int index = get_local_index();
 
 	add_object_method(&dev->obj, "init");
-	gen_device_reset(dev,f);
 	gen_mmio_setup(dev, f);
 	fprintf(f, "\nstatic int %s_init(SysBusDevice *dev) {\n", dev_name);
 	fprintf(f, "\t%s_t *_dev = DO_UPCAST(%s_t, obj, dev);\n", dev_name, dev_name);
