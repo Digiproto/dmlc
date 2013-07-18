@@ -167,9 +167,42 @@ static void gen_bank_write_access(bank_t *b,FILE *f){
 	fprintf(f,"}\n");
 }
 
+static void  gen_hard_reset(device_t *dev, FILE *f) {
+    const char *name = dev->obj.name;
+    int index = get_local_index();
+
+    add_object_method(&dev->obj, "hard_reset");
+    fprintf(f, "\nvoid %s_hard_reset(%s_t *obj) {\n", name, name);
+    fprintf(f, "\tbool v%d_exec;\n", index);
+    fprintf(f, "\tUNUSED(v%d_exec);\n", index);
+    fprintf(f, "\n");
+    fprintf(f, "\tv%d_exec = _DML_M_hard_reset(obj);\n",index, name);
+    fprintf(f, "}\n");
+}
+
+static void  gen_soft_reset(device_t *dev, FILE *f) {
+    const char *name = dev->obj.name;
+    int index = get_local_index();
+
+    add_object_method(&dev->obj, "soft_reset");
+    fprintf(f, "\nvoid %s_soft_reset(%s_t *obj) {\n", name, name);
+    fprintf(f, "\tbool v%d_exec;\n", index);
+    fprintf(f, "\tUNUSED(v%d_exec);\n", index);
+    fprintf(f, "\n");
+    fprintf(f, "\tv%d_exec = _DML_M_soft_reset(obj);\n", index, name);
+    fprintf(f, "}\n");
+}
+
+static void gen_device_reset(device_t *dev, FILE *f) {
+    gen_hard_reset(dev, f);
+    gen_soft_reset(dev, f);
+}
+
 void gen_code_once_noplatform(device_t *dev, FILE *f){
 	bank_t *b;
 	struct list_head *p;
+
+	gen_device_reset(dev,f);
 	list_for_each(p,&dev->obj.childs){
 		b = list_entry(p, bank_t, obj.entry);
 		gen_bank_read_access(b, f);
