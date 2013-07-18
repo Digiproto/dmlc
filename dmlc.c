@@ -85,6 +85,7 @@ struct file_stack* filestack_top = NULL;
 char *builtin_filename = NULL;
 symtab_t root_table = NULL;
 extern void gen_qemu_code(tree_t *root, const char *out_dir);
+extern void gen_skyeye_code(tree_t *root, const char *out_dir);
 int main (int argc, char *argv[])
 {
 	if (argc != 2) {
@@ -117,7 +118,7 @@ int main (int argc, char *argv[])
 	print_ast (ast);
 	printf("Print the syntax tree ok!\n");
 #if  1 || QEMU
-	gen_qemu_code (ast, "./output/");
+	gen_skyeye_code (ast, "./output/");
 #else
 	//generate_simics_code (ast, "./output/");
 #endif
