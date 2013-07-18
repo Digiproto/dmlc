@@ -24,6 +24,7 @@
 #ifndef __QEMU_OBJECT_HEADFILE_H__ 
 #define __QEMU_OBJECT_HEADFILE_H__  
 #include "object.h"
+#include "gen_struct.h"
 void gen_qemu_headerfiles(device_t *dev, const char *out_dir);
 
 #endif /* __QEMU_OBJECT_HEADFILE_H__ */

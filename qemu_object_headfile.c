@@ -26,117 +26,8 @@
 #include "qemu_object_headfile.h"
 #include "gen_utility.h"
 
-extern symtab_t root_table;
 
 const char *headfile_dir = "simics";
-
-static void gen_field_struct(object_t *obj, FILE *f) {
-	field_t *fld = (field_t *)obj;
-	const char *type;
-
-	type = bits2str(fld->len);
-	fprintf(f, "\t\t\t%s %s;\n", type, obj->name);
-}
-
-static void gen_iface_struct(object_t *obj, FILE *f) {
-	fprintf(f, "\t\tconst %s_interface_t *%s;\n", obj->name, obj->name);
-}
-
-static void gen_connect_struct(object_t *obj, FILE *f) {
-	connect_t *con = (connect_t *)obj;
-	struct list_head *p;
-	object_t *tmp;
-	
-	fprintf(f, "\tstruct {\n");
-	fprintf(f, "\t\tconst char *port;\n");
-	fprintf(f, "\t\tconf_object_t *obj\n");
-	list_for_each(p, &obj->childs) {
-		tmp = list_entry(p, object_t, entry);
-		gen_iface_struct(tmp, f);
-	}
-	fprintf(f, "\t} %s;\n", obj->name);
-}
-
-static void gen_device_connect(device_t *dev, FILE *f) {
-	struct list_head *p;
-	object_t *obj;
-
-	list_for_each(p, &dev->connects) {
-		obj = list_entry(p, object_t, entry);
-		gen_connect_struct(obj, f);
-	}
-}
-
-static void gen_register_struct(object_t *obj, FILE *f) {
-	object_t *fld;
-	dml_register_t *reg = (dml_register_t *)obj;
-	const char *type;
-	int reg_size;
-	struct list_head *p;
-	field_t *first; 
-	
-	reg_size = reg->size;
-	p = obj->childs.next;
-	fld = list_entry(p, object_t, entry);
-	first = (field_t *)fld; 
-	if(first->is_dummy) {
-		/*dummy  field*/
-		type = size2str(reg_size);
-		fprintf(f, "\t\t%s %s;\n", type, obj->name);
-		obj->attr_type = type;
-	} else {
-		fprintf(f, "\t\tstruct {\n");
-		list_for_each(p, &obj->childs) {
-			fld = list_entry(p, object_t, entry);
-			gen_field_struct(fld, f);
-		}
-		fprintf(f, "\t\t} %s;", obj->name);
-		obj->attr_type = "container";
-	}	
-}
-
-
-static void gen_bank_struct(object_t *obj, FILE *f) {
-	object_t *reg;
-	struct list_head *p;
-	bank_t *bank = (bank_t *)obj;
-	bank_attr_t *attr = obj->node->common.attr;
-
-	fprintf(f, "\tstruct {\n");
-	list_for_each(p, &obj->childs) {
-		reg = list_entry(p, object_t, entry);
-		gen_register_struct(reg, f);
-	}
-	fprintf(f, "\t} %s;\n", obj->name);
-	fprintf(f, "\tMemoryRegion mr_%s;\n", obj->name);
-}
-
-static void gen_banks_struct(device_t *dev, FILE *f) {
-	object_t *obj;
-	struct list_head *p;
-
-	list_for_each(p, &dev->obj.childs) {
-		obj = list_entry(p, object_t, entry);
-		gen_bank_struct(obj, f);	
-	}
-}
-
-static void gen_bank_marco(object_t *obj, FILE *f) {
-	bank_t *bank = (bank_t *)obj;
-	char *cap = to_upper(obj->name);
-	fprintf(f, "\n#define %s_MR_SIZE 0x%x\n", cap, bank->size);
-	free(cap);
-}
-
-static void gen_banks_macro(device_t *dev, FILE *f) {
-	object_t *obj;
-	struct list_head *p;
-
-	list_for_each(p, &dev->obj.childs) {
-		obj = list_entry(p, object_t, entry);
-		gen_bank_marco(obj, f);
-	}
-}
 
 static void gen_object_struct(device_t *dev, FILE *f) {
 	const char *dev_name = dev->obj.name;
@@ -152,10 +43,10 @@ static void gen_object_struct(device_t *dev, FILE *f) {
 	fprintf(f, "#define %s_QEMU_STRUCT_H\n", cap_name);
 	fprintf(f, "\n#include \"hw/sysbus.h\"\n");
 	fprintf(f, "\ntypedef struct %s %s_t;\n", dev_name, dev_name);
-	gen_banks_macro(dev, f);
+	gen_device_macros(dev, f);
 	fprintf(f, "\nstruct %s {\n", dev_name);
 	fprintf(f, "\tSysBusDevice obj;\n");
-	gen_banks_struct(dev, f);
+	gen_device_struct(dev, f);
 	/*more here */
 	fprintf(f,"};\n");
 	fprintf(f, "\n#endif\n");
@@ -167,9 +58,6 @@ static void gen_object_headfile(device_t *dev, FILE *f) {
 	const char *dev_name = dev->obj.name;
 	char *captical_name;
 	time_t timep;
-	symbol_list_t *list;
-	symbol_t sym;
-	int i;
 
 	captical_name = to_upper(dev_name);
 
@@ -185,28 +73,11 @@ static void gen_object_headfile(device_t *dev, FILE *f) {
 	fprintf(f, "#include \"qemu/log.h\"\n");
 	fprintf(f, "#include \"%s_qemu_struct.h\"\n", dev_name);
 	fprintf(f, "\n");
-	list = symbol_list_find(root_table, LOGGROUP_TYPE);
-	if(list) {
-		fprintf(f, "typedef enum %s_log_group {\n", dev_name);	
-		i = 1;
-		while(list) {
-			sym = list->sym;
-			fprintf(f, "\t%s = %d", sym->name, i);
-			list = list->next;
-			if(list) {
-				fprintf(f, ",\n");
-			} else {
-				fprintf(f, "\n");
-			}
-			i <<= 1;
-		}
-		fprintf(f, "} %s_log_group_t;\n", dev_name);
-	}
+	gen_device_loggroup(dev, f);
 	fprintf(f, "\n");
 	fprintf(f, "void %s_hard_reset(%s_t *_obj);\n", dev_name, dev_name);
 	fprintf(f, "void %s_soft_reset(%s_t *_obj);\n", dev_name, dev_name);
 	fprintf(f, "\n#endif\n");
-	symbol_list_free(list);
 	free(captical_name);
 }
 
