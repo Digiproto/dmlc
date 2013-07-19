@@ -1,6 +1,7 @@
 %{
 #include <stdio.h>
 #include <assert.h>
+#include "dmlc.h"
 #include "types.h"
 #include "symbol.h"
 #include "stack.h"
@@ -3323,12 +3324,12 @@ void yyerror(YYLTYPE* location, yyscan_t* scanner, tree_t** root_ptr, char *s) {
 
 tree_t* parse_auto_api(void) {
 	char* filename = "simics-auto-api-4_0.dml";
-	char fullname[1024];
-	int dir_len = strlen(dir);
+	char fullname[DIR_MAX_LEN];
+	int dir_len = strlen(gdml_library_dir);
 	int file_len = strlen(filename);
 
-	assert((dir_len + file_len) < 1024);
-	strncpy(fullname, dir, dir_len);
+	assert((dir_len + file_len) < DIR_MAX_LEN);
+	strncpy(fullname, gdml_library_dir, dir_len);
 	strcat(fullname, filename);
 	printf("auto api file name: %s\n", fullname);
 
@@ -3341,11 +3342,11 @@ tree_t* parse_auto_api(void) {
 	yyscan_t scanner;
 	tree_t* root = (tree_t*)create_node(filename, IMPORT_TYPE, sizeof(struct tree_import));
 	root->import.file_name = strdup(fullname);
-	printf("Begin parse the import file %s\n", fullname);
+	printf("Begin parse the import file %s\n", filename);
 	tree_t* ast = NULL;
 	yylex_init(&scanner);
 	yyrestart(file, scanner);
-	filestack_top = push_file_stack(filestack_top, fullname);  // <<<<< push new file name
+	filestack_top = push_file_stack(filestack_top, filename);  // <<<<< push new file name
 	yyparse(scanner, &ast);
 	filestack_top = pop_file_stack(filestack_top);             // <<<<< pop top file name
 	yylex_destroy(scanner);

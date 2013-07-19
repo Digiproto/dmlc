@@ -34,15 +34,18 @@
 #include "symbol.h"
 #include "pre_parse_dml.h"
 #include "code_gen.h"
+#include "dmlc.h"
 
 #define QEMU 0
 
+#if 0  /* libray directory has been moved to dmlc.h */
 #if QEMU
 const char *simics_dml_dir =
 	"/opt/simics-4.0/simics-model-builder-4.0.16/amd64-linux/bin/dml/1.0";
 #else
 const char *simics_dml_dir =
 	"/opt/virtutech/simics-4.0/simics-model-builder-4.0.16/amd64-linux/bin/dml/1.0";
+#endif
 #endif
 
 const char *import_file_list[] = {
@@ -82,6 +85,35 @@ tree_t* get_ast (char *filename)
 	return root;
 }
 
+void set_library_dir(const char *dir_r)
+{
+	char *dir;
+	int len;
+	char *tmp = malloc(DIR_MAX_LEN);
+
+	/* if exe is on windows, dir is like "d:\mingw\msys\1.0\usr\bin\dmlc" */
+	char *p = strrchr(dir_r, '\\');
+	if(p) {
+		/* exe is on windows */
+		p = strrchr(dir_r, '\\');
+		assert(p);
+		len = p - dir + 1;
+		memcpy(tmp, dir_r, len);
+		tmp[len] = '\0';
+	}else{
+		/* exe is on linux */
+		readlink("/proc/self/exe", tmp, DIR_MAX_LEN);
+		p = strrchr(tmp, '/');
+		assert(p);
+		len = p - tmp + 1;
+		*(p + 1) = '\0';
+	}
+
+	/* set library by linking bin path */
+	assert(len + strlen(GDML_LIBRARY_DIR) < DIR_MAX_LEN);
+	gdml_library_dir = strcat(tmp, GDML_LIBRARY_DIR);
+}
+
 struct file_stack* filestack_top = NULL;
 char *builtin_filename = NULL;
 symtab_t root_table = NULL;
@@ -94,8 +126,10 @@ int main (int argc, char *argv[])
 		exit (-1);
 	}
 
-	char tmp[256];
-	snprintf (tmp, 256, "%s/%s", simics_dml_dir, import_file_list[0]);
+	set_library_dir(argv[0]);
+	char tmp[DIR_MAX_LEN];
+	int rt = snprintf (tmp, DIR_MAX_LEN, "%s%s", gdml_library_dir, import_file_list[0]);
+	assert(rt < DIR_MAX_LEN);
 	builtin_filename = tmp;
 	//root_table = symtab_create();
 	//printf("In %s, builtin_filename=%s\n", __FUNCTION__, builtin_filename);
