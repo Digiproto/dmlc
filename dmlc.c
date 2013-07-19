@@ -33,6 +33,7 @@
 #include "Lexer.h"
 #include "symbol.h"
 #include "pre_parse_dml.h"
+#include "code_gen.h"
 
 #define QEMU 0
 
@@ -118,7 +119,7 @@ int main (int argc, char *argv[])
 	print_ast (ast);
 	printf("Print the syntax tree ok!\n");
 #if  1 || QEMU
-	gen_skyeye_code (ast, "./output/");
+	gen_code (ast, "./output/");
 #else
 	//generate_simics_code (ast, "./output/");
 #endif
