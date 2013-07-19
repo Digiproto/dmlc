@@ -28,23 +28,23 @@ Parser.c: gdml.y
 #
 #symbol: symbol.c
 #	gcc -g -DSYMBOL_DEBUG -o symbol symbol.c
-install: dmlc lib/gdml
+install: dmlc include/gdml
 	@echo ===== start install =====
 	@echo install dmlc [to /usr/bin]
 	@cp -r dmlc     /usr/bin
-	@echo install lib/gdml [to /usr/bin]
-	@cp -r lib/gdml /usr/lib
-uninstall: /usr/bin/dmlc /usr/lib/gdml
+	@echo install include/gdml [to /usr/include]
+	@cp -r include/gdml /usr/include
+uninstall: /usr/bin/dmlc /usr/include/gdml
 	@echo ===== start uninstall =====
 	@echo uninstall dmlc [from /usr/bin]
 	@rm -rf /usr/bin/dmlc
-	@echo uninstall lib/gdml [from /usr/lib]
-	@rm -rf /usr/lib/gdml
-check: dmlc ../lib/gdml output
+	@echo uninstall lib/gdml [from /usr/include]
+	@rm -rf /usr/include/gdml
+check: dmlc ../include/gdml output
 	@echo ===== start check =====
 	./dmlc testcase/simple-device.dml
-../lib/gdml:
-	cp -r lib ../
+../include/gdml:
+	cp -r include ../
 output:
 	mkdir output
 clean:

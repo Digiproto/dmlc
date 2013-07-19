@@ -13,7 +13,7 @@
 #endif
 
 #ifndef GDML_LIBRARY_DIR
-#define GDML_LIBRARY_DIR "../lib/gdml/1.0/"
+#define GDML_LIBRARY_DIR "../include/gdml/1.0/"
 #endif
 
 char *gdml_library_dir;
