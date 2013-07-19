@@ -87,27 +87,25 @@ tree_t* get_ast (char *filename)
 
 void set_library_dir(const char *dir_r)
 {
-	char *dir;
 	int len;
 	char *tmp = malloc(DIR_MAX_LEN);
 
 	/* if exe is on windows, dir is like "d:\mingw\msys\1.0\usr\bin\dmlc" */
+#ifdef _WIN32
+	/* exe is on windows */
 	char *p = strrchr(dir_r, '\\');
-	if(p) {
-		/* exe is on windows */
-		p = strrchr(dir_r, '\\');
-		assert(p);
-		len = p - dir + 1;
-		memcpy(tmp, dir_r, len);
-		tmp[len] = '\0';
-	}else{
-		/* exe is on linux */
-		readlink("/proc/self/exe", tmp, DIR_MAX_LEN);
-		p = strrchr(tmp, '/');
-		assert(p);
-		len = p - tmp + 1;
-		*(p + 1) = '\0';
-	}
+	assert(p);
+	len = p - dir_r + 1;
+	memcpy(tmp, dir_r, len);
+	tmp[len] = '\0';
+#else
+	/* exe is on linux */
+	readlink("/proc/self/exe", tmp, DIR_MAX_LEN);
+	char *p = strrchr(tmp, '/');
+	assert(p);
+	len = p - tmp + 1;
+	*(p + 1) = '\0';
+#endif
 
 	/* set library by linking bin path */
 	assert(len + strlen(GDML_LIBRARY_DIR) < DIR_MAX_LEN);

@@ -13,7 +13,11 @@
 #endif
 
 #ifndef GDML_LIBRARY_DIR
+#ifdef _WIN32
+#define GDML_LIBRARY_DIR "..\\include\\gdml\\1.0\\"
+#else
 #define GDML_LIBRARY_DIR "../include/gdml/1.0/"
+#endif
 #endif
 
 char *gdml_library_dir;

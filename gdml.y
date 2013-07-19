@@ -10,7 +10,7 @@
 #include "gen_common.h"
 #include "gen_expression.h"
 #define YYDEBUG 1
-const char* dir = "/opt/virtutech/simics-4.0/simics-model-builder-4.0.16/amd64-linux/bin/dml/1.0/";
+//const char* dir = "/opt/virtutech/simics-4.0/simics-model-builder-4.0.16/amd64-linux/bin/dml/1.0/";
 
 //#define PARSE_DEBUG
 #ifdef PARSE_DEBUG
@@ -1199,11 +1199,11 @@ import
 		DBG("import file is %s\n", $2);
 		printf("import file is %s\n", $2);
 		char fullname[1024];
-		int dirlen = strlen(dir);
+		int dirlen = strlen(gdml_library_dir);
 		int filelen = strlen($2);
 
 		assert((dirlen + filelen) < 1024);
-		strncpy(&fullname[0], dir, dirlen);
+		strncpy(&fullname[0], gdml_library_dir, dirlen);
 		if(*($2) == '"') {
 			$2 ++;
 		}

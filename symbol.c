@@ -165,7 +165,7 @@ static symtab_t table_malloc(type_t type)
 {
 	symtab_t new_symtab = (symtab_t) gdml_zmalloc(sizeof(struct symtab));
     assert(new_symtab != NULL);
-    bzero(new_symtab, sizeof(struct symtab));
+    memset(new_symtab, 0x0, sizeof(struct symtab));
 	new_symtab->type = type;
 #if 0
 	if (type == TEMPLATE_TYPE) {
