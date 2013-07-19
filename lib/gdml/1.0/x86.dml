@@ -1,0 +1,22 @@
+dml 1.0;
+
+/*
+ * x86.dml
+ *
+ * This file is part of Virtutech Simics
+ *
+ * Copyright (C) 1998-2007 Virtutech AB, All Rights Reserved
+ *
+ * The Virtutech Simics API is distributed under license. Please refer to
+ * the 'LICENSE' file for details.
+ *
+ * For documentation on the Virtutech Simics API, please refer to the
+ * Simics Reference Manual. Please report any difficulties you encounter
+ * with this API through the Virtutech Simics website at www.simics.com
+ *
+ */
+
+header %{
+#include <simics/core/memory.h>
+#include <simics/arch/x86.h>
+%}

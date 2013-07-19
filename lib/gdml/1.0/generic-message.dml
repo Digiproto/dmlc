@@ -1,0 +1,8 @@
+dml 1.0;
+
+header %{
+#include <simics/devs/generic-message.h>
+%}
+
+constant GENERIC_MESSAGE_LINK_INTERFACE = "generic_message_link";
+constant GENERIC_MESSAGE_DEVICE_INTERFACE = "generic_message_device";

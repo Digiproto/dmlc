@@ -1,0 +1,283 @@
+/*
+ * interrupt-registers.dml
+ *
+ * This file is part of Virtutech Simics
+ *
+ * Copyright (C) 2008 Virtutech AB, All Rights Reserved
+ *
+ * The Virtutech Simics API is distributed under license. Please refer to
+ * the 'LICENSE' file for details.
+ *
+ * For documentation on the Virtutech Simics API, please refer to the
+ * Simics Reference Manual. Please report any difficulties you encounter
+ * with this API through the Virtutech Simics website at www.simics.com
+ *
+ */
+
+dml 1.2;
+
+import "interrupt.dml";
+
+/*
+ * Set this parameter to true to get a connector for free.
+ */
+parameter create_interrupt_connection default false;
+
+/*
+ * Interrupt status per cause/mask register par.
+ */
+struct interrupt_state_t {
+    bool   high;
+    uint32 mask;
+    uint32 intr;
+    uint32 isrd;
+}
+
+/*
+ * Interrupt register, bits are cleared by writing ones.
+ */
+template interrupt_write_1_clears {
+    parameter interrupt_id default undefined;
+
+    method write(value) {
+        if (($this & ~value) != $this) {
+            $this = $this & ~value;
+            inline $interrupt_state.set_interrupt($interrupt_id, $this,
+                                                  true, false);
+        }
+    }
+    method after_set() {
+        inline $interrupt_state.set_interrupt($interrupt_id, $this,
+                                              false, true);
+    }
+    method set_interrupt_bits(value) {
+        $this |= value;
+        inline $interrupt_state.set_interrupt($interrupt_id, $this,
+                                              true, false);
+    }
+}
+
+/*
+ * Interrupt register, bits are cleared by writing zeros.
+ */
+template interrupt_write_0_clears {
+    parameter interrupt_id default undefined;
+
+    method write(value) {
+        if (($this & value) != $this) {
+            $this = $this & value;
+            inline $interrupt_state.set_interrupt($interrupt_id, $this,
+                                                  true, false);
+        }
+    }
+    method after_set() {
+        inline $interrupt_state.set_interrupt($interrupt_id, $this,
+                                              false, true);
+    }
+    method set_interrupt_bits(value) {
+        $this |= value;
+        inline $interrupt_state.set_interrupt($interrupt_id, $this,
+                                              true, false);
+    }
+}
+
+/*
+ * Level triggered interrupt mask register.
+ */
+template level_interrupt_mask {
+    parameter interrupt_id default undefined;
+
+    method write(value) {
+        if ($this != value) {
+            $this = value;
+            inline $interrupt_state.set_interrupt_mask($interrupt_id, $this, true);
+        }
+    }
+    method after_set() {
+        inline $interrupt_state.set_interrupt_mask($interrupt_id, $this, false);
+    }
+}
+
+/*
+ * Edge triggered interrupt mask register.
+ */
+template edge_interrupt_mask {
+    parameter interrupt_id default undefined;
+
+    method write(value) {
+        if ($this != value) {
+            $this = value;
+            inline $interrupt_state.set_interrupt_mask($interrupt_id, $this, false);
+        }
+    }
+    method after_set() {
+        inline $interrupt_state.set_interrupt_mask($interrupt_id, $this, false);
+    }
+}
+
+/*
+ * Interrupt status disable mask register. A 1 in a bit position in
+ * this register prevents interrupt status from beeing written to the
+ * corresponding bit of an interrupt register.
+ */
+template interrupt_status_disable_mask {
+    parameter interrupt_id default undefined;
+
+    method after_write(memop) {
+        inline $interrupt_state.set_disable_mask($interrupt_id, $this);
+    }
+
+    method after_set() {
+        inline $interrupt_state.set_disable_mask($interrupt_id, $this);
+    }
+}
+
+if ($create_interrupt_connection) {
+    connect irq_dev {
+        parameter documentation = "The interrupt destination.";
+        parameter configuration = "required";
+        interface signal {
+            parameter required = true;
+        }
+    }
+}
+
+method raise_main_interrupt() default {
+    log "info", 3: "raising interrupt signal";
+    if ($create_interrupt_connection && $irq_dev.obj)
+        $irq_dev.signal.signal_raise();
+}
+
+method lower_main_interrupt() default {
+    log "info", 3: "lowering interrupt signal";
+    if ($create_interrupt_connection && $irq_dev.obj)
+        $irq_dev.signal.signal_lower();
+}
+
+/*
+ * The interrupt_state attribute keeps track of the current interrupt
+ * state (raised/lowered), the interrupt cause, the interrupt mask
+ * per interrupt register set. An interrupt register set consist
+ * of one cause register and one mask register with the same interrupt
+ * id number.
+ *
+ * The attribute is saved as a list of lists when saving checkpoints. It
+ * is not intended to be set by users.
+ *
+ * Call update_interrupts() when triggering an interrupt from the device.
+ * Make sure that the interrupt bits are set before calling the function.
+ */
+attribute interrupt_state {
+    parameter documentation = "The interrupt state.";
+    parameter type = "[[bii]|[biii]*]";
+
+    data interrupt_state_t vect state;
+
+    method get() -> (val) {
+        local int i;
+
+        val = SIM_alloc_attr_list(VLEN($state));
+        for (i = 0; i < VLEN($state); i++) {
+            val.u.list.vector[i] = SIM_alloc_attr_list(4);
+            val.u.list.vector[i].u.list.vector[0] = SIM_make_attr_boolean(cast($state[i].high, int));
+            val.u.list.vector[i].u.list.vector[1] = SIM_make_attr_integer($state[i].mask);
+            val.u.list.vector[i].u.list.vector[2] = SIM_make_attr_integer($state[i].intr);
+            val.u.list.vector[i].u.list.vector[3] = SIM_make_attr_integer($state[i].isrd);
+        }
+    }
+
+    method set(val) {
+        VCLEAR($state);
+
+        if (val.u.list.size <= 0)
+            return;
+
+        if (val.u.list.vector[0].kind == Sim_Val_Integer) {
+            // [i*]
+            local interrupt_state_t s;
+            memset(&s, 0, sizeof(s));
+
+            local int i;
+            for (i = 0; i < val.u.list.size; i++) {
+                VADD($state, s);
+            }
+
+            return;
+        }
+
+        // [[bii*]*]
+        local int i;
+        for (i = 0; i < val.u.list.size; i++) {
+            local attr_value_t *elem = val.u.list.vector[i].u.list.vector;
+
+            local interrupt_state_t s;
+            s.high = cast(elem[0].u.boolean, bool);
+            s.mask = elem[1].u.integer;
+            s.intr = elem[2].u.integer;
+            s.isrd = (val.u.list.vector[i].u.list.size > 3
+                      ? elem[3].u.integer : 0);
+
+            VADD($state, s);
+        }
+    }
+
+    method update_interrupts(int id) {
+        local uint32 res = $state[id].intr & $state[id].mask;
+
+        log "info", 3: "update interrupts intr 0x%x, mask 0x%x",
+                $state[id].intr, $state[id].mask;
+
+        if (res > 0 && !$state[id].high) {
+            call $raise_main_interrupt();
+            $state[id].high = true;
+        }
+        else if (res == 0 && $state[id].high) {
+            call $lower_main_interrupt();
+            $state[id].high = false;
+        }
+    }
+
+    method set_interrupt_mask(int id, uint32 val, bool update) {
+        if (id >= VLEN($state)) {
+            log "error": "interrupt state not setup correct";
+            return;
+        }
+        $state[id].mask = val;
+        if (update)
+            inline $update_interrupts(id);
+    }
+
+    method set_interrupt(int id, uint32 val, bool update, bool force) {
+        if (id >= VLEN($state)) {
+            log "error": "interrupt state not setup correct";
+            return;
+        }
+
+        if (!force)
+            val &= ~$state[id].isrd;
+
+        $state[id].intr = val;
+        if (update)
+            inline $update_interrupts(id);
+    }
+
+    method set_disable_mask(int id, uint32 val) {
+        if (id >= VLEN($state)) {
+            log "error": "interrupt state not setup correct";
+            return;
+        }
+
+        $state[id].isrd = val;
+    }
+
+    method init_register_sets(int num) {
+        local int i;
+        local interrupt_state_t s;
+
+        VCLEAR($state);
+        for (i = 0; i < num; i++) {
+            memset(&s, 0, sizeof(s));
+            VADD($state, s);
+        }
+    }
+}

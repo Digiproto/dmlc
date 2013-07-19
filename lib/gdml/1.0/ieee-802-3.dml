@@ -1,0 +1,9 @@
+// ieee_802_3.dml
+//
+// This module contains types needed when using or implementing PHY interfaces
+
+dml 1.0;
+
+header %{
+#include <simics/devs/ieee_802_3.h>
+%}

@@ -1,0 +1,16 @@
+// ethernet.dml
+//
+// This module contains types needed when implementing ethernet
+// devices.
+
+dml 1.0;
+
+header %{
+#include <simics/devs/ethernet.h>
+%}
+
+constant ETHERTYPE_PUP = 0x0200;      /* Xerox PUP */
+constant ETHERTYPE_IP = 0x0800;       /* IPv4 */
+constant ETHERTYPE_IPV6 = 0x86dd;     /* IPv6 */
+constant ETHERTYPE_ARP = 0x0806;      /* Address resolution */
+constant ETHERTYPE_REVARP = 0x8035;   /* Reverse ARP */

@@ -1,0 +1,9 @@
+// interrupt.dml
+//
+// This module contains types needed when using or implementing the
+// interfaces simple_interrupt and/or trigger
+dml 1.0;
+
+header %{
+#include <simics/devs/interrupt.h>
+%}

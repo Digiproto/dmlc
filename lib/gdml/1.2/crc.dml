@@ -1,0 +1,71 @@
+dml 1.2;
+
+extern uint8  SWAB8(uint8 x);
+extern uint16 SWAB16(uint16 x);
+extern uint32 SWAB32(uint32 x);
+
+method bit_reverse(in_data, bits) -> (out_data) {
+    local int bit;
+
+    for (bit = 0, out_data = 0; bit < bits; bit++, in_data >>= 1) {
+        out_data <<= 1;
+        out_data |= in_data & 1;
+    }
+}
+
+method do_crc(uint32 poly, int width, uint32 initial_crc,
+              bool reverse_initial_crc,  bool reverse_input,
+              bool reverse_output, bool swap_output, bool complement_output,
+              bytes_t in_data) -> (uint32 crc) {
+
+    assert width <= 32;
+
+    if (reverse_initial_crc)
+        inline $bit_reverse(initial_crc, width) -> (crc);
+    else
+        crc = initial_crc;
+
+    local size_t i;
+    for (i = 0; i < in_data.len; i++) {
+        local uint8 d = in_data.data[i];
+
+        if (reverse_input)
+            inline $bit_reverse(d, 8) -> (d);
+
+        d ^= crc >> (width - 8);
+
+        local const uint32 top_bit = 1 << (width - 1);
+        local uint32 pre_crc = d << (width - 8);
+
+        local int bit;
+        for (bit = 8; bit > 0; bit--) {
+            if ((pre_crc & top_bit) != 0)
+                pre_crc = (pre_crc << 1) ^ poly;
+            else
+                pre_crc <<= 1;
+        }
+
+        crc = pre_crc ^ (crc << 8);
+    }
+
+    if (reverse_output)
+        inline $bit_reverse(crc, width) -> (crc);
+
+    if (swap_output) {
+        switch (width) {
+        case 8:  crc = SWAB8(crc); break;
+        case 16: crc = SWAB16(crc); break;
+        case 32: crc = SWAB32(crc); break;
+
+        default:
+            log "unimplemented": "CRC: byte swapping of output of size %d bits",
+                width;
+            assert false;
+        }
+    }
+
+    if (complement_output)
+        crc = ~crc;
+
+    crc &= (1 << width) - 1;
+}

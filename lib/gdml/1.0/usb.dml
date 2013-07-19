@@ -1,0 +1,10 @@
+// usb.dml
+//
+// This module contains types needed when implementing usb devices.
+//
+
+dml 1.0;
+
+header %{
+#include <simics/devs/usb.h>
+%}

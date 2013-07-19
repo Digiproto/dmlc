@@ -1,0 +1,9 @@
+// mips.dml
+//
+// This module contains types needed when using or
+// implementing the mips interfaces.
+dml 1.0;
+
+header %{
+#include <simics/arch/mips.h>
+%}

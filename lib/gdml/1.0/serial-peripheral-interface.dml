@@ -1,0 +1,24 @@
+//
+// serial-peripheral-interface.dml: Definitions for modeling SPI communication
+//
+// This file is part of Virtutech Simics
+//
+// Copyright (C) 2008 Virtutech AB, All Rights Reserved
+//
+// Parts of this product may be derived from systems developed at the
+// Swedish Institute of Computer Science (SICS). Licensed from SICS.
+// Copyright (C) 1991-1997, SICS, All Rights Reserved
+//
+// The Virtutech Simics API is distributed under license. Please refer to
+// the 'LICENSE' file for details.
+//
+// For documentation on the Virtutech Simics API, please refer to the
+// Simics Reference Manual. Please report any difficulties you encounter
+// with this API through the Virtutech Simics website at www.simics.com
+//
+dml 1.0;
+
+header %{
+    #include <simics/devs/serial-peripheral-interface.h>
+%}
+

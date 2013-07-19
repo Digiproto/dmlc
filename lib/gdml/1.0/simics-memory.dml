@@ -1,0 +1,40 @@
+dml 1.0;
+
+/*
+ * simics/core/memory.h
+ *
+ * This file is part of Virtutech Simics
+ *
+ * Copyright (C) 1998-2005 Virtutech AB, All Rights Reserved
+ *
+ * The Virtutech Simics API is distributed under license. Please refer to
+ * the 'LICENSE' file for details.
+ *
+ * For documentation on the Virtutech Simics API, please refer to the
+ * Simics Reference Manual. Please report any difficulties you encounter
+ * with this API through the Virtutech Simics website at www.simics.com
+ *
+ */
+
+extern int Sim_Trn_Instr;
+extern int Sim_Trn_Write;
+extern int Sim_Trn_Control;
+extern int Sim_Trn_Prefetch;
+
+constant IMAGE_INTERFACE = "image";
+constant LINEAR_IMAGE_INTERFACE = "linear_image";
+constant TIMING_MODEL_INTERFACE = "timing_model";
+constant SNOOP_MEMORY_INTERFACE = "snoop_memory";
+constant A20_INTERFACE = "a20";
+
+constant MEMORY_SPACE_INTERFACE = "memory_space";
+typedef ram_interface_t rom_interface_t;
+
+constant RAM_INTERFACE = "ram";
+constant ROM_INTERFACE = "rom";
+
+constant IO_MEMORY_INTERFACE = "io_memory";
+constant TRANSLATE_INTERFACE = "translate";
+constant BRIDGE_INTERFACE = "bridge";
+constant MAP_DEMAP_INTERFACE = "map_demap";
+constant CACHE_MISS_INTERFACE = "cache_miss";

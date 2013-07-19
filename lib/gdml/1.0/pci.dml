@@ -1,0 +1,19 @@
+// -*- mode: c; c-basic-offset: 4 -*-
+
+dml 1.0;
+
+header %{
+#ifndef PCI_EXPRESS
+#define PCI_EXPRESS
+#endif
+#include <simics/devs/pci.h>
+%}
+
+constant PCI_DEVICE_INTERFACE = "pci_device";
+constant PCI_BUS_INTERFACE = "pci_bus";
+constant PCI_BRIDGE_INTERFACE = "pci_bridge";
+constant PCI_INTERRUPT_INTERFACE = "pci_interrupt";
+constant PCI_EXPRESS_INTERFACE = "pci_express";
+constant PCI_EXPRESS_HOTPLUG_INTERFACE = "pci-express-hotplug";
+
+constant DEVICE_CONF_FUNC = 0xff;

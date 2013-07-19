@@ -1,0 +1,26 @@
+dml 1.0;
+
+/*
+ * simics-types.dml
+ *
+ * This file is part of Virtutech Simics
+ *
+ * Copyright (C) 1998-2005 Virtutech AB, All Rights Reserved
+ *
+ * The Virtutech Simics API is distributed under license. Please refer to
+ * the 'LICENSE' file for details.
+ *
+ * For documentation on the Virtutech Simics API, please refer to the
+ * Simics Reference Manual. Please report any difficulties you encounter
+ * with this API through the Virtutech Simics website at www.simics.com
+ *
+ */
+
+extern integer_t MAX_INTEGER_T;
+extern integer_t MIN_INTEGER_T;
+extern uinteger_t MAX_UINTEGER_T;
+extern uinteger_t MIN_UINTEGER_T;
+
+typedef conf_object_t processor_t;
+
+extern bool IS_PSEUDO_EXCEPTION(int exp);

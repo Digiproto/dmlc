@@ -1,0 +1,27 @@
+dml 1.2;
+
+/*
+ * simics-device.dml
+ *
+ * This file is part of Virtutech Simics
+ *
+ * Copyright (C) 1998-2005 Virtutech AB, All Rights Reserved
+ *
+ * The Virtutech Simics API is distributed under license. Please refer to
+ * the 'LICENSE' file for details.
+ *
+ * For documentation on the Virtutech Simics API, please refer to the
+ * Simics Reference Manual. Please report any difficulties you encounter
+ * with this API through the Virtutech Simics website at www.simics.com
+ */
+
+constant INTERRUPT_ACK_INTERFACE = "interrupt_ack";
+constant INTERRUPT_CPU_INTERFACE = "interrupt_cpu";
+constant PORT_SPACE_INTERFACE = "port_space";
+constant PIN_INTERFACE = "pin";
+constant SIGNAL_INTERFACE = "signal";
+constant MULTI_LEVEL_SIGNAL_INTERFACE = "multi_level_signal";
+constant RESET_INTERFACE = "reset";
+constant FREQUENCY_LISTENER_INTERFACE = "frequency_listener";
+constant SCALE_FACTOR_LISTENER_INTERFACE = "scale_factor_listener";
+constant SIMPLE_DISPATCHER_INTERFACE = "simple_dispatcher";

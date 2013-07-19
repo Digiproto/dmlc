@@ -1,0 +1,78 @@
+// ethernet.dml
+//
+// This module contains types needed when implementing ethernet
+// devices.
+
+dml 1.2;
+
+header %{
+#include <simics/devs/ethernet.h>
+%}
+
+constant ETHERTYPE_PUP = 0x0200;      /* Xerox PUP */
+constant ETHERTYPE_IP = 0x0800;       /* IPv4 */
+constant ETHERTYPE_IPV6 = 0x86dd;     /* IPv6 */
+constant ETHERTYPE_ARP = 0x0806;      /* Address resolution */
+constant ETHERTYPE_REVARP = 0x8035;   /* Reverse ARP */
+
+// The ethernet_connect template is useful to declare a connector that
+// will be connected directly to an ethernet-link.
+//
+// Use it like this:
+//
+//   connect link is (ethernet_connect) {
+//       parameter documentation = "...";
+//       method update_mac_info {
+//           ... code to register MAC addresses with the link ...
+//       }
+//   }
+//
+// To send a frame, the send_frame method can be used instead of
+// calling the interface function directly:
+//
+//   call $link.send_frame(frame, false)
+//
+template ethernet_connect {
+    interface ethernet_link;
+
+    // Identifier for this device on the ethernet-link. We get a new
+    // identifier for each Simics session, so we don't need to keep it
+    // in an attribute.
+    data int link_id;
+
+    method before_set {
+        // Disconnect from the previous link.
+        if ($obj)
+            $ethernet_link.disconnect_device($dev.obj);
+    }
+
+    method after_set {
+        // Connect to the new link. Defer if the configuration isn't
+        // complete yet.
+        if (SIM_object_is_configured($dev.obj) && $obj != NULL)
+            call $connect_to_link;
+    }
+
+    method connect_to_link {
+        local int new_connection;
+        assert $obj != NULL;
+        $link_id = $ethernet_link.connect_device($dev.obj, &new_connection);
+        if ($link_id == -1)
+            log "error": "Failed to connect to link %s", SIM_object_name($obj);
+        else
+            log "info", 2: "Connected to link %s", SIM_object_name($obj);
+
+        if (new_connection != 0)
+            call $update_mac_info;
+    }
+
+    method update_mac_info default {
+        // Override this with code that tells the link about the
+        // configured MAC address(es)
+    }
+
+    // Wrapper around the interface function
+    method send_frame(dbuffer_t *frame, bool crc_calculated) {
+        $ethernet_link.send_frame($link_id, frame, crc_calculated ? 1 : 0, 0);
+    }
+}

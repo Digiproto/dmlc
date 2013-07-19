@@ -1,0 +1,28 @@
+dml 1.0;
+
+/*
+ * simics-configuration.dml
+ *
+ * This file is part of Virtutech Simics
+ *
+ * Copyright (C) 1998-2005 Virtutech AB, All Rights Reserved
+ *
+ * The Virtutech Simics API is distributed under license. Please refer to
+ * the 'LICENSE' file for details.
+ *
+ * For documentation on the Virtutech Simics API, please refer to the
+ * Simics Reference Manual. Please report any difficulties you encounter
+ * with this API through the Virtutech Simics website at www.simics.com
+ *
+ */
+
+constant CHECKPOINT_INTERFACE = "checkpoint";
+constant SYMTABLE_INTERFACE = "symtable";
+
+extern int MIN_LOG_LEVEL;
+extern int MAX_LOG_LEVEL;
+
+constant LOG_OBJECT_INTERFACE = "log_object";
+
+extern void SIM_log_target_error(int level, log_object_t *logobj,
+                                 int group_ids, ...);

@@ -1,0 +1,9 @@
+// mii.dml
+//
+// This module contains types needed when using or implementing MII interfaces
+
+dml 1.0;
+
+header %{
+#include <simics/devs/mii.h>
+%}

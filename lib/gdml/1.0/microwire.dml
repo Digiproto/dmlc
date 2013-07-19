@@ -1,0 +1,7 @@
+// microwire.dml
+// Copyright 2005-2008 Virtutech AB
+dml 1.0;
+
+header %{
+#include <simics/devs/microwire.h>
+%}

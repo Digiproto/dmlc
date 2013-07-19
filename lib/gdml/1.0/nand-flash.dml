@@ -1,0 +1,10 @@
+// nand-flash.dml
+//
+// This module contains types needed when using or implementing the nand-flash
+// interface
+
+dml 1.0;
+
+header %{
+#include <simics/devs/nand-flash.h>
+%}

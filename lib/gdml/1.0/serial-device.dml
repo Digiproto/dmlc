@@ -1,0 +1,6 @@
+dml 1.0;
+
+header %{
+#include <simics/devs/serial-device.h>
+%}
+

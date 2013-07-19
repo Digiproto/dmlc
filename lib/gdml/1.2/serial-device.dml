@@ -1,0 +1,46 @@
+dml 1.2;
+
+header %{
+#include <simics/devs/serial-device.h>
+%}
+
+template serial_connect {
+    interface serial_link;
+
+    // Identifier for this device on the serial-link. We get a new
+    // identifier for each Simics session, so we don't need to keep it
+    // in an attribute.
+    data int link_id;
+
+    method before_set {
+        // Disconnect from the previous link.
+        if ($obj)
+            $serial_link.disconnect_device($dev.obj);
+    }
+
+    method after_set {
+        // Connect to the new link. Defer if the configuration isn't
+        // complete yet.
+        if (SIM_object_is_configured($dev.obj) && $obj != NULL)
+            call $connect_to_link;
+    }
+
+    method connect_to_link {
+        assert $obj != NULL;
+        $link_id = $serial_link.connect_device($dev.obj);
+        if ($link_id == -1)
+            log "error": "Failed to connect to link %s", SIM_object_name($obj);
+        else
+            log "info", 2: "Connected to link %s", SIM_object_name($obj);
+    }
+
+    // Wrapper around the interface function
+    method send_char(int ch) {
+        $serial_link.send_char($link_id, ch);
+    }
+
+    // Wrapper around the interface function
+    method receive_ready() {
+        $serial_link.send_char($link_id);
+    }
+}
