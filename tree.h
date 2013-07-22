@@ -662,9 +662,9 @@ struct tree_binary {
 	struct tree_common common;
 	const char* operat;			// the operator about binary like: / &= += etc.
 	operator_type_t type;
-	type_t final_type;
 	tree_t* left;				// the left expression about binary
 	tree_t* right;				// the right expression about binary
+	type_t final_type;
 };
 
 /**

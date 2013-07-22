@@ -32,6 +32,7 @@
 #include "ast.h"
 #include "symbol-common.h"
 #include "debug_color.h"
+#include "gen_common.h"
 
 void free_sibling(tree_t** node) {
 	assert(*node != NULL);
@@ -665,6 +666,7 @@ int get_left_right_value(tree_t* left, tree_t* right, tree_t** new_node, express
 		*new_node = (tree_t*)create_node("integer_literal", INTEGER_TYPE, sizeof(struct tree_int_cst));
 		(*new_node)->int_cst.value = (int)final_value;
 		(*new_node)->int_cst.int_str = int_str;
+		(*new_node)->common.print_node = print_interger;
 		expr->final_type = final_type;
 	}
 
@@ -915,7 +917,7 @@ expression_t* binary_expr_int(tree_t** node, symtab_t table, expression_t* expr)
 						return expr;
 				}
 
-				char* value_str = (char*)gdml_zmalloc(sizeof(int) * 8);
+				char* value_str = (char*)gdml_zmalloc(sizeof(int) * 64);
 				sprintf(value_str, "%d", final_value);
 				tree_t* new_node = (tree_t*)create_node("integer_literal", INTEGER_TYPE, sizeof(struct tree_int_cst));
 				new_node->int_cst.int_str = value_str;
@@ -1062,16 +1064,22 @@ expression_t* unary_bit_non(tree_t** node, symtab_t table, expression_t* expr) {
 			exit(-1);
 		}
 		else {
+			const int int_length = 64;
 			int value = ~(unary_expr->int_cst.value);
-			tree_t* new_node = (tree_t*)gdml_zmalloc(sizeof(struct tree_int_cst));
+			char* str = (char*)gdml_zmalloc(int_length);
+			tree_t* new_node = (tree_t*)create_node("integer_literal", INTEGER_TYPE, sizeof(struct tree_int_cst));
 			new_node->int_cst.value = value;
+			sprintf(str, "%d", value);
+			new_node->int_cst.int_str = str;
 			new_node->common.sibling = (*node)->common.sibling;
 			new_node->common.child = (*node)->common.child;
+			new_node->common.print_node = print_interger;
+			new_node->common.translate = translate_integer_literal;
+			expr = get_const_expr_value(new_node, expr);
 			free((*node)->unary.expr);
 			free_sibling(node);
 			free_child(node);
-			*node = unary_expr;
-			expr = get_const_expr_value(unary_expr, expr);
+			*node = new_node;
 		}
 	}
 	else {
@@ -1164,7 +1172,7 @@ expression_t* unary_expr_common(tree_t** node, symtab_t table, expression_t* exp
 			}
 			if (final_type == INTEGER_TYPE) {
 				char* int_str = (char*)gdml_zmalloc(sizeof(char) * 64);
-				sprintf(int_str, "%d", final_type);
+				sprintf(int_str, "%d", final_value);
 				new_node = (tree_t*)create_node("integer_literal", INTEGER_TYPE, sizeof(struct tree_int_cst));
 				new_node->int_cst.value = (int)final_value;
 				new_node->int_cst.int_str = int_str;
