@@ -1,0 +1,119 @@
+# Written by Michael.Kang(blackfin.kang@gmail.com)
+CC = gcc
+#CFLAGS = -g
+CFLAGS = -g -O2 -Werror-implicit-function-declaration -Werror=return-type \
+		-Wmissing-field-initializers -Wuninitialized
+INCLUDE = -I. -I./backend/
+BUILD_DIR = build
+BUILD_DIRS = $(patsubst %,$(BUILD_DIR)/%,$(shell find backend -type d))
+BIN_NAME = dmlc
+
+# select platform: qemu skyeye
+PLATFORM ?= qemu
+
+# args is diffent on windows or linux
+ifeq ($(shell uname),Linux)
+	# on linux
+	LIBRARY_DIR = 
+	LIBRARY = 
+else
+	# on windows
+	LIBRARY_DIR = -L/include
+	LIBRARY = -lregex
+endif
+
+# find all c files
+TOP_FILES := $(wildcard *.c)
+BACKEND_FILES  = $(wildcard backend/*.c)
+BACKEND_FILES += $(wildcard backend/$(PLATFORM)/*.c)
+SPECIAL_FILES = Parser.c Lexer.c
+C_FILES := $(TOP_FILES) $(BACKEND_FILES) $(SPECIAL_FILES)
+OBJECTS := $(patsubst %.c,$(BUILD_DIR)/%.o,$(C_FILES))
+
+all: Makefile.build $(BUILD_DIRS) $(BIN_NAME)
+
+$(BIN_NAME): $(OBJECTS)
+	@echo [LD] $@
+	@$(CC) $(CFLAGS) $^ -o $@ $(LIBRARY_DIR) $(LIBRARY)
+
+$(BUILD_DIR)/%.d: %.c
+	@set -e; rm -f $@
+	@$(CC) $(INCLUDE) -MM $(CFLAGS) $< 2>/dev/null | sed 's#^.*:#$(patsubst %.d,%.o,$@):#' > $@
+#	@echo $(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE) $(LIBRARY_DIR) $(LIBRARY) | \
+#		sed 's/\.d /\.o /g' | sed 's/^/\t/' >> $@
+#	@$(CC) $(INCLUDE) -MM $(CFLAGS) $< | sed -e 's,.*/.o[ :]*,$*.o : ,g' > $@;
+
+sinclude $(OBJECTS:.o=.d)
+
+$(BUILD_DIR)/%.o: %.c
+	@echo [CC] $@
+	@$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE) $(LIBRARY_DIR) $(LIBRARY)
+
+Lexer.c: gdml.lex
+	@echo [FLEX] $@
+	@flex gdml.lex
+Lexer.h: gdml.lex
+	@echo [FLEX] $@
+	@flex gdml.lex
+
+Parser.c: gdml.y
+	@echo [BISON] $@
+	@bison -d gdml.y
+Parser.h: gdml.y
+	@echo [BISON] $@
+	@bison -d gdml.y
+
+install: dmlc include/gdml
+	@echo ===== start install =====
+	@echo install dmlc [to /usr/bin]
+	@cp -r dmlc     /usr/bin
+	@echo install include/gdml [to /usr/include]
+	@cp -r include/gdml /usr/include
+
+uninstall: /usr/bin/dmlc /usr/include/gdml
+	@echo ===== start uninstall =====
+	@echo uninstall dmlc [from /usr/bin]
+	@rm -rf /usr/bin/dmlc
+	@echo uninstall lib/gdml [from /usr/include]
+	@rm -rf /usr/include/gdml
+
+check: dmlc ../include/gdml output
+	@echo ===== start check =====
+	./dmlc testcase/simple-device.dml
+
+../include/gdml:
+	cp -r include ../
+
+output:
+	mkdir -p output
+
+$(BUILD_DIRS): 
+	mkdir -p $(BUILD_DIRS)
+
+clean:
+	@echo ===== start clean =====
+	-rm Parser.* Lexer.* dmlc tags -rf
+	-rm output/* -rf
+	-find . -name "*.d" | xargs rm -f
+	-find . -name "*.o" | xargs rm -f
+
+distclean: clean
+	-rm build Makefile.build -rf
+	-rm Makefile -rf
+
+.PHONY: clean check install uninstall
+
+#TOP_FILES := Parser.c Lexer.c symbol.c ast.c dmlc.c debug_color.c stack.c expression.c \
+#			 decl.c parse_str.c pre_parse_dml.c import.c
+#GEN_FILES := object.c ref.c $(wildcard gen_*.c) 
+#dmlc: $(C_FILES) $(gen_objs) $(backend)
+#	gcc $(CFLAGS) -g -o dml  Parser.c Lexer.c symbol.c ast.c  dmlc.c qemu_code_gen.c debug_color.c stack.c expression.c decl.c parse_str.c \
+#		object.c qemu_platform.c gen_common.c ref.c qemu_object_headfile.c  gen_once_noplatform.c gen_object.c gen_utility.c gen_expression.c \
+#		gen_method_protos.c pre_parse_dml.c import.c
+
+#c_files: Parser.c Lexer.c symbol.c ast.c  dmlc.c qemu_code_gen.c debug_color.c stack.c expression.c decl.c parse_str.c object.c \
+#		 gen_common.c qemu_platform.c ref.c qemu_object_headfile.c gen_once_noplatform.c gen_object.c gen_utility.c pre_parse_dml.c import.c
+#module_test: symbol
+#
+#symbol: symbol.c
+#	gcc -g -DSYMBOL_DEBUG -o symbol symbol.c

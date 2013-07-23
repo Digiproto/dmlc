@@ -1,0 +1,14 @@
+# !/bin/sh
+
+BACKEND_DIRS=`find backend -type d`
+
+echo [Create] build directory
+mkdir -p build
+for var in $BACKEND_DIRS
+do
+	mkdir -p build/$var
+done
+
+echo [Enable] Makefile
+touch Makefile.build
+cp Makefile.def Makefile

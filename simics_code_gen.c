@@ -185,7 +185,7 @@ char *gen_filename[GEN_FILE_NUM];
 
 typedef void (*gen_code_func_t) (node_t * root, FILE * output);
 
-gen_code_func_t gen_code[GEN_FILE_NUM] = {
+static gen_code_func_t gen_code[GEN_FILE_NUM] = {
 	generate_module_id_source,
 	generate_device_source,
 	generate_device_header,
