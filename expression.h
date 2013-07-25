@@ -70,6 +70,8 @@ void parse_log_args(tree_t** node, symtab_t table);
 expression_t* get_ident_value(tree_t** node, symtab_t table,  expression_t* expr);
 expression_t* cal_binary_expr(tree_t** node, symtab_t table, expression_t* expr);
 extern expression_t* cal_expression(tree_t** node, symtab_t table, expression_t* expr);
+int get_typedef_type(symtab_t table, char* name);
+int charge_type(int type1, int type2);
 
 //#define DEBUG_EXPRESSION
 

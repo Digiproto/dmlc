@@ -31,6 +31,7 @@
 #include "types.h"
 #include "ast.h"
 #include "decl.h"
+#include "expression.h"
 
 void* gdml_realloc(void* addr, int size) {
 	if (addr == NULL) {
@@ -1669,7 +1670,11 @@ void parse_local_decl(tree_t* node, symtab_t table) {
 
 	if (node->local_tree.expr) {
 		expression_t* expr = parse_expression(&(node->local_tree.expr), table);
-		if (charge_decl_expr_type(table, decl, expr) != 0) {
+		type_t type_decl = get_decl_type(decl);
+		if (type_decl == TYPEDEF_TYPE) {
+			type_decl = get_typedef_type(table, decl->type->typedef_name);
+		}
+		if (charge_type(expr->final_type, type_decl) < 0) {
 			fprintf(stderr, "Line: %d, error: invalid initializer\n", __LINE__);
 			return;
 		}
