@@ -84,6 +84,20 @@ int charge_node_is_const(tree_t* node) {
 	}
 }
 
+symbol_t get_symbol_from_root_table(const char* name, type_t type) {
+	assert(name != NULL);
+	symtab_t root_table = get_root_table();
+	symbol_t symbol = NULL;
+	if (type == 0) {
+		symbol = symbol_find_notype(root_table, name);
+	}
+	else {
+		symbol = symbol_find_curr(root_table, name, type);
+	}
+
+	return symbol;
+}
+
 expression_t* get_const_expr_value(tree_t* node, expression_t* expr) {
 	assert(node != NULL);
 	/* FIXME: assert is noly for debugging */
@@ -169,7 +183,7 @@ int charge_type(int type1, int type2) {
 				return type2;
 			}
 			else {
-				fprintf(stderr, "line: %d, error: incompatible types when assigning to type\n", __LINE__);
+				fprintf(stderr, "line: %d, error: incompatible types when assigning to type: %d\n", __LINE__, type2);
 				/* FIXME: handle the error */
 				exit(-1);
 				return -1;
@@ -379,6 +393,11 @@ void cal_assign_left(tree_t** node, symtab_t table, expression_t* left_expr, exp
 		return ;
 	}
 
+	int type = 0;
+	type = charge_left_right_expr_type(left_expr, right_expr);
+	right_expr->final_type = type;
+
+#if 0
 	/* FIXME: there is some problems */
 	int type = -1;
 	if (left_node->common.type == IDENT_TYPE) {
@@ -468,6 +487,7 @@ void cal_assign_left(tree_t** node, symtab_t table, expression_t* left_expr, exp
 		type = charge_left_right_expr_type(left_expr, right_expr);
 		right_expr->final_type = type;
 	}
+#endif
 	right_expr->node = *node;
 
 	return;
@@ -1358,15 +1378,21 @@ int is_c_type(int type) {
 		return 0;
 }
 
-int get_method_param_type(symbol_t symbol) {
+int get_method_param_type(symtab_t table, symbol_t symbol) {
 	assert(symbol != NULL);
+	int type = 0;
 
 	params_t* param = (params_t*)(symbol->attr);
 	 if (param->is_notype) {
 		 return NO_TYPE;
 	 }
 	 else {
-		 return get_decl_type(param->decl);
+		 type = get_decl_type(param->decl);
+		 if (type == TYPEDEF_TYPE) {
+			 type = get_typedef_type(table, param->decl->type->typedef_name);
+		 }
+
+		 return type;
 	 }
 
 	return 0;
@@ -1412,6 +1438,10 @@ int get_typedef_type(symtab_t table, char* name) {
 	int type = 0;
 
 	symbol_t symbol = symbol_find(table, name, TYPEDEF_TYPE);
+
+	if ((symbol == NULL) && (table->no_check == 1)) {
+		symbol = get_symbol_from_root_table(name, TYPEDEF_TYPE);
+	}
 
 
 	if (symbol == NULL) {
@@ -1529,7 +1559,7 @@ int get_c_type(symtab_t table, symbol_t symbol) {
 
 	switch(symbol->type) {
 		case PARAM_TYPE:
-			type = get_method_param_type(symbol);
+			type = get_method_param_type(table, symbol);
 			DEBUG_EXPR("IN %s, line = %d, param type: %d\n",
 					__func__, __LINE__, type);
 			break;
@@ -1638,6 +1668,9 @@ expression_t* get_ident_value(tree_t** node, symtab_t table,  expression_t* expr
 	/* FIXME: should find the symbol, if it is in the symbol table,
 	 * should insert it*/
 	symbol_t symbol = symbol_find_notype(table, (*node)->ident.str);
+	if ((symbol == NULL) && (table->no_check == 1)) {
+		symbol = get_symbol_from_root_table((*node)->ident.str, 0);
+	}
 	pre_parse_symbol_t* pre_symbol =  pre_symbol_find((*node)->ident.str);
 	if ((symbol != NULL)) {
 		DEBUG_EXPR("symbol name: %s, type: %d\n", symbol->name, symbol->type);
