@@ -24,7 +24,7 @@
 #include "gen_utility.h"
 
 static char tab[16][32] =
-    { {"\0"}, {"\t"}, {"\t\t"}, {"\t\t\t"}, {"\t\t\t\t"}, {"\t\t\t\t\t"}, {"\t\t\t\t\t\t"}, {"\t\t\t\t\t\t\t"}, {"\t\t\t\t\t\t\t\t"} };
+    { {"\0"}, {"\t"}, {"\t\t"}, {"\t\t\t"}, {"\t\t\t\t"}, {"\t\t\t\t\t"}, {"\t\t\t\t\t\t"}, {"\t\t\t\t\t\t\t"}, {"\t\t\t\t\t\t\t\t"}, {"\t\t\t\t\t\t\t\t\t"}, {"\t\t\t\t\t\t\t\t\t\t"}, {"\t\t\t\t\t\t\t\t\t\t\t"}, {"\t\t\t\t\t\t\t\t\t\t\t\t"}, {"\t\t\t\t\t\t\t\t\t\t\t\t\t"}, {"\t\t\t\t\t\t\t\t\t\t\t\t\t\t"}, {"\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t"} };
 
 const char *simics_apis[] = {
 	"SIM_mem_op_is_read",
@@ -48,6 +48,7 @@ static int throw_index = 1;
 void enter_scope(void){
     D("{\n");
     tab_count++;
+	POS;
 }
 
 void exit_scope(void){

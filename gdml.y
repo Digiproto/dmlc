@@ -2200,6 +2200,7 @@ expression
 		node->binary.left = $1;
 		node->binary.right = $3;
 		node->common.print_node = print_binary;
+		node->common.translate = translate_binop_expr;
 		$$ = node;
 	}
 	| expression RIGHT_OP expression {
@@ -2218,6 +2219,7 @@ expression
 		node->binary.left = $1;
 		node->binary.right = $3;
 		node->common.print_node = print_binary;
+		node->common.translate  = translate_binop_expr;
 		$$ = node;
 	}
 	| expression NE_OP expression {
@@ -2227,6 +2229,7 @@ expression
 		node->binary.left = $1;
 		node->binary.right = $3;
 		node->common.print_node = print_binary;
+		node->common.translate = translate_binop_expr;
 		$$ = node;
 	}
 	| expression '<' expression {
@@ -2236,6 +2239,7 @@ expression
 		node->binary.left = $1;
 		node->binary.right = $3;
 		node->common.print_node = print_binary;
+		node->common.translate = translate_binop_expr;
 		$$ = node;
 	}
 	| expression '>' expression {
@@ -2255,6 +2259,7 @@ expression
 		node->binary.left = $1;
 		node->binary.right = $3;
 		node->common.print_node = print_binary;
+		node->common.translate = translate_binop_expr;
 		$$ = node;
 	}
 	| expression GE_OP expression {
@@ -2264,6 +2269,7 @@ expression
 		node->binary.left = $1;
 		node->binary.right = $3;
 		node->common.print_node = print_binary;
+		node->common.translate = translate_binop_expr;
 		$$ = node;
 	}
 	| expression OR_OP expression {
@@ -2273,6 +2279,7 @@ expression
 		node->binary.left = $1;
 		node->binary.right = $3;
 		node->common.print_node = print_binary;
+		node->common.translate = translate_binop_expr;
 		$$ = node;
 	}
 	| expression AND_OP expression {
@@ -2282,6 +2289,7 @@ expression
 		node->binary.left = $1;
 		node->binary.right = $3;
 		node->common.print_node = print_binary;
+		node->common.translate = translate_binop_expr;
 		$$ = node;
 	}
 	| expression '|' expression {
@@ -2481,6 +2489,7 @@ expression
 		node->component.expr = $1;
 		node->component.ident = $3;
 		node->common.print_node = print_component;
+		node->common.translate = translate_ref_expr;
 		$$ = node;
 	}
 	| expression METHOD_RETURN objident {
@@ -2534,6 +2543,7 @@ expression
 		 node->expr_brack.expr = NULL;
 		 node->expr_brack.expr_in_brack = $2;
 		 node->common.print_node = print_expr_brack;
+		 node->common.translate = translate_brack_expr;
 		 $$ = node;
 
 	}

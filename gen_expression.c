@@ -21,16 +21,15 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 #include "gen_expression.h" 
-
+static int expr_is_bit_slic(tree_t *t);
 void translate_assign(tree_t *t) {
 	tree_t *node;
 
 	node = t->expr_assign.left;
-	/*
 	if(expr_is_bit_slic(node)) {
 		translate_bit_slic_assign(t);
 		return;
-	}*/
+	}
 	translate(node);
 	D(" %s ",t->expr_assign.assign_symbol);
 	node = t->expr_assign.right;
@@ -175,23 +174,18 @@ void translate_expr_brack_direct(tree_t *t) {
 	translate_expr_list(node, NULL);
 	D(")");
 }
- /*
+
 static int expr_is_bit_slic(tree_t *t) {
-	const type_t *type;
 
 	if(t && t->common.type == BIT_SLIC_EXPR_TYPE) {
 		if(t->bit_slic.bit && t->bit_slic.bit_end) {
 			return 1;
-		} else if(t->bit_slic.bit && !t->bit_slic.bit_end) {
-			type = expression_type(t->bit_slic.expr);
-			if(type->kind != ARRAY_TYPE) {
-				return 1;
-			}
 		}
 	}
 	return 0;
 }
 
+/*
 static int expr_is_array_ref(tree_t *t) {
 	const type_t *type;
 
@@ -368,42 +362,48 @@ const_bit:
 		D(")");
 		D(")");
 	}
-}
+}*/
 
-static void translate_bit_slic_assign(tree_t *t) {
+void translate_bit_slic_assign(tree_t *t) {
 	tree_t *sexpr;
-	tree_t *eexpr;
-	expression_t *expr;
-	int start = -1;
-	int end = -1;
-
-
-	sexpr = t->bit_slic.bit;
-	if(t->bit_slic.bit_end) {
-		eexpr = t->bit_slic.bit_end;
-	}
+	tree_t *eexpr = NULL;
+	tree_t *node;
+	tree_t *right;
+	tree_t *expr;
 	
-	if(sexpr && eexpr) {
-		expr = parse_expression(sexpr, current_table);
-		if(expr->is_constant) {
-			start = expr->final_value;	
-		}
-		expr = parse_expression(eexpr, current_table);
-		if(expr->is_constant) {
-			end = expr->final_value;
-		}
-		if(!end) {
-			D("");
-		}
-		
+	node = t->expr_assign.left;
+	right = t->expr_assign.right;
+	sexpr = node->bit_slic.bit;
+	if(node->bit_slic.bit_end) {
+		eexpr = node->bit_slic.bit_end;
 	}
-
-	if(sexpr && !eexpr) {
-		expr = parse_expression(sexpr, current_table);
-		if(expr->is_constant) {
-			start = expr->final_value;
-		}
-
-	}
+	expr = node->bit_slic.expr;
+	translate(expr);
+	D(" = ");
+	D("MIX(");
+	translate(expr);
+	D(", ");
+	D("(uint64 )");
+	translate(right);
+	D(" << ");
+	translate(eexpr);
+	D(", ");
+	D("(uint64 )");
+	D("MASK(");
+	translate(sexpr);
+	D(" - ");
+	translate(eexpr);
+	D(")");
+	D(" << ");
+	translate(eexpr);
+	D(")");
 }
-*/
+
+void translate_brack_expr(tree_t *t) {
+	tree_t *node = t;
+	tree_t *expr = node->expr_brack.expr_in_brack;
+
+	D("(");
+	translate(expr);
+	D(")");
+}

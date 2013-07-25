@@ -259,6 +259,7 @@ static symbol_t get_ref_sym(tree_t *t, int *is_obj, object_t **iface_obj,const c
 	return sym;
 }
 
+static void translate_parameter(symbol_t sym);
 void translate_quote(tree_t *t) {
 	tree_t *node = t->quote.ident;
 	const char *name;
@@ -273,15 +274,11 @@ void translate_quote(tree_t *t) {
 		if(!strcmp(name, "this")) {
 			ref = get_obj_ref(OBJ);
 			D("%s", ref);
+			return;
 		}
 		sym = get_ref_sym(t, &is_obj, &dummy_obj, &dummy_name);	
 		if(sym) {
-			param_value_t *val = (param_value_t *)sym->attr;	
-			if(val->type == param_type_int) {
-				D("0x%x", val->u.integer);
-			} else {
-				printf("other param val type %d\n", val->type);
-			}
+			translate_parameter(sym);
 		} else {
 			printf("symbol not found\n");
 		}
@@ -290,7 +287,32 @@ void translate_quote(tree_t *t) {
 	}
 }
 
-static void translate_ref_expr(tree_t *t){
+static void translate_parameter(symbol_t sym) {
+	param_type_t type;
+	param_value_t *val;
+
+	val = (param_value_t *)sym->attr;
+	type = val->type;
+	switch(type) {
+		case param_type_int:
+			D("0x%x", val->u.integer);
+			break;
+		case param_type_float:
+			D("%f", val->u.floating);
+			break;
+		case param_type_bool:
+			D("%d", val->u.boolean);
+			break;
+		case param_type_string:
+			D("%s", val->u.string);
+			break;
+		default:
+			printf("invalide parameter type %d\n", type);
+			break;
+	}
+}
+
+void translate_ref_expr(tree_t *t){
 	ref_info_t fi;
 	symbol_t sym;
 	const char *name;
@@ -308,6 +330,7 @@ static void translate_ref_expr(tree_t *t){
 
 	if(sym && sym->type == PARAMETER_TYPE){
 		/**/
+		translate_parameter(sym);
 	}
 	
 	if(sym && sym->type == OBJECT_TYPE) {
@@ -379,14 +402,18 @@ static symbol_t  get_call_expr_info(tree_t *node) {
 	const char *dummy_name;
 	int is_obj;
 	tree_t *t;
-
+	
+	printf("hehe\n");
 	if(node->common.type == EXPR_BRACK_TYPE) {
 		t = node->expr_brack.expr;
 	} else {
 		t = node;
 	}
 
+	printf("hehe1\n");
 	tmp = get_ref_sym(t, &is_obj, &dummy_obj, &dummy_name);
+	printf("hehe2\n");
+
 	return tmp;
 }
 
@@ -459,7 +486,6 @@ void translate_call(tree_t *t){
 	POS;
 	D("if(%s) ",name);
 	enter_scope();
-	POS;
 	D("return 1;\n");
 	exit_scope();
 	new_line();
@@ -587,7 +613,6 @@ void translate_block(tree_t *t) {
 	if(t->block.statement) {
 		node = t->block.statement;
 		while(node) {
-			POS;
 			translate(node);
 			if(node_is_expression(node)) {
 				D(";");
@@ -596,6 +621,7 @@ void translate_block(tree_t *t) {
 			node = node->common.sibling;
 			if(node) {
 				//new_line();
+				POS;
 			}
 		}
 	}
@@ -636,13 +662,58 @@ static void translate_expr(tree_t *t) {
 	printf("TODO\n");
 }
 
+static int is_explicit(tree_t *t, int *boolean) {
+	tree_t *node = t;
+	int ret = 0;
+	symbol_t sym = NULL;
+	object_t *obj = NULL;
+	param_value_t *val = NULL;
+	param_value_t tmp;
+	symtab_t table;
+
+	if(node->common.type == COMPONENT_TYPE && node->component.type == COMPONENT_DOT_TYPE) {
+		node = node->component.ident;
+		if(node->common.type == IDENT_TYPE) {
+			if(!strcmp(node->ident.str, "explicit")) {
+					sym = symbol_find(current_table, "fields", PARAMETER_TYPE);
+					val = (param_value_t *)sym->attr;
+					printf("vector[0] type %d\n", val->type);
+					tmp = val->u.list.vector[0];
+					obj = (object_t *)tmp.u.ref;
+					table = obj->symtab;
+					sym = symbol_find(table, "explicit", PARAMETER_TYPE);
+					if(sym) {
+						val = (param_value_t *)sym->attr;
+						*boolean = val->u.integer;
+						ret = 1;
+					}
+				}
+			}
+		}
+	return ret;
+}
+
 void translate_if_else(tree_t *t) {
 	tree_t *node;
 	expression_t *expr = NULL;
 	node = t->if_else.cond;
-	
+	int explicit;
+	int ret;
 	//expr = parse_expression(&node, current_table);
-	if( 1 || !expr->is_const) {
+	
+	ret = is_explicit(node, &explicit);
+	if(ret) {
+		/*explicit*/
+		if(explicit) {
+			node = t->if_else.if_block;
+		} else {
+			node = t->if_else.else_block;
+		}
+		translate(node);
+		return;
+	}
+
+	if(1) {
 		D("if ");
 		D("(");
 		translate(node);
@@ -792,7 +863,8 @@ void translate_foreach(tree_t *t) {
 	symbol_t list;
 	symbol_t tmp = NULL;
 	param_value_t *val = NULL;
-	
+	object_t *obj;
+
 	node = t->foreach.ident;
 	ident = node->ident.str;
 	node = t->foreach.in_expr;
@@ -820,15 +892,20 @@ void translate_foreach(tree_t *t) {
 	enter_scope();
 	for(i = 0; i < len; i++) {
 		symbol_set_value(tmp, val->u.list.vector[i].u.ref);
-		POS;
+		obj = (object_t *)val->u.list.vector[i].u.ref;
+		printf("--------object %s\n", obj->name);
 		enter_scope();
 		node = t->foreach.block;
-		if(node->common.type != BLOCK_TYPE){
-			POS;
-		}
 		translate(node);
-		exit_scope();
-		new_line();
+		if (node->common.type == BLOCK_TYPE) {
+			new_line();
+			exit_scope();
+			new_line();
+			POS;
+		} else {
+			exit_scope();
+			new_line();
+		}
 	}
 	symbol_set_type(tmp, val->u.list.vector[0].type);
 	exit_scope();
@@ -1460,18 +1537,26 @@ void gen_dml_method_header(object_t *obj, tree_t *m) {
 	gen_method_params(obj, m);
 }
 
+static symtab_t saved_table;
 void pre_gen_method(object_t *obj, tree_t *method) {	
 	method_attr_t *attr;
 	symtab_t table;
 
 	attr = method->common.attr;
 	table = attr->table;
+	saved_table = table->parent;
 	table->parent = obj->symtab;
 	current_table = table;
 	OBJ = obj;
 }
 
 void post_gen_method(object_t *obj, tree_t *method) {
+	method_attr_t *attr;
+	symtab_t table;
+
+	attr = method->common.attr;
+	table = attr->table;
+	table->parent = saved_table;
 }
 
 void gen_dml_method(object_t *obj, struct method_name *m) {

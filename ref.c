@@ -51,7 +51,7 @@ void ref_info_destroy(ref_info_t *fi) {
 		ni = list_entry(p,node_info_t,entry);
 		node = ni->node;
 		if(node->common.type == DML_KEYWORD_TYPE){
-			free(node);
+			//free(node);
 		}
 		p = p->next;
 		free(ni);

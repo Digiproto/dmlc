@@ -105,6 +105,7 @@ typedef struct field {
     int high;
     int len;
 	int is_dummy;
+	int is_fixed;
 }field_t;
 
 typedef struct template_def {

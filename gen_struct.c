@@ -49,6 +49,20 @@ static void gen_connect_struct(object_t *obj, FILE *f) {
     fprintf(f, "\t} %s;\n", obj->name);
 }
 
+static void gen_attribute_struct(object_t *obj, FILE *f) {
+	
+}
+
+static void gen_device_attribute(device_t *dev, FILE *f) {
+    struct list_head *p;
+    object_t *obj;
+
+    list_for_each(p, &dev->attributes) {
+        obj = list_entry(p, object_t, entry);
+        gen_attribute_struct(obj, f);
+    }
+}
+
 static void gen_device_connect(device_t *dev, FILE *f) {
     struct list_head *p;
     object_t *obj;
@@ -82,7 +96,7 @@ static void gen_register_struct(object_t *obj, FILE *f) {
             fld = list_entry(p, object_t, entry);
             gen_field_struct(fld, f);
         }
-        fprintf(f, "\t\t} %s;", obj->name);
+        fprintf(f, "\t\t} %s;\n", obj->name);
         obj->attr_type = "container";
     }
 }
@@ -162,4 +176,5 @@ void gen_device_macros(device_t *dev, FILE *f) {
 
 void gen_device_struct(device_t *dev, FILE *f) {
 	gen_banks_struct(dev, f);
+	gen_device_connect(dev, f);
 }

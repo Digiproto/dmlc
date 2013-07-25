@@ -54,4 +54,5 @@ void translate_c_keyword(tree_t *t);
 void translate_local(tree_t *t);
 void translate_typeof(tree_t *t);
 void translate_quote(tree_t *t);
+void translate_ref_expr(tree_t *t);
 #endif /* __GEN_COMMON_H__ */

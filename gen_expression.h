@@ -29,5 +29,7 @@ void translate_binop_expr(tree_t *t);
 void translate_expr_brack_direct(tree_t *t);
 void translate_assign(tree_t *t);
 void translate_bit_slic(tree_t *t);
+void translate_bit_slic_assign(tree_t *t);
+void translate_brack_expr(tree_t *t);
 
 #endif /* __GEN_EXPRESSION_H__ */

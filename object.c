@@ -111,8 +111,15 @@ static symbol_t object_symbol_find_notype(symtab_t table, const char *name) {
 		printf("symbol found %s in object\n", sym->name);
 		return sym;
 	} else if (table->sibling){
-		printf("before sibling, %p; root table  %p , cb %p\n", table->sibling, root_table, root_table->cb);
+		printf("before sibling, %p; root table  %p , cb %p num: %d\n", table->sibling, root_table, root_table->cb, table->sibling->table_num);
+		if (strcmp(name, "do_dma_transfer") == 0) {
+			printf("nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn\n");
+		}
 		sym = symbol_find_notype(table->sibling, name);
+		if (strcmp(name, "do_dma_transfer") == 0) {
+			printf("sym: 0x%x\n", sym);
+			exit(-1);
+		}
 		if(sym) {
 			sym->owner = table->obj;
 			printf("symbol %s found in sibling \n", sym->name);
@@ -155,9 +162,18 @@ static void init_object(object_t *obj, const char *name, const char *type, tree_
 	obj->encoding = get_object_encoding(type);
 	obj->node = node;
 	obj->symtab = symtab_create_with_cb(OBJECT_TYPE, object_symbol_find, object_symbol_find_notype);
-	obj->symtab->sibling = table;
+	if(!table) {
+		obj->symtab->sibling = symtab_create(TMP_TYPE);
+	} else {
+		obj->symtab->sibling = table;
+	}
 	obj->symtab->obj = obj;
-	printf("obj %s, %p, symtab %p , sibling %p\n", obj->name, obj, table, obj->symtab);
+	if(OBJ) {
+		obj->symtab->parent = OBJ->symtab;
+	} else {
+		obj->symtab->parent = NULL;
+	}
+	printf("obj %s, symtab %p , sibling %p, parent table %p\n", obj->name, obj->symtab, obj->symtab->sibling, obj->symtab->parent);
 	struct list_head *p = &obj->childs;
 	for(i = 0; i < 6; i++, p++){
 		INIT_LIST_HEAD(p);
@@ -352,6 +368,9 @@ static void create_bank_object(symbol_t sym){
 	init_object(&bank->obj,sym->name,"bank",b->common.node, table);		
 	OBJ = &bank->obj;
 	create_register_objs(table);
+	printf("start bank\n");
+	print_all_symbol(table);
+	printf("end bank\n");
 }
 
 device_t *create_device_tree(tree_t  *root){
@@ -389,23 +408,24 @@ void create_template_name(object_t *obj, const char *name) {
 
 static void field_realize(object_t *obj) {
 	field_t *fld = (field_t *)obj;
-	field_attr_t *fld_attr;
+	tree_t *bitrange;
 	tree_t *templates = NULL;
+	tree_t *expr;
 
 	if(fld->is_dummy) {
 		goto end;
 	} 
-	fld_attr = obj->node->common.attr;	
-	bitrange_attr_t *range = fld_attr->bitrange;
-	expression_t expr = range->expr_end;
-	if(expr.is_const) {
-		fld->low = expr.const_expr->int_value; 
+	bitrange = obj->node->field.bitrange;	
+	expr = bitrange->array.expr;
+	fld->is_fixed = bitrange->array.is_fix;
+	fld->high = expr->int_cst.value; 
+	if(fld->is_fixed) {
+		fld->len = 1;
+	} else {
+		expr = bitrange->array.expr_end;
+		fld->low = expr->int_cst.value;
+		fld->len = fld->high - fld->low + 1;
 	}
-	expr = range->expr;
-	if(expr.is_const) {
-		fld->high = expr.const_expr->int_value;
-	}
-	fld->len = fld->high - fld->low + 1;
 	templates = obj->node->field.templates;
 end:
 	add_object_templates(obj, templates);	
@@ -431,10 +451,12 @@ static void register_realize(object_t *obj) {
 		i++;
 	}
 	reg->field_count = i;
-	reg->fields = (object_t **)gdml_zmalloc(sizeof(obj) * i); 
+	reg->fields = (object_t **)gdml_zmalloc(sizeof(obj) * reg->field_count); 
+	i = 0;
 	list_for_each(p, &obj->childs) {
 		tmp = list_entry(p, object_t, entry);
 		reg->fields[i] = tmp;
+		i++;
 		field_realize(tmp);
 	}
 	add_object_templates(obj, obj->node->reg.templates);
@@ -536,7 +558,7 @@ void device_realize(device_t *dev) {
 
 void print_object(object_t *obj, int tab_count) {
 	const char *pos = (const char *)tab[tab_count];
-	printf("%sobject type %s, name %s, symtab %p, sibling %p\n", pos, obj->obj_type, obj->name, obj->symtab, obj->symtab->sibling);	
+	printf("%sobject type %s, name %s, symtab %p, sibling %p, symtab parent %p\n", pos, obj->obj_type, obj->name, obj->symtab, obj->symtab->sibling, obj->symtab->parent);	
 	struct list_head *p;
 	object_t *tmp;
 
@@ -681,6 +703,12 @@ static void process_register_template(object_t *obj){
 	val->type = param_type_int;
 	val->u.integer = 0;
 	symbol_insert(table, "hard_reset_value", PARAMETER_TYPE, val);
+
+	val = gdml_zmalloc(sizeof(*val));
+	val->type = param_type_int;
+	bank_t *bank = (bank_t *)reg->obj.parent;
+	val->u.integer = bank->register_size * 8;
+	symbol_insert(table, "bitsize", PARAMETER_TYPE, val);
 }
 
 static void process_field_template(object_t *obj){
@@ -703,6 +731,12 @@ static void process_field_template(object_t *obj){
 	val->type = param_type_int;
 	val->u.integer = field->high;
 	symbol_insert(table, "msb", PARAMETER_TYPE, val);
+
+	val = gdml_zmalloc(sizeof(*val));
+	val->type = param_type_int;
+	val->u.integer = field->len;
+	symbol_insert(table, "bitsize", PARAMETER_TYPE, val);
+
 }
 
 /*process parameters including auto parameters */
