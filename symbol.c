@@ -535,6 +535,9 @@ symtab_t symtab_insert_sibling(symtab_t symtab, symtab_t newtab)
 	if ((newtab->no_check) == 0) {
 		newtab->no_check = symtab->parent->no_check;
 	}
+	if (newtab->type == TEMPLATE_TYPE) {
+		newtab->parent = NULL;
+	}
 
     return newtab;
 }
@@ -563,6 +566,15 @@ symtab_t symtab_insert_child(symtab_t symtab, symtab_t newtab)
 		}
         return newtab;
     }
+}
+
+static symtab_t root_table;
+void set_root_table(symtab_t table) {
+	root_table = table;
+}
+
+symtab_t get_root_table(void) {
+	return root_table;
 }
 
 /**

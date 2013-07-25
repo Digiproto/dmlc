@@ -104,6 +104,8 @@ int symbol_find_type_curr(symtab_t symtab, type_t type, symbol_t **result);
 int symbol_insert(symtab_t symtab, const char* name, type_t type, void* attr);
 void symbol_set_value(symbol_t sym, void *attr);
 void symbol_set_type(symbol_t sym, type_t type);
+void set_root_table(symtab_t table);
+symtab_t get_root_table(void);
 /* operate the symbol tables.  */
 symtab_t symtab_create(type_t type);
 symtab_t symtab_create_with_cb(type_t type, symbol_find_fn_t cb, symbol_find_notype_fn_t notype);
