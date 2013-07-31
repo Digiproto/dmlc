@@ -33,8 +33,12 @@ const char *simics_apis[] = {
 	NULL
 };
 
-const char *simics_typedef[] = {
+const char *simics_typedefs[] = {
 	"generic_transaction_t",
+	"Sim_RW_Write",
+	"Sim_RW_Read",
+	"Sim_Endian_Target",
+	"Sim_PE_No_Exception",
 	NULL
 };
 
@@ -298,5 +302,14 @@ int is_simics_api(const char *name) {
 		i++;
 		tmp = simics_apis[i];
 	}
+	i = 0;
+	tmp = simics_typedefs[0];
+	while(tmp) {
+		if(!strcmp(tmp, name))
+			return 1;
+		i++;
+		tmp = simics_typedefs[i];
+	}
+
 	return 0;
 }
