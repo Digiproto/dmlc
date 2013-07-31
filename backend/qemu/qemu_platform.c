@@ -23,6 +23,7 @@
 #include "gen_utility.h"
 #include "gen_object.h"
 #include "platform.h"
+#include "gen_connect.h"
 #include <time.h>
 extern object_t *DEV;
 
@@ -197,6 +198,32 @@ static void gen_dc_reset(device_t *dev, FILE *f) {
 	fprintf(f, "}\n");
 }
 
+static void gen_device_connect(device_t *dev, FILE *f) {
+	struct list_head *p;
+	object_t *tmp;
+	int i = 0;
+
+	gen_device_connect_code(dev, f);
+
+	fprintf(f, "\nconst struct ConnectDescription %s_connects[] = {\n", dev->obj.name);
+	list_for_each(p, &dev->connects) {
+		tmp = list_entry(p, object_t, entry);
+		fprintf(f, "\t[%d] = (struct ConnectDescription) {\n", i);
+		fprintf(f, "\t\t.name = \"%s\",\n", tmp->name);
+		fprintf(f, "\t\t.set = %s_set,\n", tmp->name);
+		fprintf(f, "\t\t.get = %s_get,\n", tmp->name);
+		fprintf(f, "\t},\n");
+		i++;
+	}
+	fprintf(f, "\t[%d] = (struct ConnectDescription) {\n", i);
+	fprintf(f, "\t\t.name = NULL,\n");
+	fprintf(f, "\t\t.set = NULL,\n");
+	fprintf(f, "\t\t.get = NULL,\n");
+	fprintf(f, "\t}\n");
+	fprintf(f, "};\n");
+
+}
+
 static void gen_device_class_init(device_t *dev, FILE *f)
 {
     const char *name = dev->obj.name;
@@ -204,6 +231,7 @@ static void gen_device_class_init(device_t *dev, FILE *f)
 	gen_dc_reset(dev, f);
     gen_device_props(dev, f);
     gen_device_vmstate(dev, f);
+	gen_device_connect(dev, f);
 
     fprintf (f, "\nstatic void %s_class_init(ObjectClass *klass,void *data){ \
             \n\tDeviceClass *dc = DEVICE_CLASS(klass); \
@@ -213,7 +241,8 @@ static void gen_device_class_init(device_t *dev, FILE *f)
             \n\tdc->desc = \"%s\"; \
             \n\tdc->props = %s_props; \
             \n\tdc->vmsd = &%s_vmstate; \
-            \n}\n", name, name, name, name, name, name);
+			\n\tdc->connects = %s_connects; \
+            \n}\n", name, name, name, name, name, name, name);
 }
 
 void gen_device_type_info(device_t * dev, FILE *f)
