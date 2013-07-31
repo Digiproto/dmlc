@@ -54,17 +54,17 @@ static void gen_obj_generic_code(object_t *obj){
 	}
 }
 
-static void gen_device_code(object_t *obj){
+static void gen_device_code(device_t *obj){
 	struct list_head *p;
 	object_t *t;
 	device_t *dev = (device_t *)obj;
 
-	gen_obj_generic_code(obj);
-	/*
-	list_for_each(p,&dev->implements){
+	gen_obj_generic_code(&dev->obj);
+	/*gen connect object */
+	list_for_each(p,&dev->connects){
 		t = list_entry(p,object_t,entry);
 		gen_obj_generic_code(t);
-	} */
+	} 
 	/*connect,port ect*/
 }
 
@@ -78,9 +78,9 @@ void gen_dml_code(device_t *dev, FILE* f) {
 
 	
 	while(method_to_generate){
-		gen_device_code(&dev->obj);
 		round++;
 		printf("code generation round %d, method to generate %d\n",round, method_to_generate);
+		gen_device_code(dev);
 	}
 }
 
