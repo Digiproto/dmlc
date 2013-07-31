@@ -27,6 +27,7 @@ static void gen_field_struct(object_t *obj, FILE *f) {
     const char *type;
 
     type = bits2str(fld->len);
+	obj->attr_type = type;
     fprintf(f, "\t\t\t%s %s;\n", type, obj->name);
 }
 
@@ -41,7 +42,7 @@ static void gen_connect_struct(object_t *obj, FILE *f) {
 
     fprintf(f, "\tstruct {\n");
     fprintf(f, "\t\tconst char *port;\n");
-    fprintf(f, "\t\tconf_object_t *obj\n");
+    fprintf(f, "\t\tconf_object_t *obj;\n");
     list_for_each(p, &obj->childs) {
         tmp = list_entry(p, object_t, entry);
         gen_iface_struct(tmp, f);
@@ -50,7 +51,9 @@ static void gen_connect_struct(object_t *obj, FILE *f) {
 }
 
 static void gen_attribute_struct(object_t *obj, FILE *f) {
-	
+	attribute_t *attr = (attribute_t *)obj;	
+
+	fprintf(f, "\t%s %s;\n", attr->alloc_type, obj->name);
 }
 
 static void gen_device_attribute(device_t *dev, FILE *f) {
@@ -85,6 +88,7 @@ static void gen_register_struct(object_t *obj, FILE *f) {
     p = obj->childs.next;
     fld = list_entry(p, object_t, entry);
     first = (field_t *)fld;
+    type = size2str(reg_size);
     if(first->is_dummy) {
         /*dummy  field*/
         type = size2str(reg_size);
@@ -97,7 +101,8 @@ static void gen_register_struct(object_t *obj, FILE *f) {
             gen_field_struct(fld, f);
         }
         fprintf(f, "\t\t} %s;\n", obj->name);
-        obj->attr_type = "container";
+		type = size2str(reg_size);
+        obj->attr_type = type;
     }
 }
 
@@ -177,4 +182,5 @@ void gen_device_macros(device_t *dev, FILE *f) {
 void gen_device_struct(device_t *dev, FILE *f) {
 	gen_banks_struct(dev, f);
 	gen_device_connect(dev, f);
+	gen_device_attribute(dev, f);
 }
