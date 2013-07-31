@@ -53,10 +53,12 @@ void translate_binop_expr(tree_t *t) {
 	tree_t *node;
 
 	node = t->binary.left;
+	D("(");
 	translate(node);
 	D(" %s ",t->binary.operat);
 	node = t->binary.right;
 	translate(node);
+	D(")");
 }
 
 void translate_bit_slic(tree_t *t) {
@@ -68,7 +70,7 @@ void translate_bit_slic(tree_t *t) {
 	node = t->bit_slic.bit_end;
 	translate(node);
 	D(" & ");
-	D("MASK(");
+	D("MASK1(");
 	node = t->bit_slic.bit;
 	translate(node);
 	D(" - ");
@@ -165,14 +167,39 @@ static void translate_string(tree_t *t) {
 */
 void translate_expr_brack_direct(tree_t *t) {
 	tree_t *node;
+	const char *name;
+	const char *ref_name;
+	object_t *obj;
+	symbol_t sym;
+	ref_ret_t ref_ret;
 
 	node = t->expr_brack.expr;
-	translate(node);
-	
-	D("(");
-	node = t->expr_brack.expr_in_brack;
-	translate_expr_list(node, NULL);
-	D(")");
+	sym = get_ref_sym(node, &ref_ret);
+	if(sym && sym->type == OBJECT_TYPE) {
+		obj = (object_t *)sym->attr;
+		if(!strcmp(obj->obj_type, "interface")) {
+			ref_name = get_obj_ref(ref_ret.iface); 
+			D("%s->%s", ref_name, ref_ret.method);
+			D("(");
+			ref_name = get_obj_ref(ref_ret.con);
+			D("%s.obj", ref_name);
+			node = t->expr_brack.expr_in_brack;
+			if(node) {
+				D(", ");
+				translate_expr_list(node, NULL);
+			}
+			D(")");
+		}else {
+			printf("object: other type %s", obj->obj_type);
+		}
+		
+	} else {
+		translate(node);
+		D("(");
+		node = t->expr_brack.expr_in_brack;
+		translate_expr_list(node, NULL);
+		D(")");
+	}
 }
 
 static int expr_is_bit_slic(tree_t *t) {
@@ -389,7 +416,7 @@ void translate_bit_slic_assign(tree_t *t) {
 	translate(eexpr);
 	D(", ");
 	D("(uint64 )");
-	D("MASK(");
+	D("MASK1(");
 	translate(sexpr);
 	D(" - ");
 	translate(eexpr);
