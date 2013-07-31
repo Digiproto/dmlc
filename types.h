@@ -352,6 +352,7 @@ static const char *sym_type2str[] = {
 	[GROUP_TYPE]     = "group",
 	[PORT_TYPE]      = "port",
 	[IMPORT_TYPE]    = "import",
+	[FOREACH_TYPE]   = "foreach",
 	[TEMPLATE_TYPE]  = "template",
 	[BITORDER_TYPE]  = "bitorder",
 	[IDENT_TYPE]     = "ident",
