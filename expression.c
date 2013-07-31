@@ -1466,7 +1466,7 @@ int get_typedef_type(symtab_t table, char* name) {
 int get_allocate_type(symbol_t symbol) {
 	assert(symbol != NULL);
 
-	char* str = NULL;
+	const char* str = NULL;
 	int type = 0;
 	parameter_attr_t* attr = symbol->attr;
 	paramspec_t* spec = attr->spec;
