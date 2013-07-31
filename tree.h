@@ -407,6 +407,9 @@ struct tree_if_else {
 	tree_t* cond;				// the condition about if
 	tree_t* if_block;			// the block about if
 	tree_t* else_block;			// the block about else
+	symtab_t else_table;
+	symtab_t if_table;
+	tree_t* else_if;
 };
 
 /**

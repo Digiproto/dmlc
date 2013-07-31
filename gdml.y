@@ -244,6 +244,7 @@ dml
 		root_table = symtab_create(DEVICE_TYPE);
 		current_table = root_table;
 		current_table->table_num = ++current_table_num;
+		set_root_table(root_table);
 		table_stack = initstack();
 		push(table_stack, current_table);
 		printf("current_table_num: %ld\n", current_table_num);
@@ -1383,6 +1384,7 @@ object_if_statement
 	object_statements '}' {
 		tree_t* node = $<tree_type>6;
 		node->if_else.if_block = $7;
+		node->if_else.if_table = current_table;
 		node->common.print_node = print_if_else;
 
 		current_table = pop(table_stack);
@@ -1400,20 +1402,14 @@ object_if
 	object_statements '}' {
 		tree_t* node = $1;
 		node->if_else.else_block = $5;
-
+		node->if_else.else_table = current_table;
 		current_table = pop(table_stack);
 
 		$$ = node;
 	}
-	| object_if_statement ELSE {
-		current_table = change_table(current_table, table_stack, &current_table_num, IF_ELSE_TYPE);
-		$<tree_type>$ = NULL;
-	}
-	object_if {
+	| object_if_statement ELSE object_if {
 		tree_t* node = $1;
-		node->if_else.else_block = $4;
-
-		current_table = pop(table_stack);
+		node->if_else.else_if = $3;
 
 		$$ = node;
 	}
@@ -1673,6 +1669,7 @@ cdecl3
 		node->array.expr = $3;
 		node->array.decl = $1;
 		node->common.print_node = print_array;
+		node->common.translate = translate_cdecl3_array;
 		$$ = node;
 	}
 	| cdecl3 '(' cdecl_list ')' {
@@ -2056,6 +2053,7 @@ expression
 		node->expr_assign.left = $1;
 		node->expr_assign.right = $3;
 		node->common.print_node = print_binary;
+		node->common.translate  = translate_assign;
 		$$ = node;
 	}
 	| expression SUB_ASSIGN expression {
@@ -2065,6 +2063,7 @@ expression
 		node->expr_assign.left = $1;
 		node->expr_assign.right = $3;
 		node->common.print_node = print_binary;
+		node->common.translate = translate_assign;
 		$$ = node;
 	}
 	| expression MUL_ASSIGN expression {
@@ -2455,6 +2454,7 @@ expression
 		node->float_cst.float_str = $1;
 		node->float_cst.value = atof($1);
 		node->common.print_node = print_float_literal;
+		node->common.translate = translate_float;
 		$$= node;
 	}
 	| STRING_LITERAL {
@@ -2632,6 +2632,7 @@ if_statement
 	statement {
 		tree_t* node = $<tree_type>5;
 		node->if_else.if_block = $6;
+		node->if_else.if_table = current_table;
 		node->common.print_node = print_if_else;
 		node->common.translate = translate_if_else;
 		current_table = pop(table_stack);
@@ -2654,7 +2655,9 @@ statement
 		parse_expression(&($1), current_table);
 		$$ =  $1;
 	}
-	| if_statement
+	| if_statement {
+		$$ = $1;
+	}
 	| if_statement ELSE {
 		tree_t* node = $1;
 
@@ -2664,7 +2667,13 @@ statement
 	}
 	statement {
 		tree_t* node = $<tree_type>1;
-		node->if_else.else_block = $4;
+		if ($4->common.type == IF_ELSE_TYPE) {
+			node->if_else.else_if = $4;
+		}
+		else {
+			node->if_else.else_block = $4;
+			node->if_else.else_table = current_table;
+		}
 		current_table = pop(table_stack);
 		$$ = node;
 	}
@@ -2681,6 +2690,7 @@ statement
 		tree_t* node = $<tree_type>5;
 		node->do_while.block = $6;
 		node->common.print_node = print_while;
+		node->common.translate = translate_while;
 		current_table = pop(table_stack);
 		$$ = node;
 	}
@@ -2790,6 +2800,7 @@ statement
 		node->after_call.cond = $3;
 		node->after_call.call_expr = $6;
 		node->common.print_node = print_after_call;
+		node->common.translate = translate_after_call;
 
 		parse_expression(&($3), current_table);
 		parse_expression(&($6), current_table);

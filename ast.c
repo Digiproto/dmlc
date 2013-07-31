@@ -2620,6 +2620,10 @@ void print_if_else(tree_t* node, int pos) {
 		}
 	}
 
+	if (node->if_else.else_if) {
+		print_if_else(node->if_else.else_if, pos);
+	}
+
 	if (node->if_else.else_block) {
 		print_pos(pos);
 		printf("[%s : %s: %d]\n",
