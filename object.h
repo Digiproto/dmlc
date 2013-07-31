@@ -163,6 +163,12 @@ typedef struct iface {
 	object_t obj;
 } interface_t;
 
+typedef struct attribute {
+	object_t obj;
+	const char *alloc_type;
+	const char *type;
+} attribute_t;
+
 device_t *create_device_tree(tree_t *root);
 void add_object_method(object_t *obj, const char *name);
 void add_object_generated_method(object_t *obj);

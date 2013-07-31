@@ -54,7 +54,7 @@ const char *get_obj_ref(object_t *obj){
 }
 
 static void process_object_names(object_t *obj) {
-	if(OBJ && (!strcmp(obj->obj_type,"register") || !strcmp(obj->obj_type,"field"))){
+	if(OBJ && (!strcmp(obj->obj_type,"register") || !strcmp(obj->obj_type,"field") || !strcmp(obj->obj_type, "interface"))){
 		obj->qname = string_concat_with(OBJ->qname,obj->name,"__");
 		obj->dotname = string_concat_with(OBJ->dotname,obj->name,".");
 	}
@@ -112,14 +112,7 @@ static symbol_t object_symbol_find_notype(symtab_t table, const char *name) {
 		return sym;
 	} else if (table->sibling){
 		printf("before sibling, %p; root table  %p , cb %p num: %d\n", table->sibling, root_table, root_table->cb, table->sibling->table_num);
-		if (strcmp(name, "do_dma_transfer") == 0) {
-			printf("nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn\n");
-		}
 		sym = symbol_find_notype(table->sibling, name);
-		if (strcmp(name, "do_dma_transfer") == 0) {
-			printf("sym: 0x%x\n", sym);
-			exit(-1);
-		}
 		if(sym) {
 			sym->owner = table->obj;
 			printf("symbol %s found in sibling \n", sym->name);
@@ -167,6 +160,7 @@ static void init_object(object_t *obj, const char *name, const char *type, tree_
 	} else {
 		obj->symtab->sibling = table;
 	}
+	obj->symtab->sibling->parent  = NULL;
 	obj->symtab->obj = obj;
 	if(OBJ) {
 		obj->symtab->parent = OBJ->symtab;
@@ -204,6 +198,8 @@ static void process_object_relationship(object_t *obj) {
 }
 
 static void create_bank_objs(symtab_t table);
+static void create_connect_objs(symtab_t table);
+static void create_attribute_objs(symtab_t table);
 object_t *create_device_object(symbol_t sym){
 	int i = 0;
 	struct list_head *p;
@@ -213,7 +209,7 @@ object_t *create_device_object(symbol_t sym){
 		printf("device exists\n");
 	device_attr_t *dev_attr = (device_attr_t *)sym->attr;
 	printf("device %s found\n",sym->name);
-	init_object(&dev->obj,sym->name,"device",dev_attr->common.node, root_table);
+	init_object(&dev->obj, sym->name, "device", dev_attr->common.node, root_table);
 	p = &dev->constants;
 	for(i = 0; i < 6; i++, p++) {
 		INIT_LIST_HEAD(p);
@@ -221,6 +217,8 @@ object_t *create_device_object(symbol_t sym){
 	OBJ = &dev->obj;
 	DEV = OBJ;
 	create_bank_objs(root_table);
+	create_connect_objs(root_table);
+	create_attribute_objs(root_table);
 	return &dev->obj;
 }
 
@@ -229,6 +227,7 @@ void create_bank_objs(symtab_t table) {
 	symbol_list_t *list = symbol_list_find(table, BANK_TYPE);
 	symbol_list_t *head = list;
 	object_t *obj = OBJ;
+
 	while(list) {
 		create_bank_object(list->sym);	
 		/*restore OBJ to device*/
@@ -290,13 +289,12 @@ static void create_register_object(symbol_t sym){
 
 static void create_iface_object(symbol_t sym) {
 	if(!OBJ || strcmp(OBJ->obj_type,"connect"))
-		printf("register %s not in right place\n",sym->name);
+		printf("iface %s not in right place\n",sym->name);
 	printf("iface %s found in connect %s\n", sym->name, OBJ->name);
 	interface_t *iface = (interface_t *)gdml_zmalloc(sizeof(*iface));
 	interface_attr_t *attr = (interface_attr_t *)sym->attr;
 	symtab_t table = attr->common.table;
-
-	init_object(&iface->obj, sym->name, "interface_t", attr->common.node, table);
+	init_object(&iface->obj, sym->name, "interface", attr->common.node, table);
 }
 
 static void create_ifaces_objs(symtab_t table) {
@@ -328,6 +326,17 @@ static void create_connect_object(symbol_t sym) {
 	create_ifaces_objs(table);
 }
 
+static void create_attribute_object(symbol_t sym) {
+	if(!OBJ || strcmp(OBJ->obj_type, "device")) 
+		printf("attribute %s not in right place\n",sym->name);
+	printf("attribute %s found in device %s", sym->name, OBJ->name);
+	attribute_t *att = (attribute_t *)gdml_zmalloc(sizeof(*att));
+	attribute_attr_t *attr = (attribute_attr_t *)(sym->attr);
+	symtab_t table = attr->common.table;
+
+	init_object(&att->obj, sym->name, "attribute", attr->common.node, table);
+}
+
 static void create_connect_objs(symtab_t table) {
 	symbol_list_t *list = symbol_list_find(table, CONNECT_TYPE);
 	symbol_list_t *head = list;
@@ -337,6 +346,21 @@ static void create_connect_objs(symtab_t table) {
 	while(list) {
 		sym = list->sym;
 		create_connect_object(sym);
+		OBJ = obj;
+		list = list->next;
+	}
+	symbol_list_free(head);
+} 
+
+static void create_attribute_objs(symtab_t table) {
+	symbol_list_t *list = symbol_list_find(table, ATTRIBUTE_TYPE);
+	symbol_list_t *head = list;
+	symbol_t sym;
+	object_t *obj = OBJ;
+
+	while(list) {
+		sym = list->sym;
+		create_attribute_object(sym);
 		OBJ = obj;
 		list = list->next;
 	}
@@ -530,6 +554,49 @@ static void connect_realize(object_t *obj) {
 	
 }
 
+static const char *get_attribute_type(const char *alloc_type) {
+	const char *type;
+
+	if(!strcmp(alloc_type, "\"double\"")) {
+		type = "double";	
+	} else if(!strcmp(alloc_type, "\"string\"")) {
+		type = "string";
+	} else if(!strcmp(alloc_type, "\"uint8\"")) {
+		type = "uint8";
+	} else if(!strcmp(alloc_type, "\"uint16\"")) {
+		type = "uint16";
+	} else if(!strcmp(alloc_type, "\"uint32\"")) {
+		type = "uint32";
+	} else if(!strcmp(alloc_type, "\"uint64\"")) {
+		type = "uint64";
+	} else if(!strcmp(alloc_type, "\"int8\"")) {
+		type = "int8";
+	} else if(!strcmp(alloc_type, "\"int16\"")) {
+		type = "int16";
+	} else if(!strcmp(alloc_type, "\"int32\"")) {
+		type = "int32";
+	} else if(!strcmp(alloc_type, "\"int64\"")) {
+		type = "int64";
+	}
+	return type;
+}
+
+static void attribute_realize(object_t *obj) {
+	tree_t *node;
+	symbol_t sym;
+	const char *alloc_type;
+    parameter_attr_t* attr;
+	const char *type;
+    paramspec_t* spec; 
+	attribute_t *attr_obj = (attribute_t *)obj;
+
+	sym  = symbol_find(obj->symtab, "allocate_type", PARAMETER_TYPE);
+	attr = (parameter_attr_t *)sym->attr;
+	spec = attr->spec;
+	alloc_type = get_attribute_type(spec->str);
+	attr_obj->alloc_type = alloc_type;
+}
+
 void device_realize(device_t *dev) {
 	struct list_head *p;
 	object_t *tmp;
@@ -552,6 +619,11 @@ void device_realize(device_t *dev) {
 		tmp = list_entry(p, object_t, entry);
 		connect_realize(tmp);
 	}
+	list_for_each(p, &dev->attributes) {
+		tmp = list_entry(p, object_t, entry);
+		attribute_realize(tmp);
+	}
+
 	printf("before device realize\n");
 	add_object_templates(&dev->obj, NULL);
 }
@@ -570,8 +642,18 @@ void print_object(object_t *obj, int tab_count) {
 
 void print_device_tree(device_t *dev) {
 	int tab = 0;
+	object_t *tmp;
+	struct list_head *p;
 
 	print_object(&dev->obj, tab);	
+	list_for_each(p, &dev->connects) {
+		tmp = list_entry(p, object_t, entry);
+		print_object(tmp, 1);
+	}
+	list_for_each(p, &dev->attributes) {
+		tmp = list_entry(p, object_t, entry);
+		print_object(tmp, 1);
+	}
 }
 
 int in_template = 0;
@@ -655,6 +737,7 @@ static void process_device_template(object_t *obj){
 	val->type = param_type_ref;
 	val->u.ref = obj;
 	symbol_insert(table, "logobj", PARAMETER_TYPE, val);
+	symbol_insert(table, "dev", OBJECT_TYPE, obj);
 }
 
 static void process_bank_template(object_t *obj){
@@ -736,7 +819,10 @@ static void process_field_template(object_t *obj){
 	val->type = param_type_int;
 	val->u.integer = field->len;
 	symbol_insert(table, "bitsize", PARAMETER_TYPE, val);
-
+	val = gdml_zmalloc(sizeof(*val));
+	val->type = param_type_int;
+	val->u.integer = 0;
+	symbol_insert(table, "hard_reset_value", PARAMETER_TYPE, val);
 }
 
 /*process parameters including auto parameters */
