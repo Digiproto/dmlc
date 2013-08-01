@@ -1,0 +1,92 @@
+#!/bin/sh
+# The file created by eJim Lee (lyjforjob@gmail.com)
+
+CURR_DIR=`pwd`
+EXEC_DIR=`dirname $0`
+
+#source $EXEC_DIR/../config
+. $EXEC_DIR/../config
+
+# function (dash undefined the keyword)
+newmakefile() {
+#	IFS_TMP=$IFS
+#	IFS=
+	echo "# The Makefile is created automatically, don't edit it" \
+	> $1/Makefile.tmp
+
+#	while read -r line
+#	do
+#		echo "$line" | sed "s?@QEMU_DIR@?$QEMU_DIR?g" \
+#		| sed "s?@SKYEYE_DIR@?$SKYEYE_DIR?g" \
+#		| sed "s?@QEMU_CONF_FLAGS@?$QEMU_CONF_FLAGS?g" \
+#		| sed "s?@SKYEYE_CONF_FLAGS@?$SKYEYE_CONF_FLAGS?g" \
+#		| sed "s?@DMLC@?$DMLC?g" \
+#		>> $1/Makefile
+#	done < "$MAKEFILE_DEF" 
+	sed -e "s?@QEMU_DIR@?$QEMU_DIR?g" \
+		-e "s?@SKYEYE_DIR@?$SKYEYE_DIR?g" \
+		-e "s?@QEMU_CONF_FLAGS@?$QEMU_CONF_FLAGS?g" \
+		-e "s?@SKYEYE_CONF_FLAGS@?$SKYEYE_CONF_FLAGS?g" \
+		-e "s?@DMLC@?$DMLC?g" \
+		"$EXEC_DIR/def/Makefile.def" \
+		>> "$1/Makefile.tmp"
+
+	if [ -z "$QEMU_BUILD" ]; then
+		sed -e "/@FOR_ALL@/d" \
+			-e "/@FOR_QEMU@/d" \
+			-e "s/@FOR_SKYEYE@//g" \
+			"$1/Makefile.tmp" \
+			> "$1/Makefile"
+	elif [ -z "$SKYEYE_BUILD" ]; then
+		sed -e "/@FOR_ALL@/d" \
+			-e "/@FOR_SKYEYE@/d" \
+			-e "s/@FOR_QEMU@//g" \
+			"$1/Makefile.tmp" \
+			> "$1/Makefile"
+	else
+		sed -e "s/@FOR_ALL@//g" \
+			-e "s/@FOR_QEMU@//g" \
+			-e "s/@FOR_SKYEYE@//g" \
+			"$1/Makefile.tmp" \
+			> "$1/Makefile"
+	fi
+	rm "$1/Makefile.tmp"
+
+#	IFS=$IFS_TMP
+}
+
+if [ -z "$*" ]; then
+	echo "[ error] please input a device name, look like:"
+	echo "         workspace-create simple_device"
+	echo "[ point] device name is same as DML source file name"
+	exit
+fi
+
+for var in $@
+do
+	NEW_DIR=$EXEC_DIR/../modules/$var
+	if [ -f $NEW_DIR -o -d $NEW_DIR ]; then
+		echo "[ error]" $var have been exist
+	else
+		echo "[normal]" create $var module
+		mkdir "$NEW_DIR"
+		echo "[normal]" create $var Makefile
+		newmakefile "$NEW_DIR"
+		echo "[normal]" create $var sample
+		sed "s/@HELLOWORLD@/$var/g" $EXEC_DIR/def/sample.dml.def > $NEW_DIR/$var.dml
+	fi
+
+	QEMU_DEV_DIR=$QEMU_DIR/hw/simics/$var
+	if [ -f $QEMU_DEV_DIR -o -d $QEMU_DEV_DIR ]; then
+		echo "[ error]" $var have been exist in QEMU
+	else
+		echo "[normal]" create $var QEMU device
+		mkdir "$QEMU_DEV_DIR"
+		echo "common-obj-y += $var.o" > $QEMU_DEV_DIR/Makefile.objs
+		echo "[normal]" create $var QEMU Makefile
+		tmp_str=`grep "common-obj-y += $var/" $QEMU_DEV_DIR/../Makefile.objs`
+		if [ -z "$tmp_str" ]; then
+			echo "common-obj-y += $var/" >> $QEMU_DEV_DIR/../Makefile.objs
+		fi
+	fi
+done

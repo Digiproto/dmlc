@@ -1,0 +1,50 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+// 
+// Copyright 2010-2011 Intel Corporation
+dml 1.2;
+
+device @HELLOWORLD@;
+
+parameter desc = "name of device";
+
+parameter documentation = "Longer description that will appear in the help";
+
+import "utility.dml";
+
+// USER-TODO: add connect definitions here, if needed
+
+// USER-TODO: add attribute definitions here, if needed
+
+// Basic bank declaration
+bank regs {
+    parameter register_size = 4;
+    // USER-TODO: Add more register declarations here.  Usually use just one
+    // line per register, containing size (optional), offset, any templates
+    // implemented, and a short description. Use the read_write template for
+    // normal registers where a read usually returns the last written value,
+    // and the unimplemented template for registers that you haven't yet
+    // implemented.
+    // Implementation of registers
+    register counter @ 0x00 "A simple counter." {
+        parameter documentation = "A simple counter.";
+        // Methods and fields go here. If there is nothing to add here, the
+        // register block can be removed altogether.
+    }
+}
+
+// USER-TODO: add implement and port declarations here, if needed
+
+// USER-TODO: add event declarations here, if needed
+
+// USER-TODO: add common methods here, if needed
+
+// USER-TODO: add templates here, if needed
+
+// USER-TODO: Add init() and post_init() methods here, if needed.
+// init() will be run to set the empty state of the model, before any
+// configuration or checkpointed attributes are set.  post_init() is run after
+// all configuration attributes have been set.  This happens both when the
+// initial configuration is set and when the configuration is loaded from a
+// checkpoint.

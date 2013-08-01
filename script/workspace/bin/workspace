@@ -1,0 +1,124 @@
+#!/bin/sh
+# The file created by eJim Lee (lyjforjob@gmail.com)
+
+EXEC_DIR=`dirname $0`
+
+#source $EXEC_DIR/../config
+. $EXEC_DIR/../config
+
+# function (dash undefined the keyword)
+input_error() {
+	echo "[ error] please input command and device name, look like:"
+	echo "         workspace create simple_device"
+	echo "      or workspace remove simple_device"
+	echo "[ point] device name is same as DML source file name"
+	echo "[ point] remove is dangerous, it will cause that:"
+	echo "         1. remove qemu/hw/simics/<YourDevice>"
+	echo "         2. remove skyeye/dev/simics/<YourDevice>"
+	echo "         3. remove modules/<YourDevice> (remove your DML source file)"
+}
+
+# function (dash undefined the keyword)
+input_help() {
+	echo "[  help] format: workspace [command] [device_name]"
+	echo "         command (required)"
+	echo "           1. help it\'s me"
+	echo "           2. create create a new module workspace and Makefile"
+	echo "           3. remove remove a module workspace from gdml and QEMU, Skyeye"
+	echo "         device_name (at least one)"
+	echo "           1. device name is same as DML source file name"
+	echo "[example] workspace create simple_device"
+	echo "          or workspace remove simple_device"
+	echo "[ point] remove is dangerous, it will cause that:"
+	echo "         1. remove qemu/hw/simics/<YourDevice>"
+	echo "         2. remove skyeye/dev/simics/<YourDevice>"
+	echo "         3. remove modules/<YourDevice> (remove your DML source file)"
+}
+
+# if parameters is empty
+if [ -z "$*" ]; then
+	input_error
+	exit
+fi
+
+case "$1" in
+	"create")
+		# if device_name is empty
+		if [ -z $2 ]; then
+			input_error
+			exit
+		fi
+		# remove first parameter and turn to workspace-create
+		shift
+		$EXEC_DIR/workspace-create "$*"
+	;;
+	"remove")
+		# if device_name is empty
+		if [ -z $2 ]; then
+			input_error
+			exit
+		fi
+		# remind user remove operation is dangrous.
+		echo "[choose] Are you sure remove $2 device[y/n]?"
+		echo "This operation is dangerous."
+		while read CHOICE
+		do
+			case "$CHOICE" in
+				"y")
+					break
+				;;
+				"n")
+					exit
+				;;
+				*)
+					echo "[ error] not known word \"$CHOICE\""
+					echo "[choice] Are you sure remove $2 device[y/n]? This operation is dangerous."
+				;;
+			esac
+		done
+		# remove first parameter and turn to workspace-remove
+		shift
+		$EXEC_DIR/workspace-remove "$*"
+	;;
+	"check")
+		if [ -z $QEMU_BUILD ] && [ -z $SKYEYE_BUILD ]; then
+			# choose nothing for building device
+			echo "[ error] qemu and skyeye have to be choose one at least."
+			exit
+		fi
+		if ! [ -z $QEMU_BUILD ]; then
+			# choose qemu for building device
+			if ! [ -d "$QEMU_DIR/hw/simics" ]; then
+				echo "[ error]" \"$QEMU_DIR\" is not a qemu src path.
+				exit
+			fi
+		fi
+		if ! [ -z $SKYEYE_BUILD ]; then
+			# choose skyeye for building device
+			if ! [ -d "$SKYEYE_DIR/simics" ]; then
+				echo "[ eroor]" \"$SKYEYE_DIR\" is not a skyeye src path.
+				exit
+			fi
+		fi
+		if [ -z `command -v "$DMLC"` ]; then
+			# not found dmlc
+			echo "[ error]" not found dmlc from \"$DMLC\"
+			exit
+		fi
+		echo "[normal] check ok, config file look fine."
+	;;
+	"--help")
+		input_help
+	;;
+	"-h")
+		input_help
+	;;
+	"help")
+		input_help
+	;;
+	*)
+		echo "[ error] not known command \"$1\""
+		input_error
+	;;
+esac
+

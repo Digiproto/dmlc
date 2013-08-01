@@ -9,6 +9,9 @@ do
 	mkdir -p build/$var
 done
 
+echo [Create] output directory
+mkdir -p output
+
 echo [Enable] Makefile
 touch Makefile.build
 cp Makefile.def Makefile
