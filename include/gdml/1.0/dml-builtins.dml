@@ -202,13 +202,12 @@ template bank {
             log "error": "Oversized access to %s", defined $name ? $name : "device";
             throw;
         }
-        local uint64 writeval;
         if (SIM_mem_op_is_read(memop)) {
             //inline $read_access_memop(memop, offset, size);	
 			/*for quick code generation, runtime performance poor*/
             call $read_access_memop(memop, offset, size);	
         } else {
-            //local uint64 writeval;
+            local uint64 writeval;
 			/*for quick code generation, runtime performance poor*/
             //inline $get_write_value(memop) -> (writeval);
             //inline $write_access_memop(memop, offset, size, writeval);
@@ -461,14 +460,14 @@ template register {
     parameter log_group                 default $parent.log_group;
 
     method hard_reset_register default {
-	/*if ($fields[0].explicit) {
+	if ($fields[0].explicit) {
 	    foreach field in ($fields)
-		inline field.hard_reset;
-	} else { */
+		call field.hard_reset;
+	} else { 
 	    // No explicit fields
 	    //inline $hard_reset;
 	    call $hard_reset;
-	//}
+	}
         //inline $after_hard_reset;
         call $after_hard_reset;
     }
@@ -488,7 +487,7 @@ template register {
 	} else {*/
 	    // No explicit fields
 	    //inline $soft_reset;
-	    call $hard_reset;
+	    call $hard_reset_register;
 	//}
         //inline $after_soft_reset;
         call $after_soft_reset;
@@ -558,26 +557,26 @@ template register {
 	}
     }
 
-    method get() -> (value) default {
+    method get() -> (typeof($this) value) default {
 	if ($fields[0].explicit) {
 	    local typeof($this) fieldval = 0;
 	    foreach field in ($fields) {
 		if ($bitsize == field.bitsize)
 		    // Only one field
-		    inline field.get() -> (fieldval);
+		    call field.get() -> (fieldval);
 		else {
-		    inline field.get() -> (fieldval[field.msb:field.lsb]);
+		    call field.get() -> (fieldval[field.msb:field.lsb]);
 		}
 	    }
 	    value = fieldval;
 	} else {
 	    // No explicit fields
-	    if ($allocate) {
+	    //if ($allocate) {
 		value = $this;
-	    } else if ($configuration != "none"
+	    /*} else if ($configuration != "none"
                        && $configuration != "pseudo") {
                 error "get() not implemented for non-allocated register";
-	    }
+	    }*/
         }
     }
 
@@ -606,21 +605,24 @@ template register {
 	//if (defined msb1) {	
 	    // Possibly partial register access
 	    local typeof($this) fieldval = 0;
-		/*
 	    if ($fields[0].explicit) {
 		foreach field in ($fields) {
 		    if ($bitsize == field.bitsize) {
 			// Only one field
-			inline field.read_access() -> (fieldval);
+			local typeof(field) val = 0;
+			call field.read_access() -> (val);
+			fieldval = val;
 		    } else if ($bitsize == 8 || lsb <= field.msb && msb1 > field.lsb) {
-			inline field.read_access() -> (fieldval[field.msb:field.lsb]);
+	    	local typeof(field) tmp;
+			call field.read_access() -> (tmp);
+			fieldval[field.msb:field.lsb] = tmp;
 		    }
 		}
-	    } else {*/
+	    } else {
 		// No explicit fields
 		//inline $read() -> (fieldval);
 			call $read() -> (fieldval);
-	    //}
+	    }
 	    value = fieldval[msb1 - 1 : lsb];
 	/*} else {
 	    // Whole-register access
@@ -662,7 +664,7 @@ template register {
             //inline $write_access_main(memop, msb1, lsb, value);
             //inline $after_write(memop);
             call $write_access_main(memop, msb1, lsb, value);
-            //call $after_write(memop);
+            call $after_write(memop);
         //}
     }
 
@@ -674,46 +676,56 @@ template register {
 		$qname, value;
 	if (defined msb1) {*/
 	    // Possibly partial register access
-	    /*if ($fields[0].explicit) {
+		local typeof($this) fieldval = 0;
+	    if ($fields[0].explicit) {
 		foreach field in ($fields) {
 		    if (lsb <= field.msb && (field.lsb == 0 || msb1 > field.lsb)) {
 			if (lsb > field.lsb || msb1 - lsb < field.bitsize) {
 			    // Partial access
-			    local typeof($this) fieldval = 0;
 			    if ($bitsize == field.bitsize) {
-				// Only one field
-				inline field.get -> (fieldval);
-				fieldval[msb1 - 1:lsb] = value;
-				inline field.write_access(fieldval);
+					// Only one field
+					local typeof(field) val = 0;
+					call field.get -> (val);
+					fieldval = val;
+					fieldval[msb1 - 1:lsb] = value;
+					call field.write_access(fieldval);
 			    } else {
-				inline field.get -> (fieldval[field.msb:field.lsb]);
-				fieldval[msb1 - 1:lsb] = value;
-				inline field.write_access(fieldval[field.msb:field.lsb]);
+					local typeof(field) tmp = 0;
+					call field.get -> (tmp);
+					fieldval[field.msb:field.lsb] = tmp;
+					fieldval[msb1 - 1:lsb] = value;
+					tmp = fieldval[field.msb:field.lsb];
+					call field.write_access(tmp);
 			    }
 			} else {
 			    // Whole-field access
-			    if ($bitsize == field.bitsize)
+			    if ($bitsize == field.bitsize) {
 				// Only one field
-				inline field.write_access(value);
-			    else
-				inline field.write_access((value << lsb)[field.msb:field.lsb]);
+					call field.write_access(value);
+			    } else {
+					local typeof(field) tmp = 0;
+					tmp = value << lsb;
+					tmp = tmp[field.msb:field.lsb];
+					//call field.write_access((value << lsb)[field.msb:field.lsb]);
+					call field.write_access(tmp);
+				}
 			}
 		    }
 		}
-	    } else {
+	    } else { 
 		// No explicit fields
+		
 		if (lsb > 0 || msb1 - lsb < $bitsize) {
 		    // Partial access
-		    local typeof($this) fieldval = 0;
-		    inline $get -> (fieldval);
+		    call $get -> (fieldval);
 		    fieldval[msb1 - 1:lsb] = value;
-		    inline $write(fieldval);
-		} else { */
+		    call $write(fieldval);
+		} else {
 		    // Whole-field access
 		    //inline $write(value);
 		    call $write(value);
-		//}
-	    //}
+		}
+	    }
 	/*} else {
 	    // Whole-register access
 	    if ($fields[0].explicit) {
@@ -765,11 +777,11 @@ template field {
     parameter allocate                  default $reg.allocate;
 
     method hard_reset() default {
-	if ($allocate)
-	    if (defined $hard_reset_value)
+	//if ($allocate)
+	   // if (defined $hard_reset_value)
 		$this = $hard_reset_value;
-	    else
-		$this = ($reg.hard_reset_value)[$msb:$lsb];
+	    //else
+		//$this = ($reg.hard_reset_value)[$msb:$lsb];
     }
 
     method soft_reset() default {
@@ -780,22 +792,22 @@ template field {
 		$this = ($reg.soft_reset_value)[$msb:$lsb];
     }
 
-    method read() -> (value) default {
-	if ($allocate) {
+    method read() -> (typeof($this) value) default {
+	//if ($allocate) {
 	    value = $this;
-	} else {
+	/*} else {
 	    log "error", 1, Register_Read: "Can't read from %s", $qname;
 	    throw;
-	}
+	}*/
     }
 
-    method write(value) default {
-        if ($allocate) {
+    method write(typeof($this) value) default {
+        //if ($allocate) {
             $this = value;
-        } else {
+        /*} else {
 	    log "error", 1, Register_Write: "Can't write to %s", $qname;
             throw;
-        }
+        }*/
     }
 
     method set(value) default {
@@ -806,20 +818,22 @@ template field {
         }
     }
 
-    method get() -> (value) default {
-        if ($allocate)
+    method get() -> (typeof($this) value) default {
+        //if ($allocate)
             value = $this;
-        else if ($configuration != "none" && $configuration != "pseudo") {
+        /*else if ($configuration != "none" && $configuration != "pseudo") {
             error "get() not implemented for non-allocated field";
-        }
+        }*/
     }
 
-    method read_access() -> (value) default {
-        inline $read -> (value);
+    method read_access() -> (typeof($this) value) default {
+		local typeof($this) tmp;
+        call $read -> (tmp);
+		value = tmp;
     }
 
-    method write_access(value) default {
-        inline $write(value);
+    method write_access(typeof($this) value) default {
+        call $write(value);
     }
 }
 
