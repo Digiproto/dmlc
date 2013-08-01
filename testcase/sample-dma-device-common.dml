@@ -113,13 +113,14 @@ connect intr_cpu {
 //
 bank regs {
     parameter function   = 0;
+    parameter register_size = 4;
 
     register DMA_control size 4 @ 0x00 "DMA control register" {
         field EN  [31]  "Enable DMA";
         field SWT [30]  "Software Transfer Trigger";
         field ECI [29]  "Enable Completion Interrupt";
         field TS [15:0] "Transfer size (words)";
-        method after_write(memop) {
+        method after_write(generic_transaction_t *memop) {
             inline $do_dma_transfer();
         }
     }
@@ -129,7 +130,7 @@ bank regs {
             // clear by writing a zero
             //   IF interrupts are enabled and interrupt status is one
             //   also clear the interrut in the processor
-            method write(value) {
+            method write(typeof($this) value) {
                 if (value == 0) {
                     if ($this == 1) {
                         log "info", 2 : "write zero to TC - clearing TC";
@@ -148,13 +149,13 @@ bank regs {
         }
     }
     register DMA_source  size 4 @ 0x08 "DMA source address" {
-	method write(value) {
+	method write(typeof($this) value) {
             log "info", 2: "%s set to 0x%x",	$qname, value;
             $this = value;
         }
     }
     register DMA_dest    size 4 @ 0x0c "DMA destination address" {
-	method write(value) {
+	method write(typeof($this) value) {
             log "info", 2: "%s set to 0x%x",	$qname, value;
             $this = value;
         }
