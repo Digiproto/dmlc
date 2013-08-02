@@ -329,7 +329,11 @@ static void translate_parameter(symbol_t sym) {
 		case param_type_ref:
 			obj = val->u.ref;
 			if(!strcmp(obj->obj_type, "device")) {
+#if backend == 1
 				D("&_dev->obj.qdev");
+#else 
+				D("&_dev->obj");
+#endif
 				return;
 			} else {
 				name = get_obj_ref(obj);
