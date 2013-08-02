@@ -224,6 +224,9 @@ static void gen_device_connect(device_t *dev, FILE *f) {
 
 }
 
+void gen_platform_device_module(device_t *dev, const char *out) {
+}
+
 static void gen_device_class_init(device_t *dev, FILE *f)
 {
     const char *name = dev->obj.name;

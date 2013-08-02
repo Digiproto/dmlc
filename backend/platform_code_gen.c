@@ -45,11 +45,13 @@ void gen_cfile(device_t *dev, const char *out) {
 	snprintf(tmp, 1024, "%s/%s_protos.c", out, dev_name);
 	f = fopen(tmp, "w");
 	if(f) {
+		setbuf(f, NULL);
 		gen_device_method_protos(dev, f);
 		fclose(f);
 	} else {
 		printf("can not open file %s\n", tmp);
 	}
+	gen_platform_device_module(dev, out);
 }
 
 

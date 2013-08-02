@@ -35,10 +35,11 @@ void gen_object_struct(device_t *dev, FILE *f) {
 
     fprintf(f, "#ifndef %s_STRUCT_H\n", cap_name);
     fprintf(f, "#define %s_STRUCT_H\n", cap_name);
-    fprintf(f, "\n#include \"skyeye_types.h\"\n");
-    fprintf(f, "\n#include \"skyeye_obj.h\"\n");
-    fprintf(f, "\n#include \"memory_space.h\"\n");
-    fprintf(f, "\n#include \"skyeye_log.h\"\n");
+	fprintf(f, "\n");
+    fprintf(f, "#include \"skyeye_obj.h\"\n");
+    fprintf(f, "#include \"memory_space.h\"\n");
+    fprintf(f, "#include \"skyeye_log.h\"\n");
+	fprintf(f, "#include \"simics/dev_iface.h\"\n");
     fprintf(f, "\ntypedef struct %s %s_t;\n", dev_name, dev_name);
     gen_device_macros(dev, f);
     fprintf(f, "\nstruct %s {\n", dev_name);
