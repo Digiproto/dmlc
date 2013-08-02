@@ -10,6 +10,18 @@ BIN_NAME = dmlc
 
 # select platform: qemu skyeye
 PLATFORM ?= qemu
+ifeq ($(PLATFORM),skyeye)
+BACKEND_NUM = 2
+BIN_NAME := $(BIN_NAME)_skyeye
+else
+ifeq ($(PLATFORM),qemu)
+BACKEND_NUM = 1
+BIN_NAME := $(BIN_NAME)_qemu
+else
+$(error PLATFORM="$(PLATFORM)" not found, PLATFORM is qemu or skyeye.)
+endif
+endif
+CFLAGS += -D backend=$(BACKEND_NUM)
 
 # args is diffent on windows or linux
 ifeq ($(shell uname),Linux)
@@ -32,6 +44,12 @@ OBJECTS := $(patsubst %.c,$(BUILD_DIR)/%.o,$(C_FILES))
 
 all: Makefile.build $(BUILD_DIRS) $(BIN_NAME)
 
+ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),distclean)
+sinclude $(OBJECTS:.o=.d)
+endif
+endif
+
 $(BIN_NAME): $(OBJECTS)
 	@echo [LD] $@
 	@$(CC) $(CFLAGS) $^ -o $@ $(LIBRARY_DIR) $(LIBRARY)
@@ -42,8 +60,6 @@ $(BUILD_DIR)/%.d: %.c
 #	@echo $(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE) $(LIBRARY_DIR) $(LIBRARY) | \
 #		sed 's/\.d /\.o /g' | sed 's/^/\t/' >> $@
 #	@$(CC) $(INCLUDE) -MM $(CFLAGS) $< | sed -e 's,.*/.o[ :]*,$*.o : ,g' > $@;
-
-sinclude $(OBJECTS:.o=.d)
 
 $(BUILD_DIR)/%.o: %.c
 	@echo [CC] $@
@@ -77,9 +93,9 @@ uninstall: /usr/bin/dmlc /usr/include/gdml
 	@echo uninstall lib/gdml [from /usr/include]
 	@rm -rf /usr/include/gdml
 
-check: dmlc ../include/gdml output
+check: $(BIN_NAME) ../include/gdml output
 	@echo ===== start check =====
-	./dmlc testcase/simple-device.dml
+	./$(BIN_NAME) testcase/simple-device.dml
 
 ../include/gdml:
 	cp -r include ../
@@ -92,7 +108,7 @@ $(BUILD_DIRS):
 
 clean:
 	@echo ===== start clean =====
-	-rm Parser.* Lexer.* dmlc tags -rf
+	-rm Parser.* Lexer.* dmlc_* tags -rf
 	-rm output/* -rf
 	-find . -name "*.d" | xargs rm -f
 	-find . -name "*.o" | xargs rm -f
