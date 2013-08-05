@@ -4,9 +4,13 @@ BACKEND_DIRS=`find backend -type d`
 
 echo [Create] build directory
 mkdir -p build
+mkdir -p build/skyeye
+mkdir -p build/qemu
 for var in $BACKEND_DIRS
 do
 	mkdir -p build/$var
+	mkdir -p build/skyeye/$var
+	mkdir -p build/qemu/$var
 done
 
 echo [Create] output directory

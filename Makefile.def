@@ -5,23 +5,29 @@ CFLAGS = -g -O2 -Werror-implicit-function-declaration -Werror=return-type \
 		-Wmissing-field-initializers -Wuninitialized
 INCLUDE = -I. -I./backend/
 BUILD_DIR = build
-BUILD_DIRS = $(patsubst %,$(BUILD_DIR)/%,$(shell find backend -type d))
-BIN_NAME = dmlc
+BUILD_DIRS_SKYEYE = $(patsubst %,$(BUILD_DIR)/skyeye/%,$(shell find backend -type d))
+BUILD_DIRS_QEMU = $(patsubst %,$(BUILD_DIR)/qemu/%,$(shell find backend -type d))
+TARGET_NAME = dmlc
 
 # select platform: qemu skyeye
-PLATFORM ?= qemu
+PLATFORM ?= all
 ifeq ($(PLATFORM),skyeye)
 BACKEND_NUM = 2
-BIN_NAME := $(BIN_NAME)_skyeye
+TARGETS = $(TARGET_NAME)_skyeye
 else
 ifeq ($(PLATFORM),qemu)
 BACKEND_NUM = 1
-BIN_NAME := $(BIN_NAME)_qemu
+TARGETS = $(TARGET_NAME)_qemu
+else
+ifeq ($(PLATFORM),all)
+TARGETS = $(TARGET_NAME)_skyeye $(TARGET_NAME)_qemu
 else
 $(error PLATFORM="$(PLATFORM)" not found, PLATFORM is qemu or skyeye.)
-endif
-endif
-CFLAGS += -D backend=$(BACKEND_NUM)
+endif # all
+endif # qemu
+endif # skyeye
+CFLAGS_QEMU = $(CFLAGS) -D backend=1
+CFLAGS_SKYEYE = $(CFLAGS) -D backend=2
 
 # args is diffent on windows or linux
 ifeq ($(shell uname),Linux)
@@ -37,12 +43,27 @@ endif
 # find all c files
 TOP_FILES := $(wildcard *.c)
 BACKEND_FILES  = $(wildcard backend/*.c)
-BACKEND_FILES += $(wildcard backend/$(PLATFORM)/*.c)
+BACKEND_SKYEYE_FILES += $(wildcard backend/skyeye/*.c)
+BACKEND_QEMU_FILES += $(wildcard backend/qemu/*.c)
 SPECIAL_FILES = Parser.c Lexer.c
-C_FILES := $(TOP_FILES) $(BACKEND_FILES) $(SPECIAL_FILES)
-OBJECTS := $(patsubst %.c,$(BUILD_DIR)/%.o,$(C_FILES))
 
-all: Makefile.build $(BUILD_DIRS) $(BIN_NAME)
+# link all c_files string
+C_FILES := $(TOP_FILES) $(BACKEND_FILES) $(BACKEND_QEMU_FILES) $(BACKEND_SKYEYE_FILES) $(SPECIAL_FILES)
+C_SKYEYE_FILES := $(TOP_FILES) $(BACKEND_FILES) $(BACKEND_SKYEYE_FILES) $(SPECIAL_FILES)
+C_QEMU_FILES := $(TOP_FILES) $(BACKEND_FILES) $(BACKEND_QEMU_FILES) $(SPECIAL_FILES)
+
+OBJECTS := $(patsubst %.c,$(BUILD_DIR)/%.o,$(C_FILES))
+OBJECTS_SKYEYE := $(patsubst %.c,$(BUILD_DIR)/skyeye/%.o,$(C_SKYEYE_FILES))
+OBJECTS_QEMU := $(patsubst %.c,$(BUILD_DIR)/qemu/%.o,$(C_QEMU_FILES))
+
+all: Makefile.build $(BUILD_DIRS_SKYEYE) $(BUILD_DIRS_QEMU) $(TARGETS)
+	@echo [ALL] build finished.
+
+skyeye: Makefile.build $(BUILD_DIRS_SKYEYE) $(TARGET_NAME)_skyeye
+	@echo [skyeye] build finished.
+
+qemu: Makefile.build $(BUILD_DIRS_QEMU) $(TARGET_NAME)_qemu
+	@echo [qemu] build finished.
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
@@ -50,9 +71,13 @@ sinclude $(OBJECTS:.o=.d)
 endif
 endif
 
-$(BIN_NAME): $(OBJECTS)
+$(TARGET_NAME)_skyeye: $(OBJECTS_SKYEYE)
 	@echo [LD] $@
-	@$(CC) $(CFLAGS) $^ -o $@ $(LIBRARY_DIR) $(LIBRARY)
+	@$(CC) $(CFLAGS_SKYEYE) $^ -o $@ $(LIBRARY_DIR) $(LIBRARY)
+
+$(TARGET_NAME)_qemu: $(OBJECTS_QEMU)
+	@echo [LD] $@
+	@$(CC) $(CFLAGS_QEMU) $^ -o $@ $(LIBRARY_DIR) $(LIBRARY)
 
 $(BUILD_DIR)/%.d: %.c
 	@set -e; rm -f $@
@@ -61,9 +86,13 @@ $(BUILD_DIR)/%.d: %.c
 #		sed 's/\.d /\.o /g' | sed 's/^/\t/' >> $@
 #	@$(CC) $(INCLUDE) -MM $(CFLAGS) $< | sed -e 's,.*/.o[ :]*,$*.o : ,g' > $@;
 
-$(BUILD_DIR)/%.o: %.c
+$(BUILD_DIR)/skyeye/%.o: %.c
 	@echo [CC] $@
-	@$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE) $(LIBRARY_DIR) $(LIBRARY)
+	@$(CC) $(CFLAGS_SKYEYE) -c $< -o $@ $(INCLUDE) $(LIBRARY_DIR) $(LIBRARY)
+
+$(BUILD_DIR)/qemu/%.o: %.c
+	@echo [CC] $@
+	@$(CC) $(CFLAGS_QEMU) -c $< -o $@ $(INCLUDE) $(LIBRARY_DIR) $(LIBRARY)
 
 Lexer.c: gdml.lex
 	@echo [FLEX] $@
@@ -79,23 +108,25 @@ Parser.h: gdml.y
 	@echo [BISON] $@
 	@bison -d gdml.y
 
-install: dmlc include/gdml
+install: $(TARGET_NAME)_skyeye $(TARGET_NAME)_qemu include/gdml
 	@echo ===== start install =====
-	@echo install dmlc [to /usr/bin]
-	@cp -r dmlc     /usr/bin
+	@echo install $(TARGET_NAME)_skyeye $(TARGET_NAME)_skyeye [to /usr/bin]
+	@cp -r $(TARGET_NAME)_skyeye /usr/bin
+	@cp -r $(TARGET_NAME)_qemu /usr/bin
 	@echo install include/gdml [to /usr/include]
 	@cp -r include/gdml /usr/include
 
-uninstall: /usr/bin/dmlc /usr/include/gdml
+uninstall: /usr/bin/$(TARGET_NAME)_skyeye /usr/bin/$(TARGET_NAME)_qemu /usr/include/gdml
 	@echo ===== start uninstall =====
-	@echo uninstall dmlc [from /usr/bin]
-	@rm -rf /usr/bin/dmlc
+	@echo uninstall $(TARGET_NAME)_skyeye $(TARGET_NAME)_qemu [from /usr/bin]
+	@rm -rf /usr/bin/$(TARGET_NAME)_skyeye /usr/bin/$(TARGET_NAME)_qemu
 	@echo uninstall lib/gdml [from /usr/include]
 	@rm -rf /usr/include/gdml
 
-check: $(BIN_NAME) ../include/gdml output
+check: $(TARGET_NAME)_skyeye $(TARGET_NAME)_qemu ../include/gdml output
 	@echo ===== start check =====
-	./$(BIN_NAME) testcase/simple-device.dml
+	./$(TARGET_NAME)_skyeye testcase/simple-device.dml 1>/dev/null
+	./$(TARGET_NAME)_qemu testcase/simple-device.dml 1>/dev/null
 
 ../include/gdml:
 	cp -r include ../
@@ -103,8 +134,11 @@ check: $(BIN_NAME) ../include/gdml output
 output:
 	mkdir -p output
 
-$(BUILD_DIRS): 
-	mkdir -p $(BUILD_DIRS)
+$(BUILD_DIRS_SKYEYE):
+	mkdir -p $(BUILD_DIRS_SKYEYE)
+
+$(BUILD_DIRS_QEMU):
+	mkdir -p $(BUILD_DIRS_QEMU)
 
 clean:
 	@echo ===== start clean =====
