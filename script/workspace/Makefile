@@ -5,3 +5,6 @@ all: modules
 
 clean: modules
 	@cd $^ && make clean
+
+distclean: modules
+	@cd $^ && make distclean

@@ -35,6 +35,43 @@ input_help() {
 	echo "         3. remove modules/<YourDevice> (remove your DML source file)"
 }
 
+# check config
+check_config() {
+	if [ -z $QEMU_BUILD ] && [ -z $SKYEYE_BUILD ]; then
+		# choose nothing for building device
+		echo "[ error] qemu and skyeye have to be choose one at least."
+		exit
+	fi
+	if ! [ -z $QEMU_BUILD ]; then
+		# choose qemu for building device
+		if ! [ -d "$QEMU_DIR/hw/simics" ]; then
+			echo "[ error]" \"$QEMU_DIR\" is not a qemu src path.
+			exit
+		fi
+	fi
+	if ! [ -z $SKYEYE_BUILD ]; then
+		# choose skyeye for building device
+		if ! [ -d "$SKYEYE_DIR/device/simics" ]; then
+			echo "[ eroor]" \"$SKYEYE_DIR\" is not a skyeye src path.
+			exit
+		fi
+	fi
+	if [ -z `command -v "$DMLC"_skyeye` ] && [ -z `command -v "$DMLC"_qemu` ]; then
+		echo "[ error] not found dmlc_skyeye and dmlc_qemu from \"$DMLC\""
+		exit
+	else
+		if [ -z `command -v "$DMLC"_skyeye` ]; then
+			# not found dmlc_skyeye
+			echo "[warning]" not found dmlc_skyeye from \"$DMLC\"
+		fi
+		if [ -z `command -v "$DMLC"_qemu` ]; then
+			# not found dmlc_qemu
+			echo "[warning]" not found dmlc_qemu from \"$DMLC\"
+		fi
+	fi
+	echo "[normal] check ok, config file look fine."
+}
+
 # if parameters is empty
 if [ -z "$*" ]; then
 	input_error
@@ -60,7 +97,7 @@ case "$1" in
 		fi
 		# remind user remove operation is dangrous.
 		echo "[choose] Are you sure remove $2 device[y/n]?"
-		echo "This operation is dangerous."
+		echo "         This operation is dangerous."
 		while read CHOICE
 		do
 			case "$CHOICE" in
@@ -72,7 +109,8 @@ case "$1" in
 				;;
 				*)
 					echo "[ error] not known word \"$CHOICE\""
-					echo "[choice] Are you sure remove $2 device[y/n]? This operation is dangerous."
+					echo "[choice] Are you sure remove $2 device[y/n]?"
+					echo "         This operation is dangerous."
 				;;
 			esac
 		done
@@ -81,31 +119,7 @@ case "$1" in
 		$EXEC_DIR/workspace-remove "$*"
 	;;
 	"check")
-		if [ -z $QEMU_BUILD ] && [ -z $SKYEYE_BUILD ]; then
-			# choose nothing for building device
-			echo "[ error] qemu and skyeye have to be choose one at least."
-			exit
-		fi
-		if ! [ -z $QEMU_BUILD ]; then
-			# choose qemu for building device
-			if ! [ -d "$QEMU_DIR/hw/simics" ]; then
-				echo "[ error]" \"$QEMU_DIR\" is not a qemu src path.
-				exit
-			fi
-		fi
-		if ! [ -z $SKYEYE_BUILD ]; then
-			# choose skyeye for building device
-			if ! [ -d "$SKYEYE_DIR/simics" ]; then
-				echo "[ eroor]" \"$SKYEYE_DIR\" is not a skyeye src path.
-				exit
-			fi
-		fi
-		if [ -z `command -v "$DMLC"` ]; then
-			# not found dmlc
-			echo "[ error]" not found dmlc from \"$DMLC\"
-			exit
-		fi
-		echo "[normal] check ok, config file look fine."
+		check_config
 	;;
 	"--help")
 		input_help

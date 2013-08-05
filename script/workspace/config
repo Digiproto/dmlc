@@ -1,12 +1,12 @@
-# The file created by eJim Lee (lyjforjob@gmail.com)
+# The file is created by eJim Lee (lyjforjob@gmail.com)
 # The configure file for setting QEMU and Skyeye path, and setting feature.
 # The file is important very much, don't remove this.
 
-QEMU_DIR=/home/lyj/qemu_new/qemu
-SKYEYE_DIR=/opt/skyeye
+QEMU_DIR=$HOME/qemu/qemu
+SKYEYE_DIR=$HOME/skyeye_src/code
 QEMU_CONF_FLAGS="--target-list=arm-softmmu --enable-dml"
 SKYEYE_CONF_FLAGS=""
 DMLC=dmlc
 
 QEMU_BUILD=yes
-#SKYEYE_BUILD=yes
+SKYEYE_BUILD=yes

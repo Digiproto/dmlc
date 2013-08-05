@@ -1,4 +1,4 @@
-# file created by eJim Lee (lyjforjob@gmail.com)
+# The file is created by eJim Lee (lyjforjob@gmail.com)
 
 # set environment variable
 QEMU_DIR=@QEMU_DIR@
@@ -14,21 +14,22 @@ OBJ_NAME=$(shell basename $(CURR_DIR))
 
 # set QEMU and Skyeye path
 QEMU_DIR_IN=$(QEMU_DIR)/hw/simics/$(OBJ_NAME)
-SKYEYE_DIR_IN=$(SKYEYE_DIR)/simics/$(OBJ_NAME)
+SKYEYE_DIR_IN=../../targets/skyeye/$(OBJ_NAME)
+#SKYEYE_DIR_IN=$(SKYEYE_DIR)/device/simics/$(OBJ_NAME)
 
 # set target device name
 QEMU_OBJ=$(QEMU_DIR_IN)/$(OBJ_NAME).o
 ifeq ($(shell uname),Linux)
-	SKYEYE_OBJ=$(SKYEYE_DIR_IN)/$(OBJ_NAME).so
+	SKYEYE_OBJ=$(SKYEYE_DIR_IN)/lib$(OBJ_NAME).so
 else
-	SKYEYE_OBJ=$(SKYEYE_DIR_IN)/$(OBJ_NAME).dll
+	SKYEYE_OBJ=$(SKYEYE_DIR_IN)/lib$(OBJ_NAME).dll
 endif
 
 # only for building qemu and skyeye both
 @FOR_ALL@all: $(QEMU_OBJ) $(SKYEYE_OBJ)
 @FOR_ALL@	@echo "[  info] qemu and skyeye build finished."
 
-@FOR_QEMU@$(QEMU_OBJ): $(QEMU_DIR_IN)/$(OBJ_NAME).c ../../build \
+@FOR_QEMU@$(QEMU_OBJ): $(QEMU_DIR_IN)/$(OBJ_NAME).c \
 @FOR_QEMU@	     $(QEMU_DIR_IN)/$(OBJ_NAME).h \
 @FOR_QEMU@	     $(QEMU_DIR_IN)/$(OBJ_NAME)_protos.c \
 @FOR_QEMU@	     $(QEMU_DIR_IN)/$(OBJ_NAME)_struct.h
@@ -36,17 +37,15 @@ endif
 @FOR_QEMU@	@cd $(QEMU_DIR) && ./configure $(QEMU_CONF_FLAGS) 1>/dev/null
 @FOR_QEMU@	@echo [normal] make QEMU ...
 @FOR_QEMU@	@cd $(QEMU_DIR) && $(MAKE) 1>/dev/null
-@FOR_QEMU@	@cp $@ ../../build
 
-@FOR_SKYEYE@$(SKYEYE_OBJ): $(SKYEYE_DIR_IN)/$(OBJ_NAME).c ../../build \
+@FOR_SKYEYE@$(SKYEYE_OBJ): $(SKYEYE_DIR_IN)/$(OBJ_NAME).c \
 @FOR_SKYEYE@	       $(SKYEYE_DIR_IN)/$(OBJ_NAME).h \
+@FOR_SKYEYE@	       $(SKYEYE_DIR_IN)/$(OBJ_NAME)_module.c \
 @FOR_SKYEYE@	       $(SKYEYE_DIR_IN)/$(OBJ_NAME)_protos.c \
 @FOR_SKYEYE@	       $(SKYEYE_DIR_IN)/$(OBJ_NAME)_struct.h
-@FOR_SKYEYE@	@echo [normal] configure Skyeye ...
-@FOR_SKYEYE@	@cd $(SKYEYE_DIR) && ./configure $(SKYEYE_CONF_FLAGS) 1>/dev/null
-@FOR_SKYEYE@	@echo [normal] make Skyeye ...
-@FOR_SKYEYE@	@cd $(SKYEYE_DIR) && $(MAKE) 1>/dev/null
-@FOR_SKYEYE@	@cp $@ ../../build
+@FOR_SKYEYE@	@echo [normal] make Skyeye device ...
+@FOR_SKYEYE@	@cd $(SKYEYE_DIR_IN) && $(MAKE) 1>/dev/null
+@FOR_SKYEYE@	@echo [normal] Skyeye device in targets/skyeye/$(OBJ_NAME)
 
 @FOR_QEMU@$(QEMU_DIR_IN)/$(OBJ_NAME).c \
 @FOR_QEMU@$(QEMU_DIR_IN)/$(OBJ_NAME).h \
@@ -54,36 +53,36 @@ endif
 @FOR_QEMU@$(QEMU_DIR_IN)/$(OBJ_NAME)_struct.h: $(OBJ_NAME).dml
 @FOR_QEMU@	@echo [  gdml] translate $(OBJ_NAME).dml to QEMU C codes
 @FOR_QEMU@	@mkdir -p output
-@FOR_QEMU@	@$(DMLC) $(OBJ_NAME).dml
+@FOR_QEMU@	@$(DMLC)_qemu $(OBJ_NAME).dml
 @FOR_QEMU@	@cp output/* $(QEMU_DIR_IN)
 @FOR_QEMU@	@rm -rf output
 
 @FOR_SKYEYE@$(SKYEYE_DIR_IN)/$(OBJ_NAME).c \
 @FOR_SKYEYE@$(SKYEYE_DIR_IN)/$(OBJ_NAME).h \
+@FOR_SKYEYE@$(SKYEYE_DIR_IN)/$(OBJ_NAME)_module.c \
 @FOR_SKYEYE@$(SKYEYE_DIR_IN)/$(OBJ_NAME)_protos.c \
 @FOR_SKYEYE@$(SKYEYE_DIR_IN)/$(OBJ_NAME)_struct.h: $(OBJ_NAME).dml
 @FOR_SKYEYE@	@echo [  gdml] translate $(OBJ_NAME).dml to SKYEYE C codes
 @FOR_SKYEYE@	@mkdir -p output
-@FOR_SKYEYE@	@$(DMLC) $(OBJ_NAME).dml
+@FOR_SKYEYE@	@$(DMLC)_skyeye $(OBJ_NAME).dml
 @FOR_SKYEYE@	@cp output/* $(SKYEYE_DIR_IN)
 @FOR_SKYEYE@	@rm -rf output
-
-../../build: 
-	@mkdir -p $@
 
 clean:
 @FOR_QEMU@	-rm -rf $(QEMU_DIR_IN)/$(OBJ_NAME).c \
 @FOR_QEMU@		$(QEMU_DIR_IN)/$(OBJ_NAME).h \
 @FOR_QEMU@		$(QEMU_DIR_IN)/$(OBJ_NAME)_protos.c \
-@FOR_QEMU@		$(QEMU_DIR_IN)/$(OBJ_NAME)_struct.h \
-@FOR_QEMU@		$QEMU_OBJ \
-@FOR_QEMU@		../../build/*
+@FOR_QEMU@		$(QEMU_DIR_IN)/$(OBJ_NAME)_struct.h
 @FOR_SKYEYE@	-rm -rf $(SKYEYE_DIR_IN)/$(OBJ_NAME).c \
 @FOR_SKYEYE@		$(SKYEYE_DIR_IN)/$(OBJ_NAME).h \
+@FOR_SKYEYE@		$(SKYEYE_DIR_IN)/$(OBJ_NAME)_module.c \
 @FOR_SKYEYE@		$(SKYEYE_DIR_IN)/$(OBJ_NAME)_protos.c \
-@FOR_SKYEYE@		$(SKYEYE_DIR_IN)/$(OBJ_NAME)_struct.h \
-@FOR_SKYEYE@		$(SKYEYE_DIR_IN)/$(OBJ_NAME).o \
-@FOR_SKYEYE@		$SKYEYE_OBJ \
-@FOR_SKYEYE@		../../build/*
+@FOR_SKYEYE@		$(SKYEYE_DIR_IN)/$(OBJ_NAME)_struct.h
 
-.PHONY: clean
+distclean: clean
+@FOR_QEMU@	-rm -rf $(QEMU_OBJ)
+@FOR_SKYEYE@	-rm -rf $(SKYEYE_DIR_IN)/$(OBJ_NAME).o \
+@FOR_SKYEYE@		$(SKYEYE_DIR_IN)/$(OBJ_NAME)_module.o \
+@FOR_SKYEYE@		$(SKYEYE_OBJ)
+
+.PHONY: clean distclean

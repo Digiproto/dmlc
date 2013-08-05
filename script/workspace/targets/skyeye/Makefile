@@ -3,7 +3,7 @@ MODULES := $(shell find . -maxdepth 1 -type d)
 MODULES := $(basename $(patsubst ./%,%,$(MODULES)))
 MODULES := $(patsubst %,%.dir,$(MODULES))
 MODULES_CLEAN := $(patsubst %,%_clean,$(MODULES))
-MODULES_DISTCLEAN := $(patsubst %,%_distclean,$(MODULES))
+MODULES_DISTCLEAN := $(patsubst %,%_clean,$(MODULES))
 
 all: $(MODULES)
 
@@ -12,7 +12,7 @@ all: $(MODULES)
 
 clean: $(MODULES_CLEAN)
 
-distclean: clean $(MODULES_DISTCLEAN)
+distclean: clean
 
 %.dir_clean: %
 	@cd $< && make clean

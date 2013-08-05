@@ -8,6 +8,7 @@ EXEC_DIR=$(dirname $0)
 . $EXEC_DIR/../config
 
 if [ -z "$*" ]; then
+	# input error
 	echo "[ error] please input a device name, look like:"
 	echo "         workspace-remove simple_device"
 	echo "[ point] device name is same as DML source file name"
@@ -16,14 +17,17 @@ fi
 
 for var in $@
 do
+	# clean the modules directory
 	NEW_DIR=$EXEC_DIR/../modules/$var
 	if [ -f $NEW_DIR -o -d $NEW_DIR ]; then
 		echo "[normal]" remove $var module
 		rm -rf "$NEW_DIR"
 	else
 		echo "[ error]" $var device is not exist
+		exit
 	fi
 
+	# clean the {qemu}/hw/simics/ directory
 	QEMU_DEV_DIR=$QEMU_DIR/hw/simics/$var
 	if [ -f $QEMU_DEV_DIR -o -d $QEMU_DEV_DIR ]; then
 		echo "[normal]" remove $var QEMU device
@@ -32,6 +36,15 @@ do
 		mv $QEMU_DEV_DIR/../Makefile.objs_tmp $QEMU_DEV_DIR/../Makefile.objs
 		rm -rf "$QEMU_DEV_DIR"
 	else
-		echo "[ error]" $var is not exist in QEMU
+		echo "[warning]" $var is not exist in QEMU
+	fi
+
+	# clean the {workspace}/targets/skyeye/ directory
+	SKYEYE_DEV_DIR=$EXEC_DIR/../targets/skyeye/$var
+	if [ -f $SKYEYE_DEV_DIR -o -d $SKYEYE_DEV_DIR ]; then
+		echo "[normal]" remove $var Skyeye device
+		rm -rf "$SKYEYE_DEV_DIR"
+	else
+		echo "[warning]" $var is not exist in Skyeye
 	fi
 done

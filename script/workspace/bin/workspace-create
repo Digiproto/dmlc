@@ -64,6 +64,7 @@ fi
 
 for var in $@
 do
+	# create a module in modules directory
 	NEW_DIR=$EXEC_DIR/../modules/$var
 	if [ -f $NEW_DIR -o -d $NEW_DIR ]; then
 		echo "[ error]" $var have been exist
@@ -76,17 +77,37 @@ do
 		sed "s/@HELLOWORLD@/$var/g" $EXEC_DIR/def/sample.dml.def > $NEW_DIR/$var.dml
 	fi
 
-	QEMU_DEV_DIR=$QEMU_DIR/hw/simics/$var
-	if [ -f $QEMU_DEV_DIR -o -d $QEMU_DEV_DIR ]; then
-		echo "[ error]" $var have been exist in QEMU
-	else
-		echo "[normal]" create $var QEMU device
-		mkdir "$QEMU_DEV_DIR"
-		echo "common-obj-y += $var.o" > $QEMU_DEV_DIR/Makefile.objs
-		echo "[normal]" create $var QEMU Makefile
-		tmp_str=`grep "common-obj-y += $var/" $QEMU_DEV_DIR/../Makefile.objs`
-		if [ -z "$tmp_str" ]; then
-			echo "common-obj-y += $var/" >> $QEMU_DEV_DIR/../Makefile.objs
+	# create a device in {qemu}/hw/simics directory
+	if ! [ -z "$QEMU_BUILD" ]; then
+		QEMU_DEV_DIR=$QEMU_DIR/hw/simics/$var
+		if [ -f $QEMU_DEV_DIR -o -d $QEMU_DEV_DIR ]; then
+			echo "[ error]" $var have been exist in QEMU
+		else
+			echo "[normal]" create $var QEMU device
+			mkdir "$QEMU_DEV_DIR"
+			echo "common-obj-y += $var.o" > $QEMU_DEV_DIR/Makefile.objs
+			echo "[normal]" create $var QEMU Makefile
+			tmp_str=`grep "common-obj-y += $var/" $QEMU_DEV_DIR/../Makefile.objs`
+			if [ -z "$tmp_str" ]; then
+				echo "common-obj-y += $var/" >> $QEMU_DEV_DIR/../Makefile.objs
+			fi
+		fi
+	fi
+
+	# create a device in {workspace}/targets/skyeye/ directory
+	if ! [ -z "$SKYEYE_BUILD" ]; then
+		SKYEYE_DEV_DIR=$EXEC_DIR/../targets/skyeye/$var
+		if [ -f $SKYEYE_DEV_DIR -o -d $SKYEYE_DEV_DIR ]; then
+			echo "[ error]" $var have been exist in Skyeye
+		else
+			echo "[normal]" create $var Skyeye device
+			mkdir "$SKYEYE_DEV_DIR"
+			echo "[normal]" create $var Skyeye Makefile
+			if ! [ -f "$SKYEYE_DEV_DIR/Makefile" ]; then
+				sed -e "s?@SKYEYE_DIR@?$SKYEYE_DIR?g" \
+					$EXEC_DIR/def/Makefile_for_skyeye.def \
+					> $SKYEYE_DEV_DIR/Makefile
+			fi
 		fi
 	fi
 done
