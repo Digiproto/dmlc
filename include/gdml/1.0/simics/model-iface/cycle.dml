@@ -1,0 +1,20 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\model-iface\cycle.h>
+%}
+
+import "simics/base/types.dml";
+import "simics/base/attr-value.dml";
+import "simics/base/event.dml";
+import "simics/base/local-time.dml";
+import "simics/base/time.dml";
+import "simics/pywrap.dml";
+
+typedef struct { cycles_t (*get_cycle_count)(conf_object_t *queue); double (*get_time)(conf_object_t *queue); cycles_t (*cycles_delta)(conf_object_t *clock, double when); uint64 (*get_frequency)(conf_object_t *queue); void (*post_cycle)(conf_object_t *queue, event_class_t *evclass, conf_object_t *obj, cycles_t cycles, void *user_data); void (*post_time)(conf_object_t *queue, event_class_t *evclass, conf_object_t *obj, double seconds, void *user_data); void (*cancel)(conf_object_t *queue, event_class_t *evclass, conf_object_t *obj, int (*pred)(void *data, void *match_data), void *match_data); cycles_t (*find_next_cycle)(conf_object_t *queue, event_class_t *evclass, conf_object_t *obj, int (*pred)(void *data, void *match_data), void *match_data); double (*find_next_time)(conf_object_t *queue, event_class_t *evclass, conf_object_t *obj, int (*pred)(void *data, void *match_data), void *match_data); attr_value_t (*events)(conf_object_t *obj); local_time_t (*get_time_in_ps)(conf_object_t *queue); cycles_t (*cycles_delta_from_ps)(conf_object_t *clock, local_time_t when); void (*post_time_in_ps)(conf_object_t *queue, event_class_t *evclass, conf_object_t *obj, duration_t picoseconds, void *user_data); duration_t (*find_next_time_in_ps)(conf_object_t *queue, event_class_t *evclass, conf_object_t *obj, int (*pred)(void *data, void *match_data), void *match_data); } cycle_interface_t;

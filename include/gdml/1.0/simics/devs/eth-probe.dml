@@ -1,0 +1,21 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\devs\eth-probe.h>
+%}
+
+import "simics/util/frags.dml";
+import "simics/device-api.dml";
+import "simics/devs/ethernet.dml";
+
+typedef void (*ethernet_probe_snoop_t)(void *user_data, conf_object_t *probe, eth_probe_side_t to_side, const frags_t *frame, eth_frame_crc_status_t crc_status);
+typedef struct { void (*attach_snooper)(conf_object_t *probe, ethernet_probe_snoop_t snoop_fun, void *user_data); void (*attach_probe)(conf_object_t *probe, ethernet_probe_snoop_t snoop_fun, void *user_data); void (*detach)(conf_object_t *probe); void (*send_frame)(conf_object_t *probe, eth_probe_side_t to_side, const frags_t *frame, eth_frame_crc_status_t crc_status); } ethernet_probe_interface_t;
+typedef int eth_probe_side_t;
+constant Eth_Probe_Port_A = 0;
+constant Eth_Probe_Port_B = 1;

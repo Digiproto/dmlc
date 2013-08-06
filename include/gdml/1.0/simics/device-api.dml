@@ -1,0 +1,34 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\device-api.h>
+%}
+
+import "simics/module-host-config.dml";
+import "simics/global.dml";
+import "simics/util/alloc.dml";
+import "simics/util/dbuffer.dml";
+import "simics/util/frags.dml";
+import "simics/base/types.dml";
+import "simics/base/attr-value.dml";
+import "simics/base/callbacks.dml";
+import "simics/base/clock.dml";
+import "simics/base/log.dml";
+import "simics/base/configuration.dml";
+import "simics/base/event.dml";
+import "simics/base/hap-producer.dml";
+import "simics/base/memory.dml";
+import "simics/base/memory-transaction.dml";
+import "simics/base/sim-exception.dml";
+import "simics/base/time.dml";
+import "simics/base/version.dml";
+import "simics/obsolete/4_0.dml";
+import "simics/obsolete/4_2.dml";
+import "simics/obsolete/4_4.dml";
+

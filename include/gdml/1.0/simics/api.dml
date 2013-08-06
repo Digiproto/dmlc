@@ -1,0 +1,102 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics/api.h>
+%}
+
+import "simics/module-host-config.dml";
+import "simics/global.dml";
+import "simics/util/alloc.dml";
+import "simics/util/dbuffer.dml";
+import "simics/base/types.dml";
+import "simics/base/attr-value.dml";
+import "simics/base/callbacks.dml";
+import "simics/base/conf-object.dml";
+import "simics/base/configuration.dml";
+import "simics/base/event.dml";
+import "simics/base/hap-producer.dml";
+import "simics/base/log.dml";
+import "simics/base/memory.dml";
+import "simics/base/memory-transaction.dml";
+import "simics/base/sim-exception.dml";
+import "simics/base/sobject.dml";
+import "simics/base/time.dml";
+import "simics/simulator/address-profiler.dml";
+import "simics/simulator/breakpoints.dml";
+import "simics/simulator/callbacks.dml";
+import "simics/simulator/cmd-line.dml";
+import "simics/simulator/conf-object.dml";
+import "simics/simulator/configuration.dml";
+import "simics/simulator/control.dml";
+import "simics/simulator/hap-consumer.dml";
+import "simics/simulator/embed.dml";
+import "simics/simulator/memory.dml";
+import "simics/simulator/modules.dml";
+import "simics/simulator/output.dml";
+import "simics/simulator/paths.dml";
+import "simics/simulator/processor.dml";
+import "simics/simulator/python.dml";
+import "simics/simulator/rev-exec.dml";
+import "simics/simulator/script.dml";
+import "simics/simulator/sim-caches.dml";
+import "simics/base/version.dml";
+import "simics/simulator/host-profiling.dml";
+import "simics/processor/data-profiler.dml";
+import "simics/processor/event.dml";
+import "simics/processor/instruction-info.dml";
+import "simics/processor/memory-augmentation.dml";
+import "simics/processor/stc.dml";
+import "simics/processor/time.dml";
+import "simics/processor/types.dml";
+import "simics/model-iface/branch-recorder.dml";
+import "simics/model-iface/breakpoints.dml";
+import "simics/model-iface/cache.dml";
+import "simics/model-iface/components.dml";
+import "simics/model-iface/cpu-group.dml";
+import "simics/model-iface/cycle.dml";
+import "simics/model-iface/data-profiler.dml";
+import "simics/model-iface/decoder.dml";
+import "simics/model-iface/exception.dml";
+import "simics/model-iface/exec-trace.dml";
+import "simics/model-iface/execute.dml";
+import "simics/model-iface/image.dml";
+import "simics/model-iface/int-register.dml";
+import "simics/model-iface/instruction-fetch.dml";
+import "simics/model-iface/memory-page.dml";
+import "simics/model-iface/memory-profiler.dml";
+import "simics/model-iface/processor-info.dml";
+import "simics/model-iface/save-state.dml";
+import "simics/model-iface/simulator-cache.dml";
+import "simics/model-iface/step.dml";
+import "simics/model-iface/temporal-state.dml";
+import "simics/model-iface/timing-model.dml";
+import "simics/simulator-iface/address-profiler.dml";
+import "simics/simulator-iface/checkpoint.dml";
+import "simics/simulator-iface/context-tracker.dml";
+import "simics/simulator-iface/disassemble.dml";
+import "simics/simulator-iface/scalar-time.dml";
+import "simics/simulator-iface/step-state.dml";
+import "simics/simulator-iface/symtable.dml";
+import "simics/devs/frequency.dml";
+import "simics/devs/interrupt-ack.dml";
+import "simics/devs/io-memory.dml";
+import "simics/devs/map-demap.dml";
+import "simics/devs/memory-space.dml";
+import "simics/devs/ram.dml";
+import "simics/devs/signal.dml";
+import "simics/arch/x86.dml";
+import "simics/arch/ppc.dml";
+import "simics/arch/arm.dml";
+import "simics/arch/mips.dml";
+import "simics/arch/sparc.dml";
+import "simics/obsolete/4_0.dml";
+import "simics/obsolete/4_2.dml";
+import "simics/obsolete/4_4.dml";
+import "simics/pywrap.dml";
+

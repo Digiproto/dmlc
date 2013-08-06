@@ -1,0 +1,29 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\devs\rapidio.h>
+%}
+
+import "simics/base/types.dml";
+import "simics/util/dbuffer.dml";
+import "simics/pywrap.dml";
+
+typedef struct { void (*transaction_request)(conf_object_t *obj, uint16 target_id, uint16 source_id, uint64 addr, rapidio_operation_t op, bytes_t msg, uint64 id); void (*transaction_response)(conf_object_t *obj, bytes_t msg, uint64 id); void (*doorbell)(conf_object_t *obj, uint16 target_id, uint16 source_id, uint16 val); void (*deliver_message)(conf_object_t *obj, uint16 target_id, uint16 source_id, uint16 mbox, uint16 letter, bytes_t msg); void (*read_register_request)(conf_object_t *obj, uint16 target_id, uint16 source_id, uint8 hopcount, uint32 reg_no, uint64 id); void (*read_register_response)(conf_object_t *obj, uint32 val, uint64 id); void (*write_register)(conf_object_t *obj, uint16 target_id, uint16 source_id, uint8 hopcount, uint32 reg_no, uint32 val); void (*port_write)(conf_object_t *obj, uint16 target_id, uint16 source_id, uint8 hopcount, bytes_t msg); } rapidio_v4_interface_t;
+typedef int rapidio_operation_t;
+constant RapidIO_Read = 0;
+constant RapidIO_Write = 1;
+constant RapidIO_Increment = 2;
+constant RapidIO_Decrement = 3;
+constant RapidIO_Test_and_Swap = 4;
+constant RapidIO_Set = 5;
+constant RapidIO_Clear = 6;
+constant RapidIO_Compare_and_Swap = 7;
+constant RapidIO_Swap = 8;
+typedef struct { void (*memory_operation)(conf_object_t *obj, uint16 destination, uint16 source, physical_address_t addr, dbuffer_t *buf, rapidio_operation_t op); void (*doorbell)(conf_object_t *obj, uint16 destination, uint16 source, uint16 data); void (*deliver_message)(conf_object_t *obj, uint16 destination, uint16 source, uint16 mbox, uint16 letter, dbuffer_t *data); uint32 (*read_register)(conf_object_t *obj, uint16 destination, uint16 source, uint8 hopcount, int reg_no); void (*write_register)(conf_object_t *obj, uint16 destination, uint16 source, uint8 hopcount, int reg_no, uint32 value); void (*port_write)(conf_object_t *obj, uint16 target_id, uint16 source_id, uint8 hopcount, dbuffer_t *msg); } rapidio_v3_interface_t;
+typedef struct { void (*transaction_request)(conf_object_t *obj, uint16 target_id, uint16 source_id, uint32 transport_class, uint64 addr, rapidio_operation_t op, bytes_t msg, uint64 id); void (*transaction_response)(conf_object_t *obj, bytes_t msg, uint64 id); void (*doorbell)(conf_object_t *obj, uint16 target_id, uint16 source_id, uint32 transport_class, uint16 val); void (*deliver_message)(conf_object_t *obj, uint16 target_id, uint16 source_id, uint32 transport_class, uint16 mbox, uint16 letter, bytes_t msg); void (*read_register_request)(conf_object_t *obj, uint16 target_id, uint16 source_id, uint32 transport_class, uint8 hopcount, uint32 reg_no, uint64 id); void (*read_register_response)(conf_object_t *obj, uint32 val, uint64 id); void (*write_register)(conf_object_t *obj, uint16 target_id, uint16 source_id, uint32 transport_class, uint8 hopcount, uint32 reg_no, uint32 val); void (*port_write)(conf_object_t *obj, uint16 target_id, uint16 source_id, uint32 transport_class, uint8 hopcount, bytes_t msg); void (*stream_data)(conf_object_t *obj, uint16 target_id, uint16 source_id, uint32 transport_class, uint8 cos, uint8 xh, uint16 stream_id, bytes_t pdu); } rapidio_v5_interface_t;

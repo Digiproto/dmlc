@@ -1,0 +1,17 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\util\os-time.h>
+%}
+
+extern os_time_t os_timegm(os_tm_t *tmp);
+extern os_tm_t os_gmtime(const os_time_t *timep);
+extern const char *os_strptime(const char *str, const char *format, struct { } *tm);
+typedef struct { int tm_sec; int tm_min; int tm_hour; int tm_mday; int tm_mon; int tm_year; int tm_wday; int tm_yday; int tm_isdst; } os_tm_t;
+typedef int os_time_t;

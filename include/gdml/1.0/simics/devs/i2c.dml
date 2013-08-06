@@ -1,0 +1,41 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\devs\i2c.h>
+%}
+
+import "simics/base/attr-value.dml";
+import "simics/base/types.dml";
+import "simics/pywrap.dml";
+
+typedef struct { void (*address_added)(conf_object_t *device, uint32 addr, uint32 mask); void (*address_removed)(conf_object_t *device, uint32 addr, uint32 mask); } i2c_bridge_interface_t;
+typedef int i2c_device_state_t;
+constant I2C_idle = 0;
+constant I2C_master_transmit = 1;
+constant I2C_master_receive = 2;
+constant I2C_slave_transmit = 3;
+constant I2C_slave_receive = 4;
+constant I2C_max_states = 5;
+typedef struct { void (*start_request)(conf_object_t *device, uint32 address); void (*read_request)(conf_object_t *device); void (*ack_read_request)(conf_object_t *device, i2c_status_t ack); void (*write_request)(conf_object_t *device, uint8 value); void (*stop)(conf_object_t *device, uint8 repeated_start); } i2c_slave_interface_t;
+typedef struct { void (*register_slave_address)(conf_object_t *i2c_link, conf_object_t *slave, uint32 address, uint32 mask); void (*unregister_slave_address)(conf_object_t *i2c_link, conf_object_t *slave, uint32 address, uint32 mask); void (*register_bridge)(conf_object_t *i2c_link, conf_object_t *bridge); void (*disconnect_device)(conf_object_t *i2c_link, conf_object_t *device); void (*start_request)(conf_object_t *i2c_link, conf_object_t *master, uint32 address); void (*read_request)(conf_object_t *i2c_link, conf_object_t *master); void (*ack_read_request)(conf_object_t *i2c_link, conf_object_t *master, i2c_status_t ack); void (*write_request)(conf_object_t *i2c_link, conf_object_t *master, uint8 value); void (*read_response)(conf_object_t *i2c_link, conf_object_t *slave, uint8 value); void (*ack_read_response)(conf_object_t *i2c_link, conf_object_t *slave); void (*write_response)(conf_object_t *i2c_link, conf_object_t *slave, i2c_status_t status); void (*start_response)(conf_object_t *i2c_link, conf_object_t *slave, i2c_status_t status); void (*stop)(conf_object_t *i2c_link, conf_object_t *master); } i2c_link_interface_t;
+typedef int i2c_ack_t;
+constant I2C_ack = 0;
+constant I2C_noack = 1;
+typedef struct { void (*start)(conf_object_t *device, uint8 address); void (*read)(conf_object_t *device); void (*write)(conf_object_t *device, uint8 value); void (*stop)(conf_object_t *device); attr_value_t (*addresses)(conf_object_t *device); } i2c_slave_v2_interface_t;
+typedef struct { int (*set_state)(conf_object_t *device, i2c_device_state_t state, uint8 address); uint8 (*read_data)(conf_object_t *device); void (*write_data)(conf_object_t *device, uint8 value); } i2c_device_interface_t;
+typedef struct { int (*start)(conf_object_t *i2c_bus, uint8 address); int (*stop)(conf_object_t *i2c_bus); uint8 (*read_data)(conf_object_t *i2c_bus); void (*write_data)(conf_object_t *i2c_bus, uint8 value); int (*register_device)(conf_object_t *i2c_bus, conf_object_t *device, uint8 address, uint8 mask, i2c_device_flag_t flags); void (*unregister_device)(conf_object_t *i2c_bus, conf_object_t *device, uint8 address, uint8 mask); } i2c_bus_interface_t;
+typedef int i2c_status_t;
+constant I2C_status_success = 0;
+constant I2C_status_noack = 1;
+constant I2C_status_bus_busy = 2;
+typedef int i2c_device_flag_t;
+constant I2C_flag_exclusive = 0;
+constant I2C_flag_shared = 1;
+typedef struct { void (*bus_freed)(conf_object_t *device); void (*read_response)(conf_object_t *device, uint8 value); void (*ack_read_response)(conf_object_t *device); void (*write_response)(conf_object_t *device, i2c_status_t status); void (*start_response)(conf_object_t *device, i2c_status_t status); } i2c_master_interface_t;
+typedef struct { void (*acknowledge)(conf_object_t *device, i2c_ack_t ack); void (*read_response)(conf_object_t *device, uint8 value); } i2c_master_v2_interface_t;

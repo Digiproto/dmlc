@@ -1,0 +1,91 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\base\memory-transaction.h>
+%}
+
+import "simics/base/types.dml";
+import "simics/base/attr-value.dml";
+import "simics/base/memory.dml";
+
+extern attr_value_t SIM_get_mem_op_value_buf(generic_transaction_t *mop);
+extern exception_type_t VT_dmacache_write(dmacache_t *dc, conf_object_t *initiator, physical_address_t addr, attr_value_t data);
+extern exception_type_t VT_dmacache_access(dmacache_t *dc, generic_transaction_t *mop);
+extern const char *SIM_get_mem_op_type_name(mem_op_type_t type);
+extern dmacache_t *VT_dmacache_alloc(conf_object_t *memory_space);
+extern uinteger_t SIM_get_mem_op_value_be(generic_transaction_t *mop);
+extern uinteger_t SIM_get_mem_op_value_cpu(generic_transaction_t *mop);
+extern uinteger_t SIM_get_mem_op_value_le(generic_transaction_t *mop);
+extern void VT_dmacache_free(dmacache_t *dc);
+extern void SIM_set_mem_op_value_buf(generic_transaction_t *mop, attr_value_t value);
+extern void VT_no_side_effects_IO(generic_transaction_t *mop, void *regptr);
+extern void SIM_c_get_mem_op_value_buf(generic_transaction_t *mop, uint8 *dst);
+extern void SIM_c_set_mem_op_value_buf(generic_transaction_t *mop, uint8 *src);
+extern void SIM_set_mem_op_value_be(generic_transaction_t *mop, uinteger_t value);
+extern void SIM_set_mem_op_value_cpu(generic_transaction_t *mop, uinteger_t value);
+extern void SIM_set_mem_op_value_le(generic_transaction_t *mop, uinteger_t value);
+extern void SIM_set_mem_op_size(generic_transaction_t *mop, uint32 size);
+extern void VT_page_access(page_t *page, physical_address_t paddr, generic_transaction_t *mop);
+extern bool SIM_mem_op_is_control(const generic_transaction_t *mop);
+extern bool SIM_mem_op_is_data(const generic_transaction_t *mop);
+extern bool SIM_mem_op_is_from_cache(const generic_transaction_t *mop);
+extern bool SIM_mem_op_is_from_cpu(const generic_transaction_t *mop);
+extern bool SIM_mem_op_is_from_device(const generic_transaction_t *mop);
+extern bool SIM_mem_op_is_instruction(const generic_transaction_t *mop);
+extern bool SIM_mem_op_is_prefetch(const generic_transaction_t *mop);
+extern bool SIM_mem_op_is_read(const generic_transaction_t *mop);
+extern bool SIM_mem_op_is_write(const generic_transaction_t *mop);
+extern bool SIM_mem_op_is_from_cpu_arch(const generic_transaction_t *mop, ini_type_t arch);
+extern int SIM_get_mem_op_ignore(generic_transaction_t *mop);
+extern int SIM_get_mem_op_inquiry(generic_transaction_t *mop);
+extern bool SIM_mem_op_is_atomic(generic_transaction_t *mop);
+extern int SIM_mem_op_may_stall(generic_transaction_t *mop);
+extern exception_type_t SIM_get_mem_op_exception(generic_transaction_t *mop);
+extern ini_type_t SIM_get_mem_op_ini_type(generic_transaction_t *mop);
+extern logical_address_t SIM_get_mem_op_virtual_address(generic_transaction_t *mop);
+extern mem_op_type_t SIM_get_mem_op_type(const generic_transaction_t *mop);
+extern physical_address_t SIM_get_mem_op_physical_address(generic_transaction_t *mop);
+extern conf_object_t *SIM_get_mem_op_initiator(generic_transaction_t *mop);
+extern void *SIM_get_mem_op_user_data(generic_transaction_t *mop);
+extern uint32 SIM_get_mem_op_page_cross(generic_transaction_t *mop);
+extern uint32 SIM_get_mem_op_size(generic_transaction_t *mop);
+extern void SIM_mem_op_ensure_future_visibility(generic_transaction_t *mop);
+extern void SIM_set_mem_op_reissue(generic_transaction_t *mop);
+extern void SIM_set_mem_op_ignore(generic_transaction_t *mop, int ignore);
+extern void SIM_set_mem_op_inquiry(generic_transaction_t *mop, int inquiry);
+extern void SIM_set_mem_op_exception(generic_transaction_t *mop, exception_type_t exc);
+extern void SIM_set_mem_op_initiator(generic_transaction_t *mop, ini_type_t type, conf_object_t *obj);
+extern void SIM_set_mem_op_virtual_address(generic_transaction_t *mop, logical_address_t va);
+extern void SIM_set_mem_op_type(generic_transaction_t *mop, mem_op_type_t type);
+extern void SIM_set_mem_op_physical_address(generic_transaction_t *mop, physical_address_t pa);
+extern void SIM_set_mem_op_user_data(generic_transaction_t *mop, void *data);
+typedef int ini_type_t;
+constant Sim_Initiator_Illegal = 0;
+constant Sim_Initiator_CPU = 4096;
+constant Sim_Initiator_CPU_V9 = 4352;
+constant Sim_Initiator_CPU_X86 = 4608;
+constant Sim_Initiator_CPU_PPC = 4864;
+constant Sim_Initiator_CPU_Alpha = 5120;
+constant Sim_Initiator_CPU_MIPS = 5632;
+constant Sim_Initiator_CPU_ARM = 5888;
+constant Sim_Initiator_CPU_V8 = 6144;
+constant Sim_Initiator_CPU_H8 = 6400;
+constant Sim_Initiator_CPU_SH = 6656;
+constant Sim_Initiator_Device = 8192;
+constant Sim_Initiator_PCI_Device = 8208;
+constant Sim_Initiator_Cache = 12288;
+constant Sim_Initiator_Other = 16384;
+typedef struct { } dmacache_t;
+typedef struct { logical_address_t logical_address; physical_address_t physical_address; uint32 size; mem_op_type_t type; uint1 atomic; uint1 inquiry; uint1 ignore; uint1 may_stall; uint1 reissue; uint1 block_STC; uint1 use_page_cache; uint1 inverse_endian; uint2 page_cross; uint1 use_iostc; uint1 iostc_blocked; uint1 inhibit_iostc_lookup; uint1 mem_hier_on_fetch; uint32 block_flags; ini_type_t ini_type; conf_object_t *ini_ptr; exception_type_t exception; void *user_ptr; uint8 *real_address; int space_count; page_t *page; page_t *tag_page; uint32 tag_page_ofs; int allocation_size; } generic_transaction_t;
+typedef int mem_op_type_t;
+constant Sim_Trans_Load = 0;
+extern mem_op_type_t Sim_Trans_Store;
+extern mem_op_type_t Sim_Trans_Instr_Fetch;
+extern mem_op_type_t Sim_Trans_Prefetch;
+extern mem_op_type_t Sim_Trans_Cache;

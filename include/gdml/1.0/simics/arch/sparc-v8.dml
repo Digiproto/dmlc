@@ -1,0 +1,17 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\arch\sparc-v8.h>
+%}
+
+import "simics/pywrap.dml";
+import "simics/base-types.dml";
+import "simics/base/types.dml";
+
+typedef struct { uinteger_t (*read_window_register)(conf_object_t *cpu, int window, int reg); void (*write_window_register)(conf_object_t *cpu, int window, int reg, uinteger_t value); void (*power_down)(conf_object_t *cpu); } sparc_v8_interface_t;

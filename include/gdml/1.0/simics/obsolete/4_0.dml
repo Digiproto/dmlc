@@ -1,0 +1,51 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\obsolete\4_0.h>
+%}
+
+import "simics/base/types.dml";
+import "simics/base/attr-value.dml";
+import "simics/base/time.dml";
+import "simics/base/log.dml";
+import "simics/pywrap.dml";
+import "simics/processor/time.dml";
+import "simics/obsolete/4_0-old-event-types.dml";
+
+extern int OLD_initial_configuration_ok(void);
+extern cycles_t VT_old_time_next_occurrence(conf_object_t *obj, void (*func)(conf_object_t *obj, void *param), void *user_data);
+extern int OLD_write_configuration_to_file(const char *file);
+extern pc_step_t VT_old_step_next_occurrence(conf_object_t *obj, void (*func)(conf_object_t *obj, void *param), void *user_data);
+extern const char *OLD_get_configuration_file_prefix(void);
+extern const char *OLD_readme(void);
+extern void VT_old_time_post_cycle(conf_object_t *obj, cycles_t cycles, sync_t sync, void (*func)(conf_object_t *obj, void *param), void *user_data);
+extern void VT_old_time_post(conf_object_t *obj, double seconds, sync_t sync, void (*func)(conf_object_t *obj, void *param), void *user_data);
+extern void OLD_log_message(conf_object_t *obj, int level, int group_ids, log_type_t log_type, const char *message);
+extern void VT_old_step_post(conf_object_t *obj, pc_step_t steps, void (*func)(conf_object_t *obj, void *param), void *user_data);
+extern void VT_old_step_clean(conf_object_t *obj, void (*func)(conf_object_t *obj, void *param), void *user_data);
+extern void VT_old_time_clean(conf_object_t *obj, sync_t sync, void (*func)(conf_object_t *obj, void *param), void *user_data);
+extern void OLD_set_prompt(const char *new_prompt);
+extern void OLD_for_all_memory_pages(void (*func)(integer_t addr), int i_or_d);
+extern int SIM_initial_configuration_ok(void);
+extern int SIM_write_configuration_to_file(const char *file);
+extern const char *SIM_get_configuration_file_prefix(void);
+extern const char *SIM_readme(void);
+extern void SIM_log_message(conf_object_t *obj, int level, int group_ids, log_type_t log_type, const char *message);
+extern void SIM_set_prompt(const char *new_prompt);
+extern void SIM_for_all_memory_pages(void (*func)(integer_t addr), int i_or_d);
+typedef void (*dma_set_interrupt_t)(conf_object_t *);
+typedef void (*dma_enable_call_t)(conf_object_t *, conf_object_t *);
+typedef int (*dma_write_data_t)(conf_object_t *, int, uint8 *, int);
+typedef void (*dma_clr_interrupt_t)(conf_object_t *);
+typedef struct { attr_value_t (*get_event_info_val)(conf_object_t *obj, void (*func)(conf_object_t *obj, void *param), void *user_data); const char *(*describe_event)(conf_object_t *obj, void (*func)(conf_object_t *obj, void *param), void *user_data); void (*get_event_info)(attr_value_t *checkpoint_value, conf_object_t *obj, void (*func)(conf_object_t *obj, void *param), void *user_data); int (*set_event_info)(conf_object_t *obj, attr_value_t *checkpoint_value, void (**out_func)(conf_object_t *obj, void *param), void **out_info); } vt_event_poster_interface_t;
+typedef int (*dma_read_data_t)(conf_object_t *, int, uint8 *, int);
+typedef int (*dma_write_data_addr_t)(conf_object_t *, logical_address_t, int, uint8 *, int);
+typedef struct { dma_read_data_t read_data; dma_write_data_t write_data; dma_read_data_addr_t read_data_addr; dma_write_data_addr_t write_data_addr; dma_transfer_time_t transfer_time; dma_set_interrupt_t set_interrupt; dma_clr_interrupt_t clr_interrupt; dma_enable_call_t enable_call; } common_dma_interface_t;
+typedef int (*dma_read_data_addr_t)(conf_object_t *, logical_address_t, int, uint8 *, int);
+typedef simtime_t (*dma_transfer_time_t)(conf_object_t *, int, int);

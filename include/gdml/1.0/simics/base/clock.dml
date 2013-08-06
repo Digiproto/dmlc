@@ -1,0 +1,17 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\base\clock.h>
+%}
+
+import "simics/base/types.dml";
+import "simics/model-iface/cycle.dml";
+
+extern int SIM_register_clock(conf_class_t *cls, const cycle_interface_t *iface);
+extern int VT_register_passive_clock(conf_class_t *cls, const cycle_interface_t *iface);

@@ -1,0 +1,24 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\model-iface\attribute-info.h>
+%}
+
+import "simics/base/attr-value.dml";
+import "simics/pywrap.dml";
+
+typedef struct { uint32 (*nr_of_attributes)(void); const char *(*name)(uint32 idx); ainfo_category_t (*category)(uint32 idx); const char *(*doc)(uint32 idx); const char *(*attr_format)(uint32 idx); attr_value_t *(*attr_template)(uint32 idx); uint32 (*nr_of_arch_regs)(uint32 idx); const char *(*arch_reg_name)(uint32 idx, uint32 ridx); uint32 (*arch_reg_attr_entries)(uint32 idx, uint32 ridx); } attribute_info_interface_t;
+typedef int ainfo_category_t;
+constant Ainfo_Unclassified = 0;
+constant Ainfo_Architectural_Register_State = 1;
+constant Ainfo_Architectural_Implicit_State = 2;
+constant Ainfo_Architectural_Structure = 3;
+constant Ainfo_Model_Extension = 4;
+constant Ainfo_Model_Internal = 5;
+constant Ainfo_Reserved = 6;

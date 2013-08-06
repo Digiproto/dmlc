@@ -1,0 +1,36 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\util\int128.h>
+%}
+
+import "simics/base-types.dml";
+import "simics/util/arith.dml";
+
+extern int int128_div_int64(int128 a, int64 b, int128 *q, int64 *r);
+extern int int128_from_double(int128 *dst, double src);
+extern double int128_to_double(int128 src);
+extern int128 int128_mul_int64(int128 a, int64 b);
+extern char *int128_as_string(int128 v, char *buf);
+extern int int128_eq(int128 a, int128 b);
+extern int int128_ge(int128 a, int128 b);
+extern int int128_gt(int128 a, int128 b);
+extern int int128_le(int128 a, int128 b);
+extern int int128_lt(int128 a, int128 b);
+extern int int128_to_int64(int64 *dst, int128 src);
+extern int128 int128_add(int128 a, int128 b);
+extern int128 int128_sub(int128 a, int128 b);
+extern int128 int128_add_int64(int128 a, int64 b);
+extern int128 int128_sub_int64(int128 a, int64 b);
+extern int128 int128_neg(int128 t);
+extern int128 int128_from_hi_lo(int64 hi, uint64 lo);
+extern int128 int128_from_int64(int64 v);
+extern int64 int128_hi(int128 v);
+extern uint64 int128_lo(int128 v);
+typedef struct { uint64 lo; int64 hi; } int128;

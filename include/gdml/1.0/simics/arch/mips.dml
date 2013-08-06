@@ -1,0 +1,22 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\arch\mips.h>
+%}
+
+import "simics/base/types.dml";
+import "simics/base/memory-transaction.dml";
+import "simics/pywrap.dml";
+
+extern mips_memory_transaction_t *SIM_mips_mem_trans_from_generic(generic_transaction_t *mop);
+typedef struct { generic_transaction_t s; uint3 cache_coherency; } mips_memory_transaction_t;
+typedef struct { void (*send_message)(conf_object_t *obj, uint32 thread_id, uint8 dst_id, uint8 dst_sw_code, uint8 size); void (*load_message)(conf_object_t *obj, uint32 thread_id, uint8 bucket); int (*wait)(conf_object_t *obj, uint32 thread_id, uint8 vector); } fmn_station_control_interface_t;
+typedef struct { int (*cache_instruction)(conf_object_t *self, conf_object_t *cpu, uint32 op, logical_address_t vaddr); } mips_cache_instruction_interface_t;
+typedef struct { uint64 (*read_register)(conf_object_t *obj, uint32 thread_id, uint32 reg, uint32 sel); void (*write_register)(conf_object_t *obj, uint32 thread_id, uint64 value, uint32 reg, uint32 sel); } mips_coprocessor_interface_t;
+typedef struct { int dummy; } mips_interface_t;

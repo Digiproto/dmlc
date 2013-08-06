@@ -1,0 +1,38 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\base\sim-exception.h>
+%}
+
+import "simics/host-info.dml";
+
+extern const char *SIM_last_error(void);
+extern sim_exception_t SIM_clear_exception(void);
+extern sim_exception_t SIM_get_pending_exception(void);
+extern void VT_frontend_exception(sim_exception_t exc_type, const char *str);
+typedef int sim_exception_t;
+constant SimExc_No_Exception = 0;
+constant SimExc_General = 1;
+constant SimExc_Lookup = 2;
+constant SimExc_Attribute = 3;
+constant SimExc_IOError = 4;
+constant SimExc_Index = 5;
+constant SimExc_Memory = 6;
+constant SimExc_Type = 7;
+constant SimExc_Break = 8;
+constant SimExc_PythonTranslation = 9;
+constant SimExc_License = 10;
+constant SimExc_IllegalValue = 11;
+constant SimExc_InquiryOutsideMemory = 12;
+constant SimExc_InquiryUnhandled = 13;
+constant SimExc_InterfaceNotFound = 14;
+constant SimExc_AttrNotFound = 15;
+constant SimExc_AttrNotReadable = 16;
+constant SimExc_AttrNotWritable = 17;
+constant Sim_Exceptions = 18;

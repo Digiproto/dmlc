@@ -1,0 +1,53 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\devs\pci.h>
+%}
+
+import "simics/base/types.dml";
+import "simics/base/memory-transaction.dml";
+import "simics/pywrap.dml";
+
+extern pci_memory_transaction_t *SIM_pci_mem_trans_from_generic(generic_transaction_t *mop);
+typedef struct { int (*send_message)(conf_object_t *dst, conf_object_t *src, pcie_message_type_t type, byte_string_t payload); } pci_express_interface_t;
+typedef struct { void (*bus_reset)(conf_object_t *obj); int (*interrupt_acknowledge)(conf_object_t *obj); void (*special_cycle)(conf_object_t *obj, uint32 value); void (*system_error)(conf_object_t *obj); void (*interrupt_raised)(conf_object_t *obj, int pin); void (*interrupt_lowered)(conf_object_t *obj, int pin); } pci_device_interface_t;
+typedef struct { exception_type_t (*operation)(conf_object_t *obj, generic_transaction_t *mem_op, addr_space_t space); } pci_downstream_interface_t;
+typedef struct { void (*presence_change)(conf_object_t *dst, conf_object_t *src, int is_present); void (*inject_power_fault)(conf_object_t *obj); void (*press_attention_button)(conf_object_t *obj); void (*set_mrl_state)(conf_object_t *obj, int locked); int (*get_mrl_state)(conf_object_t *obj); } pci_express_hotplug_interface_t;
+typedef struct { exception_type_t (*memory_access)(conf_object_t *obj, generic_transaction_t *mem_op); void (*raise_interrupt)(conf_object_t *obj, conf_object_t *dev, int pin); void (*lower_interrupt)(conf_object_t *obj, conf_object_t *dev, int pin); int (*interrupt_acknowledge)(conf_object_t *obj); int (*add_map)(conf_object_t *obj, conf_object_t *dev, addr_space_t space, conf_object_t *target, map_info_t info); int (*remove_map)(conf_object_t *obj, conf_object_t *dev, addr_space_t space, int function); void (*set_bus_number)(conf_object_t *obj, int bus_id); void (*set_sub_bus_number)(conf_object_t *obj, int bus_id); void (*add_default)(conf_object_t *obj, conf_object_t *dev, addr_space_t space, conf_object_t *target, map_info_t info); void (*remove_default)(conf_object_t *obj, addr_space_t space); void (*bus_reset)(conf_object_t *obj); void (*special_cycle)(conf_object_t *obj, uint32 value); void (*system_error)(conf_object_t *obj); int (*get_bus_address)(conf_object_t *obj, conf_object_t *dev); void (*set_device_status)(conf_object_t *obj, int device, int function, int enabled); conf_object_t *(*configuration_space)(conf_object_t *obj); conf_object_t *(*io_space)(conf_object_t *obj); conf_object_t *(*memory_space)(conf_object_t *obj); } pci_bus_interface_t;
+typedef struct { void (*system_error)(conf_object_t *obj); void (*raise_interrupt)(conf_object_t *obj, conf_object_t *pci_bus, int device, int pin); void (*lower_interrupt)(conf_object_t *obj, conf_object_t *pci_bus, int device, int pin); } pci_bridge_interface_t;
+typedef int pcie_message_type_t;
+constant PCIE_Msg_Assert_INTA = 32;
+constant PCIE_Msg_Assert_INTB = 33;
+constant PCIE_Msg_Assert_INTC = 34;
+constant PCIE_Msg_Assert_INTD = 35;
+constant PCIE_Msg_Deassert_INTA = 36;
+constant PCIE_Msg_Deassert_INTB = 37;
+constant PCIE_Msg_Deassert_INTC = 38;
+constant PCIE_Msg_Deassert_INTD = 39;
+constant PCIE_PM_Active_State_Nak = 20;
+constant PCIE_PM_PME = 24;
+constant PCIE_PM_Turn_Off = 25;
+constant PCIE_PM_PME_TO_Ack = 27;
+constant PCIE_ERR_COR = 48;
+constant PCIE_ERR_NONFATAL = 49;
+constant PCIE_ERR_FATAL = 51;
+constant PCIE_Locked_Transaction = 0;
+constant PCIE_Set_Slot_Power_Limit = 144;
+constant PCIE_HP_Power_Indicator_On = 69;
+constant PCIE_HP_Power_Indicator_Blink = 71;
+constant PCIE_HP_Power_Indicator_Off = 68;
+constant PCIE_HP_Attention_Button_Pressed = 72;
+constant PCIE_HP_Attention_Indicator_On = 65;
+constant PCIE_HP_Attention_Indicator_Blink = 67;
+constant PCIE_HP_Attention_Indicator_Off = 64;
+extern pcie_message_type_t PCIE_DLL_Link_Down;
+extern pcie_message_type_t PCIE_DLL_Link_Up;
+typedef struct { exception_type_t (*operation)(conf_object_t *obj, generic_transaction_t *mem_op, addr_space_t space); } pci_upstream_interface_t;
+typedef struct { void (*raise_interrupt)(conf_object_t *obj, conf_object_t *pci_bus, int device, int pin); void (*lower_interrupt)(conf_object_t *obj, conf_object_t *pci_bus, int device, int pin); } pci_interrupt_interface_t;
+typedef struct { generic_transaction_t s; uint32 original_size; int bus_address; int bus_number; int device_number; int function_number; } pci_memory_transaction_t;

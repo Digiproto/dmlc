@@ -1,0 +1,25 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\base\duration.h>
+%}
+
+import "simics/base-types.dml";
+
+extern int duration_eq(duration_t a, duration_t b);
+extern int duration_gt(duration_t a, duration_t b);
+extern int duration_lt(duration_t a, duration_t b);
+extern int duration_is_illegal(duration_t dt);
+extern double duration_as_sec(duration_t dt);
+extern duration_t duration_from_sec(double dt);
+extern duration_t duration_double(duration_t dt);
+extern duration_t duration_half(duration_t dt);
+extern duration_t duration_from_ps(int64 ps);
+extern int64 duration_as_ps(duration_t dt);
+typedef struct { int64 t; } duration_t;

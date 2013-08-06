@@ -1,0 +1,16 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\model-iface\temporal-state.h>
+%}
+
+import "simics/base/types.dml";
+import "simics/pywrap.dml";
+
+typedef struct { void *(*save)(conf_object_t *obj); void (*merge)(conf_object_t *obj, void *prev, void *killed); void (*prepare_restore)(conf_object_t *obj); void (*finish_restore)(conf_object_t *obj, void *state); } temporal_state_interface_t;

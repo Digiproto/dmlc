@@ -1,0 +1,17 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\build-id.h>
+%}
+
+typedef int sim_version_t;
+constant SIM_VERSION_4_6 = 4000;
+constant SIM_VERSION_4_4 = 3500;
+constant SIM_VERSION_4_2 = 3000;
+constant SIM_VERSION_4_0 = 2500;

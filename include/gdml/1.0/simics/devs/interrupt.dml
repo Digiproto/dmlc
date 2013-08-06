@@ -1,0 +1,18 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\devs\interrupt.h>
+%}
+
+import "simics/base/types.dml";
+import "simics/pywrap.dml";
+
+typedef struct { int (*is_enabled)(conf_object_t *interrupt_controller, int irq_level); void (*register_callback)(conf_object_t *interrupt_controller, conf_object_t *device, int irq_level, interrupt_changed_state_callback_t cb, void *cb_data); } interrupt_query_interface_t;
+typedef void (*interrupt_changed_state_callback_t)(conf_object_t *interrupt_controller, conf_object_t *device, int irq_level, int enabled, void *data);
+typedef struct { void (*interrupt)(conf_object_t *, int); void (*interrupt_clear)(conf_object_t *, int); } simple_interrupt_interface_t;

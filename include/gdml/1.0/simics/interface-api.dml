@@ -1,0 +1,18 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\interface-api.h>
+%}
+
+import "simics/device-api.dml";
+import "simics/util/hashtab.dml";
+import "simics/simulator/sim-get-class.dml";
+import "simics/simulator/oec-control.dml";
+import "simics/simulator/output-pr-err.dml";
+

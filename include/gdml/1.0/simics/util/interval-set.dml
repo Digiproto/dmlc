@@ -1,0 +1,36 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\util\interval-set.h>
+%}
+
+import "simics/host-info.dml";
+import "simics/base-types.dml";
+import "simics/util/vect.dml";
+
+extern int get_interval_vector_and_range(interval_set_t *_is, uint64 address, range_node_t **res, uint64 *first_address, uint64 *last_address);
+extern int get_interval_vector(interval_set_t *_is, uinteger_t address, range_node_t **res);
+extern int touch_interval(interval_set_t *_is, uinteger_t start, uinteger_t end);
+extern interval_set_t *new_interval(int dummy);
+extern range_node_t *interval_set_iter_next(interval_set_iter_t *it);
+extern void *get_higher_interval_ptr(interval_set_t *_is, uinteger_t address);
+extern void *get_interval_ptr(interval_set_t *_is, uinteger_t address);
+extern void *get_lower_interval_ptr(interval_set_t *_is, uinteger_t address);
+extern void interval_set_new_iter(const interval_set_t *_is, interval_set_iter_t *it, uint64 start, uint64 end);
+extern void free_interval(interval_set_t *_is);
+extern void init_interval(interval_set_t *_is, int allow_overlap);
+extern void for_all_intervals(interval_set_t *_is, intervals_func_t f, void *data);
+extern void for_some_intervals(interval_set_t *_is, uinteger_t start, uinteger_t end, intervals_func_t f, void *data);
+extern void insert_interval(interval_set_t *_is, uinteger_t start, uinteger_t end, void *ptr);
+extern void remove_interval(interval_set_t *_is, uinteger_t start, uinteger_t end, void *ptr);
+extern int interval_set_empty(interval_set_t *_is);
+typedef struct { struct { int size; int used; struct { } *elements; } sections; } interval_set_t;
+typedef struct { uinteger_t start; uinteger_t end; void *ptr; } range_node_t;
+typedef struct { const interval_set_t *_is; uint64 start; uint64 end; uint32 sect; uint32 inum; } interval_set_iter_t;
+typedef void (*intervals_func_t)(uinteger_t start, uinteger_t end, void *el, void *data);

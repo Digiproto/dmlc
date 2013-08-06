@@ -1,0 +1,20 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\model-iface\frontend-server.h>
+%}
+
+import "simics/base/attr-value.dml";
+import "simics/base/conf-object.dml";
+import "simics/base/types.dml";
+import "simics/pywrap.dml";
+
+typedef struct { void (*register_object_callback)(conf_object_t *frontend_server, conf_class_t *target, const char *name, attr_value_t (*callback)(conf_object_t *target, attr_value_t args, void *user_data), void *user_data, int has_side_effects); } remote_callback_interface_t;
+typedef struct { } attribute_id_t;
+typedef struct { attribute_id_t *(*register_monitored_attribute)(conf_object_t *obj, conf_object_t *attr_obj, const char *attr_name); void (*monitored_attribute_changed)(conf_object_t *obj, attribute_id_t *id); } attribute_monitor_interface_t;

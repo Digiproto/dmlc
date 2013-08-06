@@ -1,0 +1,44 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\base\bigtime.h>
+%}
+
+import "simics/base-types.dml";
+import "simics/util/int128.dml";
+import "simics/util/help-macros.dml";
+import "simics/base/duration.dml";
+import "simics/base/attr-value.dml";
+
+extern attr_value_t bigtime_to_attr(bigtime_t t);
+extern bigtime_t bigtime_from_attr(attr_value_t a);
+extern bigtime_t bigtime_div_floor(bigtime_t t, int64 divisor);
+extern bigtime_t bigtime_div_raw(bigtime_t t, int64 divisor, int *exact);
+extern bigtime_t bigtime_mul(bigtime_t t, int64 factor);
+extern char *bigtime_as_string(bigtime_t t, char *buf);
+extern bigtime_t bigtime_add_bigtime(bigtime_t a, bigtime_t b);
+extern bigtime_t bigtime_sub_bigtime(bigtime_t a, bigtime_t b);
+extern bigtime_t bigtime_add(bigtime_t t, duration_t delta);
+extern bigtime_t bigtime_sub(bigtime_t t, duration_t delta);
+extern bigtime_t bigtime_from_sec(double t);
+extern bigtime_t bigtime_from_ps_int128(int128 ps);
+extern bigtime_t bigtime_from_ps(int64 ps_hi, uint64 ps_lo);
+extern bigtime_t bigtime_from_ps_lo(int64 ps_lo);
+extern int bigtime_eq(bigtime_t a, bigtime_t b);
+extern int bigtime_ge(bigtime_t a, bigtime_t b);
+extern int bigtime_gt(bigtime_t a, bigtime_t b);
+extern int bigtime_le(bigtime_t a, bigtime_t b);
+extern int bigtime_lt(bigtime_t a, bigtime_t b);
+extern int bigtime_is_illegal(bigtime_t t);
+extern double bigtime_as_sec(bigtime_t t);
+extern duration_t bigtime_diff(bigtime_t t1, bigtime_t t2);
+extern int128 bigtime_as_ps_int128(bigtime_t t);
+extern int64 bigtime_as_ps_hi(bigtime_t t);
+extern uint64 bigtime_as_ps_lo(bigtime_t t);
+typedef struct { int128 val; } bigtime_t;

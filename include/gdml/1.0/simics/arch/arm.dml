@@ -1,0 +1,27 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\arch\arm.h>
+%}
+
+import "simics/base/types.dml";
+import "simics/base/memory-transaction.dml";
+import "simics/processor/types.dml";
+import "simics/pywrap.dml";
+
+extern arm_memory_transaction_t *SIM_arm_mem_trans_from_generic(generic_transaction_t *mop);
+typedef struct { int valid; uint32 address; } arm_avic_t;
+typedef int arm_trustzone_mode_t;
+constant Arm_Trustzone_Secure = 0;
+constant Arm_Trustzone_Non_Secure = 1;
+typedef struct { arm_trustzone_mode_t (*get_security_mode)(conf_object_t *obj); arm_trustzone_mode_t (*mem_op_security_mode)(conf_object_t *obj, generic_transaction_t *memop); } arm_trustzone_interface_t;
+typedef struct { uinteger_t (*read_register_mode)(conf_object_t *processor_obj, int reg_num, int mode); void (*write_register_mode)(conf_object_t *processor_obj, int reg_num, int mode, uinteger_t value); } arm_interface_t;
+typedef struct { void (*process_data)(conf_object_t *obj, uint32 CRd, uint32 opcode_1, uint32 CRn, uint32 CRm, uint32 opcode_2, int type); void (*load_coprocessor)(conf_object_t *obj, uint32 CRd, uint32 N, uint32 Options, uint32 value, int type); uint32 (*read_register)(conf_object_t *obj, uint32 opcode_1, uint32 CRn, uint32 CRm, uint32 opcode_2, int type); void (*write_register)(conf_object_t *obj, uint32 value, uint32 opcode_1, uint32 CRn, uint32 CRm, uint32 opcode_2, int type); uint32 (*store_coprocessor)(conf_object_t *obj, uint32 CRd, uint32 N, uint32 Options, int type); void (*reset)(conf_object_t *obj, int hard_reset); } arm_coprocessor_interface_t;
+typedef struct { arm_avic_t (*get_interrupt_address)(conf_object_t *obj); } arm_avic_interface_t;
+typedef struct { generic_transaction_t s; processor_mode_t mode; int rotate; } arm_memory_transaction_t;

@@ -1,0 +1,27 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\util\str-vec.h>
+%}
+
+import "simics/host-info.dml";
+import "simics/util/vect.dml";
+
+extern const char *str_vec_find(const str_vec_t *sv, const char *s);
+extern void str_vec_free(str_vec_t *sv);
+extern void str_vec_sort(str_vec_t *sv);
+extern void str_vec_add_stealing(str_vec_t *sv, char *s);
+extern void str_vec_add(str_vec_t *sv, const char *s);
+extern void str_vec_remove(str_vec_t *sv, const char *s);
+extern int str_vec_len(const str_vec_t *sv);
+extern const char *str_vec_get(const str_vec_t *sv, uint32 n);
+extern char **str_vec_vec(str_vec_t *sv);
+extern void str_vec_clear(str_vec_t *sv);
+extern void str_vec_init(str_vec_t *sv);
+typedef struct { struct { int size; int used; char **elements; } v; } str_vec_t;

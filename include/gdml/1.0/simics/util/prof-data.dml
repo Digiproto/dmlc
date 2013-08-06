@@ -1,0 +1,30 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\util\prof-data.h>
+%}
+
+import "simics/util/hashtab.dml";
+
+extern int prof_data_granularity_log2(prof_data_t *pd);
+extern int prof_data_load(prof_data_t *pd, FILE *f);
+extern int prof_data_save(prof_data_t *pd, FILE *f);
+extern prof_data_t *prof_data_create(uint32 granularity);
+extern prof_data_address_t prof_data_iter_addr(prof_data_iter_t *it);
+extern prof_data_counter_t prof_data_iter_next(prof_data_iter_t *it);
+extern prof_data_counter_t prof_data_get(prof_data_t *pd, prof_data_address_t address);
+extern void prof_data_clear(prof_data_t *pd);
+extern void prof_data_delete(prof_data_t *pd);
+extern void prof_data_new_iter(prof_data_t *pd, prof_data_iter_t *it, prof_data_address_t start, prof_data_address_t end);
+extern void prof_data_add(prof_data_t *pd, prof_data_address_t address, prof_data_counter_t value);
+extern void prof_data_set(prof_data_t *pd, prof_data_address_t address, prof_data_counter_t value);
+typedef uint64 prof_data_address_t;
+typedef struct { } prof_data_t;
+typedef struct { prof_data_t *pd; uint64 start; uint64 end; ht_int_iter_t hit; int index; } prof_data_iter_t;
+typedef uint64 prof_data_counter_t;

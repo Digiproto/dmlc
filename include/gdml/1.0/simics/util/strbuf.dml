@@ -1,0 +1,44 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\util\strbuf.h>
+%}
+
+import "simics/host-info.dml";
+import "simics/base-types.dml";
+
+extern int sb_readline(strbuf_t *sb, FILE *f);
+extern int sb_write(const strbuf_t *sb, FILE *f);
+extern char *sb_detach(strbuf_t *sb);
+extern strbuf_t sb_newf(const char *format, ...);
+extern strbuf_t sb_new(const char *s);
+extern void sb_free(strbuf_t *sb);
+extern void sb_addesc(strbuf_t *sb, char c, char delim);
+extern void sb_addfmt(strbuf_t *sb, const char *format, ...);
+extern void sb_fmt(strbuf_t *sb, const char *format, ...);
+extern void sb_realloc(strbuf_t *sb, uint32 minlen);
+extern char sb_char(const strbuf_t *sb, int i);
+extern int sb_len(const strbuf_t *sb);
+extern char *sb_str(const strbuf_t *sb);
+extern strbuf_t sb_dup(const strbuf_t *sb);
+extern void sb_copy(strbuf_t *dst, const strbuf_t *src);
+extern void sb_clear(strbuf_t *sb);
+extern void sb_init(strbuf_t *sb);
+extern void sb_addc(strbuf_t *sb, char c);
+extern void sb_addchars(strbuf_t *sb, char c, uint32 n);
+extern void sb_delete(strbuf_t *sb, int start, uint32 n);
+extern void sb_addstr(strbuf_t *sb, const char *str);
+extern void sb_set(strbuf_t *sb, const char *str);
+extern void sb_addmem(strbuf_t *sb, const char *str, uint32 len);
+extern void sb_extend(strbuf_t *sb, uint32 minlen);
+extern void sb_resize(strbuf_t *sb, uint32 size);
+extern void sb_insertstr(strbuf_t *sb, uint32 start, const char *str);
+extern void sb_insertmem(strbuf_t *sb, uint32 start, const char *str, uint32 n);
+extern void sb_cat(strbuf_t *sb1, const strbuf_t *sb2);
+typedef struct { char *s; uint32 size; uint32 len; } strbuf_t;

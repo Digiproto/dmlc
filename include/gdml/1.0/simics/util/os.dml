@@ -1,0 +1,74 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\util\os.h>
+%}
+
+import "simics/module-host-config.dml";
+import "simics/base-types.dml";
+import "simics/util/str-vec.dml";
+import "simics/util/strbuf.dml";
+
+extern int os_file_exists(const char *filename);
+extern int os_isfile(const char *filename);
+extern int os_is_same_file(const char *name1, const char *name2);
+extern int os_dir_contains_path(const char *parent, const char *path);
+extern int os_isabs(const char *path);
+extern int os_isdir(const char *);
+extern int os_dladdr(void *addr, os_dlinfo_t *ret);
+extern int os_make_sparse(int fd);
+extern int os_pwrite(int fd, const void *buf, size_t nbyte, uint64 offset);
+extern int os_pread(int fd, void *buf, size_t nbyte, uint64 offset);
+extern int os_ftruncate(int fd, uint64 newsize);
+extern int os_dlclose(os_dlhandle_t handle);
+extern int os_fclose(FILE *stream);
+extern int os_rmdir(const char *dirname);
+extern int os_stat(const char *file, os_stat_t *result);
+extern int os_chdir(const char *filename);
+extern int os_remove(const char *filename);
+extern int os_mkdir(const char *filename, int mode);
+extern int os_create_unique_autoremoved_file(const char *name);
+extern int os_open(const char *path, int flags, ...);
+extern int os_access(const char *path, int mode);
+extern int os_copy(const char *src, const char *dst);
+extern int os_rename(const char *src, const char *dst);
+extern int os_get_last_error(void);
+extern int os_last_error_was_error(void);
+extern int64 os_lseek(int fd, int64 off, int whence);
+extern int64 os_get_file_size(const char *filename);
+extern os_dlhandle_t os_dlopen(const char *filename, int flags);
+extern os_dlsymbol_t os_dllookup(os_dlhandle_t handle, const char *symbol);
+extern FILE *os_fopen(const char *path, const char *mode);
+extern char *os_quote_filename(const char *file);
+extern char *os_dirname(const char *filename);
+extern char *os_make_readable_path(const char *path);
+extern char *os_normalize_path(const char *path);
+extern char *os_absolutify(const char *path, const char *base);
+extern char *os_describe_last_dlerror(void);
+extern char *os_describe_last_error(void);
+extern char *os_get_library_path(void);
+extern char *os_getcwd(void);
+extern char *os_getcwd_nice(void);
+extern const char *os_basename(const char *path);
+extern str_vec_t *os_listdir(const char *dir);
+extern uint64 os_current_time(void);
+extern uint64 os_current_time_us(void);
+extern uint64 os_host_phys_mem_size(void);
+extern uint64 os_host_virt_mem_size(void);
+extern uint64 os_user_cpu_time_us(void);
+extern uint32 os_getpid(void);
+extern uint32 os_host_ncpus(void);
+extern void os_close_descriptors(int from, int except);
+extern void os_millisleep(int t);
+extern void os_clean_path(char *path);
+extern void os_path_join(strbuf_t *path, const char *name);
+typedef FARPROC os_dlsymbol_t;
+typedef struct { uint64 size; uint64 mtime; } os_stat_t;
+typedef HINSTANCE os_dlhandle_t;
+typedef struct { const char *sym_name; void *sym_base; const char *file_name; void *file_base; } os_dlinfo_t;

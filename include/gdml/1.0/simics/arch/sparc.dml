@@ -1,0 +1,36 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\arch\sparc.h>
+%}
+
+import "simics/base/memory-transaction.dml";
+import "simics/processor/types.dml";
+import "simics/pywrap.dml";
+
+extern v9_memory_transaction_t *SIM_v9_mem_trans_from_generic(generic_transaction_t *mop);
+typedef int sparc_access_type_t;
+constant V9_Access_Normal = 0;
+constant V9_Access_Normal_FP = 1;
+constant V9_Access_Double_FP = 2;
+constant V9_Access_Short_FP = 3;
+constant V9_Access_FSR = 4;
+constant V9_Access_Atomic = 5;
+constant V9_Access_Atomic_Load = 6;
+constant V9_Access_Prefetch = 7;
+constant V9_Access_Partial_Store = 8;
+constant V9_Access_Ldd_Std_1 = 9;
+constant V9_Access_Ldd_Std_2 = 10;
+constant V9_Access_Block = 11;
+constant V9_Access_Internal1 = 12;
+typedef struct { int (*set_bus_id)(conf_object_t *obj, conf_object_t *src, int id); void (*interrupt_by_id)(conf_object_t *obj, conf_object_t *src, int src_id, int dst_id, interrupt_ack_t interrupt_ack, uint64 *data, void *usr, int dummy0, int dummy1); conf_object_t *(*get_object_by_id)(conf_object_t *obj, int id); void (*reset_all)(conf_object_t *obj, int reset_type); } sparc_irq_bus_interface_t;
+typedef struct { void (*cause_error)(conf_object_t *obj, int afsr_status_bit, exception_type_t trap, int estate_error_enable_bit, int m_synd_priority, uint32 m_synd, int e_synd_priority, uint32 e_synd, int afar_priority, uint64 afar, int set_priv, int set_me); } sparc_u3_interface_t;
+typedef struct { generic_transaction_t s; uint1 cache_virtual; uint1 cache_physical; uint1 side_effect; uint1 priv; uint1 red; uint1 hpriv; uint1 henb; uint32 address_space; uint8 prefetch_fcn; sparc_access_type_t access_type; } v9_memory_transaction_t;
+typedef void (*interrupt_ack_t)(conf_object_t *obj, conf_object_t *cpu, int cpu_mid, int ack, void *usr);
+typedef struct { void (*interrupt_cpu)(conf_object_t *cpu, conf_object_t *obj, int source_mid, int target_mid, interrupt_ack_t irq_ack_cb, uint64 *data, void *usr, int dummy1, int dummy2); void (*trap_cpu)(conf_object_t *cpu, exception_type_t trap_vector); } sparc_interrupt_interface_t;

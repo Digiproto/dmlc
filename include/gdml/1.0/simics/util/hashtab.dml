@@ -1,0 +1,69 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\util\hashtab.h>
+%}
+
+import "simics/host-info.dml";
+import "simics/base-types.dml";
+
+extern int ht_remove_int(ht_int_table_t *ht, uint64 key);
+extern int ht_for_each_entry_int(ht_int_table_t *table, int (*f)(ht_int_table_t *table, uint64 key, void *value, void *data), void *data);
+extern int ht_remove_str(ht_str_table_t *ht, const char *key);
+extern int ht_for_each_entry_str(ht_str_table_t *table, int (*f)(ht_str_table_t *table, const char *key, void *value, void *data), void *data);
+extern ht_int_entry_t *ht_entry_lookup_int(ht_int_table_t *ht, uint64 key);
+extern ht_str_entry_t *ht_entry_lookup_str(ht_str_table_t *ht, const char *key);
+extern void *ht_lookup_int(ht_int_table_t *ht, uint64 key);
+extern void *ht_update_int(ht_int_table_t *ht, uint64 key, const void *value);
+extern void *ht_lookup_str(ht_str_table_t *ht, const char *key);
+extern void *ht_update_str(ht_str_table_t *ht, const char *key, const void *value);
+extern void ht_clear_int_table(ht_int_table_t *ht, int free_vals);
+extern void ht_delete_int_table(ht_int_table_t *ht, int free_values);
+extern void ht_insert_int(ht_int_table_t *ht, uint64 key, const void *value);
+extern void ht_clear_str_table(ht_str_table_t *ht, int free_vals);
+extern void ht_delete_str_table(ht_str_table_t *ht, int free_values);
+extern void ht_insert_str(ht_str_table_t *ht, const char *key, const void *value);
+extern int ht_int_at_end(ht_int_iter_t it);
+extern int ht_at_end_common(ht_iter_common_t it);
+extern int ht_str_at_end(ht_str_iter_t it);
+extern ht_int_iter_t ht_int_next(ht_int_iter_t it);
+extern ht_int_iter_t ht_int_iter(ht_int_table_t *ht);
+extern ht_iter_common_t ht_next_common(ht_iter_common_t it);
+extern ht_iter_common_t ht_iter_common(ht_table_common_t *ht);
+extern ht_iter_common_t ht_make_iter(ht_table_common_t *ht, uint32 index, ht_entry_common_t *e, ht_entry_common_t *next);
+extern ht_str_iter_t ht_str_next(ht_str_iter_t it);
+extern ht_str_iter_t ht_str_iter(ht_str_table_t *ht);
+extern const char *ht_iter_str_key(ht_str_iter_t it);
+extern void *ht_iter_int_value(ht_int_iter_t it);
+extern void *ht_iter_str_value(ht_str_iter_t it);
+extern void *ht_value_common(ht_entry_common_t *e);
+extern void *ht_int_value(ht_int_entry_t *e);
+extern void *ht_str_value(ht_str_entry_t *e);
+extern uint64 ht_iter_int_key(ht_int_iter_t it);
+extern uint32 ht_num_entries_int(const ht_int_table_t *ht);
+extern uint32 ht_num_entries_str(const ht_str_table_t *ht);
+extern uint32 ht_num_entries_common(const ht_table_common_t *ht);
+extern void ht_iter_int_set_value(ht_int_iter_t it, const void *value);
+extern void ht_iter_str_set_value(ht_str_iter_t it, const void *value);
+extern void ht_set_value_common(ht_entry_common_t *e, const void *value);
+extern void ht_set_int_value(ht_int_entry_t *e, const void *value);
+extern void ht_init_int_table(ht_int_table_t *ht);
+extern void ht_set_str_value(ht_str_entry_t *e, const void *value);
+extern void ht_init_str_table(ht_str_table_t *ht, int keys_owned);
+extern void ht_init_table_common(ht_table_common_t *ht);
+typedef struct { ht_iter_common_t it; } ht_str_iter_t;
+typedef struct { const void *value; ht_entry_common_t *next; ht_key_t key; uint32 hash; } ht_entry_common_t;
+typedef struct { ht_table_common_t t; int keys_owned; } ht_str_table_t;
+typedef struct { uint64 i; const char *s; } ht_key_t;
+typedef struct { ht_iter_common_t it; } ht_int_iter_t;
+typedef struct { ht_table_common_t *ht; uint32 index; ht_entry_common_t *e; ht_entry_common_t *next; } ht_iter_common_t;
+typedef struct { ht_entry_common_t e; } ht_str_entry_t;
+typedef struct { ht_table_common_t t; } ht_int_table_t;
+typedef struct { uint32 nbuckets; uint32 bits; ht_entry_common_t **buckets; int num_elements; } ht_table_common_t;
+typedef struct { ht_entry_common_t e; } ht_int_entry_t;

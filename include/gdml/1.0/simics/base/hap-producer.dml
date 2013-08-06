@@ -1,0 +1,27 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\base\hap-producer.h>
+%}
+
+import "simics/base/types.dml";
+import "simics/base/attr-value.dml";
+
+extern int SIM_hap_is_active(hap_type_t hap);
+extern int SIM_hap_is_active_obj(hap_type_t hap, conf_object_t *obj);
+extern int SIM_hap_is_active_obj_idx(hap_type_t hap, conf_object_t *obj, integer_t index);
+extern hap_type_t SIM_hap_get_number(const char *hap);
+extern hap_type_t SIM_hap_add_type(const char *hap, const char *params, const char *param_desc, const char *index, const char *desc, int unused);
+extern int SIM_c_hap_occurred(hap_type_t hap, conf_object_t *obj, integer_t value, ...);
+extern int SIM_c_hap_occurred_always(hap_type_t hap, conf_object_t *obj, integer_t value, ...);
+extern int SIM_hap_occurred(hap_type_t hap, conf_object_t *obj, integer_t value, attr_value_t *list);
+extern int SIM_hap_occurred_always(hap_type_t hap, conf_object_t *obj, integer_t value, attr_value_t *list);
+extern const char *SIM_hap_get_name(hap_type_t hap);
+extern void SIM_hap_remove_type(const char *hap);
+typedef int hap_type_t;

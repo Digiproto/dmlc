@@ -1,0 +1,36 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\devs\apic.h>
+%}
+
+import "simics/base/types.dml";
+import "simics/pywrap.dml";
+
+typedef struct { apic_bus_status_t (*interrupt)(conf_object_t *obj, apic_destination_mode_t dest_mode, apic_delivery_mode_t delivery_mode, int level_assert, apic_trigger_mode_t trigger_mode, uint8 vector, uint8 destination); } apic_bus_interface_t;
+typedef int apic_trigger_mode_t;
+constant Apic_Trigger_Mode_Edge = 0;
+constant Apic_Trigger_Mode_Level = 1;
+typedef int apic_bus_status_t;
+constant Apic_Bus_Accepted = 0;
+constant Apic_Bus_Retry = 1;
+constant Apic_Bus_No_Target = 2;
+constant Apic_Bus_Invalid = 3;
+typedef int apic_destination_mode_t;
+constant Apic_Destination_Mode_Physical = 0;
+constant Apic_Destination_Mode_Logical = 1;
+typedef int apic_delivery_mode_t;
+constant Apic_Delivery_Mode_Fixed = 0;
+constant Apic_Delivery_Mode_Lowest_Priority = 1;
+constant Apic_Delivery_Mode_SMI = 2;
+constant Apic_Delivery_Mode_Remote_Read = 3;
+constant Apic_Delivery_Mode_NMI = 4;
+constant Apic_Delivery_Mode_INIT = 5;
+constant Apic_Delivery_Mode_Start_Up = 6;
+constant Apic_Delivery_Mode_Ext_INT = 7;

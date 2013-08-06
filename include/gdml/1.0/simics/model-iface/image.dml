@@ -1,0 +1,21 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\model-iface\image.h>
+%}
+
+import "simics/base/types.dml";
+import "simics/base/memory.dml";
+import "simics/pywrap.dml";
+
+typedef struct { void (*read)(conf_object_t *img, void *to_buf, uint64 start, size_t length); void (*write)(conf_object_t *img, const void *from_buf, uint64 start, size_t length); int (*for_all_spages)(conf_object_t *img, int (*f)(image_spage_t *p, uint64 ofs, void *arg), void *arg); void (*set_persistent)(conf_object_t *obj); void (*save_to_file)(conf_object_t *obj, const char *file, uint64 start, uint64 length); void (*save_diff)(conf_object_t *obj, const char *file); void (*clear_range)(conf_object_t *obj, uint64 start, uint64 length); void (*fill)(conf_object_t *obj, uint64 start, uint64 length, uint8 value); void (*dealloc_icode_page)(conf_object_t *obj, image_spage_t *spage); uint64 (*size)(conf_object_t *obj); void (*set)(conf_object_t *obj, uint64 ofs, bytes_t b); bytes_t (*get)(conf_object_t *obj, uint64 ofs, size_t size); } image_interface_t;
+typedef struct { int (*create_group)(conf_object_t *obj, conf_object_t *image_obj); void (*protect)(conf_object_t *obj, int id); } pool_protect_interface_t;
+typedef struct { uint8 *(*get_base)(conf_object_t *obj, size_t *retsize); void (*set_base)(conf_object_t *obj, uint8 *base); void (*prepare_range)(conf_object_t *obj, read_or_write_t type, size_t offs, size_t size); } linear_image_interface_t;
+typedef struct { void (*page_modified)(conf_object_t *obj, conf_object_t *img, uint64 offset, uint8 *page_data, image_spage_t *spage); } image_snoop_interface_t;
+typedef struct { } image_spage_t;

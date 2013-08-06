@@ -1,0 +1,17 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\devs\arinc-429.h>
+%}
+
+import "simics/pywrap.dml";
+import "simics/base/types.dml";
+
+typedef struct { void (*send_word)(conf_object_t *bus, uint32 word, int parity_ok); } arinc429_bus_interface_t;
+typedef struct { void (*receive_word)(conf_object_t *dev, uint32 word, int parity_ok); } arinc429_receiver_interface_t;

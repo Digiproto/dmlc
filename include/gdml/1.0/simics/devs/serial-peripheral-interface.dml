@@ -1,0 +1,21 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\devs\serial-peripheral-interface.h>
+%}
+
+import "simics/base/types.dml";
+import "simics/pywrap.dml";
+import "simics/util/dbuffer.dml";
+
+typedef int serial_peripheral_interface_flags_t;
+constant SPI_Flags_CPHA = 1;
+constant SPI_Flags_CPOL = 2;
+typedef struct { void (*spi_response)(conf_object_t *obj, int bits, dbuffer_t *payload); } serial_peripheral_interface_master_interface_t;
+typedef struct { void (*spi_request)(conf_object_t *obj, int first, int last, int bits, dbuffer_t *payload); void (*connect_master)(conf_object_t *obj, conf_object_t *master, const char *port, serial_peripheral_interface_flags_t flags); void (*disconnect_master)(conf_object_t *obj, conf_object_t *master); } serial_peripheral_interface_slave_interface_t;

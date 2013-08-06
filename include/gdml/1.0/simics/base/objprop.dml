@@ -1,0 +1,18 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\base\objprop.h>
+%}
+
+import "simics/base/types.dml";
+
+extern void *VT_get_object_prop(const conf_object_t *obj, prop_id_t prop);
+extern void VT_set_object_prop(conf_object_t *obj, prop_id_t prop, void *data);
+typedef const prop_desc_t *prop_id_t;
+typedef struct { uint32 abi_version; const char *name; void (*free_data)(void *); } prop_desc_t;

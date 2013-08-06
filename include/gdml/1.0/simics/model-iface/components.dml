@@ -1,0 +1,24 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\model-iface\components.h>
+%}
+
+import "simics/base/types.dml";
+import "simics/base/attr-value.dml";
+import "simics/pywrap.dml";
+
+typedef struct { uint64 (*size)(conf_object_t *obj); } disk_component_interface_t;
+typedef struct { char *(*type)(conf_object_t *obj); int (*hotpluggable)(conf_object_t *obj); int (*required)(conf_object_t *obj); int (*multi)(conf_object_t *obj); connector_direction_t (*direction)(conf_object_t *obj); int (*add_destination)(conf_object_t *obj, conf_object_t *connector); int (*remove_destination)(conf_object_t *obj, conf_object_t *connector); attr_value_t (*destination)(conf_object_t *obj); void (*update)(conf_object_t *obj); int (*check)(conf_object_t *obj, attr_value_t attr); void (*connect)(conf_object_t *obj, attr_value_t attr); void (*disconnect)(conf_object_t *obj); int (*deletion_requested)(conf_object_t *obj); } connector_interface_t;
+typedef struct { attr_value_t (*get_check_data)(conf_object_t *obj, conf_object_t *connector); attr_value_t (*get_connect_data)(conf_object_t *obj, conf_object_t *connector); int (*check)(conf_object_t *obj, conf_object_t *connector, attr_value_t attr); void (*connect)(conf_object_t *obj, conf_object_t *connector, attr_value_t attr); void (*disconnect)(conf_object_t *obj, conf_object_t *connector); } component_connector_interface_t;
+typedef struct { int (*pre_instantiate)(conf_object_t *obj); void (*post_instantiate)(conf_object_t *obj); int (*create_cell)(conf_object_t *obj); attr_value_t (*get_slots)(conf_object_t *obj); attr_value_t (*get_slot_objects)(conf_object_t *obj); attr_value_t (*get_slot_value)(conf_object_t *obj, const char *slot); void (*set_slot_value)(conf_object_t *obj, const char *slot, attr_value_t value); int (*has_slot)(conf_object_t *obj, const char *slot); int (*add_slot)(conf_object_t *obj, const char *slot); int (*del_slot)(conf_object_t *obj, const char *slot); } component_interface_t;
+typedef int connector_direction_t;
+constant Sim_Connector_Direction_Up = 0;
+constant Sim_Connector_Direction_Down = 1;
+constant Sim_Connector_Direction_Any = 2;

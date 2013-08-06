@@ -1,0 +1,31 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\processor\generic-spr.h>
+%}
+
+import "simics/base/types.dml";
+
+typedef int gen_spr_ret_t;
+constant Sim_Gen_Spr_Ok = 0;
+constant Sim_Gen_Spr_Illegal = 1;
+constant Sim_Gen_Spr_Privilege = 2;
+constant Sim_Gen_Spr_Processor_Sleeps = 3;
+extern gen_spr_ret_t Sim_PPC_Spr_Ok;
+extern gen_spr_ret_t Sim_PPC_Spr_Illegal;
+extern gen_spr_ret_t Sim_PPC_Spr_Privilege;
+typedef gen_spr_ret_t (*gen_spr_user_getter_func_t)(conf_object_t *cpu, integer_t spr_number, gen_spr_access_type_t type, void *user_data);
+typedef gen_spr_ret_t (*gen_spr_user_setter_func_t)(conf_object_t *cpu, integer_t spr_number, uinteger_t value, gen_spr_access_type_t type, void *user_data);
+typedef int gen_spr_access_type_t;
+constant Sim_Gen_Spr_Instruction_Access = 0;
+constant Sim_Gen_Spr_Attribute_Access = 1;
+constant Sim_Gen_Spr_Int_Register_Access = 2;
+extern gen_spr_access_type_t Sim_PPC_Spr_Instruction_Access;
+extern gen_spr_access_type_t Sim_PPC_Spr_Attribute_Access;
+extern gen_spr_access_type_t Sim_PPC_Spr_Int_Register_Access;

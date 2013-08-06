@@ -1,0 +1,17 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\model-iface\execute.h>
+%}
+
+import "simics/base/types.dml";
+import "simics/pywrap.dml";
+
+typedef struct { void (*set_current_processor_obj)(conf_object_t *obj, conf_object_t *cpu_obj); void (*set_current_step_obj)(conf_object_t *obj, conf_object_t *step_obj); } cell_inspection_interface_t;
+typedef struct { void (*run)(conf_object_t *obj); void (*stop)(conf_object_t *obj); void (*switch_in)(conf_object_t *obj); void (*switch_out)(conf_object_t *obj); } execute_interface_t;

@@ -1,0 +1,19 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\processor\event.h>
+%}
+
+import "simics/base/types.dml";
+import "simics/base/event.dml";
+import "simics/processor/time.dml";
+
+extern pc_step_t SIM_event_find_next_step(conf_object_t *clock, event_class_t *evclass, conf_object_t *obj, int (*pred)(void *data, void *match_data), void *match_data);
+extern void SIM_event_post_step(conf_object_t *clock, event_class_t *evclass, conf_object_t *obj, pc_step_t steps, void *user_data);
+extern void SIM_event_cancel_step(conf_object_t *clock, event_class_t *evclass, conf_object_t *obj, int (*pred)(void *data, void *match_data), void *match_data);

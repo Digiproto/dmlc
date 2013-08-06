@@ -1,0 +1,19 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\devs\mii.h>
+%}
+
+import "simics/base/types.dml";
+import "simics/pywrap.dml";
+
+typedef struct { uint16 (*read_register)(conf_object_t *obj, int mmd, int reg); void (*write_register)(conf_object_t *obj, int mmd, int reg, uint16 value); } mdio45_phy_interface_t;
+typedef struct { int (*serial_access)(conf_object_t *obj, int data_in, int clock); uint16 (*read_register)(conf_object_t *obj, int phy, int reg); void (*write_register)(conf_object_t *obj, int phy, int reg, uint16 value); } mii_management_interface_t;
+typedef struct { uint16 (*read_register)(conf_object_t *obj, int phy, int mmd, int reg); void (*write_register)(conf_object_t *obj, int phy, int mdd, int reg, uint16 value); } mdio45_bus_interface_t;
+typedef struct { int (*serial_access)(conf_object_t *obj, int data_in, int clock); uint16 (*read_register)(conf_object_t *obj, int index); void (*write_register)(conf_object_t *obj, int index, uint16 value); } mii_interface_t;

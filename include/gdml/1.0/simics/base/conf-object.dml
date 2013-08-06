@@ -1,0 +1,97 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\base\conf-object.h>
+%}
+
+import "simics/base/types.dml";
+import "simics/base/sobject.dml";
+import "simics/base/attr-value.dml";
+import "simics/util/vect.dml";
+
+extern bool SIM_object_is_configured(const conf_object_t *obj);
+extern int SIM_register_typed_attribute(conf_class_t *cls, const char *name, get_attr_t get_attr, void *user_data_get, set_attr_t set_attr, void *user_data_set, attr_attr_t attr, const char *type, const char *idx_type, const char *desc);
+extern int SIM_register_typed_class_attribute(conf_class_t *cls, const char *name, get_class_attr_t get_attr, void *user_data_get, set_class_attr_t set_attr, void *user_data_set, attr_attr_t attr, const char *type, const char *idx_type, const char *desc);
+extern int VT_register_port_array_interface(conf_class_t *cls, const char *name, const interface_array_t *iface_list, const char *portname, const char *desc);
+extern int SIM_register_interface(conf_class_t *cls, const char *name, const interface_t *iface);
+extern int SIM_register_port_interface(conf_class_t *cls, const char *name, const interface_t *iface, const char *portname, const char *desc);
+extern class_interface_t *SIM_c_get_class_interface(const conf_class_t *cls, const char *name);
+extern class_interface_t *SIM_get_class_interface(const conf_class_t *cls, const char *name);
+extern class_interface_t *SIM_c_get_class_port_interface(const conf_class_t *cls, const char *name, const char *portname);
+extern class_interface_t *SIM_get_class_port_interface(const conf_class_t *cls, const char *name, const char *portname);
+extern conf_class_t *SIM_register_class(const char *name, const class_data_t *class_data);
+extern const char *SIM_get_class_name(const conf_class_t *class_data);
+extern const char *SIM_object_id(const conf_object_t *obj);
+extern const char *SIM_object_name(const conf_object_t *obj);
+extern interface_t *SIM_c_get_interface(const conf_object_t *obj, const char *name);
+extern interface_t *SIM_get_interface(const conf_object_t *obj, const char *name);
+extern interface_t *SIM_c_get_port_interface(const conf_object_t *obj, const char *name, const char *portname);
+extern interface_t *SIM_get_port_interface(const conf_object_t *obj, const char *name, const char *portname);
+extern void *SIM_object_data(conf_object_t *obj);
+extern void VT_attribute_error(int revex_ignore, const char *msg);
+extern void VT_c_attribute_error(int revex_ignore, const char *msg, ...);
+extern void SIM_ensure_partial_attr_order(conf_class_t *cls, const char *attr1, const char *attr2);
+extern void SIM_register_compatible_interfaces(conf_class_t *cls, const char *name);
+extern void VT_set_constructor_data(conf_class_t *cls, void *data);
+extern void SIM_require_object(conf_object_t *obj);
+extern void SIM_set_object_configured(conf_object_t *obj);
+extern void VT_set_instance_data(conf_object_t *obj, void *data);
+extern void VT_object_constructor(conf_object_t *obj, parse_object_t *po);
+extern void SIM_register_class_alias(const char *alias, const char *name);
+extern void SIM_attribute_error(const char *msg);
+extern void SIM_c_attribute_error(const char *msg, ...);
+extern void VT_set_cpu_offset(const void *arg, int add);
+extern conf_class_t *SIM_object_class(const conf_object_t *obj);
+typedef int attr_attr_t;
+constant Sim_Attr_Required = 0;
+constant Sim_Attr_Optional = 1;
+constant Sim_Attr_Session = 3;
+constant Sim_Attr_Pseudo = 4;
+constant Sim_Attr_Integer_Indexed = 4096;
+constant Sim_Attr_String_Indexed = 8192;
+constant Sim_Attr_List_Indexed = 16384;
+constant Sim_Attr_Persistent = 131072;
+constant Sim_Attr_Flag_Mask = 255;
+constant Sim_Init_Phase_Shift = 8;
+extern attr_attr_t Sim_Init_Phase_0;
+extern attr_attr_t Sim_Init_Phase_1;
+extern attr_attr_t Sim_Init_Phase_Bits;
+extern attr_attr_t Sim_Init_Phase_Mask;
+extern attr_attr_t Sim_Init_Phase_Pre1;
+extern attr_attr_t Sim_Attr_Class;
+extern attr_attr_t Sim_Attr_Internal;
+extern attr_attr_t Sim_Attr_Doc;
+extern attr_attr_t Sim_Attr_Read_Only;
+extern attr_attr_t Sim_Attr_Write_Only;
+typedef struct { } conf_class_t;
+typedef struct { conf_object_t *(*new_instance)(parse_object_t *parse_obj); conf_object_t *(*alloc_object)(void *data); void *(*init_object)(conf_object_t *obj, void *data); void (*finalize_instance)(conf_object_t *obj); void (*pre_delete_instance)(conf_object_t *obj); int (*delete_instance)(conf_object_t *obj); const char *description; const char *class_desc; class_kind_t kind; } class_data_t;
+typedef struct { } parse_object_t;
+typedef set_error_t (*set_class_attr_t)(void *ptr, conf_class_t *c, attr_value_t *val, attr_value_t *idx);
+typedef void interface_t;
+typedef int set_error_t;
+constant Sim_Set_Ok = 0;
+constant Sim_Set_Object_Not_Found = 1;
+constant Sim_Set_Interface_Not_Found = 2;
+constant Sim_Set_Illegal_Value = 3;
+constant Sim_Set_Illegal_Type = 4;
+constant Sim_Set_Illegal_Index = 5;
+constant Sim_Set_Attribute_Not_Found = 6;
+constant Sim_Set_Not_Writable = 7;
+constant Sim_Set_Ignored = 8;
+constant Sim_Set_Error_Types = 9;
+typedef set_error_t (*set_attr_t)(void *ptr, conf_object_t *obj, attr_value_t *val, attr_value_t *idx);
+typedef attr_value_t (*get_class_attr_t)(void *ptr, conf_class_t *c, attr_value_t *idx);
+typedef void class_interface_t;
+typedef struct {  } conf_object_t;
+typedef struct { int size; int used; const interface_t **elements; } interface_array_t;
+typedef attr_value_t (*get_attr_t)(void *ptr, conf_object_t *obj, attr_value_t *idx);
+typedef int class_kind_t;
+constant Sim_Class_Kind_Vanilla = 0;
+constant Sim_Class_Kind_Session = 1;
+constant Sim_Class_Kind_Pseudo = 2;

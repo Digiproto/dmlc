@@ -1,0 +1,27 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\base\time.h>
+%}
+
+import "simics/base/types.dml";
+import "simics/base/conf-object.dml";
+
+extern cycles_t SIM_cycle_count(conf_object_t *obj);
+extern cycles_t SIM_stall_count(conf_object_t *obj);
+extern cycles_t SIM_stalled_until(conf_object_t *obj);
+extern cycles_t VT_cycles_to_quantum_end(conf_object_t *obj);
+extern double SIM_time(conf_object_t *obj);
+extern conf_object_t *SIM_object_clock(const conf_object_t *obj);
+extern void SIM_stall_cycle(conf_object_t *obj, cycles_t cycles);
+extern void SIM_stall(conf_object_t *obj, double seconds);
+extern void VT_set_object_clock(conf_object_t *obj, conf_object_t *clock);
+typedef integer_t nano_secs_t;
+typedef integer_t simtime_t;
+typedef simtime_t cycles_t;

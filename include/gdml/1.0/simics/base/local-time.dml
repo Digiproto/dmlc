@@ -1,0 +1,35 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\base\local-time.h>
+%}
+
+import "simics/base/types.dml";
+import "simics/base/duration.dml";
+import "simics/base/bigtime.dml";
+import "simics/base/attr-value.dml";
+
+extern attr_value_t local_time_to_attr(local_time_t t);
+extern local_time_t local_time_from_attr(attr_value_t val);
+extern void local_time_as_string(local_time_t v, char *str);
+extern bigtime_t local_time_as_bigtime(local_time_t t);
+extern int local_time_eq(local_time_t a, local_time_t b);
+extern int local_time_ge(local_time_t a, local_time_t b);
+extern int local_time_gt(local_time_t a, local_time_t b);
+extern int local_time_le(local_time_t a, local_time_t b);
+extern int local_time_lt(local_time_t a, local_time_t b);
+extern int local_time_is_illegal(local_time_t t);
+extern double local_time_as_sec(local_time_t t);
+extern duration_t local_time_diff(local_time_t t1, local_time_t t2);
+extern local_time_t local_time_add(local_time_t t, duration_t delta);
+extern local_time_t local_time_sub(local_time_t t, duration_t delta);
+extern local_time_t local_time_from_bigtime(conf_object_t *clock, bigtime_t t);
+extern local_time_t local_time_from_sec(conf_object_t *clock, double t);
+extern conf_object_t *local_time_clock(local_time_t t);
+typedef struct { conf_object_t *clock; bigtime_t t; } local_time_t;

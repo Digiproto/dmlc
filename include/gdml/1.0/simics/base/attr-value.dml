@@ -1,0 +1,80 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\base\attr-value.h>
+%}
+
+import "simics/base/types.dml";
+import "simics/util/help-macros.dml";
+
+extern attr_value_t SIM_attr_copy(attr_value_t val);
+extern attr_value_t SIM_make_attr_string(const char *str);
+extern attr_value_t SIM_make_attr_data(size_t size, const void *data);
+extern attr_value_t SIM_alloc_attr_dict(uint32 length);
+extern attr_value_t SIM_alloc_attr_list(uint32 length);
+extern attr_value_t SIM_make_attr_list(uint32 length, ...);
+extern int SIM_ascanf(attr_value_t *list, const char *fmt, ...);
+extern void SIM_free_attribute(attr_value_t value);
+extern void SIM_attr_list_set_item(attr_value_t *attr, uint32 index, attr_value_t elem);
+extern void SIM_attr_dict_set_item(attr_value_t *attr, uint32 index, attr_value_t key, attr_value_t value);
+extern void SIM_attr_dict_resize(attr_value_t *attr, uint32 newsize);
+extern void SIM_attr_list_resize(attr_value_t *attr, uint32 newsize);
+extern void SIM_attr_free(attr_value_t *value);
+extern void VT_bad_attr_type(const char *function, attr_kind_t wanted, attr_value_t actual);
+extern attr_value_t SIM_attr_dict_key(attr_value_t attr, uint32 index);
+extern attr_value_t SIM_attr_dict_value(attr_value_t attr, uint32 index);
+extern attr_value_t SIM_attr_list_item(attr_value_t attr, uint32 index);
+extern attr_value_t SIM_make_attr_boolean(int b);
+extern attr_value_t SIM_make_attr_floating(double d);
+extern attr_value_t SIM_make_attr_int64(int64 i);
+extern attr_value_t SIM_make_attr_object(conf_object_t *obj);
+extern attr_value_t SIM_make_attr_string_adopt(const char *str);
+extern attr_value_t SIM_make_attr_data_adopt(size_t size, void *data);
+extern attr_value_t SIM_make_attr_uint64(uint64 i);
+extern attr_value_t SIM_make_attr_invalid(void);
+extern attr_value_t SIM_make_attr_nil(void);
+extern int SIM_attr_boolean(attr_value_t attr);
+extern bool SIM_attr_is_boolean(attr_value_t attr);
+extern bool SIM_attr_is_data(attr_value_t attr);
+extern bool SIM_attr_is_dict(attr_value_t attr);
+extern bool SIM_attr_is_floating(attr_value_t attr);
+extern bool SIM_attr_is_int64(attr_value_t attr);
+extern bool SIM_attr_is_integer(attr_value_t attr);
+extern bool SIM_attr_is_invalid(attr_value_t attr);
+extern bool SIM_attr_is_list(attr_value_t attr);
+extern bool SIM_attr_is_nil(attr_value_t attr);
+extern bool SIM_attr_is_object(attr_value_t attr);
+extern bool SIM_attr_is_string(attr_value_t attr);
+extern bool SIM_attr_is_uint64(attr_value_t attr);
+extern double SIM_attr_floating(attr_value_t attr);
+extern integer_t SIM_attr_integer(attr_value_t attr);
+extern attr_value_t *SIM_attr_list(attr_value_t attr);
+extern char *SIM_attr_string_detach(attr_value_t *attr);
+extern conf_object_t *SIM_attr_object(attr_value_t attr);
+extern conf_object_t *SIM_attr_object_or_nil(attr_value_t attr);
+extern const char *SIM_attr_string(attr_value_t attr);
+extern void *SIM_attr_data(attr_value_t attr);
+extern uint32 SIM_attr_data_size(attr_value_t attr);
+extern uint32 SIM_attr_dict_size(attr_value_t attr);
+extern uint32 SIM_attr_list_size(attr_value_t attr);
+typedef struct { attr_value_t key; attr_value_t value; } attr_dict_pair_t;
+typedef struct { attr_kind_t kind; uint32 size; struct { const char *string; integer_t integer; int boolean; double floating; attr_value_t *list; attr_dict_pair_t *dict; uint8 *data; conf_object_t *object; struct { } *py_object; char *uobject; } u; } attr_value_t;
+typedef int attr_kind_t;
+constant Sim_Val_Invalid = 0;
+constant Sim_Val_String = 1;
+constant Sim_Val_Integer = 2;
+constant Sim_Val_Floating = 3;
+constant Sim_Val_List = 4;
+constant Sim_Val_Data = 5;
+constant Sim_Val_Nil = 6;
+constant Sim_Val_Object = 7;
+constant Sim_Val_Dict = 8;
+constant Sim_Val_Boolean = 9;
+constant Sim_Val_Py_Object = 10;
+constant Sim_Val_Unresolved_Object = 11;

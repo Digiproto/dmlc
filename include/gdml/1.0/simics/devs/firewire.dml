@@ -1,0 +1,49 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\devs\firewire.h>
+%}
+
+import "simics/pywrap.dml";
+import "simics/util/dbuffer.dml";
+import "simics/base/types.dml";
+
+typedef int firewire_response_code_t;
+constant Firewire_Response_Complete = 0;
+constant Firewire_Response_Data_Error = 5;
+constant Firewire_Response_Type_Error = 6;
+constant Firewire_Response_Address_Error = 7;
+typedef struct { int (*connect_device)(conf_object_t *bus, conf_object_t *dev); int (*disconnect_device)(conf_object_t *bus, conf_object_t *dev); void (*set_device_bus_id)(conf_object_t *bus, conf_object_t *dev, uint16 bus_id); void (*set_id_mask)(conf_object_t *bus, conf_object_t *dev, uint16 id_mask); firewire_ack_code_t (*transfer)(conf_object_t *bus, conf_object_t *source, dbuffer_t *packet, int crc_calculated); int (*register_channel)(conf_object_t *bus, conf_object_t *dev, uint32 channel); int (*unregister_channel)(conf_object_t *bus, conf_object_t *dev, uint32 channel); void (*reset)(conf_object_t *bus); } firewire_bus_interface_t;
+typedef struct { size_t len; uint32 *data; } uint32_array_t;
+typedef struct { firewire_ack_code_t (*transfer)(conf_object_t *dev, dbuffer_t *packet, int crc_calculated); void (*reset)(conf_object_t *dev, uint16 id, uint8 root_id, uint32_array_t self_ids); uint32 (*get_self_id_template)(conf_object_t *dev); int (*get_rhb)(conf_object_t *dev); uint8 (*get_port_count)(conf_object_t *dev); uint16 (*get_port_mask)(conf_object_t *dev); } firewire_device_interface_t;
+typedef int firewire_ack_code_t;
+constant Firewire_Ack_Complete = 1;
+constant Firewire_Ack_Pending = 2;
+constant Firewire_Ack_Busy_X = 4;
+constant Firewire_Ack_Busy_A = 5;
+constant Firewire_Ack_Busy_B = 6;
+constant Firewire_Ack_Tardy = 11;
+constant Firewire_Ack_Conflict_Error = 12;
+constant Firewire_Ack_Data_Error = 13;
+constant Firewire_Ack_Type_Error = 14;
+constant Firewire_Ack_Address_Error = 15;
+constant Firewire_Ack_No_Destination = 16;
+constant Firewire_Ack_No_Ack = 17;
+typedef int firewire_transaction_code_t;
+constant Firewire_Write_Quadlet = 0;
+constant Firewire_Write_Block = 1;
+constant Firewire_Write_Response = 2;
+constant Firewire_Read_Quadlet = 4;
+constant Firewire_Read_Block = 5;
+constant Firewire_Read_Quadlet_Response = 6;
+constant Firewire_Read_Block_Response = 7;
+constant Firewire_Cycle_Start = 8;
+constant Firewire_Lock = 9;
+constant Firewire_Streaming = 10;
+constant Firewire_Lock_Response = 11;

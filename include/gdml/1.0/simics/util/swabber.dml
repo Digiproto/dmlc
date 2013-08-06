@@ -1,0 +1,62 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\util\swabber.h>
+%}
+
+import "simics/host-info.dml";
+import "simics/base-types.dml";
+
+extern uint16 generic_loadswab16(const uint16 *p);
+extern uint16 straight_load16(const uint16 *p);
+extern uint16 generic_unaligned_load_be16(const void *p);
+extern uint16 generic_unaligned_load_le16(const void *p);
+extern uint16 unaligned_load16(const void *p);
+extern uint16 generic_swab16(uint16 x);
+extern uint16 identity16(uint16 x);
+extern uint16 reverse_bits16(uint16 x);
+extern uint32 generic_loadswab32(const uint32 *p);
+extern uint32 straight_load32(const uint32 *p);
+extern uint32 generic_unaligned_load_be32(const void *p);
+extern uint32 generic_unaligned_load_le32(const void *p);
+extern uint32 unaligned_load32(const void *p);
+extern uint32 generic_swab32(uint32 x);
+extern uint32 identity32(uint32 x);
+extern uint32 reverse_bits32(uint32 x);
+extern uint32 swab32(uint32 x);
+extern uint64 generic_loadswab64(const uint64 *p);
+extern uint64 straight_load64(const uint64 *p);
+extern uint64 generic_unaligned_load_be64(const void *p);
+extern uint64 generic_unaligned_load_le64(const void *p);
+extern uint64 unaligned_load64(const void *p);
+extern uint64 generic_swab64(uint64 x);
+extern uint64 identity64(uint64 x);
+extern uint64 reverse_bits64(uint64 x);
+extern uint64 swab64(uint64 x);
+extern uint8 straight_load8(const uint8 *p);
+extern uint8 unaligned_load8(const void *p);
+extern uint8 identity8(uint8 x);
+extern uint8 reverse_bits8(uint8 x);
+extern void generic_storeswab16(uint16 *p, uint16 x);
+extern void straight_store16(uint16 *p, uint16 x);
+extern void generic_storeswab32(uint32 *p, uint32 x);
+extern void straight_store32(uint32 *p, uint32 x);
+extern void generic_storeswab64(uint64 *p, uint64 x);
+extern void straight_store64(uint64 *p, uint64 x);
+extern void straight_store8(uint8 *p, uint8 x);
+extern void generic_unaligned_store_be16(void *p, uint16 x);
+extern void generic_unaligned_store_le16(void *p, uint16 x);
+extern void unaligned_store16(void *p, uint16 x);
+extern void generic_unaligned_store_be32(void *p, uint32 x);
+extern void generic_unaligned_store_le32(void *p, uint32 x);
+extern void unaligned_store32(void *p, uint32 x);
+extern void generic_unaligned_store_be64(void *p, uint64 x);
+extern void generic_unaligned_store_le64(void *p, uint64 x);
+extern void unaligned_store64(void *p, uint64 x);
+extern void unaligned_store8(void *p, uint8 x);

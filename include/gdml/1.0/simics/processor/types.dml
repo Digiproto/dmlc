@@ -1,0 +1,29 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\processor\types.h>
+%}
+
+import "simics/base/types.dml";
+
+typedef int processor_mode_t;
+constant Sim_CPU_Mode_User = 0;
+constant Sim_CPU_Mode_Supervisor = 1;
+constant Sim_CPU_Mode_Hypervisor = 2;
+typedef int cpu_endian_t;
+constant Sim_Endian_Little = 0;
+constant Sim_Endian_Big = 1;
+typedef int data_or_instr_t;
+constant Sim_DI_Instruction = 0;
+constant Sim_DI_Data = 1;
+typedef struct { int valid; physical_address_t address; physical_address_t block_start; physical_address_t block_end; } physical_block_t;
+typedef int access_t;
+constant Sim_Access_Read = 1;
+constant Sim_Access_Write = 2;
+constant Sim_Access_Execute = 4;

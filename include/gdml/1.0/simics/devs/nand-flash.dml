@@ -1,0 +1,16 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\devs\nand-flash.h>
+%}
+
+import "simics/base/types.dml";
+import "simics/pywrap.dml";
+
+typedef struct { uint16 (*read_access)(conf_object_t *obj); void (*write_access)(conf_object_t *obj, uint16 value); void (*set_command_latch_enable)(conf_object_t *obj, int value); void (*set_address_latch_enable)(conf_object_t *obj, int value); void (*set_write_protect)(conf_object_t *obj, int value); void (*set_spare_area_enable)(conf_object_t *obj, int value); } nand_flash_interface_t;

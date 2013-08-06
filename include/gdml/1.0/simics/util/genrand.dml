@@ -1,0 +1,25 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\util\genrand.h>
+%}
+
+import "simics/base-types.dml";
+import "simics/base/types.dml";
+
+extern int genrand_restore(rand_state_t *rs, bytes_t serialization);
+extern bytes_t genrand_serialization(const rand_state_t *rs);
+extern double genrand_double(rand_state_t *rs);
+extern rand_state_t *genrand_init_array(uint32 *init_key, uint32 key_length);
+extern rand_state_t *genrand_init(uint32 s);
+extern uint32 genrand_uint32(rand_state_t *rs);
+extern uint64 genrand_uint64(rand_state_t *rs);
+extern uint64 genrand_range(rand_state_t *rs, uint64 max);
+extern void genrand_destroy(rand_state_t *rs);
+typedef struct { } rand_state_t;

@@ -1,0 +1,44 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\util\frags.h>
+%}
+
+import "simics/base-types.dml";
+import "simics/util/alloc.dml";
+import "simics/util/help-macros.dml";
+import "simics/util/swabber.dml";
+
+extern void *frags_extract_alloc(const frags_t *buf);
+extern void *frags_extract_slice_alloc(const frags_t *buf, size_t offset, size_t len);
+extern void frags_extract(const frags_t *buf, void *vdst);
+extern void frags_extract_slice(const frags_t *buf, void *vdst, size_t offset, size_t len);
+extern int frags_it_end(frags_it_t it);
+extern frags_it_t frags_it_next(frags_it_t it);
+extern frags_it_t frags_it(const frags_t *buf, size_t offset, size_t len);
+extern frags_t frags_suffix(const frags_t *body, void *header, size_t header_len);
+extern frags_t frags_prefix(const void *header, size_t header_len, const frags_t *body);
+extern const uint8 *frags_it_data(frags_it_t it);
+extern size_t frags_it_len(frags_it_t it);
+extern size_t frags_len(const frags_t *buf);
+extern uint16 frags_extract_be16(const frags_t *buf, size_t offset);
+extern uint16 frags_extract_le16(const frags_t *buf, size_t offset);
+extern uint32 frags_extract_be32(const frags_t *buf, size_t offset);
+extern uint32 frags_extract_le32(const frags_t *buf, size_t offset);
+extern uint64 frags_extract_be64(const frags_t *buf, size_t offset);
+extern uint64 frags_extract_le64(const frags_t *buf, size_t offset);
+extern uint8 frags_extract_8(const frags_t *buf, size_t offset);
+extern void frags_init(frags_t *buf);
+extern void frags_add(frags_t *buf, const void *data, size_t len);
+extern void frags_init_add(frags_t *buf, const void *data, size_t len);
+extern void frags_add_from_frags(frags_t *dst, const frags_t *src, size_t offset, size_t len);
+extern void frags_init_add_from_frags(frags_t *dst, const frags_t *src, size_t offset, size_t len);
+typedef struct { const uint8 *start; size_t len; } frags_frag_t;
+typedef struct { size_t len; uint32 nfrags; frags_frag_t fraglist[8]; } frags_t;
+typedef struct { const frags_frag_t *frag; size_t skip; size_t left; } frags_it_t;

@@ -1,0 +1,126 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\arch\x86.h>
+%}
+
+import "simics/base/memory-transaction.dml";
+import "simics/processor/types.dml";
+import "simics/processor/generic-spr.dml";
+import "simics/pywrap.dml";
+
+extern x86_memory_transaction_t *SIM_x86_mem_trans_from_generic(generic_transaction_t *mop);
+typedef struct { uint64 (*get_gpr)(conf_object_t *cpu, uint32 index); void (*set_gpr)(conf_object_t *cpu, uint32 index, uint64 val); uint64 (*get_mmx)(conf_object_t *cpu, uint32 index); void (*set_mmx)(conf_object_t *cpu, uint32 index, uint64 val); xmm_reg_t (*get_xmm)(conf_object_t *cpu, uint32 index); ymm_reg_t (*get_ymm)(conf_object_t *cpu, uint32 index); void (*set_xmm)(conf_object_t *cpu, uint32 index, xmm_reg_t val); void (*set_ymm)(conf_object_t *cpu, uint32 index, ymm_reg_t val); uint64 (*get_rflags)(conf_object_t *cpu); void (*set_status_flags)(conf_object_t *cpu, uint16 flags); uint64 (*get_cr0)(conf_object_t *cpu); uint64 (*get_cr4)(conf_object_t *cpu); uint64 (*get_efer)(conf_object_t *cpu); x86_xmode_info_t (*get_xmode_info)(conf_object_t *cpu); x86_exec_mode_t (*get_exec_mode)(conf_object_t *cpu); uint32 (*get_mxcsr)(conf_object_t *cpu); void (*set_mxcsr)(conf_object_t *cpu, uint32 mxcsr); void (*get_fpu_env)(conf_object_t *cpu, x86_fpu_env_t *state); void (*set_fpu_env)(conf_object_t *cpu, const x86_fpu_env_t *state); x86_fpu_reg_t (*get_freg)(conf_object_t *cpu, uint32 index); void (*set_freg)(conf_object_t *cpu, uint32 index, x86_fpu_reg_t freg); uint64 (*get_xcr0)(conf_object_t *cpu); void (*set_xcr0)(conf_object_t *cpu, uint64 xcr0); uint64 (*get_ext_state_dirty_bits)(conf_object_t *cpu); void (*or_ext_state_dirty_bits)(conf_object_t *cpu, uint64 dirty_bits); void (*and_ext_state_dirty_bits)(conf_object_t *cpu, uint64 dirty_bits); uint32 (*get_mxcsr_mask)(conf_object_t *cpu); } x86_reg_access_interface_t;
+typedef int x86_access_type_t;
+constant X86_Other = 0;
+constant X86_Vanilla = 1;
+constant X86_Instruction = 2;
+constant X86_Clflush = 3;
+constant X86_Fpu_Env = 4;
+constant X86_Fpu_State = 5;
+constant X86_Idt = 6;
+constant X86_Gdt = 7;
+constant X86_Ldt = 8;
+constant X86_Task_Segment = 9;
+constant X86_Task_Switch = 10;
+constant X86_Far_Call_Parameter = 11;
+constant X86_Stack = 12;
+constant X86_Pml4 = 13;
+constant X86_Pdp = 14;
+constant X86_Pd = 15;
+constant X86_Pt = 16;
+constant X86_Sse = 17;
+constant X86_Fpu = 18;
+constant X86_Access_Simple = 19;
+constant X86_Microcode_Update = 20;
+constant X86_Non_Temporal = 21;
+constant X86_Prefetch_3DNow = 22;
+constant X86_Prefetchw_3DNow = 23;
+constant X86_Prefetch_T0 = 24;
+constant X86_Prefetch_T1 = 25;
+constant X86_Prefetch_T2 = 26;
+constant X86_Prefetch_NTA = 27;
+constant X86_Loadall = 28;
+constant X86_Atomic_Info = 29;
+constant X86_Cmpxchg16b = 30;
+constant X86_Smm_State = 31;
+constant X86_Vmcs = 32;
+constant X86_Vmx_IO_Bitmap = 33;
+constant X86_Vmx_Vapic = 34;
+constant X86_Vmx_Msr = 35;
+typedef int x86_processor_mode_t;
+constant X86_Processor_Mode_Privileged = 0;
+constant X86_Processor_Mode_User = 1;
+constant X86_Processor_Mode_Current = 2;
+typedef int x86_exec_mode_t;
+constant X86_Exec_Mode_Real = 0;
+constant X86_Exec_Mode_V86 = 1;
+constant X86_Exec_Mode_Prot = 2;
+constant X86_Exec_Mode_Compat = 3;
+constant X86_Exec_Mode_64 = 4;
+typedef int x86_alignment_t;
+constant X86_Alignment_Not_Required = 0;
+constant X86_Alignment_Required = 1;
+typedef x86_msr_ret_t (*x86_msr_setter_func_t)(conf_object_t *cpu, integer_t spr_number, uinteger_t value, x86_msr_access_type_t type, void *user_data);
+typedef struct { void (*save_state)(conf_object_t *obj, conf_object_t *cpu); void (*restore_state)(conf_object_t *obj, conf_object_t *cpu); } x86_smm_interface_t;
+typedef struct { cpuid_ret_t (*cpuid)(conf_object_t *obj, conf_object_t *cpu, uint32 in_eax, uint32 in_ebx, uint32 in_ecx, uint32 in_edx); } x86_cpuid_interface_t;
+typedef struct { void (*set_pin_status)(conf_object_t *obj, x86_pin_t pin, int status); void (*start_up)(conf_object_t *obj, uint32 start_address); int (*interrupt)(conf_object_t *obj, int (*ack)(conf_object_t *), conf_object_t *data); void (*uninterrupt)(conf_object_t *obj, int (*ack)(conf_object_t *)); int (*has_pending_interrupt)(conf_object_t *obj); int (*has_waiting_interrupt)(conf_object_t *obj); tagged_linear_address_t (*logical_to_linear)(conf_object_t *obj, int segment, logical_address_t addr); physical_address_t (*linear_to_physical)(conf_object_t *obj, data_or_instr_t d_or_i, linear_address_t addr); void (*enter_acpi_c2_state)(conf_object_t *obj); } x86_interface_t;
+typedef struct { uint64 low; uint16 high; } x86_fpu_reg_t;
+typedef struct { void (*DE_fault)(conf_object_t *cpu); void (*BR_fault)(conf_object_t *cpu); void (*UD_fault)(conf_object_t *cpu); void (*NM_fault)(conf_object_t *cpu); void (*DF_abort)(conf_object_t *cpu, const char *desc); void (*TS_fault)(conf_object_t *cpu, uint16 sel); void (*NP_fault)(conf_object_t *cpu, uint16 sel_vec, int is_vec); void (*SS_fault)(conf_object_t *cpu, uint16 sel); void (*GP_fault)(conf_object_t *cpu, uint16 sel_vec, int is_vec, const char *desc); void (*PF_fault)(conf_object_t *cpu, linear_address_t laddr, uint32 ecode); void (*MF_fault)(conf_object_t *cpu); void (*AC_fault)(conf_object_t *cpu); void (*XM_fault)(conf_object_t *cpu); } x86_exception_interface_t;
+typedef struct { uint32 (*get_block_count)(conf_object_t *cpu); void (*set_block_count)(conf_object_t *cpu, uint32 cnt); } x86_vmp_control_interface_t;
+typedef struct { int valid; linear_address_t addr; } tagged_linear_address_t;
+typedef struct { uint16 cw; uint16 sw; uint16 tag; uint16 opc; uint64 last_instr_ptr; uint64 last_operand_ptr; uint16 last_instr_sel; uint16 last_operand_sel; uint32 pad; } x86_fpu_env_t;
+typedef struct { int efer_lma; int cs_l; int cs_d; int ss_b; } x86_xmode_info_t;
+typedef struct { uint64 gpr[16]; uint16 seg_sel[6]; uint16 tr_sel; uint16 ldtr_sel; uint64 seg_base[6]; uint64 tr_base; uint64 ldtr_base; uint32 seg_attr[6]; uint32 tr_attr; uint32 ldtr_attr; uint32 seg_limit[6]; uint32 tr_limit; uint32 ldtr_limit; uint64 cr0; uint64 cr3; uint64 cr4; uint64 ia32_efer; uint64 rip; uint64 rflags; uint64 dr6; uint64 dr7; uint32 smbase; uint16 idtr_limit; uint16 gdtr_limit; uint64 idtr_base; uint64 gdtr_base; int activity_hlt; int io_instr_restart; int reserved[6]; uint64 io_rip; uint64 io_lin_addr; uint32 io_instr_info; uint32 reserved2; uint64 reserved3[2]; } smm_reg_state_t;
+typedef struct { uint64 v[4]; } ymm_reg_t;
+typedef struct { uint64 v[2]; } xmm_reg_t;
+typedef struct { uint64 (*read_logical)(conf_object_t *cpu, logical_address_t offs, x86_seg_t seg, uint32 len, x86_processor_mode_t mode, x86_access_type_t access_type); void (*read_logical_buf)(conf_object_t *cpu, logical_address_t offs, x86_seg_t seg, uint32 len, void *p, x86_processor_mode_t mode, x86_access_type_t access_type, x86_alignment_t alignment); void (*write_logical)(conf_object_t *cpu, logical_address_t offs, x86_seg_t seg, uint32 len, uint64 val, x86_processor_mode_t mode, x86_access_type_t access_type); void (*write_logical_buf)(conf_object_t *cpu, logical_address_t offs, x86_seg_t seg, uint32 len, const void *p, x86_processor_mode_t mode, x86_access_type_t access_type, x86_alignment_t alignment); } x86_memory_access_interface_t;
+typedef int local_apic_interrupt_t;
+constant Apic_Performance_Counter = 832;
+constant Apic_Thermal_Sensor = 816;
+typedef struct { void (*register_handlers)(conf_object_t *cpu, integer_t number, x86_msr_getter_func_t getter, void *getter_data, x86_msr_setter_func_t setter, void *setter_data, const char *name); void (*unregister_handlers)(conf_object_t *cpu, integer_t number); x86_msr_getter_ret_t (*get)(conf_object_t *cpu, integer_t number, x86_msr_access_type_t type); x86_msr_ret_t (*set)(conf_object_t *cpu, integer_t number, uinteger_t value, x86_msr_access_type_t type); const char *(*get_name)(conf_object_t *cpu, integer_t number); integer_t (*get_number)(conf_object_t *cpu, const char *name); attr_value_t (*get_all_valid_numbers)(conf_object_t *cpu); } x86_msr_interface_t;
+typedef struct { void (*flush)(conf_object_t *obj, conf_object_t *cpu, int writeback); } x86_cache_flush_interface_t;
+typedef int x86_seg_t;
+constant X86_Seg_ES = 0;
+constant X86_Seg_CS = 1;
+constant X86_Seg_SS = 2;
+constant X86_Seg_DS = 3;
+constant X86_Seg_FS = 4;
+constant X86_Seg_GS = 5;
+constant X86_Seg_None = 6;
+typedef struct { void (*get_state)(conf_object_t *cpu, smm_reg_state_t *state); void (*set_state)(conf_object_t *cpu, const smm_reg_state_t *state); uint64 (*smram_read)(conf_object_t *obj, uint32 smram_offs, uint32 len); void (*smram_write)(conf_object_t *obj, uint32 smram_offs, uint32 len, uint64 val); } x86_smm_state_interface_t;
+typedef struct { uint64 (*tpr_r)(conf_object_t *obj); void (*tpr_w)(conf_object_t *obj, uint64 tpr); void (*local_int)(conf_object_t *obj, local_apic_interrupt_t int_type); void (*power_on)(conf_object_t *obj, int bsp, int apic_id); void (*init)(conf_object_t *obj); int (*enabled_r)(conf_object_t *obj); } apic_cpu_interface_t;
+typedef struct { x86_msr_ret_t status; uinteger_t value; } x86_msr_getter_ret_t;
+typedef int x86_msr_access_type_t;
+extern x86_msr_access_type_t Sim_X86_Msr_Instruction_Access;
+extern x86_msr_access_type_t Sim_X86_Msr_Attribute_Access;
+extern x86_msr_access_type_t Sim_X86_Msr_Int_Register_Access;
+extern x86_msr_access_type_t Sim_X86_Msr_VMX_Access;
+typedef x86_msr_getter_ret_t (*x86_msr_getter_func_t)(conf_object_t *cpu, integer_t number, x86_msr_access_type_t type, void *user_data);
+typedef int x86_msr_ret_t;
+extern x86_msr_ret_t Sim_X86_Msr_Ok;
+extern x86_msr_ret_t Sim_X86_Msr_GP_Fault;
+extern x86_msr_ret_t Sim_X86_Msr_Not_Handled;
+typedef int x86_memory_type_t;
+constant X86_None = 0;
+constant X86_Strong_Uncacheable = 1;
+constant X86_Uncacheable = 2;
+constant X86_Write_Combining = 3;
+constant X86_Write_Through = 4;
+constant X86_Write_Back = 5;
+constant X86_Write_Protected = 6;
+typedef struct { void (*set_a20_line)(conf_object_t *, int); int (*get_a20_line)(conf_object_t *); } a20_interface_t;
+typedef int x86_pin_t;
+constant Pin_Init = 0;
+constant Pin_Smi = 1;
+constant Pin_Nmi = 2;
+constant Pin_Ignne = 3;
+typedef x86_memory_transaction_t p2_memory_transaction_t;
+typedef struct { int taken; uinteger_t out_a; uinteger_t out_b; uinteger_t out_c; uinteger_t out_d; } cpuid_ret_t;
+typedef struct { } x86_memory_transaction_t;

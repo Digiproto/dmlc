@@ -1,0 +1,19 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\model-iface\int-register.h>
+%}
+
+import "simics/base/types.dml";
+import "simics/base/attr-value.dml";
+import "simics/pywrap.dml";
+
+typedef int ireg_info_t;
+constant Sim_RegInfo_Catchable = 0;
+typedef struct { int (*get_number)(conf_object_t *obj, const char *name); const char *(*get_name)(conf_object_t *obj, int reg); uinteger_t (*read)(conf_object_t *obj, int reg); void (*write)(conf_object_t *obj, int reg, uinteger_t val); attr_value_t (*all_registers)(conf_object_t *obj); int (*register_info)(conf_object_t *obj, int reg, ireg_info_t info); } int_register_interface_t;

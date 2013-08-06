@@ -1,0 +1,60 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\devs\mil-std-1553.h>
+%}
+
+import "simics/base/types.dml";
+import "simics/pywrap.dml";
+
+typedef struct { int length; uint16 *data; } ms1553_words_t;
+typedef struct { void (*receive_data)(conf_object_t *obj, conf_object_t *link, int id, ms1553_phase_t phase, ms1553_words_t data); void (*receive_error)(conf_object_t *obj, conf_object_t *link, int id, ms1553_error_t err); } ms1553_terminal_interface_t;
+typedef int ms1553_phase_t;
+constant MS1553_Phase_Idle = 0;
+constant MS1553_Phase_T_Command = 1;
+constant MS1553_Phase_R_Command = 2;
+constant MS1553_Phase_M_T_Command = 3;
+constant MS1553_Phase_M_R_Command = 4;
+constant MS1553_Phase_M_N_Command = 5;
+constant MS1553_Phase_Data = 6;
+constant MS1553_Phase_Status = 7;
+constant MS1553_Num_Phases = 8;
+typedef int ms1553_dir_t;
+constant MS1553_Dir_Transmit = 0;
+constant MS1553_Dir_Receive = 1;
+typedef struct { void (*new_message)(conf_object_t *obj, conf_object_t *bridge, uint16 cmd, ms1553_words_t data, uint16 sts); } ms1553_bridge_terminal_interface_t;
+typedef int ms1553_mode_code_t;
+constant MS1553_Dynamic_Bus_Control = 0;
+constant MS1553_Synchronize_T = 1;
+constant MS1553_Transmit_Status_word = 2;
+constant MS1553_Initiate_Self_Test = 3;
+constant MS1553_Transmitter_Shutdown = 4;
+constant MS1553_Override_Transmitter_Shutdown = 5;
+constant MS1553_Inhibit_Terminal_Flag_Bit = 6;
+constant MS1553_Override_Inhibit_Terminal_Flag_Bit = 7;
+constant MS1553_Reset_Remote_Terminal = 8;
+constant MS1553_Transmit_Vector_Word = 16;
+constant MS1553_Synchronize_R = 17;
+constant MS1553_Transmit_Last_Command_Word = 18;
+constant MS1553_Transmit_BIT_Vector = 19;
+constant MS1553_Selected_Transmitter_Shutdown = 20;
+constant MS1553_Override_Selected_Transmitter_Shutdown = 21;
+typedef struct { int (*connect_terminal)(conf_object_t *link, conf_object_t *obj); void (*disconnect_terminal)(conf_object_t *link, int id); void (*send_data)(conf_object_t *link, int id, ms1553_phase_t phase, ms1553_words_t data); void (*set_terminal_address)(conf_object_t *link, int id, int address); void (*clr_terminal_address)(conf_object_t *link, int id); void (*set_idle)(conf_object_t *link, int id); void (*inject_data)(conf_object_t *link, ms1553_phase_t phase, ms1553_words_t data); void (*inject_error)(conf_object_t *link, ms1553_error_t err); } ms1553_link_interface_t;
+typedef int ms1553_error_t;
+constant MS1553_Err_Manchester = 0;
+constant MS1553_Err_Sync_Field = 1;
+constant MS1553_Err_Word_Count = 2;
+constant MS1553_Err_Parity = 3;
+constant MS1553_Err_Protocol = 4;
+typedef int ms1553_shadow_word_t;
+constant MS1553_Shadow_Word_Command = 0;
+constant MS1553_Shadow_Word_Status = 1;
+constant MS1553_Shadow_Word_BIT = 2;
+constant MS1553_Shadow_Word_Vector = 3;
+typedef struct { int (*connect_terminal)(conf_object_t *bridge, conf_object_t *obj, uint8 rt_addr); int (*disconnect_terminal)(conf_object_t *bridge, uint8 rt_addr); int (*set_data)(conf_object_t *obj, uint8 rt_addr, uint8 sub_addr, ms1553_dir_t dir, ms1553_words_t data); int (*get_data)(conf_object_t *obj, uint8 rt_addr, uint8 sub_addr, ms1553_dir_t dir, ms1553_words_t *data); int (*set_shadow_word)(conf_object_t *obj, uint8 rt_addr, ms1553_shadow_word_t word, uint16 data); int (*get_shadow_word)(conf_object_t *obj, uint8 rt_addr, ms1553_shadow_word_t word, uint16 *data); } ms1553_bridge_bus_interface_t;

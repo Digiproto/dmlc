@@ -1,0 +1,31 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+dml 1.0;
+
+header %{
+#include <simics\obsolete\limited-dml-simics-api.h>
+%}
+
+import "simics/device-api.dml";
+import "simics/model-iface/cache.dml";
+import "simics/model-iface/components.dml";
+import "simics/model-iface/cycle.dml";
+import "simics/model-iface/decoder.dml";
+import "simics/model-iface/exec-trace.dml";
+import "simics/model-iface/execute.dml";
+import "simics/model-iface/image.dml";
+import "simics/model-iface/int-register.dml";
+import "simics/model-iface/save-state.dml";
+import "simics/model-iface/temporal-state.dml";
+import "simics/devs/frequency.dml";
+import "simics/devs/interrupt-ack.dml";
+import "simics/devs/io-memory.dml";
+import "simics/devs/map-demap.dml";
+import "simics/devs/memory-space.dml";
+import "simics/devs/ram.dml";
+import "simics/devs/signal.dml";
+
