@@ -4,18 +4,25 @@ SKYEYE_DIR = @SKYEYE_DIR@
 
 CFLAGS := -Wall -fPIC
 LDFLAGS := -shared
+CC = gcc
 
 CURR_DIR := $(shell pwd)
 OBJ_NAME := $(shell basename $(CURR_DIR))
 ifeq ($(shell uname),Linux)
 libname := lib$(OBJ_NAME).so
+LIBRARY_DIR =
+LIBRARY =
 else
 libname := lib$(OBJ_NAME).dll
+LIBRARY_DIR = -L../../../bin/library
+LIBRARY = -lcommon
 endif
 INCLUDES := -I$(SKYEYE_DIR)/common/include/
 
 $(libname): $(OBJ_NAME).o $(OBJ_NAME)_module.o
-	gcc $(LDFLAGS) -o $(libname) $^
+	@echo [LD] $@
+	@$(CC) $(LDFLAGS) -o $(libname) $^ $(LIBRARY) $(LIBRARY_DIR)
 
 %.o: %.c
-	gcc $(CFLAGS) -c -o $@ $^ $(INCLUDES)
+	@echo [CC] $@
+	@$(CC) $(CFLAGS) -c -o $@ $^ $(INCLUDES)

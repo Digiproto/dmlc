@@ -44,7 +44,7 @@ endif
 @FOR_SKYEYE@	       $(SKYEYE_DIR_IN)/$(OBJ_NAME)_protos.c \
 @FOR_SKYEYE@	       $(SKYEYE_DIR_IN)/$(OBJ_NAME)_struct.h
 @FOR_SKYEYE@	@echo [normal] make Skyeye device ...
-@FOR_SKYEYE@	@cd $(SKYEYE_DIR_IN) && $(MAKE) 1>/dev/null
+@FOR_SKYEYE@	@cd $(SKYEYE_DIR_IN) && $(MAKE)
 @FOR_SKYEYE@	@echo [normal] Skyeye device in targets/skyeye/$(OBJ_NAME)
 
 @FOR_QEMU@$(QEMU_DIR_IN)/$(OBJ_NAME).c \
