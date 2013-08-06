@@ -51,7 +51,7 @@ const char *simics_dml_dir =
 const char *import_file_list[] = {
 	"simics-auto-api-4_0.dml",
 	"dml-builtins.dml",
-	//"simics/C.dml",
+	"simics/C.dml",
 	NULL
 };
 
