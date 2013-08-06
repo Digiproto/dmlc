@@ -89,6 +89,7 @@ typedef struct YYLTYPE
 extern tree_t* parse_auto_api(void);
 void yyerror(YYLTYPE* location, yyscan_t* scanner, tree_t** root_ptr, char *s);
 extern char* builtin_filename;
+extern const char* import_file_list[];
 extern symtab_t root_table;
 stack_t* table_stack;
 int object_spec_type = -1;
@@ -261,16 +262,17 @@ dml
 		attr->common.node = node;
 		node->common.attr = attr;
 
-		tree_t* api_node = parse_auto_api();
-		create_node_list(node, api_node);
-
+		/* parase the pre-import file */
+		int i = 0;
 		tree_t* import_ast = NULL;
-		if(builtin_filename != NULL) {
-			import_ast = (tree_t*)get_ast(builtin_filename);
-			printf("\n\nbuiltin_filename: %s\n\n", builtin_filename);
+		while(import_file_list[i] != NULL) {
+			printf("start parse file: %s\n", import_file_list[i]);
+			import_ast = (tree_t*)get_ast(import_file_list[i]);
 			if(import_ast->common.child != NULL) {
 				create_node_list(node, import_ast->common.child);
 			}
+			printf("finished parse file: %s\n", import_file_list[i]);
+			i++;
 		}
 
 		$<tree_type>$ = node;
@@ -3341,38 +3343,4 @@ void yyerror(YYLTYPE* location, yyscan_t* scanner, tree_t** root_ptr, char *s) {
 		fprintf(stderr,"Syntax error on line #%d, column #%d: %s\n", location->first_line, location->first_column, s);
 	}
 	exit(1);
-}
-
-tree_t* parse_auto_api(void) {
-	char* filename = "simics-auto-api-4_0.dml";
-	char fullname[DIR_MAX_LEN];
-	int dir_len = strlen(gdml_library_dir);
-	int file_len = strlen(filename);
-
-	assert((dir_len + file_len) < DIR_MAX_LEN);
-	strncpy(fullname, gdml_library_dir, dir_len);
-	strcat(fullname, filename);
-	printf("auto api file name: %s\n", fullname);
-
-	FILE *file = fopen(fullname, "r");
-	if (file == NULL) {
-		printf("Can't open imported file %s.\n", fullname);
-		exit(EXIT_FAILURE);
-	}
-
-	yyscan_t scanner;
-	tree_t* root = (tree_t*)create_node(filename, IMPORT_TYPE, sizeof(struct tree_import));
-	root->import.file_name = strdup(fullname);
-	printf("Begin parse the import file %s\n", filename);
-	tree_t* ast = NULL;
-	yylex_init(&scanner);
-	yyrestart(file, scanner);
-	filestack_top = push_file_stack(filestack_top, filename);  // <<<<< push new file name
-	yyparse(scanner, &ast);
-	filestack_top = pop_file_stack(filestack_top);             // <<<<< pop top file name
-	yylex_destroy(scanner);
-	fclose(file);
-	printf("End of parse the import file %s\n", fullname);
-
-	return ast->common.child;
 }

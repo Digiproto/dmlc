@@ -19,7 +19,7 @@ typedef struct level
 
 } level_t;
 
-tree_t* get_ast (char *filename);
+tree_t* get_ast (const char *filename);
 void* gdml_zmalloc(int size);
 char** get_templates(tree_t* head);
 int get_list_num (tree_t* root);

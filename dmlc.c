@@ -49,8 +49,9 @@ const char *simics_dml_dir =
 #endif
 
 const char *import_file_list[] = {
+	"simics-auto-api-4_0.dml",
 	"dml-builtins.dml",
-	"simics-configuration.dml",
+	//"simics/C.dml",
 	NULL
 };
 
@@ -63,7 +64,7 @@ extern int yyparse (yyscan_t scanner, tree_t** root_ptr);
 *
 * @return the root node of ast
 */
-tree_t* get_ast (char *filename)
+tree_t* get_ast (const char *filename)
 {
 	FILE *file = fopen (filename, "r");
 	if (file == NULL) {
@@ -125,15 +126,19 @@ int main (int argc, char *argv[])
 	}
 
 	set_library_dir(argv[0]);
-	char tmp[DIR_MAX_LEN];
-	int rt = snprintf (tmp, DIR_MAX_LEN, "%s%s", gdml_library_dir, import_file_list[0]);
-	assert(rt < DIR_MAX_LEN);
-	builtin_filename = tmp;
-	//root_table = symtab_create();
-	//printf("In %s, builtin_filename=%s\n", __FUNCTION__, builtin_filename);
-	//sleep(1);
-	/* dml-builtins.dml */
-	//node_t* import_ast = get_ast(builtin_filename);
+
+	int i = 0;
+	int len = strlen(gdml_library_dir);
+	char* file_path = NULL;
+	/* add the full patch about import file */
+	while (import_file_list[i] != NULL) {
+		len += strlen(import_file_list[i]);
+		file_path = (char*)gdml_zmalloc(len + 1);
+		strcpy(file_path, gdml_library_dir);
+		strcat(file_path, import_file_list[i]);
+		import_file_list[i] = file_path;
+		i++;
+	}
 
 	insert_pre_dml_struct();
 	/* main ast */
