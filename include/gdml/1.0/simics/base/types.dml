@@ -13,11 +13,3 @@ header %{
 import "simics/base-types.dml";
 
 extern bytes_t buffer_bytes(buffer_t buf);
-typedef uint64 generic_address_t;
-typedef struct { int integer; char *string; } tuple_int_string_t;
-typedef struct { const uint8 *data; size_t len; } bytes_t;
-typedef uint64 physical_address_t;
-typedef uint64 logical_address_t;
-typedef uint64 linear_address_t;
-typedef struct { uint8 *data; size_t len; } buffer_t;
-typedef struct { size_t len; uint8 *str; } byte_string_t;

@@ -13,5 +13,5 @@ header %{
 import "simics/base/types.dml";
 import "simics/pywrap.dml";
 
-typedef struct { void (*signal_level_change)(conf_object_t *obj, uint64 level); void (*signal_current_level)(conf_object_t *obj, uint64 level); } multi_level_signal_interface_t;
-typedef struct { void (*signal_raise)(conf_object_t *obj); void (*signal_lower)(conf_object_t *obj); void (*signal_level)(conf_object_t *obj, int level); } signal_interface_t;
+//typedef struct { void (*signal_level_change)(conf_object_t *obj, uint64 level); void (*signal_current_level)(conf_object_t *obj, uint64 level); } multi_level_signal_interface_t;
+//typedef struct { void (*signal_raise)(conf_object_t *obj); void (*signal_lower)(conf_object_t *obj); void (*signal_level)(conf_object_t *obj, int level); } signal_interface_t;
