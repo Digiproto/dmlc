@@ -23,7 +23,7 @@ do
 		echo "[normal]" remove $var module
 		rm -rf "$NEW_DIR"
 	else
-		echo "[ error]" $var device is not exist
+		echo "[ error]" \"$var\" device is not exist
 		exit
 	fi
 
@@ -36,7 +36,7 @@ do
 		mv $QEMU_DEV_DIR/../Makefile.objs_tmp $QEMU_DEV_DIR/../Makefile.objs
 		rm -rf "$QEMU_DEV_DIR"
 	else
-		echo "[warning]" $var is not exist in QEMU
+		echo "[warning]" \"$var\" is not exist in QEMU
 	fi
 
 	# clean the {workspace}/targets/skyeye/ directory
@@ -45,6 +45,6 @@ do
 		echo "[normal]" remove $var Skyeye device
 		rm -rf "$SKYEYE_DEV_DIR"
 	else
-		echo "[warning]" $var is not exist in Skyeye
+		echo "[warning]" \"$var\" is not exist in Skyeye
 	fi
 done

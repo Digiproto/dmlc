@@ -8,6 +8,7 @@ EXEC_DIR=`dirname $0`
 . $EXEC_DIR/../config
 
 # function (dash undefined the keyword)
+# newmakefile [path]
 newmakefile() {
 #	IFS_TMP=$IFS
 #	IFS=

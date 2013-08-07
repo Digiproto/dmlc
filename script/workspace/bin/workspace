@@ -11,10 +11,11 @@ input_error() {
 	echo "[ error] please input command and device name, look like:"
 	echo "         workspace create simple_device"
 	echo "      or workspace remove simple_device"
+	echo "      or workspace copy sample_dma"
 	echo "[ point] device name is same as DML source file name"
 	echo "[ point] remove is dangerous, it will cause that:"
 	echo "         1. remove qemu/hw/simics/<YourDevice>"
-	echo "         2. remove skyeye/dev/simics/<YourDevice>"
+	echo "         2. remove targets/skyeye/<YourDevice>"
 	echo "         3. remove modules/<YourDevice> (remove your DML source file)"
 }
 
@@ -25,10 +26,12 @@ input_help() {
 	echo "           1. help it\'s me"
 	echo "           2. create create a new module workspace and Makefile"
 	echo "           3. remove remove a module workspace from gdml and QEMU, Skyeye"
+	echo "           4. copy   copy a sample DML source, such as simple_device sample_dma"
 	echo "         device_name (at least one)"
-	echo "           1. device name is same as DML source file name"
+	echo "           1. device_name is same as DML source file name and DML device name"
 	echo "[example] workspace create simple_device"
 	echo "          or workspace remove simple_device"
+	echo "          or workspace copy sample_dma"
 	echo "[ point] remove is dangerous, it will cause that:"
 	echo "         1. remove qemu/hw/simics/<YourDevice>"
 	echo "         2. remove skyeye/dev/simics/<YourDevice>"
@@ -72,6 +75,25 @@ check_config() {
 	echo "[normal] check ok, config file look fine."
 }
 
+# print_file_list [path] [type] [start_string]
+print_file_list() {
+	LIST_DEVICE=`find "$1" -type $2 | \
+				sed -e "s?$1/??g" \
+					-e "s?$1?_DIR_DEL_LINE_?g" \
+					-e "/_DIR_DEL_LINE_/d"`
+	VARI=1
+	echo "$3"
+	if [ -z "$LIST_DEVICE" ]; then
+		echo ".........Nothing!"
+	else
+		for var in $LIST_DEVICE
+		do
+			echo "     ("$VARI")" "$var"
+			VARI=$(($VARI + 1))
+		done
+	fi
+}
+
 # if parameters is empty
 if [ -z "$*" ]; then
 	input_error
@@ -95,8 +117,10 @@ case "$1" in
 			input_error
 			exit
 		fi
+		# remove first parameter and turn to workspace-remove
+		shift
 		# remind user remove operation is dangrous.
-		echo "[choose] Are you sure remove $2 device[y/n]?"
+		echo "[choose] Are you sure remove \"$*\" device(s)[y/n]?"
 		echo "         This operation is dangerous."
 		while read CHOICE
 		do
@@ -114,9 +138,23 @@ case "$1" in
 				;;
 			esac
 		done
+		$EXEC_DIR/workspace-remove "$*"
+	;;
+	"copy")
+		# if device_name is empty
+		if [ -z $2 ]; then
+			input_error
+			exit
+		fi
 		# remove first parameter and turn to workspace-remove
 		shift
-		$EXEC_DIR/workspace-remove "$*"
+		$EXEC_DIR/workspace-copy "$*"
+	;;
+	"list")
+		print_file_list $EXEC_DIR/../modules d "[  info] devices:"
+	;;
+	"sample-list")
+		print_file_list $EXEC_DIR/sample f "[  info] sample devices:"
 	;;
 	"check")
 		check_config

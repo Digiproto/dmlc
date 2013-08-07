@@ -1,0 +1,26 @@
+#!/bin/sh
+# The file created by eJim Lee (lyjforjob@gmail.com)
+
+CURR_DIR=`pwd`
+EXEC_DIR=`dirname $0`
+
+#source $EXEC_DIR/../config
+. $EXEC_DIR/../config
+
+if [ -z "$*" ]; then
+	echo "[ error] please input a device name, look like:"
+	echo "         workspace-copy simple_device"
+	echo "[ point] device name is same as DML source file name and DML device name"
+	exit
+fi
+
+for var in $@
+do
+	SAMPLE_DIR="$EXEC_DIR/sample"
+	if [ -f "$SAMPLE_DIR/$var.dml" ]; then
+		$EXEC_DIR/workspace-create "$var"
+		cp "$SAMPLE_DIR/$var.dml" "$EXEC_DIR/../modules/$var"
+	else
+		echo "[ error] no such sample named as \"$var\""
+	fi
+done

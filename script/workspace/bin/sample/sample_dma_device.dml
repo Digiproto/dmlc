@@ -1,0 +1,233 @@
+/*
+  sample-dma-device-common.dml - sample DMA device, common code
+
+  Copyright 2007-2009 Virtutech AB
+
+  The contents herein are Source Code which are a subset of Licensed
+  Software pursuant to the terms of the Virtutech Simics Software
+  License Agreement (the "Agreement"), and are being distributed under
+  the Agreement.  You should have received a copy of the Agreement with
+  this Licensed Software; if not, please contact Virtutech for a copy
+  of the Agreement prior to using this Licensed Software.
+
+  By using this Source Code, you agree to be bound by all of the terms
+  of the Agreement, and use of this Source Code is subject to the terms
+  the Agreement.
+
+  This Source Code and any derivatives thereof are provided on an "as
+  is" basis.  Virtutech makes no warranties with respect to the Source
+  Code or any derivatives thereof and disclaims all implied warranties,
+  including, without limitation, warranties of merchantability and
+  fitness for a particular purpose and non-infringement.
+
+*/
+
+dml 1.2;
+
+device sample_dma_device;
+
+parameter desc = "big endian sample DMA device";
+parameter documentation = "A sample DMA device, big-endian version.";
+
+parameter byte_order = "big-endian";
+
+//
+// Code is intended to be imported from other scripts
+//
+import "utility.dml";
+import "io-memory.dml";
+import "interrupt.dml";
+
+// Timing parameter
+attribute time_per_unit {
+    parameter documentation = "Delay in seconds per word of memory copied";
+    parameter type = "f";
+    parameter allocate_type = "double";
+    parameter configuration = "optional";
+}
+
+method init() {
+    $time_per_unit = 1e-6; // a really slow DMA device
+}
+
+// Memory-space connection for DMA work
+connect target_mem_space
+{
+    interface memory_space
+    {
+        parameter required = true;
+    }
+    // Utility methods in the interface to make code
+    // accessing memory shorter and easier to read
+    // -- designed for inlining
+    // -- address is a 32-bit word
+    // -- value is a local 4-byte buffer
+    method write_word(physical_address_t dest_address,
+                      uint8 *value)->(exception_type_t result) {
+        result = $target_mem_space.
+            memory_space.access_simple($dev.obj,
+                                       dest_address,
+                                       value,
+                                       4,
+                                       Sim_RW_Write,
+                                       Sim_Endian_Target);
+    }
+    method read_word(physical_address_t dest_address,
+                     uint8 *value)->(exception_type_t result) {
+        result = $target_mem_space.
+            memory_space.access_simple($dev.obj,
+                                       dest_address,
+                                       value,
+                                       4,
+                                       Sim_RW_Read,
+                                       Sim_Endian_Target);
+    }
+
+}
+
+// CPU connection for interrupting
+connect intr_cpu {
+    parameter documentation = "Interrupt target port";
+    parameter configuration = "required";
+    interface signal;
+}
+
+// Implement a simple "DMA" function that copies data from one part of
+// memory to another.  This illustrates how to implement the effects
+// of a multi-field register.  It uses the memory-space connected
+// above to find the memory to work with.
+//
+// The model is simplified, but the dual use of an enable bit and a
+// software trigger bit is found in real hardware where setting EN to
+// zero will prevent other devices from making use of DMA.  The
+// software on the CPU is not the only device which can initiate DMA
+// transfers typically.
+//
+// After the transfer, the source and destination register will have
+// been updated to the point after the transfer, for possible chained
+// transfers.  At this point, the status register bit changes to "complete".
+// This bit has to be cleared by the software.
+//
+// Byte-order of this bank is specified by the sample-dma-device and
+// sample-dma-device-le device main files including this file.
+//
+bank regs {
+    parameter function   = 0;
+    parameter register_size = 4;
+
+    register DMA_control size 4 @ 0x00 "DMA control register" {
+        field EN  [31]  "Enable DMA";
+        field SWT [30]  "Software Transfer Trigger";
+        field ECI [29]  "Enable Completion Interrupt";
+        field TS [15:0] "Transfer size (words)";
+        method after_write(generic_transaction_t *memop) {
+            inline $do_dma_transfer();
+        }
+    }
+    register DMA_status size 4 @ 0x04 "DMA status register" {
+        field TC  [31]  "Transfer Completed" {
+            // set to 1 when transfer completed by device itself
+            // clear by writing a zero
+            //   IF interrupts are enabled and interrupt status is one
+            //   also clear the interrut in the processor
+            method write(typeof($this) value) {
+                if (value == 0) {
+                    if ($this == 1) {
+                        log "info", 2 : "write zero to TC - clearing TC";
+                        $this = 0;
+                        if( ($DMA_control.ECI == 1) &&
+                            ($DMA_interrupt_posted==1)) {
+                            log "info", 3 : "also clearing interrupt on CPU";
+                            $DMA_interrupt_posted = 0; // remember cleared
+                            $intr_cpu.signal.signal_lower();
+                        }
+                    }
+                } else {
+                    log "spec_violation", 1 : "write one to TC - ignored";
+                }
+            }
+        }
+    }
+    register DMA_source  size 4 @ 0x08 "DMA source address" {
+	method write(typeof($this) value) {
+            log "info", 2: "%s set to 0x%x",	$qname, value;
+            $this = value;
+        }
+    }
+    register DMA_dest    size 4 @ 0x0c "DMA destination address" {
+	method write(typeof($this) value) {
+            log "info", 2: "%s set to 0x%x",	$qname, value;
+            $this = value;
+        }
+    }
+    // Internal register to store interrupt state
+    // -- has no offset in memory map
+    register DMA_interrupt_posted size 1 "Internal: interrupt posted?" {
+        parameter offset = undefined;
+        parameter hard_reset_value = 0;
+    }
+
+
+    method do_dma_transfer() {
+        if ($DMA_control.EN==1) {
+            log "info", 2 : "EN bit set, SWT written, initiating DMA";
+            log "info", 2 : "transferring %d words from 0x%x to 0x%x", $DMA_control.TS, $DMA_source, $DMA_dest;
+            log "info", 2 : "delay to completion: %f seconds", ($time_per_unit * $DMA_control.TS);
+            log "info", 2 : "interrupt on completion: %d ", $DMA_control.ECI;
+
+            // Delay completion using a timed event
+            after ($time_per_unit * $DMA_control.TS) call $complete_dma();
+        } else {
+            if($DMA_control.SWT==1) {
+                // enable bit not set, so we cannot transfer
+                log "info", 2 : "EN bit not set, SWT = 1 has no effect";
+            } // if
+        } // else
+    } // method
+
+    method complete_dma () {
+        local uint16 count = $DMA_control.TS;
+        local uint8  local_buf[4];
+        local exception_type_t result;
+
+        // Log that completion is taking place
+        log "info", 2 : "DMA transfer completion";
+
+        // Move memory block, four bytes at a time
+        // Wait until here to do it, so that the software
+        // does not see the transfer prematurely
+        while(count>0) {
+            inline $target_mem_space.read_word($DMA_source,local_buf)->(result);
+            if(result!=Sim_PE_No_Exception) {
+                log "error",1 : "DMA failed to read memory at 0x%x", $DMA_source;
+                break;
+            }
+            // call the write word
+            inline $target_mem_space.write_word($DMA_dest,local_buf)->(result);
+            // check result
+            if(result!=Sim_PE_No_Exception) {
+                log "error",1 : "DMA failed to write memory at 0x%x", $DMA_dest;
+                break;
+            }
+            $DMA_source += 4;
+            $DMA_dest += 4;
+            count -= 1;
+        }
+
+        // clear SWT bit, update TS
+        $DMA_control.SWT = 0;
+        $DMA_control.TS = 0;
+        $DMA_status.TC = 1;
+
+        // raise interrupt towards CPU
+        if($DMA_control.ECI==1) {
+            log "info", 2: "raising interrupt signal";
+            // raise interrupt
+            $intr_cpu.signal.signal_raise();
+            // remember that we raised it
+            $DMA_interrupt_posted = 1;
+        } else {
+            log "info", 2: "ECI is zero, no interrupt raised";
+        }
+    }
+}
