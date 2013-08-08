@@ -37,7 +37,7 @@
 #include "stack.h"
 #include "ast.h"
 #ifdef SYMBOL_DEBUG
-#define DBG(fmt, ...) do { fprintf(stderr, fmt, ## __VA_ARGS__); } while (0)
+#define DBG(fmt, ...) do { DEBUG_SYMBOL(stderr, fmt, ## __VA_ARGS__); } while (0)
 #else
 #define DBG(fmt, ...) do { } while (0)
 #endif
@@ -228,17 +228,17 @@ symbol_t default_symbol_find(symtab_t symtab, const char* name, type_t type)
     symtab_t tmp = symtab;
     symbol_t rt;
     if(tmp != NULL) {
-		printf("before search self table %s\n", name);
+		DEBUG_SYMBOL("before search self table %s\n", name);
         rt = _symbol_find(tmp->table, name, type);
         if(rt) {
             return rt;
         }
-		printf("try to search template %s\n", name);
+		DEBUG_SYMBOL("try to search template %s\n", name);
 		rt = symbol_find_from_templates(symtab->template_table, name, type);
 		if (rt) {
 			return rt;
 		}
-		printf("goto parent table %s\n", name);
+		DEBUG_SYMBOL("goto parent table %s\n", name);
         tmp = tmp->parent;
 		if(tmp) {
 			return symbol_find(tmp, name, type);
@@ -753,7 +753,7 @@ void params_insert_table(symtab_t table, method_params_t* method_params) {
 			continue;
 		}
 		if (symbol_insert(table, in_list[i]->var_name, PARAM_TYPE, in_list[i]) == -1) {
-			fprintf(stderr, "method param : %s redefined\n", in_list[i]->var_name);
+			DEBUG_SYMBOL(stderr, "method param : %s redefined\n", in_list[i]->var_name);
 			/* FIXME: handle the error */
 			exit(-1);
 		}
@@ -767,7 +767,7 @@ void params_insert_table(symtab_t table, method_params_t* method_params) {
 			continue;
 		}
 		if (symbol_insert(table, ret_list[i]->var_name, PARAM_TYPE, ret_list[i]) == -1) {
-			fprintf(stderr, "method param : %s redefined\n", in_list[i]->var_name);
+			DEBUG_SYMBOL(stderr, "method param : %s redefined\n", in_list[i]->var_name);
 			/* FIXME: handle the error */
 			exit(-1);
 		}
