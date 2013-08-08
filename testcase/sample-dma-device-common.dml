@@ -197,13 +197,13 @@ bank regs {
         // Wait until here to do it, so that the software
         // does not see the transfer prematurely
         while(count>0) {
-            inline $target_mem_space.read_word($DMA_source,local_buf)->(result);
+            call $target_mem_space.read_word($DMA_source,local_buf)->(result);
             if(result!=Sim_PE_No_Exception) {
                 log "error",1 : "DMA failed to read memory at 0x%x", $DMA_source;
                 break;
             }
             // call the write word
-            inline $target_mem_space.write_word($DMA_dest,local_buf)->(result);
+            call $target_mem_space.write_word($DMA_dest,local_buf)->(result);
             // check result
             if(result!=Sim_PE_No_Exception) {
                 log "error",1 : "DMA failed to write memory at 0x%x", $DMA_dest;
