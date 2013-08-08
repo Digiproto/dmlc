@@ -29,6 +29,7 @@
 #include <string.h>
 #include <ctype.h>
 #include "ast.h"
+#include "gen_debug.h"
 
 #define TMP_SIZE 512
 extern FILE *out;
