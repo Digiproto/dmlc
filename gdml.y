@@ -88,6 +88,7 @@ typedef struct YYLTYPE
 //extern int  yylex(YYSTYPE *yylval_param, yyscan_t yyscanner);
 extern tree_t* parse_auto_api(void);
 void yyerror(YYLTYPE* location, yyscan_t* scanner, tree_t** root_ptr, char *s);
+extern void insert_array_index(object_attr_t* attr, symtab_t table);
 extern char* builtin_filename;
 extern const char* import_file_list[];
 extern symtab_t root_table;
@@ -424,8 +425,8 @@ object
 		object_attr_t* attr = (object_attr_t*)gdml_zmalloc(sizeof(register_attr_t));
 		attr->common.name = $2->ident.str;
 		attr->reg.is_array = 0;
-		attr->reg.size = get_size($3);
-		attr->reg.offset = get_offset($4);
+		attr->reg.size = get_size(&($3), current_table);
+		attr->reg.offset = get_offset(&($4), current_table);
 		attr->common.templates = get_templates($5);
 		attr->common.templates_num = get_list_num($5);
 		symbol_insert(current_table, $2->ident.str, REGISTER_TYPE, attr);
@@ -459,9 +460,9 @@ object
 		object_attr_t* attr = (object_attr_t*)gdml_zmalloc(sizeof(register_attr_t));
 		attr->common.name = $2->ident.str;
 		attr->reg.is_array = 1;
-		attr->reg.size = get_size($6);
-		attr->reg.offset = get_offset($7);
-		attr->reg.arraydef = get_arraydef($4);
+		attr->reg.size = get_size(&($6), current_table);
+		attr->reg.offset = get_offset(&($7), current_table);
+		attr->reg.arraydef = get_arraydef(&($4), current_table);
 		attr->common.templates = get_templates($8);
 		attr->common.templates_num = get_list_num($8);
 		symbol_insert(current_table, $2->ident.str, REGISTER_TYPE, attr);
@@ -797,7 +798,7 @@ object
 		object_attr_t* attr = (object_attr_t*)gdml_zmalloc(sizeof(attribute_attr_t));
 		attr->common.name = $2->ident.str;
 		attr->attribute.is_array = 1;
-		attr->attribute.arraydef = get_arraydef($4);
+		attr->attribute.arraydef = get_arraydef(&($4), current_table);
 		attr->common.templates =  get_templates($6);
 		attr->common.templates_num = get_list_num($6);
 		symbol_insert(current_table, $2->ident.str, ATTRIBUTE_TYPE, attr);
@@ -830,7 +831,7 @@ object
 		object_attr_t* attr = (object_attr_t*)gdml_zmalloc(sizeof(group_attr_t));
 		attr->common.name = $2->ident.str;
 		attr->group.is_array = 1;
-		attr->group.arraydef = get_arraydef($4);
+		attr->group.arraydef = get_arraydef(&($4), current_table);
 		attr->common.templates = get_templates($6);
 		attr->common.templates_num = get_list_num($6);
 
@@ -858,11 +859,44 @@ object
 		object_comm_attr = NULL;
 		$$ = node;
 	}
+	| PORT objident '[' arraydef ']' istemplate {
+		object_attr_t* attr = (object_attr_t*)gdml_zmalloc(sizeof(port_attr_t));
+		attr->common.name = $2->ident.str;
+		attr->common.templates = get_templates($6);
+		attr->common.templates_num = get_list_num($6);
+		attr->port.is_array = 1;
+		attr->port.arraydef = get_arraydef(&($4), current_table);
+		symbol_insert(current_table, $2->ident.str, IMPLEMENT_TYPE, attr);
+
+		tree_t* node = (tree_t*)create_node("port", PORT_TYPE, sizeof(struct tree_port));
+		node->port.name = $2->ident.str;
+		node->port.templates = $6;
+		node->port.is_array = 1;
+		node->port.array = $4;
+		node->common.print_node = print_port;
+		node->common.attr = attr;
+		current_object_node = node;
+
+		attr->common.node = node;
+		object_spec_type = PORT_TYPE;
+		object_comm_attr = attr;
+		$<tree_type>$ = node;
+	}
+	object_spec {
+		tree_t* node = $<tree_type>7;
+		port_attr_t* attr = (port_attr_t*)(node->common.attr);
+		node->port.spec = $8;
+		attr->common.desc = get_obj_desc($8);
+		//attr->common.table = get_obj_block_table($8);
+		object_spec_type = -1;
+		object_comm_attr = NULL;
+		$$ = node;
+	}
 	| CONNECT objident '[' arraydef ']' istemplate {
 		object_attr_t* attr = (object_attr_t*)gdml_zmalloc(sizeof(connect_attr_t));
 		attr->common.name = $2->ident.str;
 		attr->connect.is_array = 1;
-		attr->connect.arraydef = get_arraydef($4);
+		attr->connect.arraydef = get_arraydef(&($4), current_table);
 		attr->common.templates = get_templates($6);
 		attr->common.templates_num = get_list_num($6);
 		symbol_insert(current_table, $2->ident.str, CONNECT_TYPE, attr);
@@ -1309,6 +1343,7 @@ object_spec
 		current_table = block->block.table;
 		if (object_comm_attr) {
 			object_comm_attr->common.table = current_table;;
+			insert_array_index(object_comm_attr, current_table);
 		}
 
 		node->spec.block = block;
@@ -2027,11 +2062,9 @@ typeident
 
 comma_expression
 	: expression {
-		debug_proc("Line : %d\n", __LINE__);
 		$$ = $1;
 	}
 	| comma_expression ',' expression {
-		debug_proc("Line : %d\n", __LINE__);
 		create_node_list($1, $3);
 		$$ = $1;
 	}
@@ -3343,4 +3376,30 @@ void yyerror(YYLTYPE* location, yyscan_t* scanner, tree_t** root_ptr, char *s) {
 		fprintf(stderr,"Syntax error on line #%d, column #%d: %s\n", location->first_line, location->first_column, s);
 	}
 	exit(1);
+}
+
+void insert_array_index(object_attr_t* attr, symtab_t table) {
+	assert(attr != NULL);
+	assert(table != NULL);
+	arraydef_attr_t* array_attr = NULL;
+
+	if (attr->reg.is_array == 1) {
+		array_attr = attr->reg.arraydef;
+	}
+	else if (attr->attribute.is_array == 1) {
+		array_attr = attr->attribute.arraydef;
+	}
+	else if (attr->group.is_array == 1) {
+		array_attr = attr->group.arraydef;
+	}
+	else if (attr->port.is_array == 1) {
+		array_attr = attr->port.arraydef;
+	}
+	else if (attr->connect.is_array == 1) {
+		array_attr = attr->connect.arraydef;
+	}
+
+	if ((array_attr != NULL) && (array_attr->ident != NULL)) {
+		symbol_insert(table, array_attr->ident, INT_TYPE, NULL);
+	}
 }

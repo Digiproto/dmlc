@@ -836,8 +836,10 @@ struct tree_group {
 struct tree_port {
 	struct tree_common common;
 	const char* name;					// port name
+	int is_array;
 	tree_t* templates;			// templates that inherited
 	tree_t* spec;				// the spec about port
+	tree_t* array;
 };
 
 /* Define the overall contents of a tree node.

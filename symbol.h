@@ -189,9 +189,9 @@ typedef struct register_list_node
 typedef struct bank_attr
 {
 	struct object_common common;
+	register_list_node_t *registers;
 	int register_size;
 	int size;
-	register_list_node_t *registers;
 } bank_attr_t;
 
 typedef struct try_catch_attr {
@@ -229,8 +229,8 @@ typedef struct bitrange_attr{
 typedef struct field_attr
 {
 	struct object_common common;
-	int is_range;
 	bitrange_attr_t* bitrange;
+	int is_range;
 } field_attr_t;
 
 typedef struct data_attr
@@ -282,6 +282,8 @@ typedef struct group_array_attr
 typedef struct port_attr
 {
 	struct object_common common;
+	int is_array;
+	arraydef_attr_t* arraydef;
 } port_attr_t;
 
 typedef struct implement_attr
