@@ -283,7 +283,9 @@ symbol_t symbol_find_from_templates_notype(struct template_table* templates, con
 	while (templates != NULL) {
 		//table = templates->table->table;
 		table = templates->table;
-        rt = symbol_find_notype(table, name);
+		if (table) {
+			rt = symbol_find_notype(table, name);
+		}
         if(rt) {
             return rt;
         }
