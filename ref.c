@@ -22,6 +22,7 @@
  */
 
 #include "ref.h"
+#include "gen_debug.h"
 
 void ref_info_init(ref_info_t *fi) {
 	struct list_head *ptr = &fi->list;
@@ -66,7 +67,7 @@ void ref_info_print(ref_info_t *fi) {
 	list_for_each(p, &fi->list) {
 		ni = list_entry(p, node_info_t, entry);
 		node = ni->node;
-		printf("name %s\n", node->common.name);
+		my_DBG("name %s\n", node->common.name);
 	}
 
 }

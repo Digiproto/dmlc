@@ -190,7 +190,7 @@ void translate_expr_brack_direct(tree_t *t) {
 			}
 			D(")");
 		}else {
-			printf("object: other type %s", obj->obj_type);
+			my_DBG("object: other type %s", obj->obj_type);
 		}
 		
 	} else {

@@ -51,7 +51,7 @@ static tree_t *create_tmp_node(void) {
 	node = create_node(name, TMP_TYPE, sizeof(struct tree_tmp));
 	node->tmp_node.name = name;
 	*/
-	printf("not implemented\n");
+	my_DBG("not implemented\n");
 	return NULL;
 }
 
@@ -94,19 +94,19 @@ static void collect_ref_info(tree_t *expr, ref_info_t *fi){
 		add_node_info(fi, ni);
 		return;
 	}else if(type == QUOTE_TYPE){
-		printf("quote type\n");
+		my_DBG("quote type\n");
 		ni = new_node_info(expr);
 		add_node_info(fi, ni);
 		return;
 	}else if(type == COMPONENT_TYPE){
 		node = expr->component.expr;
-		printf("expr %p \n", node);
+		my_DBG("expr %p \n", node);
 		collect_ref_info(node,fi);
 		node = dml_keyword_node(expr->common.name);	
 		ni = new_node_info(node);
 		add_node_info(fi,ni);
 		node = expr->component.ident;
-		printf("ident %s, node %p\n", node->ident.str, node);
+		my_DBG("ident %s, node %p\n", node->ident.str, node);
 		ni = new_node_info(node);
 		add_node_info(fi,ni);
 	} else if (type == DML_KEYWORD_TYPE) {
@@ -131,13 +131,13 @@ static void printf_ref(ref_info_t *fi){
 		} else if (node->common.type == DML_KEYWORD_TYPE){
 			name = node->common.name;
 		}else {
-			printf("node name %s type %d\n",node->common.name,node->common.type);
+			my_DBG("node name %s type %d\n",node->common.name,node->common.type);
 		}
 		if(i == 0){
 			i++;
 			sym = symbol_find(current_table,name,0);
 			if(!sym){
-				printf("no sym %s found in current symtab \n",name);
+				my_DBG("no sym %s found in current symtab \n",name);
 			}
 			name = get_symbol_alias(sym);
 			D("%s",name);
@@ -196,7 +196,7 @@ symbol_t get_ref_sym(tree_t *t, ref_ret_t *ret){
 			ref_obj = 1;
 			name = node->ident.str;
 		} else {
-			printf("error component foramt, type %d\n", node->common.type);
+			my_DBG("error component foramt, type %d\n", node->common.type);
 		}
 	}
 	sym = symbol_find_notype(symtab, name);
@@ -208,7 +208,7 @@ symbol_t get_ref_sym(tree_t *t, ref_ret_t *ret){
 	/*maybe check expression*/
 	p = &fi.list;
 	struct list_head *head = p;
-	printf("outof\n");
+	my_DBG("outof\n");
 	if(p->next->next == p) {
 		/*only one node*/
 		goto end;
@@ -228,33 +228,33 @@ symbol_t get_ref_sym(tree_t *t, ref_ret_t *ret){
 				} else if(node->common.type == IDENT_TYPE || node->common.type == DML_KEYWORD_TYPE){
 					name = node->ident.str;
 				} else {
-					printf("error format\n");
+					my_DBG("error format\n");
 				}
 				node3 = ((node_info_t *)ni_next->entry.next)->node;
 				if(node3->common.type == IDENT_TYPE){
 					name2 = node3->ident.str;
 				} else {
-					printf("only ident valid\n");
+					my_DBG("only ident valid\n");
 				}
 				if(!name2 || !name){
-					printf("error name null\n");
+					my_DBG("error name null\n");
 				}
 				sym = symbol_find(symtab, name,OBJECT_TYPE); 
-				printf("object found %s, sym %p\n", name, sym);
+				my_DBG("object found %s, sym %p\n", name, sym);
 				if(!sym){
-					printf("no object %s symbol found\n",name);
+					my_DBG("no object %s symbol found\n",name);
 				}
 				obj = (object_t *)(sym->attr);
 				symtab = obj->symtab;
-				printf("object name %s, name %s\n", obj->name, name2);
+				my_DBG("object name %s, name %s\n", obj->name, name2);
 				sym = symbol_find_notype(symtab, name2);
 				if(sym){
-					printf("sym type %d, interface type %d", sym->type, INTERFACE_TYPE);
+					my_DBG("sym type %d, interface type %d", sym->type, INTERFACE_TYPE);
 					/*may be interface function need */
 					if(sym->type == OBJECT_TYPE) {
 						obj2 = (object_t *)sym->attr;
 						if(!strcmp(obj2->obj_type, "interface")) {
-							printf("interface object\n");
+							my_DBG("interface object\n");
 							ret->con = obj;
 							ret->iface = obj2;
 							node = t->component.ident;
@@ -269,7 +269,7 @@ symbol_t get_ref_sym(tree_t *t, ref_ret_t *ret){
 		}
 	}
 end:
-	printf("out of 2\n");
+	my_DBG("out of 2\n");
 	ref_info_destroy(&fi);
 	return sym;
 }
@@ -298,10 +298,10 @@ void translate_quote(tree_t *t) {
 			name = get_obj_ref(obj);
 			D("%s", name);
 		} else {
-			printf("TODO: sym %p\n", sym);
+			my_DBG("TODO: sym %p\n", sym);
 		}
 	} else {
-		printf("other type %d\n", node->common.type);
+		my_DBG("other type %d\n", node->common.type);
 	}
 }
 
@@ -341,7 +341,7 @@ static void translate_parameter(symbol_t sym) {
 			}
 			break;
 		default:
-			printf("invalide parameter type %d\n", type);
+			my_DBG("invalide parameter type %d\n", type);
 			break;
 	}
 }
@@ -472,7 +472,7 @@ static void translate_call_common(tree_t *expr, tree_t *ret){
 			return;
 		}
 	} else {
-		printf("method not found in call \n");
+		my_DBG("method not found in call \n");
 	}
 
 	sym = symbol_find(current_table,"exec",TMP_TYPE);
@@ -482,13 +482,13 @@ static void translate_call_common(tree_t *expr, tree_t *ret){
 	if(method_sym && (method_sym->type == METHOD_TYPE)) {
 		obj = (object_t *)method_sym->owner;
 		if(!obj) {
-			printf("method object cannot empty\n");
+			my_DBG("method object cannot empty\n");
 		} else {
-			printf("obj name %s, method name %s\n", obj->name, method_sym->name);
+			my_DBG("obj name %s, method name %s\n", obj->name, method_sym->name);
 			add_object_method(obj, method_sym->name);
 		}
 	} else {
-		printf("method not right %p, %d\n", method_sym, method_sym->type);
+		my_DBG("method not right %p, %d\n", method_sym, method_sym->type);
 	}
 	/*
 	if(expr->common.type == EXPR_BRACK_TYPE){
@@ -552,17 +552,17 @@ static void process_method_parameters(method_attr_t *m, int alias) {
 			param = mp->in_list[i];
 			sym = symbol_find(table, param->var_name, PARAM_TYPE);
 			if(!sym) {
-				printf("no sym %s found\n",param->var_name);
+				my_DBG("no sym %s found\n",param->var_name);
 			}
 			set_symbol_alias(sym, 2, index);
-			printf("sym name %s, alias name %s\n", sym->name, sym->alias_name);
+			my_DBG("sym name %s, alias name %s\n", sym->name, sym->alias_name);
 		}
 		/**/
 		for (i = 0 ; i < mp->ret_argc; i ++){
 			param = mp->ret_list[i];
 			sym = symbol_find(table, param->var_name,PARAM_TYPE);
 			if(!sym) {
-				printf("no sym %s found\n",param->var_name);
+				my_DBG("no sym %s found\n",param->var_name);
 			}
 			set_symbol_alias(sym, 2, index);
 		}
@@ -571,7 +571,7 @@ static void process_method_parameters(method_attr_t *m, int alias) {
 			param = mp->in_list[i];
 			sym = symbol_find(current_table,param->var_name,IDENT_TYPE);
 			if(!sym) {
-				printf("no sym %s found\n",param->var_name);
+				my_DBG("no sym %s found\n",param->var_name);
 			}
 			set_symbol_alias(sym,0,index);
 		}
@@ -579,7 +579,7 @@ static void process_method_parameters(method_attr_t *m, int alias) {
 			param = mp->ret_list[i];
 			sym = symbol_find(current_table,param->var_name,IDENT_TYPE);
 			if(!sym) {
-				printf("no sym %s found\n",param->var_name);
+				my_DBG("no sym %s found\n",param->var_name);
 			}
 			set_symbol_alias(sym,1,index);
 		}	
@@ -704,7 +704,7 @@ static void translate_expr(tree_t *t) {
 	}
 	new_line();
 	*/
-	printf("TODO\n");
+	my_DBG("TODO\n");
 }
 
 static int is_explicit(tree_t *t, int *boolean) {
@@ -722,7 +722,7 @@ static int is_explicit(tree_t *t, int *boolean) {
 			if(!strcmp(node->ident.str, "explicit")) {
 					sym = symbol_find(current_table, "fields", PARAMETER_TYPE);
 					val = (param_value_t *)sym->attr;
-					printf("vector[0] type %d\n", val->type);
+					my_DBG("vector[0] type %d\n", val->type);
 					tmp = val->u.list.vector[0];
 					obj = (object_t *)tmp.u.ref;
 					table = obj->symtab;
@@ -796,7 +796,7 @@ void translate_if_else(tree_t *t) {
 			current_table = saved;
 		}
 	} else {
-		printf("const if\n");
+		my_DBG("const if\n");
 		if(expr->const_expr->int_value) {
 			/*true*/
 			node = t->if_else.if_block;
@@ -916,11 +916,11 @@ static symbol_t  get_expression_sym(tree_t *node) {
 	if(node->common.type == QUOTE_TYPE) {
 		tmp = node->quote.ident;
 		name = tmp->ident.str;
-		printf("try to find %s\n", name);
+		my_DBG("try to find %s\n", name);
 		sym = symbol_find(current_table, name, PARAMETER_TYPE);
 		return sym;
 	} else {
-		printf("TODO: other cases \n");
+		my_DBG("TODO: other cases \n");
 	}
 	return NULL;
 }
@@ -950,10 +950,10 @@ void translate_foreach(tree_t *t) {
 			if(val->type == param_type_list) {
 				len = val->u.list.size;		
 			} else {
-				printf("error type in foreach\n");
+				my_DBG("error type in foreach\n");
 			}
 		} else {
-			printf("error type in foreach\n");
+			my_DBG("error type in foreach\n");
 		}
 	}
 	saved = current_table;
@@ -968,7 +968,7 @@ void translate_foreach(tree_t *t) {
 	for(i = 0; i < len; i++) {
 		symbol_set_value(tmp, val->u.list.vector[i].u.ref);
 		obj = (object_t *)val->u.list.vector[i].u.ref;
-		printf("--------object %s\n", obj->name);
+		my_DBG("--------object %s\n", obj->name);
 		enter_scope();
 		node = t->foreach.block;
 		translate(node);
@@ -1026,9 +1026,9 @@ void translate_inline(tree_t *t) {
 
 	sym = get_call_expr_info(expr->expr_brack.expr);
 	if(sym) {
-		printf("sym %s found\n", sym->name);
+		my_DBG("sym %s found\n", sym->name);
 	} else {
-		printf("sym not found\n");
+		my_DBG("sym not found\n");
 	}
 	/*get sym info*/
 	//translate(expr);
@@ -1083,7 +1083,7 @@ void translate_typeof(tree_t *t) {
 			D("%s", obj->attr_type);
 		}
 	} else {
-		printf("other typeof \n");
+		my_DBG("other typeof \n");
 	}
 }
 
@@ -1099,7 +1099,7 @@ void translate_cdecl(tree_t *t) {
 	base_type = 0;
 	no_star = old_no_star;
 	no_alias = old_no_alias;
-	printf("here decl2\n");
+	my_DBG("here decl2\n");
 	translate(t->cdecl.decl);
 }
 
@@ -1108,14 +1108,14 @@ static void print_basetype(tree_t *node) {
 	
 
 	if(node->common.type == IDENT_TYPE) {
-		printf("name %s\n", node->ident.str);
+		my_DBG("name %s\n", node->ident.str);
 		D("%s", node->ident.str);
 	} else if(node->common.type == C_KEYWORD_TYPE) {
 		D("%s",node->ident.str);
 	} else if(node->common.type == TYPEOF_TYPE) {
 		translate(node);
     }else {
-		printf("other base type\n");
+		my_DBG("other base type\n");
 	}
 }
 static void print_cdecl2(tree_t *t);
@@ -1183,7 +1183,7 @@ static int block_has_call(tree_t *t) {
 					tmp = it->call_inline.expr;
 					sym = get_ref_sym(tmp->expr_brack.expr,&ref_ret);		
 					if(!sym) {
-						printf("err,no inline function\n");
+						my_DBG("err,no inline function\n");
 					}
 					method_attr_t *m = sym->attr;
 					tmp = m->common.node;
@@ -1326,9 +1326,9 @@ void translate_log(tree_t *t) {
 	const char *log_type;
 
 	log_type = node->log.log_type;
-	printf("log type %s\n", log_type);
-	printf("log format %s\n", node->log.format);
-	printf("log args %s\n", node->log.args);
+	my_DBG("log type %s\n", log_type);
+	my_DBG("log format %s\n", node->log.format);
+	my_DBG("log args %s\n", node->log.args);
 	if(!strcmp(log_type, "\"error\"")) {
 		//D("SIM_log_err(&_dev->obj.qdev, 0, %s, %s);", node->log.format, node->log.args);		
 	}
@@ -1356,7 +1356,7 @@ void translate_ident(tree_t *t) {
 	}
 	symbol_t sym = symbol_find_notype(current_table, name);
 	if(!sym) {
-		printf("no sym %s found in table\n",name);
+		my_DBG("no sym %s found in table\n",name);
 	}
 	if(no_alias) {
 		if(no_star) {
@@ -1378,7 +1378,7 @@ void translate_cdecl2(tree_t *t) {
 			D("*");
 		}else if (t->cdecl.is_vect) {
 			/*vect type */
-			printf("TODO: vect type\n");
+			my_DBG("TODO: vect type\n");
 		}
 		translate(t->cdecl.decl);
 	} else {
@@ -1394,14 +1394,14 @@ static void print_cdecl2(tree_t *t) {
 			print_cdecl2(t->cdecl.decl);
 		}else if(t->cdecl.is_point) {
 			D("*");
-			printf("*\n");
+			my_DBG("*\n");
 			print_cdecl2(t->cdecl.decl);
 		}else if (t->cdecl.is_vect) {
 			/*vect type */
-			printf("TODO: vect type\n");
+			my_DBG("TODO: vect type\n");
 		}
 	} else {
-		printf("cdecl3\n");
+		my_DBG("cdecl3\n");
 		print_cdecl3(t);
 	}
 }
@@ -1421,7 +1421,7 @@ static void print_cdecl3(tree_t *t) {
 	if(t->common.type == IDENT_TYPE) {
 		D("%s", t->ident.str);
 	} else {
-		printf("TODO: other cdecl3 type\n");
+		my_DBG("TODO: other cdecl3 type\n");
 	}
 }
 
@@ -1429,7 +1429,7 @@ static const char *get_cdecl3_name(tree_t *t) {
 	if(t->common.type == IDENT_TYPE) {
 		return t->ident.str;
 	} else {
-		printf("TODO: get_name:other cdecl3 type\n");
+		my_DBG("TODO: get_name:other cdecl3 type\n");
 	}
 	return NULL;
 }
@@ -1495,7 +1495,7 @@ static void do_method_param_alias(tree_t *t, int ret) {
 			set_symbol_alias_name(sym, dup);
 		}
 	} else {
-		printf("symbol %s not found in method params\n", name);
+		my_DBG("symbol %s not found in method params\n", name);
 	}
 }
 
@@ -1634,7 +1634,7 @@ void pre_gen_method(object_t *obj, tree_t *method) {
 	saved_table = table->parent;
 	table->parent = obj->symtab;
 	current_table = table;
-	printf("method name %s, obj %s, table num %d\n", method->method.name, obj->name, table->table_num);
+	my_DBG("method name %s, obj %s, table num %d\n", method->method.name, obj->name, table->table_num);
 	OBJ = obj;
 }
 

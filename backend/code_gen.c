@@ -32,8 +32,10 @@
 #include "object.h"
 #include "object_headfile.h"
 #include "platform_code_gen.h"
+#include "gen_debug.h"
 
 extern symtab_t root_table;
+int debugflags = 1;
 
 void gen_code (tree_t * root, const char *name)
 {
@@ -42,10 +44,10 @@ void gen_code (tree_t * root, const char *name)
 	device_attr_t *dev;
 	device_t *dev_obj;
 
-	printf("welcome to code generation backend\n");
+	my_DBG("welcome to code generation backend\n");
 	list = symbol_list_find(root_table, DEVICE_TYPE); 
 	if(!list || list->next) {
-		printf("device not right\n");
+		BE_DBG(OBJ, "device not right\n");
 		exit(-1);
 	}
 	sym = list->sym;	

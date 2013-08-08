@@ -30,6 +30,7 @@
 
 #include "object.h"
 #include <string.h>
+#include "gen_debug.h"
 extern symtab_t root_table;
 object_t *OBJ;
 object_t *DEV;
@@ -73,28 +74,28 @@ static symbol_t object_symbol_find(symtab_t table, const char *name, type_t type
 	object_t *obj;
 
 	obj = table->obj;
-	printf("IN object: try to search symbol %s, %s\n", name, obj->name);
+	BE_DBG(OBJ_SYM, "IN object: try to search symbol %s, %s\n", name, obj->name);
 	sym = _symbol_find(table->table, name, type);
 	if(sym) {
 		sym->owner = table->obj;
-		printf("symbol found %s in object\n", sym->name);
+		BE_DBG(OBJ_SYM, "symbol found %s in object\n", sym->name);
 		return sym;
 	} else if (table->sibling){
-		printf("before sibling, %p; root table  %p , cb %p\n", table->sibling, root_table, root_table->cb);
+		BE_DBG(OBJ_SYM, "before sibling, %p; root table  %p , cb %p\n", table->sibling, root_table, root_table->cb);
 		sym = symbol_find(table->sibling, name, type);
 		if(sym) {
 			sym->owner = table->obj;
-			printf("symbol %s found in sibling \n", sym->name);
+			BE_DBG(OBJ_SYM, "symbol %s found in sibling \n", sym->name);
 			return sym;
 		} else {
-			printf("symbol %s not found in sibling\n", name);
+			BE_DBG(OBJ_SYM, "symbol %s not found in sibling\n", name);
 		}
 	}
-	printf("here goto parent\n");
+	BE_DBG(OBJ_SYM, "here goto parent\n");
 	if(table->parent) {
 		sym = symbol_find(table->parent, name, type);
 	}
-	printf("symbol %s found in parent symtable\n", sym->name);
+	BE_DBG(OBJ_SYM, "symbol %s found in parent symtable\n", sym->name);
 	return sym;
 
 }
@@ -104,28 +105,28 @@ static symbol_t object_symbol_find_notype(symtab_t table, const char *name) {
 	object_t *obj;
 
 	obj = table->obj;
-	printf("try to search symbol %s in object %s\n", name, obj->name);
+	BE_DBG(OBJ_SYM,"try to search symbol %s in object %s\n", name, obj->name);
 	sym = _symbol_find_notype(table->table, name);
 	if(sym) {
 		sym->owner = table->obj;
-		printf("symbol found %s in object\n", sym->name);
+		BE_DBG(OBJ_SYM, "symbol found %s in object\n", sym->name);
 		return sym;
 	} else if (table->sibling){
-		printf("before sibling, %p; root table  %p , cb %p num: %d\n", table->sibling, root_table, root_table->cb, table->sibling->table_num);
+		BE_DBG(OBJ_SYM,"before sibling, %p; root table  %p , cb %p num: %d\n", table->sibling, root_table, root_table->cb, table->sibling->table_num);
 		sym = symbol_find_notype(table->sibling, name);
 		if(sym) {
 			sym->owner = table->obj;
-			printf("symbol %s found in sibling \n", sym->name);
+			BE_DBG(OBJ_SYM, "symbol %s found in sibling \n", sym->name);
 			return sym;
 		} else {
-			printf("symbol %s not found in sibling\n", name);
+			BE_DBG(OBJ_SYM, "symbol %s not found in sibling\n", name);
 		}
 	}
-	printf("here goto parent\n");
+	BE_DBG(OBJ_SYM, "here goto parent\n");
 	if(table->parent) {
 		sym = symbol_find_notype(table->parent, name);
 	}
-	printf("symbol %s found in parent symtable\n", sym->name);
+	BE_DBG(OBJ_SYM, "symbol %s found in parent symtable\n", sym->name);
 	return sym;
 
 }
@@ -167,7 +168,7 @@ static void init_object(object_t *obj, const char *name, const char *type, tree_
 	} else {
 		obj->symtab->parent = NULL;
 	}
-	printf("obj %s, symtab %p , sibling %p, parent table %p\n", obj->name, obj->symtab, obj->symtab->sibling, obj->symtab->parent);
+	BE_DBG(OBJ, "obj %s, symtab %p , sibling %p, parent table %p\n", obj->name, obj->symtab, obj->symtab->sibling, obj->symtab->parent);
 	struct list_head *p = &obj->childs;
 	for(i = 0; i < 6; i++, p++){
 		INIT_LIST_HEAD(p);
@@ -206,9 +207,9 @@ object_t *create_device_object(symbol_t sym){
 
 	device_t *dev =  (device_t *)gdml_zmalloc(sizeof(*dev));
 	if(OBJ)
-		printf("device exists\n");
+		BE_DBG(OBJ, "device exists\n");
 	device_attr_t *dev_attr = (device_attr_t *)sym->attr;
-	printf("device %s found\n",sym->name);
+	BE_DBG(OBJ, "device %s found\n",sym->name);
 	init_object(&dev->obj, sym->name, "device", dev_attr->common.node, root_table);
 	p = &dev->constants;
 	for(i = 0; i < 6; i++, p++) {
@@ -239,8 +240,8 @@ void create_bank_objs(symtab_t table) {
 
 static void create_field_object(symbol_t sym){
 	if(!OBJ || strcmp(OBJ->obj_type,"register"))
-		printf("field %s not in right place\n",sym->name);
-	printf("found %s in register %s\n", sym->name, OBJ->name);
+		BE_DBG(OBJ, "field %s not in right place\n",sym->name);
+	BE_DBG(OBJ, "found %s in register %s\n", sym->name, OBJ->name);
 	field_t *fld = gdml_zmalloc(sizeof(*fld));
 	field_attr_t *field_attr = (field_attr_t *)sym->attr;
 	init_object(&fld->obj,sym->name,"field",field_attr->common.node, field_attr->common.table);
@@ -275,8 +276,8 @@ static void create_field_objs(symtab_t symtab){
 
 static void create_register_object(symbol_t sym){
 	if(!OBJ || strcmp(OBJ->obj_type,"bank"))
-		printf("register %s not in right place\n",sym->name);
-	printf("register %s found in bank %s\n", sym->name, OBJ->name);
+		BE_DBG(OBJ, "register %s not in right place\n",sym->name);
+	BE_DBG(OBJ, "register %s found in bank %s\n", sym->name, OBJ->name);
 	dml_register_t *reg = (dml_register_t *)gdml_zmalloc(sizeof(*reg));
 	register_attr_t *reg_attr = (register_attr_t *)(sym->attr);
 	symtab_t table = reg_attr->common.table;
@@ -289,8 +290,8 @@ static void create_register_object(symbol_t sym){
 
 static void create_iface_object(symbol_t sym) {
 	if(!OBJ || strcmp(OBJ->obj_type,"connect"))
-		printf("iface %s not in right place\n",sym->name);
-	printf("iface %s found in connect %s\n", sym->name, OBJ->name);
+		BE_DBG(OBJ, "iface %s not in right place\n",sym->name);
+	BE_DBG(OBJ, "iface %s found in connect %s\n", sym->name, OBJ->name);
 	interface_t *iface = (interface_t *)gdml_zmalloc(sizeof(*iface));
 	interface_attr_t *attr = (interface_attr_t *)sym->attr;
 	symtab_t table = attr->common.table;
@@ -315,8 +316,8 @@ static void create_ifaces_objs(symtab_t table) {
 
 static void create_connect_object(symbol_t sym) {
 	if(!OBJ || strcmp(OBJ->obj_type, "device")) 
-		printf("connect %s not in right place\n",sym->name);
-	printf("connect %s found in device %s", sym->name, OBJ->name);
+		BE_DBG(OBJ, "connect %s not in right place\n",sym->name);
+	BE_DBG(OBJ, "connect %s found in device %s", sym->name, OBJ->name);
 	connect_t *con = (connect_t *)gdml_zmalloc(sizeof(*con));
 	connect_attr_t *attr = (connect_attr_t *)(sym->attr);
 	symtab_t table = attr->common.table;
@@ -328,8 +329,8 @@ static void create_connect_object(symbol_t sym) {
 
 static void create_attribute_object(symbol_t sym) {
 	if(!OBJ || strcmp(OBJ->obj_type, "device")) 
-		printf("attribute %s not in right place\n",sym->name);
-	printf("attribute %s found in device %s", sym->name, OBJ->name);
+		BE_DBG(OBJ, "attribute %s not in right place\n",sym->name);
+	BE_DBG(OBJ, "attribute %s found in device %s", sym->name, OBJ->name);
 	attribute_t *att = (attribute_t *)gdml_zmalloc(sizeof(*att));
 	attribute_attr_t *attr = (attribute_attr_t *)(sym->attr);
 	symtab_t table = attr->common.table;
@@ -384,17 +385,15 @@ static void create_register_objs(symtab_t table){
 
 static void create_bank_object(symbol_t sym){
 	if(!OBJ || strcmp(OBJ->obj_type,"device"))
-		printf("bank %s not in right place\n",sym->name);
+		BE_DBG(OBJ, "bank %s not in right place\n",sym->name);
 	bank_t *bank = gdml_zmalloc(sizeof(*bank));
-	printf("bank %s found in device %s\n",sym->name, OBJ->name);
+	BE_DBG(OBJ, "bank %s found in device %s\n",sym->name, OBJ->name);
 	bank_attr_t *b = (bank_attr_t *)(sym->attr);
 	symtab_t table = b->common.table;
 	init_object(&bank->obj,sym->name,"bank",b->common.node, table);		
 	OBJ = &bank->obj;
 	create_register_objs(table);
-	printf("start bank\n");
-	print_all_symbol(table);
-	printf("end bank\n");
+	//print_all_symbol(table);
 }
 
 device_t *create_device_tree(tree_t  *root){
@@ -403,7 +402,7 @@ device_t *create_device_tree(tree_t  *root){
 	//print_all_symbol(root_table);
 	symbol_list_t *dev_list = symbol_list_find(root_table, DEVICE_TYPE);
 	if(!dev_list || dev_list->next) {
-		printf("device not correct\n");
+		BE_DBG(OBJ, "device not correct\n");
 		exit(-1);
 	}
 	symbol_t sym = dev_list->sym;
@@ -426,7 +425,7 @@ void create_template_name(object_t *obj, const char *name) {
 		tmp->node = tem_attr->common.node;
 		list_add_tail(&obj->templates, &tmp->entry);
 	} else {
-		printf("template %s not found \n", name);
+		BE_DBG(OBJ, "template %s not found \n", name);
 	}
 }
 
@@ -517,7 +516,7 @@ static void bank_realize(object_t *obj) {
 	paramspec_t *spec;
 	expression_t *expr;
 	
-	printf("object name %s\n", obj->name);
+	BE_DBG(OBJ, "object name %s\n", obj->name);
 	sym = symbol_find(obj->symtab, "register_size", PARAMETER_TYPE);
 	if(sym) {
 		param = (parameter_attr_t *)sym->attr;
@@ -623,14 +622,12 @@ void device_realize(device_t *dev) {
 		tmp = list_entry(p, object_t, entry);
 		attribute_realize(tmp);
 	}
-
-	printf("before device realize\n");
 	add_object_templates(&dev->obj, NULL);
 }
 
 void print_object(object_t *obj, int tab_count) {
 	const char *pos = (const char *)tab[tab_count];
-	printf("%sobject type %s, name %s, symtab %p, sibling %p, symtab parent %p\n", pos, obj->obj_type, obj->name, obj->symtab, obj->symtab->sibling, obj->symtab->parent);	
+	BE_DBG(OBJ, "%sobject type %s, name %s, symtab %p, sibling %p, symtab parent %p\n", pos, obj->obj_type, obj->name, obj->symtab, obj->symtab->sibling, obj->symtab->parent);	
 	struct list_head *p;
 	object_t *tmp;
 
@@ -665,7 +662,7 @@ static void add_template(template_def_t  *def){
 	list_for_each(p,&templates){
 		tp = list_entry(p,struct template_def,entry);
 		if(!strcmp(tp->name, def->name)){
-			printf("template %s redifinition,previous definition is here",def->name);
+			BE_DBG(TEMPLATE, "template %s redifinition,previous definition is here",def->name);
 			return;
 		}
 	}
@@ -686,10 +683,10 @@ static struct template_def *lookup_template(const char *name)
 }
 
 struct template_def *create_template_def(tree_t *t){
-		if(in_template)
-			printf("canot define template in template definition\n");
-		if(strcmp(OBJ->obj_type,"device"))
-			printf("template definition must at top level\n");
+	if(in_template)
+		BE_DBG(TEMPLATE, "canot define template in template definition\n");
+	if(strcmp(OBJ->obj_type,"device"))
+		BE_DBG(TEMPLATE, "template definition must at top level\n");
 	struct template_def *temp = malloc(sizeof(*temp));
 	temp->name = t->common.name;
 	temp->node = t;
@@ -837,7 +834,7 @@ static void process_object_template(object_t *obj, struct template_name *name){
 	symbol_t sym;
 	paramspec_t *spec;
 
-	printf("template name %s, obj name %s\n", name->name, obj->name);
+	BE_DBG(TEMPLATE, "template name %s, obj name %s\n", name->name, obj->name);
 	//list = symbol_list_find(table, PARAMETER_TYPE);
 }
 
@@ -863,7 +860,7 @@ static void process_basic_template(object_t *obj) {
 }
 
 void object_none_temp_fn(object_t *obj) {
-	printf("some error happend\n");
+	BE_DBG(TEMPLATE, "some error happend\n");
 }
 
 static void (*specific_temp_fn[])(object_t *obj) = {
@@ -877,9 +874,9 @@ static void (*specific_temp_fn[])(object_t *obj) = {
 static void process_default_template(object_t *obj) {
 	process_basic_template(obj);
 	specific_temp_fn[obj->encoding](obj);
-	printf("start ........\nobject Name %s symbols\n", obj->name);
-	print_all_symbol(obj->symtab);
-	printf("end .......");
+	BE_DBG(TEMPLATE, "start ........\nobject Name %s symbols\n", obj->name);
+	//print_all_symbol(obj->symtab);
+	BE_DBG(TEMPLATE, "end .......");
 }
 
 static void process_object_templates(object_t *obj){
@@ -934,10 +931,10 @@ void add_object_method(object_t *obj,const char *name){
 	m = gdml_zmalloc(sizeof(*m));
 	m->name = strdup(name);
 	INIT_LIST_HEAD(&m->entry);
-	printf("add object %s, name, %s\n", obj->name, name);
+	BE_DBG(OBJ, "add object %s, name, %s\n", obj->name, name);
 	sym = object_symbol_find(obj->symtab, name, METHOD_TYPE);
 	if(!sym)
-		printf("object %s has no method %s\n",obj->name, name);
+		BE_DBG(OBJ, "object %s has no method %s\n",obj->name, name);
 	else {
 		attr = sym->attr;	
 		m->method = attr->common.node;	

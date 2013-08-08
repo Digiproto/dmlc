@@ -29,6 +29,7 @@
  */
 
 #include "gen_object.h"
+#include "gen_debug.h"
 extern int method_to_generate;
 
 static void gen_object_method(object_t *obj){
@@ -79,7 +80,7 @@ void gen_dml_code(device_t *dev, FILE* f) {
 	
 	while(method_to_generate){
 		round++;
-		printf("code generation round %d, method to generate %d\n",round, method_to_generate);
+		BE_DBG(GENERAL, "code generation round %d, method to generate %d\n",round, method_to_generate);
 		gen_device_code(dev);
 	}
 }
