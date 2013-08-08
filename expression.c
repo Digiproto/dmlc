@@ -98,6 +98,77 @@ symbol_t get_symbol_from_root_table(const char* name, type_t type) {
 	return symbol;
 }
 
+tree_t* copy_data_from_constant(tree_t* node) {
+	assert(node != NULL);
+	tree_t* new_node = NULL;
+	tree_t* tmp = NULL;
+	switch (node->common.type) {
+		case INTEGER_TYPE:
+			new_node = (tree_t*)create_node("integer_literal", INTEGER_TYPE, sizeof(struct tree_int_cst));
+			new_node->int_cst.int_str = node->int_cst.int_str;
+			new_node->int_cst.value = node->int_cst.value;
+			new_node->int_cst.out_64bit = node->int_cst.out_64bit;
+			new_node->common.print_node = print_interger;
+			new_node->common.translate = translate_integer_literal;
+			break;
+		case FLOAT_TYPE:
+			new_node = (tree_t*)create_node("float_literal", FLOAT_TYPE, sizeof(struct tree_float_cst));
+			new_node->float_cst.float_str = node->float_cst.float_str;
+			new_node->float_cst.value = node->float_cst.value;
+			new_node->common.print_node = print_float_literal;
+			new_node->common.translate = translate_float;
+			break;
+		case CONST_STRING_TYPE:
+			new_node = (tree_t*)create_node("string_literal", CONST_STRING_TYPE, sizeof(struct tree_string));
+			new_node->string.length = node->string.length;
+			new_node->string.pointer = node->string.pointer;
+			new_node->common.print_node = print_string;
+			break;
+		case EXPR_BRACK_TYPE:
+			tmp = node->expr_brack.expr_in_brack;
+			if (charge_node_is_const(tmp)) {
+				new_node = copy_data_from_constant(tmp);
+			}
+			else {
+				fprintf(stderr, "The value is no constant : %s(%d)\n",
+						tmp->common.name, tmp->common.type);
+				exit(-1);
+			}
+			break;
+		default:
+			fprintf(stderr, "other constant value type: %s(%d)\n",
+					node->common.name, node->common.type);
+				/* TODO: handle the error */
+				exit(-1);
+			break;
+	}
+	return new_node;
+}
+
+type_t change_node_to_const(tree_t** node, symtab_t table, expression_t* expr) {
+	assert(*node != NULL);
+	if (((*node)->common.type != IDENT_TYPE) && ((*node)->common.type != DML_KEYWORD_TYPE)) {
+		fprintf(stderr, "not constant node %s: %d\n", (*node)->common.name, (*node)->common.type);
+		/* FIXME: handle  the error */
+		exit(-1);
+	}
+	symbol_t symbol = symbol_find(table, (*node)->ident.str, CONSTANT_TYPE);
+	if ((symbol == NULL) && (table->no_check == 1)) {
+		symbol = get_symbol_from_root_table((*node)->ident.str, CONSTANT_TYPE);
+	}
+	constant_attr_t* attr = (constant_attr_t*)(symbol->attr);
+	tree_t* new_node = copy_data_from_constant(attr->value->node);
+	new_node->common.sibling = (*node)->common.sibling;
+	new_node->common.child = (*node)->common.child;
+	assgin_sibling_child_null(node);
+	free(*node);
+	*node = new_node;
+	cal_expression(node, table, expr);
+	DEBUG_EXPR("constant node type: %s, value type: %d, expr->type : %d\n",
+			new_node->common.name, attr->value->final_type, expr->final_type);
+	return attr->value->final_type;
+}
+
 expression_t* get_const_expr_value(tree_t* node, expression_t* expr) {
 	assert(node != NULL);
 	/* FIXME: assert is noly for debugging */
@@ -397,97 +468,6 @@ void cal_assign_left(tree_t** node, symtab_t table, expression_t* left_expr, exp
 	type = charge_left_right_expr_type(left_expr, right_expr);
 	right_expr->final_type = type;
 
-#if 0
-	/* FIXME: there is some problems */
-	int type = -1;
-	if (left_node->common.type == IDENT_TYPE) {
-		symbol_t symbol = symbol_find_notype(table, left_node->ident.str);
-		if (symbol == NULL) {
-			if (table->no_check) {
-				DEBUG_TEMPLATE_SYMBOL("line : %d warning: %s no undeclared in template\n", __LINE__, left_node->ident.str);
-				symbol_insert(table, left_node->ident.str, right_expr->final_type, NULL);
-			}
-		}
-		else if (symbol->type == PARAM_TYPE) {
-			params_t* param = (params_t*)(symbol->attr);
-			if (param->is_notype) {
-				set_decl_type(param->decl->type, right_expr->final_type);
-				param->decl->value = right_expr;
-			}
-			else {
-				decl_t* decl = (decl_t*)(param->decl);
-				int type = get_decl_type(decl);
-				type = charge_type(type, right_expr->final_type);
-				if (type < 0) {
-					/* FIXME: handle  the error */
-					exit(-1);
-				}
-				set_decl_type(decl->type, type);
-				decl->value = right_expr;
-			}
-			DEBUG_EXPR("In %s, line = %d, right_expr is_notype : %d\n", __func__, __LINE__, right_expr->final_type);
-		}
-		else if (symbol->type == IDENT_TYPE) {
-			decl_t* decl = (decl_t*)(symbol->attr);
-			int type = get_decl_type(decl);
-			type = charge_type(type, right_expr->final_type);
-			if (type < 0) {
-				/* FIXME: handle  the error */
-				exit(-1);
-			}
-			set_decl_type(decl->type, type);
-			decl->value = right_expr;
-		}
-		else if (symbol->type == PARAMETER_TYPE)  {
-			parameter_attr_t* parameter = (parameter_attr_t*)(symbol->attr);
-			paramspec_t* spec = parameter->spec;
-			int type = charge_type(spec->type, right_expr->final_type);
-			if (type < 0) {
-				fprintf(stderr, "Line : %d error: incompatible types when assigning to type\n", __LINE__);
-				/* FIXME : handle the error */
-				exit(-1);
-			}
-			spec->type = type;
-			spec->expr = right_expr;
-		}
-		else if (((symbol->type) >= BITFIELDS_TYPE) &&
-				((symbol->type) <= STRUCT_TYPE)){
-			int type = charge_type(symbol->type, right_expr->final_type);
-			if (type > 0) {
-				decl_t* decl = (decl_t*)(symbol->attr);
-				decl->value = right_expr;
-				right_expr->final_type = type;
-			}
-		}
-		else {
-			DEBUG_EXPR("In %s, line = %d, other type: %d\n",
-					__func__, __LINE__, symbol->type);
-			/* FIXME: handle the error */
-			exit(-1);
-		}
-	}
-	else if (left_node->common.type == QUOTE_TYPE) {
-		tree_t* node = left_node->quote.ident;
-		if (charge_node_is_const(node)) {
-			fprintf(stderr, "the quote can not the const!\n");
-			/* TODO: hann  the error */
-			exit(-1);
-		}
-		else if (strcmp(node->ident.str, "this") == 0) {
-			/* do nothing */
-		}
-		else {
-			get_ident_value(&(left_node->quote.ident), table, left_expr);
-			type = charge_left_right_expr_type(left_expr, right_expr);
-			right_expr->final_type = type;
-		}
-	}
-	else {
-		DEBUG_EXPR("other left node type : %d\n", left_node->common.type);
-		type = charge_left_right_expr_type(left_expr, right_expr);
-		right_expr->final_type = type;
-	}
-#endif
 	right_expr->node = *node;
 
 	return;
@@ -500,6 +480,10 @@ expression_t* cal_common_assign(tree_t** node, symtab_t table, expression_t* exp
 	DEBUG_EXPR("In %s, line = %d\n", __FUNCTION__, __LINE__);
 
 	expr = cal_expression(&((*node)->expr_assign.right), table, expr);
+	if (expr->final_type == CONSTANT_TYPE) {
+		tree_t* tmp = (*node)->expr_assign.right;
+		expr->final_type = change_node_to_const(&((*node)->expr_assign.right), table, expr);
+	}
 	expression_t* left_expr = (expression_t*)gdml_zmalloc(sizeof(expression_t));
 	cal_assign_left(node, table, left_expr, expr);
 	expr->is_const = 0;
@@ -567,6 +551,7 @@ expression_t* cal_ternary_expr(tree_t** node, symtab_t table, expression_t* expr
 	cal_expression(&((*node)->ternary.expr_false), table, expr);
 	false_type = expr->final_type;
 	if (expr->is_undeclare) {
+		expr->node = *node;
 		return expr;
 	}
 	/* TODO: the expression type node defined */
@@ -630,7 +615,7 @@ int get_left_right_value(tree_t* left, tree_t* right, tree_t** new_node, express
 	}
 	else {
 		fprintf(stderr, "The left(%s) or right(%s) node type is invalid operands\n",
-				left->common.name, right->common.name);
+				right->common.name, right->common.name);
 		return -1;
 	}
 
@@ -650,6 +635,12 @@ int get_left_right_value(tree_t* left, tree_t* right, tree_t** new_node, express
 			break;
 		case DIV_TYPE:
 		case DIV_ASSIGN_TYPE:
+			if (right_type != INTEGER_TYPE) {
+				fprintf(stderr, "dividor not int\n");
+				/* TODO: handle the error */
+				exit(-1);
+				break;
+			}
 			final_value = (left_value / right_value);
 			break;
 		case EQ_OP_TYPE:
@@ -672,7 +663,7 @@ int get_left_right_value(tree_t* left, tree_t* right, tree_t** new_node, express
 	}
 
 	if (final_type == FLOAT_TYPE) {
-		char* float_str = (char*)gdml_zmalloc(sizeof(char) * 64);
+		char* float_str = (char*)gdml_zmalloc(sizeof(float));
 		sprintf(float_str, "%f", final_value);
 		*new_node = (tree_t*)create_node("float_literal", FLOAT_TYPE, sizeof(struct tree_float_cst));
 		(*new_node)->float_cst.float_str = float_str;
@@ -681,8 +672,9 @@ int get_left_right_value(tree_t* left, tree_t* right, tree_t** new_node, express
 		expr->final_type = final_type;
 	}
 	if ((final_type == INTEGER_TYPE) || (final_type == BOOL_TYPE)) {
-		char* int_str = (char*)gdml_zmalloc(sizeof(char) * 64);
-		sprintf(int_str, "%d", final_type);
+		char* int_str = (char*)gdml_zmalloc(sizeof(int));
+		int value = (int)final_value;
+		sprintf(int_str, "%d", value);
 		*new_node = (tree_t*)create_node("integer_literal", INTEGER_TYPE, sizeof(struct tree_int_cst));
 		(*new_node)->int_cst.value = (int)final_value;
 		(*new_node)->int_cst.int_str = int_str;
@@ -720,6 +712,12 @@ expression_t* cal_add_expr(tree_t** node, symtab_t table, expression_t* expr) {
 		cal_expression(&((*node)->binary.right), table, expr);
 		right_type = expr->final_type;
 		op_type = (*node)->binary.type;
+		if (left_type == CONSTANT_TYPE) {
+			left_type = change_node_to_const(&((*node)->binary.left), table, expr);
+		}
+		if (right_type == CONSTANT_TYPE) {
+			right_type = change_node_to_const(&((*node)->binary.right), table, expr);
+		}
 		left = (*node)->binary.left;
 		right = (*node)->binary.right;
 	}
@@ -729,11 +727,18 @@ expression_t* cal_add_expr(tree_t** node, symtab_t table, expression_t* expr) {
 		cal_expression(&((*node)->expr_assign.right), table, expr);
 		right_type = expr->final_type;
 		op_type = (*node)->expr_assign.type;
+		if (left_type == CONSTANT_TYPE) {
+			left_type = change_node_to_const(&((*node)->expr_assign.left), table, expr);
+		}
+		if (right_type == CONSTANT_TYPE) {
+			right_type = change_node_to_const(&((*node)->expr_assign.right), table, expr);
+		}
 		left = (*node)->expr_assign.left;
 		right = (*node)->expr_assign.right;
 	}
 
 	if (expr->is_undeclare) {
+		expr->node = *node;
 		return expr;
 	}
 
@@ -802,6 +807,13 @@ expression_t* binary_expr_common(tree_t** node, symtab_t table, expression_t* ex
 		cal_expression(&((*node)->binary.right), table, expr);
 		right_type = expr->final_type;
 
+		if (left_type == CONSTANT_TYPE) {
+			left_type = change_node_to_const(&((*node)->binary.left), table, expr);
+		}
+		if (right_type == CONSTANT_TYPE) {
+			right_type = change_node_to_const(&((*node)->binary.right), table, expr);
+		}
+
 		left = (*node)->binary.left;
 		right = (*node)->binary.right;
 		op_type = (*node)->binary.type;
@@ -812,11 +824,19 @@ expression_t* binary_expr_common(tree_t** node, symtab_t table, expression_t* ex
 		cal_expression(&((*node)->expr_assign.right), table, expr);
 		right_type = expr->final_type;
 
+		if (left_type == CONSTANT_TYPE) {
+			left_type = change_node_to_const(&((*node)->expr_assign.left), table, expr);
+		}
+		if (right_type == CONSTANT_TYPE) {
+			right_type = change_node_to_const(&((*node)->expr_assign.right), table, expr);
+		}
+
 		left = (*node)->expr_assign.left;
 		right = (*node)->expr_assign.right;
 		op_type = (*node)->expr_assign.type;
 	}
 	if (expr->is_undeclare) {
+		expr->node = *node;
 		return expr;
 	}
 
@@ -831,7 +851,8 @@ expression_t* binary_expr_common(tree_t** node, symtab_t table, expression_t* ex
 			return expr;
 		}
 		else {
-			if (get_left_right_value(left, right, &new_node, expr, op_type) == 0) {
+			if (get_left_right_value(left, right, &new_node, expr, op_type) != 0) {
+				expr->final_type = charge_type(left_type, right_type);
 				expr->node = *node;
 				return expr;
 			}
@@ -845,6 +866,7 @@ expression_t* binary_expr_common(tree_t** node, symtab_t table, expression_t* ex
 	}
 	else {
 		expr->final_type = charge_type(left_type, right_type);
+		expr->node = *node;
 	}
 
 	DEBUG_EXPR("In %s, line = %d, node type: %s, expr final_type: %d\n",
@@ -871,6 +893,12 @@ expression_t* binary_expr_int(tree_t** node, symtab_t table, expression_t* expr)
 		left_type = expr->final_type;
 		cal_expression(&((*node)->binary.right), table, expr);
 		right_type = expr->final_type;
+		if (left_type == CONSTANT_TYPE) {
+			left_type = change_node_to_const(&((*node)->binary.left), table, expr);
+		}
+		if (right_type == CONSTANT_TYPE) {
+			right_type = change_node_to_const(&((*node)->binary.right), table, expr);
+		}
 
 		left = (*node)->binary.left;
 		right = (*node)->binary.right;
@@ -881,6 +909,12 @@ expression_t* binary_expr_int(tree_t** node, symtab_t table, expression_t* expr)
 		left_type = expr->final_type;
 		cal_expression(&((*node)->expr_assign.right), table, expr);
 		right_type = expr->final_type;
+		if (left_type == CONSTANT_TYPE) {
+			left_type = change_node_to_const(&((*node)->expr_assign.left), table, expr);
+		}
+		if (right_type == CONSTANT_TYPE) {
+			right_type = change_node_to_const(&((*node)->expr_assign.right), table, expr);
+		}
 
 		left = (*node)->expr_assign.left;
 		right = (*node)->expr_assign.right;
@@ -888,6 +922,7 @@ expression_t* binary_expr_int(tree_t** node, symtab_t table, expression_t* expr)
 	}
 
 	if (expr->is_undeclare) {
+		expr->node = *node;
 		return expr;
 	}
 
@@ -933,7 +968,7 @@ expression_t* binary_expr_int(tree_t** node, symtab_t table, expression_t* expr)
 						break;
 					default:
 						fprintf(stderr, "The binary operator is other type: %s\n", (*node)->common.name);
-						expr -> node = *node;
+						expr->node = *node;
 						return expr;
 				}
 
@@ -1074,7 +1109,12 @@ expression_t* unary_bit_non(tree_t** node, symtab_t table, expression_t* expr) {
 	tree_t* unary_expr = (*node)->unary.expr;
 
 	if (expr->is_undeclare) {
+		expr->node = *node;
 		return expr;
+	}
+
+	if (expr->final_type == CONSTANT_TYPE) {
+		expr->final_type = change_node_to_const(&((*node)->unary.expr), table, expr);
 	}
 
 	if (charge_node_is_const(unary_expr)) {
@@ -1111,6 +1151,7 @@ expression_t* unary_bit_non(tree_t** node, symtab_t table, expression_t* expr) {
 		expr->node = *node;
 	}
 
+	expr->node = *node;
 	return expr;
 }
 
@@ -1123,7 +1164,12 @@ expression_t* unary_expr_common(tree_t** node, symtab_t table, expression_t* exp
 	tree_t* unary_expr = (*node)->unary.expr;
 
 	if (expr->is_undeclare) {
+		expr->node = *node;
 		return expr;
+	}
+
+	if (expr->final_type == CONSTANT_TYPE) {
+		expr->final_type = change_node_to_const(&((*node)->unary.expr), table, expr);
 	}
 
 	if (charge_node_is_const(unary_expr)) {
@@ -1192,7 +1238,7 @@ expression_t* unary_expr_common(tree_t** node, symtab_t table, expression_t* exp
 			}
 			if (final_type == INTEGER_TYPE) {
 				char* int_str = (char*)gdml_zmalloc(sizeof(char) * 64);
-				sprintf(int_str, "%d", final_value);
+				sprintf(int_str, "%ld", final_value);
 				new_node = (tree_t*)create_node("integer_literal", INTEGER_TYPE, sizeof(struct tree_int_cst));
 				new_node->int_cst.value = (int)final_value;
 				new_node->int_cst.int_str = int_str;
@@ -1259,6 +1305,9 @@ expression_t* cal_unary_expr(tree_t** node, symtab_t table,  expression_t* expr)
 				expr->node = *node;
 				break;
 			}
+			if (expr->final_type == CONSTANT_TYPE) {
+				expr->final_type = change_node_to_const(&((*node)->unary.expr), table, expr);
+			}
 			if (charge_node_is_const((*node)->unary.expr)) {
 				fprintf(stderr, "The unary operation expression can not constant\n");
 					/* FIXME: should handle the error */
@@ -1295,6 +1344,7 @@ expression_t* cal_cast_expr(tree_t** node, symtab_t table, expression_t* expr) {
 	cal_expression(&((*node)->cast.expr), table, expr);
 
 	if (expr->is_undeclare) {
+		expr->node = *node;
 		return expr;
 	}
 
@@ -1325,6 +1375,7 @@ expression_t* cal_sizeof_expr(tree_t** node, symtab_t table,  expression_t* expr
 	}
 	cal_expression(&((*node)->sizeof_tree.expr), table, expr);
 	if (expr->is_undeclare) {
+		expr->node = *node;
 		return expr;
 	}
 	expr->final_type = INT_TYPE;
@@ -1569,7 +1620,8 @@ int get_c_type(symtab_t table, symbol_t symbol) {
 					__func__, __LINE__, type);
 			break;
 		case CONSTANT_TYPE:
-			type = get_constant_type(symbol);
+			//type = get_constant_type(symbol);
+			type = CONSTANT_TYPE;
 			DEBUG_EXPR("\nIN %s, line = %d, constant type: %d\n",
 					__func__, __LINE__, type);
 			break;
@@ -1708,11 +1760,13 @@ expression_t* get_ident_value(tree_t** node, symtab_t table,  expression_t* expr
 			//symbol_insert(table, node->ident.str, NO_TYPE, NULL);
 			expr->final_type = NO_TYPE;
 		}
-		else {
+		else if (expr->is_undeclare == 0) {
 			expr->is_undeclare = 1;
 			expr->undecl_name = (*node)->ident.str;
-			/* insert the undeclared variable to table list */
-			//fprintf(stderr, "%s no undeclared (first use)\n", (*node)->ident.str);
+		}
+		else {
+			fprintf(stderr, "%s no undeclared (first use)\n", (*node)->ident.str);
+			exit(-1);
 		}
 	}
 	expr->node = *node;
@@ -1854,9 +1908,7 @@ symtab_t get_default_symbol_tale(symtab_t table, const char* name) {
 		table = ((template_attr_t*)attr)->table;
 	} // device
 	else {
-		fprintf(stderr, "Othe default name: %s\n", name);
-		/* FIXME: handle the error */
-		exit(-1);
+		return NULL;
 	}
 
 	return table;
@@ -1887,13 +1939,22 @@ int check_reference(symtab_t table, reference_t* ref, expression_t* expr) {
 			ref_table = get_symbol_table(symbol);
 		}
 
-		if (ref_table == NULL) {
+		if ((ref_table == NULL) && (expr->is_undeclare == 0)) {
+			expr->is_undeclare = 1;
+			break;
+		}
+		else if ((ref_table == NULL) && (expr->is_undeclare == 1)){
 			fprintf(stderr, "%s not object or struct!\n", symbol->name);
 			/* FIXME: handle the error */
 			exit(-1);
 		}
+
 		ref_symbol = symbol_find_notype(ref_table, tmp->next->name);
-		if (ref_symbol == NULL) {
+		if ((ref_symbol == NULL) && (expr->is_undeclare == 0)) {
+			expr->is_undeclare = 1;
+			break;
+		}
+		else if ((ref_symbol == NULL) && (expr->is_undeclare == 1)) {
 			fprintf(stderr, "%s not element of %s\n", tmp->next->name, tmp->name);
 			/* FIXME: handle the error */
 			exit(-1);
@@ -1929,6 +1990,9 @@ expression_t* get_component_expr(tree_t** node, symtab_t table,  expression_t* e
 	assert(expr != NULL);
 	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
 			__func__, __LINE__, (*node)->common.name);
+	if (expr->is_undeclare) {
+		return expr;
+	}
 	reference_t* reference = (reference_t*)gdml_zmalloc(sizeof(reference_t));
 	/* TODO: should find the member, check it */
 	if ((*node)->component.type == COMPONENT_POINTER_TYPE) {
@@ -2014,6 +2078,9 @@ void charge_func_param(tree_t** node, symtab_t table, function_t* func) {
 		if (type == TYPEDEF_TYPE) {
 			type = get_typedef_type(table, param->decl->type->typedef_name);
 		}
+		if (expr->final_type == CONSTANT_TYPE) {
+			expr->final_type = change_node_to_const(&tmp_node, table, expr);
+		}
 		charge_type(expr->final_type, type);
 		tmp_node = tmp_node->common.sibling;
 		param = param->next;
@@ -2036,6 +2103,9 @@ expression_t* get_brack_expr(tree_t** node, symtab_t table,  expression_t* expr)
 		}
 		else {
 			expr = cal_expression(&((*node)->expr_brack.expr_in_brack), table, expr);
+			if (expr->final_type == CONSTANT_TYPE) {
+				expr->final_type = change_node_to_const(&((*node)->expr_brack.expr_in_brack), table, expr);
+			}
 			if (charge_node_is_const(in_node)) {
 				expr = get_const_expr_value(in_node, expr);
 			}
@@ -2075,6 +2145,7 @@ expression_t* get_brack_expr(tree_t** node, symtab_t table,  expression_t* expr)
 		}
 	}
 
+	expr->node = *node;
 	return expr;
 }
 
@@ -2111,16 +2182,22 @@ expression_t* get_bit_slic_expr(tree_t** node, symtab_t table,  expression_t* ex
 	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
 			__func__, __LINE__, (*node)->common.name);
 
+	if (expr->is_undeclare) {
+		return expr;
+	}
 	cal_expression(&((*node)->bit_slic.expr), table, expr);
 	if (expr->is_const) {
 		fprintf(stderr, "The bit slic declare should not const!\n");
 		exit(-1);
 	}
 	cal_expression(&((*node)->bit_slic.bit), table, expr);
-	cal_expression(&((*node)->bit_slic.bit_end), table, expr);
+	if ((*node)->bit_slic.bit_end) {
+		cal_expression(&((*node)->bit_slic.bit_end), table, expr);
+	}
 
 	expr->is_const = 0;
 	if (expr->is_undeclare) {
+		expr->node = *node;
 		return expr;
 	}
 
@@ -2142,6 +2219,10 @@ expression_t* cal_expression(tree_t** node, symtab_t table, expression_t* expr) 
 	assert(*node != NULL);
 	assert(table != NULL);
 	assert(expr != NULL);
+	if (expr->is_undeclare) {
+		expr->node = *node;
+		return expr;
+	}
 	switch((*node)->common.type) {
 		case EXPR_ASSIGN_TYPE:
 			expr = cal_assign_expr(node, table, expr);
@@ -2219,6 +2300,9 @@ expression_t* parse_expression(tree_t** node, symtab_t table) {
 
 	expression_t* expr = (expression_t*)gdml_zmalloc(sizeof(expression_t));
 	cal_expression(node, table, expr);
+	if (expr->final_type == CONSTANT_TYPE) {
+		expr->final_type = change_node_to_const(node, table, expr);
+	}
 	expr->node = *node;
 
 	if (expr->is_undeclare) {
