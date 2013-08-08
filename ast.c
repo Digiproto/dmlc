@@ -370,26 +370,38 @@ char* get_obj_desc(tree_t* spec) {
 	}
 }
 
-int get_int_value(tree_t* node) {
-	if (node == NULL) {
+int get_int_value(tree_t** node, symtab_t table) {
+	if (*node == NULL) {
 		return -1;
 	}
-	if (node->common.type == INTEGER_TYPE) {
-		return node->int_cst.value;
+	if ((*node)->common.type == INTEGER_TYPE) {
+		return (*node)->int_cst.value;
 	}
 	else {
-		fprintf(stderr, "In %s, line = %d, other node expression, name: %s, type: %d\n",
-				__FUNCTION__, __LINE__, node->common.name, node->common.type);
+		expression_t* expr = parse_expression(node, table);
+		if (expr->is_const == 0) {
+			fprintf(stderr, "Non-constant value\n");
+			exit(-1);
+		}
+		else if (expr->final_type == INTEGER_TYPE) {
+			printf("value: %d\n", expr->const_expr->int_value);
+			return expr->const_expr->int_value;
+		}
+		else {
+			fprintf(stderr, "final type not int\n");
+			exit(-1);
+		}
+		printf("In %s, line = %d\n", __FUNCTION__, __LINE__);
 		exit(-1);
 	}
 }
 
-arraydef_attr_t* get_range_arraydef(tree_t* node, arraydef_attr_t* array) {
-	if (node == NULL) {
+arraydef_attr_t* get_range_arraydef(tree_t** node, symtab_t table, arraydef_attr_t* array) {
+	if (*node == NULL) {
 		return NULL;
 	}
-	if (node->array.ident) {
-		tree_t* ident = node->array.ident;
+	if ((*node)->array.ident) {
+		tree_t* ident = (*node)->array.ident;
 		if (ident->common.type == IDENT_TYPE) {
 			array->ident = ident->ident.str;
 		}
@@ -403,15 +415,16 @@ arraydef_attr_t* get_range_arraydef(tree_t* node, arraydef_attr_t* array) {
 		fprintf(stderr, "The array need identifier\n");
 		exit(-1);
 	}
-	if (node->array.expr) {
-		array->low = get_int_value(node->array.expr);
+
+	if ((*node)->array.expr) {
+		array->low = get_int_value(&((*node)->array.expr), table);
 	}
 	else {
 		fprintf(stderr, "The array need start array number\n");
 		exit(-1);
 	}
-	if (node->array.expr_end) {
-		array->high = get_int_value(node->array.expr_end);
+	if ((*node)->array.expr_end) {
+		array->high = get_int_value(&((*node)->array.expr_end), table);
 	}
 	else {
 		fprintf(stderr, "The array need end array number\n");
@@ -421,16 +434,16 @@ arraydef_attr_t* get_range_arraydef(tree_t* node, arraydef_attr_t* array) {
 	return array;
 }
 
-arraydef_attr_t* get_arraydef(tree_t* node) {
-	if (node == NULL) {
+arraydef_attr_t* get_arraydef(tree_t** node, symtab_t table) {
+	if (*node == NULL) {
 		return NULL;
 	}
 	arraydef_attr_t* arraydef = (arraydef_attr_t*)gdml_zmalloc(sizeof(arraydef_attr_t));
-	if ((node->array.is_fix) == 1) {
-		arraydef->fix_array = get_int_value(node->array.expr);
+	if (((*node)->array.is_fix) == 1) {
+		arraydef->fix_array = get_int_value(&((*node)->array.expr), table);
 	}
 	else {
-		arraydef = get_range_arraydef(node, arraydef);
+		arraydef = get_range_arraydef(node, table, arraydef);
 	}
 
 	return arraydef;
@@ -533,12 +546,12 @@ paramspec_t* get_paramspec(tree_t* node, symtab_t table) {
 	return spec;
 }
 
-int get_size(tree_t* node) {
-	if (node == NULL) {
+int get_size(tree_t** node, symtab_t table) {
+	if (*node == NULL) {
 		return -1;
 	}
-	if (node->common.type == INTEGER_TYPE) {
-		int size = node->int_cst.value;
+	if ((*node)->common.type == INTEGER_TYPE) {
+		int size = (*node)->int_cst.value;
 		if ((size > 0) && (size <= 8)) {
 			return size;
 		}
@@ -547,23 +560,59 @@ int get_size(tree_t* node) {
 		}
 	}
 	else {
-		DEBUG_AST("The size is another type expression - node type: %d, name: %s\n", node->common.type, node->common.name);
+		expression_t* expr = parse_expression(node, table);
+		if (expr->is_const == 0) {
+			fprintf(stderr, "Non-constant value\n");
+			exit(-1);
+		}
+		if (expr->final_type == INTEGER_TYPE) {
+			if (expr->const_expr->out_64bit) {
+				fprintf(stderr, "The register size out\n");
+				exit(-1);
+			}
+			return expr->const_expr->int_value;
+		}
+		else {
+			fprintf(stderr, "The offset final size in other type: %d\n", expr->final_type);
+			exit(-1);
+		}
+		printf("In %s, line = %d, get the constant value about size\n", __func__, __LINE__);
 		exit(-1);
 	}
 
 	return 0;
 }
 
-int get_offset(tree_t* node) {
-	if (node == NULL) {
+int get_offset(tree_t** node, symtab_t table) {
+	if (*node == NULL) {
 		return -1;
 	}
-	if (node->common.type == INTEGER_TYPE) {
-		int offset = node->int_cst.value;
+	if ((*node)->common.type == INTEGER_TYPE) {
+		int offset = (*node)->int_cst.value;
 		return offset;
 	}
+	else if ((*node)->common.type == UNDEFINED_TYPE) {
+		return -1;
+	}
 	else {
-		DEBUG_AST("The size is another type expression - node type: %d, name: %s\n", node->common.type, node->common.name);
+		expression_t* expr = parse_expression(node, table);
+
+		if (expr->is_const == 0) {
+			fprintf(stderr, "Non-constant value\n");
+			exit(-1);
+		}
+		if (expr->final_type == INTEGER_TYPE) {
+			if (expr->const_expr->out_64bit) {
+				fprintf(stderr, "The offset out_64bit\n");
+				exit(-1);
+			}
+			return expr->const_expr->int_value;
+		}
+		else {
+			fprintf(stderr, "The offset final size in other type: %d\n", expr->final_type);
+			exit(-1);
+		}
+		printf("In %s, line = %d, get the constant value about offset\n", __func__, __LINE__);
 		exit(-1);
 	}
 
