@@ -255,12 +255,18 @@ static void create_dummy_field(void) {
 }
 
 static void create_field_objs(symtab_t symtab){
-	symbol_list_t *list = symbol_list_find(symtab, FIELD_TYPE);
+	symbol_list_t *list = NULL;
 	symbol_list_t *head = list;
 	symbol_t sym;
 	object_t *obj = OBJ;
 	int i = 0;
-
+	
+	if(!symtab) {
+		create_dummy_field();
+		return;
+	} else {
+		list = symbol_list_find(symtab, FIELD_TYPE);
+	}
 	while(list){
 		sym = list->sym;
 		create_field_object(sym);
