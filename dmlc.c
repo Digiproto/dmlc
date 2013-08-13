@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#include <libgen.h>
 #include "ast.h"
 #include "Parser.h"
 #include "Lexer.h"
@@ -113,8 +114,19 @@ void set_library_dir(const char *dir_r)
 	gdml_library_dir = strcat(tmp, GDML_LIBRARY_DIR);
 }
 
+char* get_file_dir(char* filename) {
+	assert(filename != NULL);
+
+	char tmp[256];
+	strncpy(tmp, filename, strlen(filename));
+	char* dir = dirname(tmp);
+
+	return strdup(dir);
+}
+
 struct file_stack* filestack_top = NULL;
 char *builtin_filename = NULL;
+char* file_dir = NULL;
 symtab_t root_table = NULL;
 extern void gen_qemu_code(tree_t *root, const char *out_dir);
 extern void gen_skyeye_code(tree_t *root, const char *out_dir);
@@ -143,6 +155,7 @@ int main (int argc, char *argv[])
 	insert_pre_dml_struct();
 	/* main ast */
 	char *filename = argv[1];
+	file_dir = get_file_dir(filename);
 	tree_t* ast = get_ast (filename);
 	assert (ast != NULL);
 	if (root_table->type != DEVICE_TYPE) {

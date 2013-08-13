@@ -93,6 +93,7 @@ extern char* builtin_filename;
 extern const char* import_file_list[];
 extern symtab_t root_table;
 stack_t* table_stack;
+extern char* file_dir;
 int object_spec_type = -1;
 object_attr_t* object_comm_attr = NULL;
 static symtab_t current_table = NULL;
@@ -1234,13 +1235,13 @@ istemplate_stmt
 import
 	: IMPORT STRING_LITERAL ';' {
 		DBG("import file is %s\n", $2);
-		printf("import file is %s\n", $2);
 		char fullname[1024];
+		char file_name[1024];
 		int dirlen = strlen(gdml_library_dir);
 		int filelen = strlen($2);
+		int file_dir_len = strlen(file_dir);
 
 		assert((dirlen + filelen) < 1024);
-		strncpy(&fullname[0], gdml_library_dir, dirlen);
 		if(*($2) == '"') {
 			$2 ++;
 		}
@@ -1248,17 +1249,31 @@ import
 		/* something wrong */
 			fprintf(stderr, "the import file format is wrong\n");
 		}
+
 		if(*($2 + strlen($2) - 1) == '"') {
-			strncpy(&fullname[dirlen], $2, filelen - 1);
+			strncpy(file_name, file_dir, file_dir_len);
+			file_name[file_dir_len] = '/';
+			strncpy(&file_name[file_dir_len + 1], $2, filelen - 2);
+			file_name[file_dir_len + filelen - 1] = '\0';
 		}
 		else {
 			/* something wrong */
 			fprintf(stderr, "the import file format is wrong\n");
 		}
-		fullname[dirlen + filelen - 2] = '\0';
+
+		FILE *file = fopen(file_name, "r");
+		if (file == NULL) {
+			strncpy(&fullname[0], gdml_library_dir, dirlen);
+			strncpy(&fullname[dirlen], $2, filelen - 2);
+			fullname[dirlen + filelen - 2] = '\0';
+			file = fopen(fullname, "r");
+		}
+		else {
+			strncpy(fullname, file_name, file_dir_len + filelen - 1);
+		}
+
 		DBG("In IMPORT, fullname=%s, dirlen=%d, filelen=%d\n", fullname, dirlen, filelen);
 
-		FILE *file = fopen(fullname, "r");
 		if (file == NULL) {
 			printf("Can't open imported file %s.\n", fullname);
 			exit(EXIT_FAILURE);
@@ -1288,7 +1303,6 @@ import
 		symbol_insert(current_table, $2, IMPORT_TYPE, attr);
 
 		$$ = ast->common.child;
-		//$$ = ast;
 	}
 	;
 
