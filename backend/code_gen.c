@@ -35,7 +35,7 @@
 #include "gen_debug.h"
 
 extern symtab_t root_table;
-int debugflags = 1;
+int debugflags = 0x1f;
 
 void gen_code (tree_t * root, const char *name)
 {
