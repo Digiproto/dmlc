@@ -499,7 +499,11 @@ static void translate_call_common(tree_t *expr, tree_t *ret){
 		translate(expr);
 	}*/
 	obj_name = get_obj_qname(obj);
-	D("_DML_M_%s__%s", obj_name, method_sym->name);
+	if(!strcmp(obj->obj_type, "device")) {
+		D("_DML_M_%s", method_sym->name);	
+	} else {
+		D("_DML_M_%s__%s", obj_name, method_sym->name);
+	}
 	D("(_dev");
     if(expr->common.type == EXPR_BRACK_TYPE) {
 		expr_list = expr->expr_brack.expr_in_brack;
