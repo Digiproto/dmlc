@@ -2149,6 +2149,7 @@ expression
 		node->expr_assign.left = $1;
 		node->expr_assign.right = $3;
 		node->common.print_node = print_binary;
+		node->common.translate = translate_assign;
 		$$ = node;
 	}
 	| expression AND_ASSIGN expression {
@@ -2158,6 +2159,7 @@ expression
 		node->expr_assign.left = $1;
 		node->expr_assign.right = $3;
 		node->common.print_node = print_binary;
+		node->common.translate = translate_assign;
 		$$ = node;
 	}
 	| expression XOR_ASSIGN expression {
@@ -2410,6 +2412,7 @@ expression
 		node->unary.type = BIT_NON_TYPE;
 		node->unary.expr = $2;
 		node->common.print_node = print_unary;
+		node->common.translate = translate_unary_expr; 
 		$$ = node;
 	}
 	| '&' expression {
@@ -2418,6 +2421,7 @@ expression
 		node->unary.type = ADDR_TYPE;
 		node->unary.expr = $2;
 		node->common.print_node = print_unary;
+		node->common.translate = translate_unary_expr;
 		$$ = node;
 	}
 	| '*' expression {
