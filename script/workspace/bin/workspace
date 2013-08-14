@@ -55,7 +55,7 @@ check_config() {
 	if ! [ -z $SKYEYE_BUILD ]; then
 		# choose skyeye for building device
 		if ! [ -d "$SKYEYE_DIR/device/simics" ]; then
-			echo "[ eroor]" \"$SKYEYE_DIR\" is not a skyeye src path.
+			echo "[ error]" \"$SKYEYE_DIR\" is not a skyeye src path.
 			exit
 		fi
 	fi
