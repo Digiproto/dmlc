@@ -96,9 +96,9 @@ static void translate_sizeof(tree_t *t) {
 	node = t->sizeof_tree.expr;
 	D("sizeof ");
 	translate(node);
-}
+} */
 
-static void translate_unary_expr(tree_t *t) {
+void translate_unary_expr(tree_t *t) {
 	tree_t *node;
 
 	D("%s",t->unary.operat);
@@ -106,6 +106,7 @@ static void translate_unary_expr(tree_t *t) {
 	translate(node);
 }
 
+/*
 static void translate_defined(tree_t *t) {
 	tree_t *node;
 

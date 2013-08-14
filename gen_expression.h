@@ -31,5 +31,6 @@ void translate_assign(tree_t *t);
 void translate_bit_slic(tree_t *t);
 void translate_bit_slic_assign(tree_t *t);
 void translate_brack_expr(tree_t *t);
+void translate_unary_expr(tree_t *t);
 
 #endif /* __GEN_EXPRESSION_H__ */
