@@ -770,7 +770,11 @@ static void process_register_template(object_t *obj){
 	dml_register_t *reg = (dml_register_t *)obj;
 	int i;
 	param_value_t tmp;
-
+	object_attr_t *attr;
+	tree_t *node;
+	
+	node = obj->node;
+	attr = node->common.attr;
 	param_value_t *val = gdml_zmalloc(sizeof(*val));
 	val->type = param_type_list;
 	val->u.list.size = reg->field_count;
@@ -795,6 +799,14 @@ static void process_register_template(object_t *obj){
 	bank_t *bank = (bank_t *)reg->obj.parent;
 	val->u.integer = bank->register_size * 8;
 	symbol_insert(table, "bitsize", PARAMETER_TYPE, val);
+
+	val = gdml_zmalloc(sizeof(*val));
+	val->type = param_type_bool;
+	val->u.boolean = 1;
+	if(attr->reg.offset == -1) {
+		val->u.boolean = 0;
+	}
+	symbol_insert(table, "allocate", PARAMETER_TYPE, val);
 }
 
 static void process_field_template(object_t *obj){
@@ -902,12 +914,12 @@ static void add_object_templates(object_t *obj, tree_t *t){
 	struct tree_ident *ident;
 	struct template_name *temp;
 	
-	add_default_template(obj);
-	while(it){
+	/*while(it){
 		ident = (struct tree_ident *)it;
 		create_template_name(obj, ident->str);
 		it = it->common.sibling;
-	}
+	}*/
+	add_default_template(obj);
 	process_object_templates(obj);
 }
 
