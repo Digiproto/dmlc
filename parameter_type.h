@@ -31,7 +31,9 @@ typedef enum parameter_type {
 	param_type_bool,
 	param_type_string,
 	param_type_list,
-	param_type_ref
+	param_type_ref,
+	param_type_undef,
+	param_type_max
 } param_type_t;
 
 
