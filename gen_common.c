@@ -287,7 +287,12 @@ void translate_quote(tree_t *t) {
 		name = node->ident.str;
 		if(!strcmp(name, "this")) {
 			ref = get_obj_ref(OBJ);
-			D("%s", ref);
+			if(!OBJ->is_array) { 
+				D("%s", ref);
+			} else {
+				/*handle array index */
+				D("%s[%s]", ref, "_idx0");
+			}
 			return;
 		}
 		sym = get_ref_sym(t, &ref_ret);	
