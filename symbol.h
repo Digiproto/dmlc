@@ -223,8 +223,8 @@ typedef struct register_array_attr
 typedef struct bitrange_attr{
 	struct symbol_common common;
 	int is_fix;
-	expression_t expr;
-	expression_t expr_end;
+	expression_t* expr;
+	expression_t* expr_end;
 }bitrange_attr_t;
 
 typedef struct field_attr

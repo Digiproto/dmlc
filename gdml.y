@@ -1369,7 +1369,6 @@ object_spec
 		}
 		table->table_num = ++current_table_num;
 		block->block.table = symtab_insert_child(current_table, table);
-		//prefix_table = current_table;
 		push(table_stack, current_table);
 		current_table = block->block.table;
 		if (object_comm_attr) {
@@ -1627,6 +1626,7 @@ bitrange
 		/* should calulate the expression value */
 		bitrange_attr_t* attr = (bitrange_attr_t*)gdml_zmalloc(sizeof(bitrange_attr_t));
 		attr->is_fix = 1;
+		attr->expr = parse_expression(&($2), current_table);
 		tree_t* node = (tree_t*)create_node("array", ARRAY_TYPE, sizeof(struct tree_array));
 		node->array.is_fix = 1;
 		node->array.expr = $2;
@@ -1640,6 +1640,8 @@ bitrange
 		/* should calulate the expression value */
 		bitrange_attr_t* attr = (bitrange_attr_t*)gdml_zmalloc(sizeof(bitrange_attr_t));
 		attr->is_fix = 0;
+		attr->expr = parse_expression(&($2), current_table);
+		attr->expr_end = parse_expression(&($4), current_table);
 		tree_t* node = (tree_t*)create_node("array", ARRAY_TYPE, sizeof(struct tree_array));
 		node->array.is_fix = 0;
 		node->array.expr = $2;

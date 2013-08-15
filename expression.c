@@ -145,7 +145,7 @@ tree_t* copy_data_from_constant(tree_t* node) {
 	return new_node;
 }
 
-type_t change_node_to_const(tree_t** node, symtab_t table, expression_t* expr) {
+constant_attr_t* get_constant_attr(tree_t** node, symtab_t table) {
 	assert(*node != NULL);
 	if (((*node)->common.type != IDENT_TYPE) && ((*node)->common.type != DML_KEYWORD_TYPE)) {
 		fprintf(stderr, "not constant node %s: %d\n", (*node)->common.name, (*node)->common.type);
@@ -156,7 +156,12 @@ type_t change_node_to_const(tree_t** node, symtab_t table, expression_t* expr) {
 	if ((symbol == NULL) && (table->no_check == 1)) {
 		symbol = get_symbol_from_root_table((*node)->ident.str, CONSTANT_TYPE);
 	}
-	constant_attr_t* attr = (constant_attr_t*)(symbol->attr);
+	return (constant_attr_t*)(symbol->attr);
+}
+
+type_t change_node_to_const(tree_t** node, symtab_t table, expression_t* expr) {
+	assert(*node != NULL);
+	constant_attr_t* attr = get_constant_attr(node, table);
 	tree_t* new_node = copy_data_from_constant(attr->value->node);
 	new_node->common.sibling = (*node)->common.sibling;
 	new_node->common.child = (*node)->common.child;
@@ -2066,25 +2071,32 @@ void charge_func_param(tree_t** node, symtab_t table, function_t* func) {
 	if (*node == NULL) {
 		return;
 	}
-	tree_t* tmp_node = (*node);
+	tree_t* save_node = *node;
 	func_param_t* param = func->param;
+
+	int arg_num = get_param_num(*node);
 
 	expression_t* expr = (expression_t*)gdml_zmalloc(sizeof(expression_t));
 	int type = 0;
 	int i = 0;
-	while (tmp_node) {
-		expr = cal_expression(&tmp_node, table, expr);
+	while (*node) {
+		expr = cal_expression(node, table, expr);
 		type = get_decl_type(param->decl);
 		if (type == TYPEDEF_TYPE) {
 			type = get_typedef_type(table, param->decl->type->typedef_name);
 		}
 		if (expr->final_type == CONSTANT_TYPE) {
-			expr->final_type = change_node_to_const(&tmp_node, table, expr);
+			constant_attr_t* attr = get_constant_attr(node, table);
+			expr->final_type =  attr->value->final_type;
 		}
 		charge_type(expr->final_type, type);
-		tmp_node = tmp_node->common.sibling;
+		*node = (*node)->common.sibling;
 		param = param->next;
+		i++;
 	}
+
+	*node = save_node;
+	arg_num = get_param_num(*node);
 
 	return;
 }
@@ -2140,6 +2152,9 @@ expression_t* get_brack_expr(tree_t** node, symtab_t table,  expression_t* expr)
 			else {
 				charge_func_param(&(*node)->expr_brack.expr_in_brack, table, func);
 			}
+
+			arg_num = get_param_num((*node)->expr_brack.expr_in_brack);
+
 
 			expr->final_type = get_func_ret_type(table, func->ret_decl);
 		}
@@ -2339,19 +2354,13 @@ void parse_log_args(tree_t** node, symtab_t table) {
 	}
 	assert(table != NULL);
 
-	parse_expression(node, table);
-	tree_t* arg_node = *node;
-	tree_t* pre_node = *node;
+	tree_t** arg_node = node;
 
 	parse_expression(node, table);
 
-	while ((arg_node->common.sibling) != NULL) {
-		arg_node = arg_node->common.sibling;
-		parse_expression(&arg_node, table);
-		if (arg_node != (pre_node->common.sibling)) {
-			pre_node->common.sibling = arg_node;
-		}
-		pre_node = arg_node;
+	while (((*arg_node)->common.sibling) != NULL) {
+		*arg_node = (*arg_node)->common.sibling;
+		parse_expression(arg_node, table);
 	}
 
 	return;
