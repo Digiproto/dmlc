@@ -241,156 +241,19 @@ static void translate_string(tree_t *t) {
 static void translate_float(tree_t *t) {
 	tree_t *node = t;
 	D("%s",node->float_cst.float_str);
-}
+} */
 
-static void translate_bit_slice(tree_t *t) {
-	tree_t *node;
+void translate_bit_slice2(tree_t *t) {
+	tree_t *expr;
 	tree_t *index;
-	int start_index;
-	int end_index = -1;
-	int tmp;
-	int single_bit = 0;
-	tree_t *start_expr;
-	tree_t *end_expr;
-	int const_index = 0;
-	int pos;
-	int mask;
-	const char *type;
-	int is_array;
-	expression_t *expr;
 
-
-	node = t->bit_slic.expr;
-	is_array = !t->bit_slic.bit_end && !t->bit_slic.endian;
-	if(!is_array) {
-		if(t->bit_slic.bit && t->bit_slic.bit_end) {
-			expr = parse_expression(t->bit_slic.bit, current_table);
-			if(expr->is_const) {
-				start_index = expr->final_value;
-				const_index++;
-			} else {
-				start_expr = t->bit_slic.bit;
-			}
-			expr = parse_expression(t->bit_slic.bit_end, current_table);
-			if(expr->is_const) {
-				const_index++;
-				end_index = expr->final_value;
-			} else {
-				end_expr = t->bit_slic.bit_end; 
-			}
-			if(const_index == 2) {
-				goto const_bit;
-			}
-		} else if (t->bit_slic.bit && !t->bit_slic.bit_end) {
-			expr = parse_expression(t->bit_slic.bit, current_table);
-			if(expr->is_const) {
-				start_index = expr->final_value;
-				const_index++;
-				goto const_bit;
-			} else {
-				single_bit = 1;
-		    	start_expr = t->bit_slic.bit;	
-			}
-		}
-	} else {
-		index = t->bit_slic.bit;	
-	}
-
-	if(!is_array) {
-		if(single_bit) {
-			D("(");
-			D("(%s)",type);
-			D("(");
-			translate(node);
-			D(" >> ")
-			translate(start_expr);
-			D(" & 1");
-			D(")");
-			D(")");
-			return;
-		}
-		if(end_index == 0) {
-			D("(");
-			D("(%s)",type);
-			D("(");
-			translate(node);
-			D(" & ");
-			D("MASK")
-			D("(");
-			translate(start_expr);
-			D(")");
-			D(")");
-			D(")");
-			return;
-		} else if (end_index > 0) {
-			D("(");
-			D("(%s)",type);
-			D("(");
-			translate(node);
-			D(" >> %d",end_index);
-			D(" & ");
-			D("MASK");
-			D("(");
-			translate(start_expr);
-			D(" - ");
-			D("%d", end_index);
-			D(")");
-			D(")");
-			D(")");
-			return;
-		} else {
-			D("(");
-			D("(%s)",type);
-			D("(");
-			translate(node);
-			D(" >> ");
-			translate(end_expr);
-			D(" & ");
-			D("MASK");
-			D("(");
-			translate(start_expr);
-			D(" - ");
-			translate(end_expr);
-			D(")");
-			D(")");
-			D(")");
-			return;
-
-		}
-	} else {
-		translate(node);
-		D("[");
-		transalte(index);
-		D("]");
-		return;
-	}
-const_bit:
-	if(const_index == 2) {
-		tmp = start_index - end_index;
-		tmp = 1 << (tmp + 1);
-		mask = tmp - 1;
-	} else {
-		mask = 1;
-	}
-	if(end_index == 0) {
-		D("(");
-		D("(%s)",type);
-		D("(");
-		translate(node);
-		D(" & %d",mask);
-		D(")");
-		D(")");
-	} else {
-		D("(");
-		D("(%s)",type);
-		D("(");
-		translate(node);
-		D(" >> %d",end_index);
-		D(" & %d",mask);
-		D(")");
-		D(")");
-	}
-}*/
+	expr = t->bit_slic.expr;
+	index = t->bit_slic.bit;
+	translate(expr);
+	D("[");
+	translate(index);
+	D("]");
+}
 
 void translate_bit_slic_assign(tree_t *t) {
 	tree_t *sexpr;
