@@ -1,0 +1,14 @@
+#!/bin/sh
+
+. ../config
+
+first=
+for var in $@
+do
+	if [ -z $first ]; then
+		echo "common-obj-y += $var/" > $QEMU_DIR/hw/simics/Makefile.objs
+		first=no
+	else
+		echo "common-obj-y += $var/" >> $QEMU_DIR/hw/simics/Makefile.objs
+	fi
+done

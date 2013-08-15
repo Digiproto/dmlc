@@ -25,27 +25,16 @@ else
 	SKYEYE_OBJ=$(SKYEYE_DIR_IN)/lib$(OBJ_NAME).dll
 endif
 
-# only for building qemu and skyeye both
-@FOR_ALL@all: $(QEMU_OBJ) $(SKYEYE_OBJ)
-@FOR_ALL@	@echo "[  info] qemu and skyeye build finished."
-
-@FOR_QEMU@$(QEMU_OBJ): $(QEMU_DIR_IN)/$(OBJ_NAME).c \
+@FOR_QEMU@qemu: $(QEMU_DIR_IN)/$(OBJ_NAME).c \
 @FOR_QEMU@	     $(QEMU_DIR_IN)/$(OBJ_NAME).h \
 @FOR_QEMU@	     $(QEMU_DIR_IN)/$(OBJ_NAME)_protos.c \
 @FOR_QEMU@	     $(QEMU_DIR_IN)/$(OBJ_NAME)_struct.h
-@FOR_QEMU@	@echo [normal] configure QEMU ...
-@FOR_QEMU@	@cd $(QEMU_DIR) && ./configure $(QEMU_CONF_FLAGS) 1>/dev/null
-@FOR_QEMU@	@echo [normal] make QEMU ...
-@FOR_QEMU@	@cd $(QEMU_DIR) && $(MAKE) 1>/dev/null
 
-@FOR_SKYEYE@$(SKYEYE_OBJ): $(SKYEYE_DIR_IN)/$(OBJ_NAME).c \
+@FOR_SKYEYE@skyeye: $(SKYEYE_DIR_IN)/$(OBJ_NAME).c \
 @FOR_SKYEYE@	       $(SKYEYE_DIR_IN)/$(OBJ_NAME).h \
 @FOR_SKYEYE@	       $(SKYEYE_DIR_IN)/$(OBJ_NAME)_module.c \
 @FOR_SKYEYE@	       $(SKYEYE_DIR_IN)/$(OBJ_NAME)_protos.c \
 @FOR_SKYEYE@	       $(SKYEYE_DIR_IN)/$(OBJ_NAME)_struct.h
-@FOR_SKYEYE@	@echo [normal] make Skyeye device ...
-@FOR_SKYEYE@	@cd $(SKYEYE_DIR_IN) && $(MAKE)
-@FOR_SKYEYE@	@echo [normal] Skyeye device in targets/skyeye/$(OBJ_NAME)
 
 @FOR_QEMU@$(QEMU_DIR_IN)/$(OBJ_NAME).c \
 @FOR_QEMU@$(QEMU_DIR_IN)/$(OBJ_NAME).h \

@@ -1,10 +1,12 @@
 # The file created by eJim Lee (lyjforjob@gmail.com)
 
+MODULES := $(shell find modules -maxdepth 1 -type d)
+MODULES := $(basename $(patsubst modules/%,%,$(MODULES)))
+
 all: modules
-	@cd $^ && make
+	@cd $^ && make $(MAKECMDGOALS_MODE)
 
-clean: modules
-	@cd $^ && make clean
+$(MAKECMDGOALS): modules
+	@cd $^ && make $(MAKECMDGOALS)
 
-distclean: modules
-	@cd $^ && make distclean
+.PHONY: distclean clean $(MODULES)
