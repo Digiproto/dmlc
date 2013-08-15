@@ -26,21 +26,47 @@
 #include <stdio.h>
 #include <string.h>
 #include "import.h"
+#include "ast.h"
 
 struct file_stack* push_file_stack(struct file_stack* top, const char* name)
 {
-	struct file_stack* new_stack = malloc(sizeof(struct file_stack));
-	assert((new_stack != NULL) && (name != NULL));
+	assert(name != NULL);
+
+	if(top != NULL) {
+		/* file stack is not empty. */
+		struct file_stack* tmp = top->file_history;
+		/* stop import, if the file have been imported before. */
+		while(tmp != NULL) {
+			if(strcmp(tmp->name, name) == 0)
+				return NULL;
+			tmp = tmp->next;
+		}
+	}
+
+	struct file_stack* new_stack = gdml_zmalloc(sizeof(struct file_stack));
 	new_stack->name = strdup(name);
 	new_stack->next = top;
+	struct file_stack* new_history = gdml_zmalloc(sizeof(struct file_stack));
+	new_history->name = new_stack->name;
+	new_history->next = NULL;
+
+	if(top != NULL) {
+		new_stack->file_history = top->file_history;
+		/* insert new file name into file history list end.*/
+		struct file_stack* tmp = top->file_history;
+		while(tmp->next != NULL) {
+			tmp = tmp->next;
+		}
+		tmp->next = new_history;
+	}else{
+		new_stack->file_history = new_history;
+	}
 	return new_stack;
 }
 
 struct file_stack* pop_file_stack(struct file_stack* top)
 {
 	assert(top != NULL);
-	struct file_stack* tmp = top->next;
-	free(top->name);
-	free(top);
-	return tmp;
+	/* node may be used as error information, so it can't be free. */
+	return top->next;
 }

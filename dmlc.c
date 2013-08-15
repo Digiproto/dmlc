@@ -77,9 +77,13 @@ tree_t* get_ast (const char *filename)
 	tree_t* root = NULL;
 	yylex_init (&scanner);
 	yyrestart (file, scanner);
-	filestack_top = push_file_stack(filestack_top, filename);  // <<<<< push new file name
-	yyparse (scanner, &root);
-	filestack_top = pop_file_stack(filestack_top);             // <<<<< pop top file name
+	struct file_stack* tmp_stack;
+	tmp_stack = push_file_stack(filestack_top, filename);  // <<<<< push new file name
+	if(tmp_stack != NULL) {
+		filestack_top = tmp_stack;
+		yyparse (scanner, &root);
+		filestack_top = pop_file_stack(filestack_top);             // <<<<< pop top file name
+	}
 	yylex_destroy (scanner);
 
 	fclose (file);

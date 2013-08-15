@@ -1303,9 +1303,13 @@ import
 		tree_t* ast = NULL;
 		yylex_init(&scanner);
 		yyrestart(file, scanner);
-		filestack_top = push_file_stack(filestack_top, fullname);  // <<<<< push new file name
-		yyparse(scanner, &ast);
-		filestack_top = pop_file_stack(filestack_top);             // <<<<< pop top file name
+		struct file_stack* tmp_stack;
+		tmp_stack = push_file_stack(filestack_top, fullname);  // <<<<< push new file name
+		if(tmp_stack != NULL) {
+			filestack_top = tmp_stack;
+			yyparse(scanner, &ast);
+			filestack_top = pop_file_stack(filestack_top);             // <<<<< pop top file name
+		}
 		yylex_destroy(scanner);
 		fclose(file);
 		DBG("End of parse the import file %s\n", fullname);

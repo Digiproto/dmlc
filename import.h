@@ -42,6 +42,9 @@ struct file_stack
 {
 	char *name;
 	struct file_stack *next;
+	/* record files imported.
+	 * it's not a global variable, because considered to reentrant. */
+	struct file_stack *file_history;
 //	int line;
 //	int indent_level;
 };
