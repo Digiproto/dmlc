@@ -166,6 +166,7 @@ struct object_common {
    const char* desc;
    char** templates;
    int templates_num;
+   int obj_type;
 };
 
 struct bank_attr;

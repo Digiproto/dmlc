@@ -384,7 +384,6 @@ int get_int_value(tree_t** node, symtab_t table) {
 			exit(-1);
 		}
 		else if (expr->final_type == INTEGER_TYPE) {
-			printf("value: %d\n", expr->const_expr->int_value);
 			return expr->const_expr->int_value;
 		}
 		else {

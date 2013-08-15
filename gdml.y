@@ -396,6 +396,7 @@ object
 		attr->common.table_num = current_table->table_num;
 		attr->common.templates = get_templates($3);
 		attr->common.templates_num = get_list_num($3);
+		attr->common.obj_type = BANK_TYPE;
 
 		tree_t* node = (tree_t*)create_node("bank", BANK_TYPE, sizeof(struct tree_bank));
 		node->bank.name = $2->ident.str;
@@ -430,6 +431,7 @@ object
 		attr->reg.offset = get_offset(&($4), current_table);
 		attr->common.templates = get_templates($5);
 		attr->common.templates_num = get_list_num($5);
+		attr->common.obj_type = REGISTER_TYPE;
 		symbol_insert(current_table, $2->ident.str, REGISTER_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("register", REGISTER_TYPE, sizeof(struct tree_register));
@@ -466,6 +468,7 @@ object
 		attr->reg.arraydef = get_arraydef(&($4), current_table);
 		attr->common.templates = get_templates($8);
 		attr->common.templates_num = get_list_num($8);
+		attr->common.obj_type = REGISTER_TYPE;
 		symbol_insert(current_table, $2->ident.str, REGISTER_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("register", REGISTER_TYPE, sizeof(struct tree_register));
@@ -503,6 +506,7 @@ object
 		attr->field.is_range = 1;
 		attr->common.templates = get_templates($4);
 		attr->common.templates_num = get_list_num($4);
+		attr->common.obj_type = FIELD_TYPE;
 		/* FIXME: should parsing bitrange */
 		attr->field.bitrange = $3->common.attr;
 		symbol_insert(current_table, $2->ident.str, FIELD_TYPE, attr);
@@ -541,6 +545,7 @@ object
 		attr->field.is_range = 0;
 		attr->common.templates = get_templates($3);
 		attr->common.templates_num = get_list_num($3);
+		attr->common.obj_type = FIELD_TYPE;
 		symbol_insert(current_table, $2->ident.str, FIELD_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("field", FIELD_TYPE, sizeof(struct tree_field));
@@ -585,6 +590,7 @@ object
 		attr->connect.is_array = 0;
 		attr->common.templates = get_templates($3);
 		attr->common.templates_num = get_list_num($3);
+		attr->common.obj_type = CONNECT_TYPE;
 		symbol_insert(current_table, $2->ident.str, CONNECT_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("connect", CONNECT_TYPE, sizeof(struct tree_connect));
@@ -619,6 +625,7 @@ object
 		attr->common.name = $2->ident.str;
 		attr->common.templates = get_templates($3);
 		attr->common.templates_num = get_list_num($3);
+		attr->common.obj_type = INTERFACE_TYPE;
 		symbol_insert(current_table, $2->ident.str, INTERFACE_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("interface", INTERFACE_TYPE, sizeof(struct tree_interface));
@@ -654,6 +661,7 @@ object
 		attr->attribute.arraydef = 0;
 		attr->common.templates =  get_templates($3);
 		attr->common.templates_num = get_list_num($3);
+		attr->common.obj_type = ATTRIBUTE_TYPE;
 		symbol_insert(current_table, $2->ident.str, ATTRIBUTE_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("attribute", ATTRIBUTE_TYPE, sizeof(struct tree_attribute));
@@ -684,6 +692,7 @@ object
 		attr->common.name = $2->ident.str;
 		attr->common.templates = get_templates($3);
 		attr->common.templates_num = get_list_num($3);
+		attr->common.obj_type = EVENT_TYPE;
 		symbol_insert(current_table, $2->ident.str, EVENT_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("event", EVENT_TYPE, sizeof(struct tree_event));
@@ -712,6 +721,7 @@ object
 		attr->common.name = $2->ident.str;
 		attr->common.templates = get_templates($3);
 		attr->common.templates_num = get_list_num($3);
+		attr->common.obj_type = GROUP_TYPE;
 		symbol_insert(current_table, $2->ident.str, GROUP_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("group", GROUP_TYPE, sizeof(struct tree_group));
@@ -741,6 +751,7 @@ object
 		attr->common.name = $2->ident.str;
 		attr->common.templates = get_templates($3);
 		attr->common.templates_num = get_list_num($3);
+		attr->common.obj_type = PORT_TYPE;
 		symbol_insert(current_table, $2->ident.str, IMPLEMENT_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("port", PORT_TYPE, sizeof(struct tree_port));
@@ -770,6 +781,7 @@ object
 		attr->common.name = $2->ident.str;
 		attr->common.templates = get_templates($3);
 		attr->common.templates_num = get_list_num($3);
+		attr->common.obj_type = IMPLEMENT_TYPE;
 		symbol_insert(current_table, $2->ident.str, IMPLEMENT_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("implement", IMPLEMENT_TYPE, sizeof(struct tree_implement));
@@ -800,8 +812,10 @@ object
 		attr->common.name = $2->ident.str;
 		attr->attribute.is_array = 1;
 		attr->attribute.arraydef = get_arraydef(&($4), current_table);
+		printf("\nIn %s, line = %d, arraydef: 0x%x\n\n", __func__, __LINE__, attr->attribute.arraydef);
 		attr->common.templates =  get_templates($6);
 		attr->common.templates_num = get_list_num($6);
+		attr->common.obj_type = ATTRIBUTE_TYPE;
 		symbol_insert(current_table, $2->ident.str, ATTRIBUTE_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("attribute", ATTRIBUTE_TYPE, sizeof(struct tree_attribute));
@@ -835,6 +849,7 @@ object
 		attr->group.arraydef = get_arraydef(&($4), current_table);
 		attr->common.templates = get_templates($6);
 		attr->common.templates_num = get_list_num($6);
+		attr->common.obj_type = GROUP_TYPE;
 
 		tree_t* node = (tree_t*)create_node("group", GROUP_TYPE, sizeof(struct tree_group));
 		node->group.name = $2->ident.str;
@@ -865,6 +880,7 @@ object
 		attr->common.name = $2->ident.str;
 		attr->common.templates = get_templates($6);
 		attr->common.templates_num = get_list_num($6);
+		attr->common.obj_type = PORT_TYPE;
 		attr->port.is_array = 1;
 		attr->port.arraydef = get_arraydef(&($4), current_table);
 		symbol_insert(current_table, $2->ident.str, IMPLEMENT_TYPE, attr);
@@ -900,6 +916,7 @@ object
 		attr->connect.arraydef = get_arraydef(&($4), current_table);
 		attr->common.templates = get_templates($6);
 		attr->common.templates_num = get_list_num($6);
+		attr->common.obj_type = CONNECT_TYPE;
 		symbol_insert(current_table, $2->ident.str, CONNECT_TYPE, attr);
 
 		tree_t* node = (tree_t*)create_node("connect", CONNECT_TYPE, sizeof(struct tree_connect));
@@ -3401,23 +3418,25 @@ void insert_array_index(object_attr_t* attr, symtab_t table) {
 	assert(table != NULL);
 	arraydef_attr_t* array_attr = NULL;
 
-	if (attr->reg.is_array == 1) {
+	if ((attr->common.obj_type == REGISTER_TYPE) && (attr->reg.is_array == 1)) {
 		array_attr = attr->reg.arraydef;
 	}
-	else if (attr->attribute.is_array == 1) {
+	else if ((attr->common.obj_type == ATTRIBUTE_TYPE) && (attr->attribute.is_array == 1)) {
 		array_attr = attr->attribute.arraydef;
 	}
-	else if (attr->group.is_array == 1) {
+	else if ((attr->common.obj_type == GROUP_TYPE) && (attr->group.is_array == 1)) {
 		array_attr = attr->group.arraydef;
 	}
-	else if (attr->port.is_array == 1) {
+	else if ((attr->common.obj_type == PORT_TYPE) && (attr->port.is_array == 1)) {
 		array_attr = attr->port.arraydef;
 	}
-	else if (attr->connect.is_array == 1) {
+	else if ((attr->common.obj_type == CONNECT_TYPE) && (attr->connect.is_array == 1)) {
 		array_attr = attr->connect.arraydef;
 	}
 
 	if ((array_attr != NULL) && (array_attr->ident != NULL)) {
 		symbol_insert(table, array_attr->ident, INT_TYPE, NULL);
 	}
+
+	return;
 }
