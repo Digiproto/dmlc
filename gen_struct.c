@@ -92,7 +92,11 @@ static void gen_register_struct(object_t *obj, FILE *f) {
     if(first->is_dummy) {
         /*dummy  field*/
         type = size2str(reg_size);
-        fprintf(f, "\t\t%s %s;\n", type, obj->name);
+		if(!reg->is_array) {
+        	fprintf(f, "\t\t%s %s;\n", type, obj->name);
+		} else {
+        	fprintf(f, "\t\t%s %s[%d];\n", type, obj->name, reg->array_size);
+		}
         obj->attr_type = type;
     } else {
         fprintf(f, "\t\tstruct {\n");
@@ -100,7 +104,11 @@ static void gen_register_struct(object_t *obj, FILE *f) {
             fld = list_entry(p, object_t, entry);
             gen_field_struct(fld, f);
         }
-        fprintf(f, "\t\t} %s;\n", obj->name);
+		if(!reg->is_array) {
+        	fprintf(f, "\t\t} %s;\n", obj->name);
+		} else {
+        	fprintf(f, "\t\t} %s[%d];\n", obj->name, reg->array_size);
+		}
 		type = size2str(reg_size);
         obj->attr_type = type;
     }

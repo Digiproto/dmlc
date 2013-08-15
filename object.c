@@ -468,12 +468,18 @@ static void register_realize(object_t *obj) {
 	int register_size = bank->register_size;
 	struct list_head *p;
 	object_t *tmp;
+	arraydef_attr_t *arraydef = NULL;
 
 	reg_attr = reg->obj.node->common.attr;
 	reg->is_array = reg_attr->is_array;
+	obj->is_array = reg->is_array;
 	reg->size = reg_attr->size;
 	if(!reg->size || reg->size == -1) {
 		reg->size = register_size;
+	}
+	if(reg->is_array) {
+		arraydef = reg_attr->arraydef;
+		reg->array_size = arraydef->high - arraydef->low + 1;
 	}
 	reg->offset = reg_attr->offset;
 	list_for_each(p, &obj->childs) {

@@ -55,6 +55,7 @@ typedef struct object {
 	const char *qname;
 	const char *dotname;
 	const char *obj_type;	
+	int is_array;
 	object_type_t encoding;
 	tree_t *node;
 	struct object *parent;
