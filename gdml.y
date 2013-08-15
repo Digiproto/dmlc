@@ -2646,6 +2646,7 @@ expression
 		node->bit_slic.bit = $3;
 		node->bit_slic.endian = $4;
 		node->common.print_node = print_bit_slic;
+		node->common.translate = translate_bit_slice2;
 		$$ = node;
 	}
 	| expression '[' expression ':' expression endianflag ']' {
