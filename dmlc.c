@@ -83,8 +83,8 @@ tree_t* get_ast (const char *filename)
 		filestack_top = tmp_stack;
 		yyparse (scanner, &root);
 		filestack_top = pop_file_stack(filestack_top);             // <<<<< pop top file name
+		yylex_destroy (scanner);
 	}
-	yylex_destroy (scanner);
 
 	fclose (file);
 	//print_ast(root);

@@ -1309,8 +1309,8 @@ import
 			filestack_top = tmp_stack;
 			yyparse(scanner, &ast);
 			filestack_top = pop_file_stack(filestack_top);             // <<<<< pop top file name
+			yylex_destroy(scanner);
 		}
-		yylex_destroy(scanner);
 		fclose(file);
 		DBG("End of parse the import file %s\n", fullname);
 
