@@ -250,7 +250,9 @@ dml
 		set_root_table(root_table);
 		table_stack = initstack();
 		push(table_stack, current_table);
+#ifndef RELEASE
 		printf("current_table_num: %ld\n", current_table_num);
+#endif
 		device_attr_t* attr = (device_attr_t*)malloc(sizeof(device_attr_t));
 		attr->name = $2->ident.str;
 		if (symbol_insert(root_table, $2->ident.str, DEVICE_TYPE, attr) == -1) {
@@ -268,12 +270,16 @@ dml
 		int i = 0;
 		tree_t* import_ast = NULL;
 		while(import_file_list[i] != NULL) {
+#ifndef RELEASE
 			printf("start parse file: %s\n", import_file_list[i]);
+#endif
 			import_ast = (tree_t*)get_ast(import_file_list[i]);
 			if(import_ast->common.child != NULL) {
 				create_node_list(node, import_ast->common.child);
 			}
+#ifndef RELEASE
 			printf("finished parse file: %s\n", import_file_list[i]);
+#endif
 			i++;
 		}
 
@@ -281,11 +287,15 @@ dml
 	}
 	syntax_modifiers device_statements {
 		if($5 != NULL)	{
+#ifndef RELEASE
 			printf("\ndevice list: name: %s\n\n", $5->common.name);
+#endif
 			create_node_list($<tree_type>4, $5);
 		}
 		if($6 != NULL) {
+#ifndef RELEASE
 			printf("\ndevice list: name: %s\n\n", $6->common.name);
+#endif
 			create_node_list($<tree_type>4, $6);
 		}
 

@@ -9,6 +9,11 @@ BUILD_DIRS_SKYEYE = $(patsubst %,$(BUILD_DIR)/skyeye/%,$(shell find backend -typ
 BUILD_DIRS_QEMU = $(patsubst %,$(BUILD_DIR)/qemu/%,$(shell find backend -type d))
 TARGET_NAME = dmlc
 
+# remove DEBUG information
+ifeq ($(RELEASE),yes)
+CFLAGS += -D RELEASE
+endif
+
 # select platform: qemu skyeye
 PLATFORM ?= all
 ifeq ($(PLATFORM),skyeye)

@@ -159,7 +159,9 @@ loop:
 						lineno ++;
 					}
 header_loop:
+#ifndef RELEASE
 					printf("begin header_loop\n");
+#endif
 					/* try to get the end token "%}" */
 					while ((c = input(yyscanner)) != '%' && c != 0) {
 						if(c == '\n'){

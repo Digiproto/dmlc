@@ -69,7 +69,7 @@ tree_t* get_ast (const char *filename)
 {
 	FILE *file = fopen (filename, "r");
 	if (file == NULL) {
-		printf ("Can't open file %s.\n", filename);
+		fprintf (stderr, "Can't open file %s.\n", filename);
 		exit (EXIT_FAILURE);
 	}
 
@@ -169,9 +169,11 @@ int main (int argc, char *argv[])
 	else {
 		parse_undef_node(root_table);
 	}
+#ifndef RELEASE
 	printf("node name: %s\n", ast->common.name);
 	print_ast (ast);
 	printf("Print the syntax tree ok!\n");
+#endif
 #if  1 || QEMU
 	gen_code (ast, "./output/");
 #else
