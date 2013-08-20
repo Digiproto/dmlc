@@ -28,5 +28,14 @@
 #include "gen_utility.h"
 
 void gen_code_once_noplatform(device_t *dev, FILE *f);
+typedef struct register_array_list {
+	int size;
+	struct list_head list;
+} reg_array_t;
 
+typedef struct reg_element {
+	struct list_head entry;
+	object_t *obj;
+} reg_item_t;
+#define LIST_SZ 4
 #endif /* __GEN_COMMON_H__ */
