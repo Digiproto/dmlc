@@ -469,6 +469,8 @@ static int get_reg_offset(paramspec_t *t) {
 	if(t->type == INTEGER_TYPE) {
 		offset = t->expr->const_expr->int_value;
 		return offset;
+	} else if(t->type ==  UNDEFINED_TYPE) {
+		return -1;
 	} else {
 		node = t->expr->node;
 		if(node->common.type == BINARY_TYPE && !strcmp(node->binary.operat, "+")) {
@@ -521,6 +523,9 @@ static void register_realize(object_t *obj) {
 		} else {
 			parameter_attr  = (parameter_attr_t *)sym->attr;		
 			reg->offset = get_reg_offset(parameter_attr->spec);
+			if(reg->offset == -1) {
+				reg->is_undefined = 1;
+			}
 			BE_DBG(GENERAL, "reg offset 0x%x\n", reg->offset);
 		}	
 	}
@@ -569,6 +574,7 @@ static void bank_calculate_register_offset(object_t *obj) {
 	}	
 	bank->size = offset;
 }
+
 static void bank_realize(object_t *obj) {
 	bank_t *bank = (bank_t *)obj;
 	bank_attr_t *attr = obj->node->common.attr;
