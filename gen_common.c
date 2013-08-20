@@ -483,7 +483,6 @@ static void translate_call_common(tree_t *expr, tree_t *ret){
 	sym = symbol_find(current_table,"exec",TMP_TYPE);
 	name = get_symbol_alias(sym);
 	//POS;
-	D("%s = ",name);
 	if(method_sym && (method_sym->type == METHOD_TYPE)) {
 		obj = (object_t *)method_sym->owner;
 		if(!obj) {
@@ -495,14 +494,7 @@ static void translate_call_common(tree_t *expr, tree_t *ret){
 	} else {
 		my_DBG("method not right %p, %d\n", method_sym, method_sym->type);
 	}
-	/*
-	if(expr->common.type == EXPR_BRACK_TYPE){
-		in_method = 1;
-		translate(expr);	
-		in_method = 0;
-	} else {
-		translate(expr);
-	}*/
+	D("%s = ",name);
 	obj_name = get_obj_qname(obj);
 	if(!strcmp(obj->obj_type, "device")) {
 		D("_DML_M_%s", method_sym->name);	
@@ -510,6 +502,9 @@ static void translate_call_common(tree_t *expr, tree_t *ret){
 		D("_DML_M_%s__%s", obj_name, method_sym->name);
 	}
 	D("(_dev");
+	if(obj->is_array) {
+		D(", _idx0");
+	}
     if(expr->common.type == EXPR_BRACK_TYPE) {
 		expr_list = expr->expr_brack.expr_in_brack;
 		if(expr_list) {
@@ -980,7 +975,18 @@ void translate_foreach(tree_t *t) {
 		my_DBG("--------object %s\n", obj->name);
 		enter_scope();
 		node = t->foreach.block;
+		/*
+		if(obj->is_array) {
+			D("int _idx0;");
+			new_line();
+			POS;
+			D("for(_idx0 = 0; _idx0 < %d; _idx++)", obj->array_size);
+			enter_scope();
+		}*/
 		translate(node);
+		/*if(obj->is_array) {
+			exit_scope();
+		}*/
 		if (node->common.type == BLOCK_TYPE) {
 			new_line();
 			exit_scope();
@@ -1624,11 +1630,21 @@ static void gen_method_block(object_t *obj, tree_t *m){
 void gen_dml_method_header(object_t *obj, tree_t *m) {
 	/*generate function head*/
 	if(strcmp(obj->obj_type, "device" )) {
-		D("\nstatic bool\
-			\n_DML_M_%s__%s(%s_t *_dev",obj->qname, m->method.name, DEV->name);
+		if(!obj->is_array) {
+			D("\nstatic bool\
+				\n_DML_M_%s__%s(%s_t *_dev",obj->qname, m->method.name, DEV->name);
+		} else {
+			D("\nstatic bool\
+				\n_DML_M_%s__%s(%s_t *_dev, int _idx0",obj->qname, m->method.name, DEV->name);
+		}
 	} else {
-		D("\nstatic bool\
-			\n_DML_M_%s(%s_t *_dev", m->method.name, DEV->name);
+		if(!obj->is_array) {
+			D("\nstatic bool\
+				\n_DML_M_%s(%s_t *_dev", m->method.name, DEV->name);
+		} else {
+			D("\nstatic bool\
+				\n_DML_M_%s(%s_t *_dev, int _idx0", m->method.name, DEV->name);
+		}
 	}
 	gen_method_params(obj, m);
 }
