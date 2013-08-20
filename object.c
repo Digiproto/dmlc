@@ -460,6 +460,34 @@ end:
 	add_object_templates(obj, templates);	
 }
 
+static int get_reg_offset(paramspec_t *t) {
+	tree_t *node;
+	int offset = 0;
+	tree_t *left;
+	tree_t *right;
+
+	if(t->type == INTEGER_TYPE) {
+		offset = t->expr->const_expr->int_value;
+		return offset;
+	} else {
+		node = t->expr->node;
+		if(node->common.type == BINARY_TYPE && !strcmp(node->binary.operat, "+")) {
+			/*get base offset for register array */
+			left = node->binary.left;
+			if(left->common.type == INTEGER_TYPE) {
+				offset = left->int_cst.value;
+				return offset;
+			} 
+			right = node->binary.right;
+			if(right->common.type == INTEGER_TYPE) {
+				offset = right->int_cst.value;
+				return offset;
+			}
+		}
+	}
+	return offset;
+}
+
 static void register_realize(object_t *obj) {
 	dml_register_t *reg  = (dml_register_t *)obj;
 	bank_t *bank = (bank_t *)obj->parent; 
@@ -469,19 +497,33 @@ static void register_realize(object_t *obj) {
 	struct list_head *p;
 	object_t *tmp;
 	arraydef_attr_t *arraydef = NULL;
+	symbol_t sym;
+	parameter_attr_t *parameter_attr;
 
 	reg_attr = reg->obj.node->common.attr;
 	reg->is_array = reg_attr->is_array;
 	obj->is_array = reg->is_array;
-	reg->size = reg_attr->size;
 	if(!reg->size || reg->size == -1) {
 		reg->size = register_size;
 	}
 	if(reg->is_array) {
 		arraydef = reg_attr->arraydef;
 		reg->array_size = arraydef->high - arraydef->low + 1;
+		obj->array_size = reg->array_size;
 	}
 	reg->offset = reg_attr->offset;
+	reg->is_undefined = 0;
+	if(reg->offset == -1) {
+		/*search for parameter offset */
+		sym = symbol_find(obj->symtab, "offset", PARAMETER_TYPE);
+		if(!sym) {
+			reg->is_undefined = 1;
+		} else {
+			parameter_attr  = (parameter_attr_t *)sym->attr;		
+			reg->offset = get_reg_offset(parameter_attr->spec);
+			BE_DBG(GENERAL, "reg offset 0x%x\n", reg->offset);
+		}	
+	}
 	list_for_each(p, &obj->childs) {
 		i++;
 	}
@@ -505,14 +547,27 @@ static void bank_calculate_register_offset(object_t *obj) {
 	int offset = 0;
 	int register_size = bank->register_size;
 	int size;
-
+	int last = 0;
+	
+	
 	for(i = 0; i < bank->reg_count; i++) {
 		reg = (dml_register_t *)bank->regs[i];
-		if(reg->offset == -1) {
+		if(reg->offset == -1 && !reg->is_undefined) {
 			reg->offset = offset;
 		}
-		offset += reg->size;		
-	}
+		if(reg->offset < offset) {
+			BE_DBG(GENERAL, "offset cross boundry!\n");
+		} else if(reg->offset > offset) {
+			offset = reg->offset;
+		}
+		if(reg->is_array) {
+			size = reg->array_size * reg->size;
+		} else {
+			size = reg->size;
+		}
+		offset += size;		
+	}	
+	bank->size = offset;
 }
 static void bank_realize(object_t *obj) {
 	bank_t *bank = (bank_t *)obj;
@@ -549,12 +604,12 @@ static void bank_realize(object_t *obj) {
 	tmp = (object_t *)gdml_zmalloc(sizeof(tmp) * i);
 	bank->regs = (object_t **)tmp;
 	bank->reg_count = i;
-	bank->size = bank->register_size * bank->reg_count;
 	i = 0;
 	list_for_each(p, &obj->childs) {
 		tmp = list_entry(p, object_t, entry);
 		bank->regs[i] = tmp;
 		i++;
+		BE_DBG(GENERAL, "i: %d, register name %s\n", i, tmp->name);
 		register_realize(tmp);
 	}
 	bank_calculate_register_offset(obj);

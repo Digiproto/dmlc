@@ -56,6 +56,7 @@ typedef struct object {
 	const char *dotname;
 	const char *obj_type;	
 	int is_array;
+	int array_size;
 	object_type_t encoding;
 	tree_t *node;
 	struct object *parent;
@@ -97,6 +98,7 @@ typedef struct register_def {
 	int is_array;
 	int array_size;
 	int field_count;
+	int is_undefined;
 	object_t **fields;
 } dml_register_t;
 
