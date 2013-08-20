@@ -646,7 +646,10 @@ static void connect_realize(object_t *obj) {
 	obj->is_array = attr->is_array;
 	if(obj->is_array) {
 		array_def = attr->arraydef;
-		obj->array_size = array_def->high - array_def->low + 1;
+		obj->array_size = array_def->fix_array;
+		if(!obj->array_size) {
+			obj->array_size = array_def->high - array_def->low + 1;
+		}
 	}
 }
 
