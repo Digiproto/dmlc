@@ -75,12 +75,23 @@ check_config() {
 	echo "[normal] check ok, config file look fine."
 }
 
-# print_file_list [path] [type] [start_string]
-print_file_list() {
-	LIST_DEVICE=`find "$1" -type $2 | \
+# file_list [path] [type]
+LIST_DEVICE=
+file_list() {
+	LIST_TMP=`find "$1" -type $2 | \
 				sed -e "s?$1/??g" \
 					-e "s?$1?_DIR_DEL_LINE_?g" \
 					-e "/_DIR_DEL_LINE_/d"`
+	LIST_DEVICE=
+	for var in $LIST_TMP
+	do
+		LIST_DEVICE="$LIST_DEVICE $var"
+	done
+}
+
+# print_file_list [path] [type] [start_string]
+print_file_list() {
+	file_list "$1" "$2"
 	VARI=1
 	echo "$3"
 	if [ -z "$LIST_DEVICE" ]; then
@@ -92,6 +103,31 @@ print_file_list() {
 			VARI=$(($VARI + 1))
 		done
 	fi
+}
+
+# remove_devices [devices]
+remove_devices() {
+	# remind user remove operation is dangrous.
+	DEVICES="$1"
+	echo "[choose] Are you sure remove \"$DEVICES\" device(s)[y/n]?"
+	echo "         This operation is dangerous."
+	while read CHOICE
+	do
+		case "$CHOICE" in
+			"y")
+				break
+			;;
+			"n")
+				exit
+			;;
+			*)
+				echo "[ error] not known word \"$CHOICE\""
+				echo "[choose] Are you sure remove \"$DEVICES\" device(s)[y/n]?"
+				echo "         This operation is dangerous."
+			;;
+		esac
+	done
+	$EXEC_DIR/workspace-remove "$DEVICES"
 }
 
 # if parameters is empty
@@ -119,26 +155,11 @@ case "$1" in
 		fi
 		# remove first parameter and turn to workspace-remove
 		shift
-		# remind user remove operation is dangrous.
-		echo "[choose] Are you sure remove \"$*\" device(s)[y/n]?"
-		echo "         This operation is dangerous."
-		while read CHOICE
-		do
-			case "$CHOICE" in
-				"y")
-					break
-				;;
-				"n")
-					exit
-				;;
-				*)
-					echo "[ error] not known word \"$CHOICE\""
-					echo "[choice] Are you sure remove $2 device[y/n]?"
-					echo "         This operation is dangerous."
-				;;
-			esac
-		done
-		$EXEC_DIR/workspace-remove "$*"
+		remove_devices "$*"
+	;;
+	"remove-all")
+		file_list "$EXEC_DIR/../modules" "d"
+		remove_devices "$LIST_DEVICE"
 	;;
 	"copy")
 		# if device_name is empty

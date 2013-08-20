@@ -11,7 +11,6 @@ HOST := $(shell uname)
 # find all modules
 MODULES := $(shell find . -maxdepth 1 -type d)
 MODULES := $(basename $(patsubst ./%,%,$(MODULES)))
-MODULES_DEV := $(patsubst %,%_dev,$(MODULES))
 # create clean rule
 MODULES_CLEAN := $(patsubst %,%_dev_clean,$(MODULES))
 MODULES_DISTCLEAN := $(patsubst %,%_dev_distclean,$(MODULES))
@@ -20,7 +19,6 @@ MODULES_DISTCLEAN := $(patsubst %,%_dev_distclean,$(MODULES))
 # remove reserve keywords
 SPECIAL_WORDS := clean distclean all
 TARGETS := $(filter-out $(SPECIAL_WORDS),$(MAKECMDGOALS))
-TARGETS_DEV := $(patsubst %,%_dev,$(TARGETS))
 
 # skyeye or qemu target goals
 ifneq ($(SKYEYE_BUILD),)
@@ -47,43 +45,50 @@ TARGETS_OBJ := $(TARGETS_SKYEYE_OBJ) $(TARGETS_QEMU_OBJ)
 ALL_SRC := $(ALL_SKYEYE_SRC) $(ALL_QEMU_SRC)
 TARGETS_SRC := $(TARGETS_SKYEYE_SRC) $(TARGETS_QEMU_SRC)
 
-all: $(ALL_SRC)
-ifneq ($(QEMU_BUILD),)
-	@./setMakefile.qemu $(MODULES)
-	@echo [normal] configure QEMU
-	@cd $(QEMU_DIR) && ./configure $(QEMU_CONF_FLAGS) 1>/dev/null
-	@echo [normal] make QEMU
-	@cd $(QEMU_DIR) && $(MAKE) 1>/dev/null
-endif # QEMU_BUILD
-ifneq ($(SKYEYE_BUILD),)
-	@cd ../targets/skyeye && $(MAKE)
-endif # SKYEYE_BUILD
+# configure and make QEMU after generating all C codes
+# GOAL is all targets needed.
+ifneq ($(MAKECMDGOALS),)
+ifneq ($(MAKECMDGOALS),all)
+GOAL_OBJ := $(TARGETS_OBJ)
+GOAL_SRC := $(TARGETS_SRC)
+GOAL := $(TARGETS)
+else
+GOAL_OBJ := $(ALL_OBJ)
+GOAL_SRC := $(ALL_SRC)
+GOAL := $(MODULES)
+endif
+else
+GOAL_OBJ := $(ALL_OBJ)
+GOAL_SRC := $(ALL_SRC)
+GOAL := $(MODULES)
+endif
 
-$(TARGETS): $(TARGETS_SRC)
-ifneq ($(QEMU_BUILD),)
-	@./setMakefile.qemu $(TARGETS)
-	@echo [normal] configure QEMU
-	@cd $(QEMU_DIR) && ./configure $(QEMU_CONF_FLAGS) 1>/dev/null
-	@echo [normal] make QEMU
-	@cd $(QEMU_DIR) && $(MAKE) 1>/dev/null
-endif # QEMU_BUILD
-ifneq ($(SKYEYE_BUILD),)
-	@cd ../targets/skyeye && $(MAKE) $(TARGETS)
-endif # SKYEYE_BUILD
+# only for make or make all
+all: $(ALL_OBJ)
+	@echo [normal] finish compile QEMU and Skyeye device.
+
+# for make {device_name}
+$(TARGETS): $(TARGETS_OBJ)
+	@echo [normal] finish compile QEMU and Skyeye device.
 
 # create each module rule
 define PROGRAM_TEMPLATE
 
-#$(SKYEYE_DIR_IN)/$(1)/lib$(1).so $(SKYEYE_DIR_IN)/$(1)/lib$(1).dll:
-#$(QEMU_DIR_IN)/$(1)/$(1).o:
-
 ifneq ($(SKYEYE_BUILD),)
-$(SKYEYE_DIR_IN)/$(1)/$(1).c:
+$(SKYEYE_DIR_IN)/$(1)/lib$(1).so $(SKYEYE_DIR_IN)/$(1)/lib$(1).dll: $(GOAL_SRC)
+	@cd ../targets/skyeye && $(MAKE) $(1)
+$(SKYEYE_DIR_IN)/$(1)/$(1).c: $(1)/$(1).dml
 	@cd $(1) && make skyeye
 endif # SKYEYE_BUILD
 
 ifneq ($(QEMU_BUILD),)
-$(QEMU_DIR_IN)/$(1)/$(1).c:
+$(QEMU_DIR_IN)/$(1)/$(1).o: $(GOAL_SRC)
+	@./setMakefile.qemu $(GOAL)
+	@echo [normal] configure QEMU
+	@cd $(QEMU_DIR) && ./configure $(QEMU_CONF_FLAGS) 1>/dev/null
+	@echo [normal] make QEMU
+	@cd $(QEMU_DIR) && $(MAKE) 1>/dev/null
+$(QEMU_DIR_IN)/$(1)/$(1).c: $(1)/$(1).dml
 	@cd $(1) && make qemu
 endif # QEMU_BUILD
 
