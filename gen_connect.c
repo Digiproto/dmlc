@@ -29,32 +29,61 @@ static void gen_connect_set(object_t *obj, FILE *f) {
 	struct list_head *p;
 	object_t *tmp;
 	const char *iface = NULL;
+	int is_array = obj->is_array;
 
-	fprintf(f, "\nstatic int %s_set(conf_object_t *obj, conf_object_t *obj2, const char *port, int index) {\n", name);
+	fprintf(f, "\nstatic int %s_set(conf_object_t *obj, conf_object_t *peer, const char *port, int _idx) {\n", name);
 	fprintf(f, "\t%s_t *_dev = (%s_t *)obj;\n", dev_name, dev_name);
 	fprintf(f, "\tint ret = 0;\n");
 	fprintf(f, "\tvoid const *iface = NULL;\n");
 	fprintf(f, "\n");
-	fprintf(f, "\tif(_dev->%s.obj == obj2 && _dev->%s.port == port) {\n", name, name);
+	if(!is_array) {
+		fprintf(f, "\tif(_dev->%s.obj == peer && _dev->%s.port == port) {\n", name, name);
+	} else {
+		fprintf(f, "\tif(_dev->%s[_idx].obj == peer && _dev->%s[_idx].port == port) {\n", name, name);
+	}
 	fprintf(f, "\t\treturn 0;\n");
 	fprintf(f, "\t}\n");
-	fprintf(f, "\t_dev->%s.obj = obj2;\n", name);
-	fprintf(f, "\tif(_dev->%s.port)\n", name);
-	fprintf(f, "\t\tMM_FREE((void *)_dev->%s.port);\n", name);
+	if(!is_array) {
+		fprintf(f, "\t_dev->%s.obj = peer;\n", name);
+	} else {
+		fprintf(f, "\t_dev->%s[_idx].obj = peer;\n", name);
+	}
+	if(!is_array) {
+		fprintf(f, "\tif(_dev->%s.port)\n", name);
+	} else {
+		fprintf(f, "\tif(_dev->%s[_idx].port)\n", name);
+	}
+	if(!is_array) {
+		fprintf(f, "\t\tMM_FREE((void *)_dev->%s.port);\n", name);
+	} else {
+		fprintf(f, "\t\tMM_FREE((void *)_dev->%s[_idx].port);\n", name);
+	}
 	fprintf(f, "\tif(port) {\n");
-	fprintf(f, "\t\t_dev->%s.port = MM_STRDUP(port);\n", name);
+	if(!is_array) {
+		fprintf(f, "\t\t_dev->%s.port = MM_STRDUP(port);\n", name);
+	} else {
+		fprintf(f, "\t\t_dev->%s[_idx].port = MM_STRDUP(port);\n", name);
+	}
 	fprintf(f, "\t} else { \n");
-	fprintf(f, "\t\t_dev->%s.port = NULL;\n", name);
+	if(!is_array) {
+		fprintf(f, "\t\t_dev->%s.port = NULL;\n", name);
+	} else {
+		fprintf(f, "\t\t_dev->%s[_idx].port = NULL;\n", name);
+	}
 	fprintf(f, "\t}\n");
 	list_for_each(p, &obj->childs) {
 		tmp = list_entry(p, object_t, entry);
 		iface = tmp->name;
 		fprintf(f, "\tif(port) {\n");
-		fprintf(f, "\t\tiface = SIM_c_get_port_interface(obj2, \"%s\", port);\n",iface);
+		fprintf(f, "\t\tiface = SIM_c_get_port_interface(peer, \"%s\", port);\n",iface);
 		fprintf(f, "\t} else {\n");
-		fprintf(f, "\t\tiface = SIM_c_get_interface(obj2, \"%s\");\n", iface);
+		fprintf(f, "\t\tiface = SIM_c_get_interface(peer, \"%s\");\n", iface);
 		fprintf(f, "\t}\n");
-		fprintf(f, "\t_dev->%s.%s = iface;\n", name, iface);
+		if(!is_array) {
+			fprintf(f, "\t_dev->%s.%s = iface;\n", name, iface);
+		} else {
+			fprintf(f, "\t_dev->%s[_idx].%s = iface;\n", name, iface);
+		}
 	}
 	fprintf(f, "\treturn ret;\n");
 	fprintf(f, "}\n");
@@ -63,7 +92,7 @@ static void gen_connect_set(object_t *obj, FILE *f) {
 static void gen_connect_get(object_t *obj, FILE *f) {
 	const char *name = obj->name;
 	/*dummy get function*/	
-	fprintf(f, "\nstatic int %s_get(conf_object_t *obj, conf_object_t **obj2, char **port, int index) {\n", name);
+	fprintf(f, "\nstatic int %s_get(conf_object_t *obj, conf_object_t **peer, char **port, int index) {\n", name);
 	fprintf(f, "\tint ret = 0;\n");
 	fprintf(f, "\tUNUSED(ret);\n");
 	fprintf(f, "\treturn ret;\n");

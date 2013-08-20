@@ -47,7 +47,11 @@ static void gen_connect_struct(object_t *obj, FILE *f) {
         tmp = list_entry(p, object_t, entry);
         gen_iface_struct(tmp, f);
     }
-    fprintf(f, "\t} %s;\n", obj->name);
+	if(!obj->is_array) {
+    	fprintf(f, "\t} %s;\n", obj->name);
+	} else {
+    	fprintf(f, "\t} %s[%d];\n", obj->name, obj->array_size);
+	}
 }
 
 static void gen_attribute_struct(object_t *obj, FILE *f) {
