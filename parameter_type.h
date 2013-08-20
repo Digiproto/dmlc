@@ -36,9 +36,16 @@ typedef enum parameter_type {
 	param_type_max
 } param_type_t;
 
+typedef enum parameter_flag {
+	param_flag_none,
+	param_flag_default,
+	param_flag_auto,
+	param_flag_MAX
+} param_flag_t;
 
 typedef struct param_value {
 	param_type_t type;
+	param_flag_t flag;
 	union {
 		int integer;
 		const char *string;
