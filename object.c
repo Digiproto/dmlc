@@ -485,6 +485,9 @@ static int get_reg_offset(paramspec_t *t) {
 				offset = right->int_cst.value;
 				return offset;
 			}
+		} else {
+			/*wrong format base + $i * register_size */
+			BE_DBG(GENERAL, "wrong register offset format, node type %d, expected format %d\n", node->common.type, BINARY_TYPE);
 		}
 	}
 	return offset;
@@ -505,6 +508,8 @@ static void register_realize(object_t *obj) {
 	reg_attr = reg->obj.node->common.attr;
 	reg->is_array = reg_attr->is_array;
 	obj->is_array = reg->is_array;
+	reg->size = reg_attr->size;
+	/*take default value, if not specified*/
 	if(!reg->size || reg->size == -1) {
 		reg->size = register_size;
 	}
@@ -557,11 +562,18 @@ static void bank_calculate_register_offset(object_t *obj) {
 	
 	for(i = 0; i < bank->reg_count; i++) {
 		reg = (dml_register_t *)bank->regs[i];
-		if(reg->offset == -1 && !reg->is_undefined) {
+		/*skip undefined registers, only used as variables, not intended for access */
+		if(reg->is_undefined) {
+			continue;
+		}
+		/*if user not specify an offset, we stuff it based on its order, FIXME maybe wrong*/
+		if(reg->offset == -1) {
 			reg->offset = offset;
 		}
+		/*check register offset cross bounry cases, not allowed*/
 		if(reg->offset < offset) {
 			BE_DBG(GENERAL, "offset cross boundry!\n");
+			exit(-1);
 		} else if(reg->offset > offset) {
 			offset = reg->offset;
 		}
@@ -572,6 +584,7 @@ static void bank_calculate_register_offset(object_t *obj) {
 		}
 		offset += size;		
 	}	
+	/*take the register total size as bank size in a conservative way. Maybe some alignment should make */
 	bank->size = offset;
 }
 
@@ -618,12 +631,23 @@ static void bank_realize(object_t *obj) {
 		BE_DBG(GENERAL, "i: %d, register name %s\n", i, tmp->name);
 		register_realize(tmp);
 	}
+	/*sort the register in user specifid order*/
 	bank_calculate_register_offset(obj);
 	add_object_templates(obj, obj->node->bank.templates);
 }
 
 static void connect_realize(object_t *obj) {
-	
+	arraydef_attr_t *array_def;
+	tree_t *node;
+	connect_attr_t *attr;
+
+	node = obj->node;
+	attr = node->common.attr;
+	obj->is_array = attr->is_array;
+	if(obj->is_array) {
+		array_def = attr->arraydef;
+		obj->array_size = array_def->high - array_def->low + 1;
+	}
 }
 
 static const char *get_attribute_type(const char *alloc_type) {
