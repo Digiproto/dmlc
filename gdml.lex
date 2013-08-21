@@ -4,7 +4,7 @@ L           [a-zA-Z_]
 H           [a-fA-F0-9]  
 E           [Ee][+-]?{D}+  
 FS          (f|F|l|L)  
-INTS          (u|U|l|L)*  
+INTS          ([Uu](L|l|LL|ll)?|(L|l|LL|ll)[Uu]?)
 
 %{  
 #include <stdio.h>  
@@ -34,7 +34,7 @@ void count(yyscan_t scanner);
 
 %x COMMENT
 %x BODYMODE
-      
+
 %%  
 "/*"					{ BEGIN(COMMENT);}
 <COMMENT>"*/"			{ BEGIN(INITIAL);}
@@ -138,7 +138,7 @@ void count(yyscan_t scanner);
 "where"			{count(yyscanner); return(WHERE);}
 "after"			{count(yyscanner); return(AFTER);}
 
-L?\"([^"\\]|\\['"?\\abfnrtv]|\\[0-7]{1,3}|\\[Xx]{H}+|({L}|{D}))*\"	{
+L?\"([^"\\]|\\['"?\\abfnrtv]|\\[0-7]{1,3}|\\[Xx][0-9a-fA-F]+|({L}|{D}))*\"	{
 					count(yyscanner);
 					yylval_param->sval = (char *) strdup(yyget_text(yyscanner));
 					return(STRING_LITERAL);
@@ -156,36 +156,39 @@ L?\"([^"\\]|\\['"?\\abfnrtv]|\\[0-7]{1,3}|\\[Xx]{H}+|({L}|{D}))*\"	{
 								return(INTEGER_LITERAL);
 							}
 
-0{D}+{INTS}?				{
+0[0-7]*{INTS}?				{
 								count(yyscanner);
 								yylval_param->sval = (char *) strdup(yyget_text(yyscanner));
 								return(INTEGER_LITERAL);
 							}
 
-{D}+{INTS}?					{
+[1-9][0-9]*{INTS}?			{
 								count(yyscanner);
 								yylval_param->sval = (char *) strdup(yyget_text(yyscanner));
 								return(INTEGER_LITERAL);
 							}
 
-L?'(\\.|[^\\'])+'			{
-								count(yyscanner);
+[0-9]+".."					{
 								yylval_param->sval = (char *) strdup(yyget_text(yyscanner));
+								yylval_param->sval[yyleng - 2] = '\0';
+								unput('.');
+								unput('.');
 								return(INTEGER_LITERAL);
 							}
 
-{D}+{E}{FS}?				{
+([0-9]*\.[0-9]+|[0-9]+\.){E}?[flFL]?	{
 								count(yyscanner);
 								yylval_param->sval = (char *) strdup(yyget_text(yyscanner));
 								return(FLOAT_LITERAL);
 							}
 
-{D}*"."{D}+({E})?{FS}?		{
+[0-9]+{E}[flFL]?			{
 								count(yyscanner);
 								yylval_param->sval = (char *) strdup(yyget_text(yyscanner));
 								return(FLOAT_LITERAL);
 							}
-{D}+"."{D}*({E})?{FS}?		{
+
+0[Xx]({H}*\.{H}+|{H}+\.?)[Pp][-+]?[0-9]+[flFL]? {
 								count(yyscanner);
 								yylval_param->sval = (char *) strdup(yyget_text(yyscanner));
 								return(FLOAT_LITERAL);
@@ -322,6 +325,11 @@ L?\"(\\.|[^\\"])*\"			{
 								count(yyscanner);
 								yylval_param->sval = (char *) strdup(yyget_text(yyscanner));
 								return(STRING_LITERAL);
+							}
+L?'(\\.|[^\\'])+'			{
+								count(yyscanner);
+								yylval_param->sval = (char *) strdup(yyget_text(yyscanner));
+								return(INTEGER_LITERAL);
 							}
 #endif
 
