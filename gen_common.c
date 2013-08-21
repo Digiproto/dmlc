@@ -102,7 +102,7 @@ static void collect_ref_info(tree_t *expr, ref_info_t *fi){
 		node = expr->component.expr;
 		my_DBG("expr %p \n", node);
 		collect_ref_info(node,fi);
-		node = dml_keyword_node(expr->common.name);	
+		node = dml_keyword_node(expr->common.name, &expr->common.location);
 		ni = new_node_info(node);
 		add_node_info(fi,ni);
 		node = expr->component.ident;

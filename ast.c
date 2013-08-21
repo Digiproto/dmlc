@@ -291,8 +291,8 @@ void parse_undef_node(symtab_t table) {
  *
  * @return : return a pointer to the node
  */
-tree_t* dml_keyword_node(const char* name) {
-    tree_t* node = create_node("dml_keyword", DML_KEYWORD_TYPE, sizeof(struct tree_ident), NULL);
+tree_t* dml_keyword_node(const char* name, YYLTYPE* location) {
+    tree_t* node = create_node("dml_keyword", DML_KEYWORD_TYPE, sizeof(struct tree_ident), location);
     node->ident.str = strdup(name);
     node->ident.len = strlen(name);
 	node->common.print_node = print_ident;
@@ -2155,6 +2155,23 @@ void print_header(tree_t* node, int pos) {
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 			node->common.name, node->head.str, pos);
+
+	print_sibling(node, pos);
+
+	return;
+}
+
+/**
+ * @brief print_footer : print foot tree node information
+ *
+ * @param node : pointer to foot tree node
+ * @param pos : tree node position in syntax tree
+ */
+void print_footer(tree_t* node, int pos) {
+	/* Grammar: HEADER */
+	print_pos(pos);
+	printf("[%s : %s : %d]\n",
+			node->common.name, node->foot.str, pos);
 
 	print_sibling(node, pos);
 

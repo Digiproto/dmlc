@@ -109,7 +109,7 @@ tree_t* current_object_node = NULL;
 %token METHOD_RETURN RANGE_SIGN
 
 %token PARAMETER BANK FIELD DATA CONNECT INTERFACE ATTRIBUTE EVENT GROUP
-%token IN TEMPLATE HEADER HEADER_KEYWORD FOOTER LOGGROUP IMPORT SIZE LAYOUT BITFIELDS
+%token IN TEMPLATE HEADER FOOTER BODY LOGGROUP IMPORT SIZE LAYOUT BITFIELDS
 %token USING PORT PUBLIC PROTECTED PRIVATE STRICT THIS SELECT IS IMPLEMENT VECT WHERE
 %token DEVICE DEFINED AFTER ASSERT BITORDER CATCH TRY THROW CLASS LOG METHOD
 %token CALL CAST CONSTANT ERROR FOREACH INLINE LOCAL NAMESPACE 
@@ -122,7 +122,7 @@ tree_t* current_object_node = NULL;
 %type	<tree_type> IDENTIFIER
 %type	<tree_type> CONSTANT
 %type	<tree_type> SIGNED
-%type	<tree_type> HEADER
+%type	<tree_type> BODY
 %type	<tree_type> objident
 %type	<tree_type> maybe_objident
 %type	<tree_type> ident
@@ -1227,12 +1227,21 @@ toplevel
 		current_table = pop(table_stack);
 		$$ = node;
 	}
-	| HEADER {
+	| HEADER BODY {
 		/* FIXME: the header include much content */
 		tree_t* node = (tree_t*)create_node("header", HEADER_TYPE, sizeof(struct tree_head), &@$);
-		node->head.str = (char*)($1);
+		node->head.str = (char*)($2);
 		node->common.print_node = print_header;
 		/* TODO: should analyze the content of head */
+		//node->head.head = $1;
+		$$ = node;
+	}
+	| FOOTER BODY {
+		/* FIXME: the header include much content */
+		tree_t* node = (tree_t*)create_node("footer", FOOTER_TYPE, sizeof(struct tree_foot), &@$);
+		node->head.str = (char*)($2);
+		node->common.print_node = print_footer;
+		/* TODO: should analyze the content of foot */
 		//node->head.head = $1;
 		$$ = node;
 	}
@@ -3227,12 +3236,12 @@ objident
 		$$ = $1;
 	}
 	| THIS {
-		tree_t* node = (tree_t*)dml_keyword_node("this");
+		tree_t* node = (tree_t*)dml_keyword_node("this", &@$);
 		node->ident.type = THIS_TYPE;
 		$$ = node;
 	}
 	| REGISTER {
-		tree_t* node = (tree_t*)dml_keyword_node("register");
+		tree_t* node = (tree_t*)dml_keyword_node("register", &@$);
 		node->ident.type = REGISTER_TYPE;
 		$$ = node;
 	}
@@ -3258,153 +3267,153 @@ ident
 		$$ = ident;
 	}
 	| ATTRIBUTE {
-		tree_t* node = (tree_t*)dml_keyword_node("attribute");
+		tree_t* node = (tree_t*)dml_keyword_node("attribute", &@$);
 		node->ident.type = ATTRIBUTE_TYPE;
 		$$ = node;
 	}
 	| BANK {
-		tree_t* node = (tree_t*)dml_keyword_node("bank");
+		tree_t* node = (tree_t*)dml_keyword_node("bank", &@$);
 		node->ident.type = BANK_TYPE;
 		$$ = node;
 	}
 	| BITORDER {
-		tree_t* node = (tree_t*)dml_keyword_node("bitorder");
+		tree_t* node = (tree_t*)dml_keyword_node("bitorder", &@$);
 		node->ident.type = BITORDER_TYPE;
 		$$ = node;
 	}
 	| CONNECT {
-		tree_t* node = (tree_t*)dml_keyword_node("connect");
+		tree_t* node = (tree_t*)dml_keyword_node("connect", &@$);
 		node->ident.type = CONNECT_TYPE;
 		$$ = node;
 	}
 	| CONSTANT {
-		tree_t* node = (tree_t*)dml_keyword_node("constant");
+		tree_t* node = (tree_t*)dml_keyword_node("constant", &@$);
 		node->ident.type = CONSTANT_TYPE;
 		$$ = node;
 	}
 	| DATA {
-		tree_t* node = (tree_t*)dml_keyword_node("data");
+		tree_t* node = (tree_t*)dml_keyword_node("data", &@$);
 		node->ident.type = DATA_TYPE;
 		$$ = node;
 	}
 	| DEVICE {
-		tree_t* node = (tree_t*)dml_keyword_node("device");
+		tree_t* node = (tree_t*)dml_keyword_node("device", &@$);
 		node->ident.type = DEVICE_TYPE;
 		$$ = node;
 	}
 	| EVENT {
-		tree_t* node = (tree_t*)dml_keyword_node("event");
+		tree_t* node = (tree_t*)dml_keyword_node("event", &@$);
 		node->ident.type = EVENT_TYPE;
 		$$ = node;
 	}
 	| FIELD {
-		tree_t* node = (tree_t*)dml_keyword_node("field");
+		tree_t* node = (tree_t*)dml_keyword_node("field", &@$);
 		node->ident.type = FIELD_TYPE;
 		$$ = node;
 	}
 	| FOOTER {
-		tree_t* node = (tree_t*)dml_keyword_node("footer");
+		tree_t* node = (tree_t*)dml_keyword_node("footer", &@$);
 		node->ident.type = FOOTER_TYPE;
 		$$ = node;
 	}
 	| GROUP {
-		tree_t* node = (tree_t*)dml_keyword_node("group");
+		tree_t* node = (tree_t*)dml_keyword_node("group", &@$);
 		node->ident.type = GROUP_TYPE;
 		$$ = node;
 	}
-	| HEADER_KEYWORD {
-		tree_t* node = (tree_t*)dml_keyword_node("header");
+	| HEADER {
+		tree_t* node = (tree_t*)dml_keyword_node("header", &@$);
 		node->ident.type = HEADER_TYPE;
 		$$ = node;
 	}
 	| IMPLEMENT {
-		tree_t* node = (tree_t*)dml_keyword_node("implement");
+		tree_t* node = (tree_t*)dml_keyword_node("implement", &@$);
 		node->ident.type = IMPLEMENT_TYPE;
 		$$ = node;
 	}
 	| IMPORT {
-		tree_t* node = (tree_t*)dml_keyword_node("import");
+		tree_t* node = (tree_t*)dml_keyword_node("import", &@$);
 		node->ident.type = IMPORT_TYPE;
 		$$ = node;
 	}
 	| INTERFACE {
-		tree_t* node = (tree_t*)dml_keyword_node("interface");
+		tree_t* node = (tree_t*)dml_keyword_node("interface", &@$);
 		node->ident.type = INTERFACE_TYPE;
 		$$ = node;
 	}
 	| LOGGROUP {
-		tree_t* node = (tree_t*)dml_keyword_node("loggroup");
+		tree_t* node = (tree_t*)dml_keyword_node("loggroup", &@$);
 		node->ident.type = LOGGROUP_TYPE;
 		$$ = node;
 	}
 	| METHOD {
-		tree_t* node = (tree_t*)dml_keyword_node("method");
+		tree_t* node = (tree_t*)dml_keyword_node("method", &@$);
 		node->ident.type = METHOD_TYPE;
 		$$ = node;
 	}
 	| PORT {
-		tree_t* node = (tree_t*)dml_keyword_node("port");
+		tree_t* node = (tree_t*)dml_keyword_node("port", &@$);
 		node->ident.type = PORT_TYPE;
 		$$ = node;
 	}
 	| SIZE {
-		tree_t* node = (tree_t*)dml_keyword_node("size");
+		tree_t* node = (tree_t*)dml_keyword_node("size", &@$);
 		node->ident.type = SIZE_TYPE;
 		node->common.translate = translate_dml_keyword;
 		$$ = node;
 	}
 	| CLASS {
-		tree_t* node = (tree_t*)dml_keyword_node("class");
+		tree_t* node = (tree_t*)dml_keyword_node("class", &@$);
 		node->ident.type = CLASS_TYPE;
 		$$ = node;
 	}
 	| ENUM {
-		tree_t* node = (tree_t*)dml_keyword_node("enum");
+		tree_t* node = (tree_t*)dml_keyword_node("enum", &@$);
 		node->ident.type = ENUM_TYPE;
 		$$ = node;
 	}
 	| NAMESPACE {
-		tree_t* node = (tree_t*)dml_keyword_node("namespace");
+		tree_t* node = (tree_t*)dml_keyword_node("namespace", &@$);
 		node->ident.type = NAMESPACE_TYPE;
 		$$ = node;
 	}
 	| PRIVATE {
-		tree_t* node = (tree_t*)dml_keyword_node("private");
+		tree_t* node = (tree_t*)dml_keyword_node("private", &@$);
 		node->ident.type = PRIVATE_TYPE;
 		$$ = node;
 	}
 	| PROTECTED {
-		tree_t* node = (tree_t*)dml_keyword_node("protected");
+		tree_t* node = (tree_t*)dml_keyword_node("protected", &@$);
 		node->ident.type = PROTECTED_TYPE;
 		$$ = node;
 	}
 	| PUBLIC {
-		tree_t* node = (tree_t*)dml_keyword_node("public");
+		tree_t* node = (tree_t*)dml_keyword_node("public", &@$);
 		node->ident.type = PUBLIC_TYPE;
 		$$ = node;
 	}
 	| RESTRICT {
-		tree_t* node = (tree_t*)dml_keyword_node("register");
+		tree_t* node = (tree_t*)dml_keyword_node("register", &@$);
 		node->ident.type = RESTRICT_TYPE;
 		$$ = node;
 	}
 	| UNION {
-		tree_t* node = (tree_t*)dml_keyword_node("union");
+		tree_t* node = (tree_t*)dml_keyword_node("union", &@$);
 		node->ident.type = UNION_TYPE;
 		$$ = node;
 	}
 	| USING {
-		tree_t* node = (tree_t*)dml_keyword_node("using");
+		tree_t* node = (tree_t*)dml_keyword_node("using", &@$);
 		node->ident.type = USING_TYPE;
 		$$ = node;
 	}
 	| VIRTUAL {
-		tree_t* node = (tree_t*)dml_keyword_node("virtual");
+		tree_t* node = (tree_t*)dml_keyword_node("virtual", &@$);
 		node->ident.type = VIRTUAL_TYPE;
 		$$ = node;
 	}
 	| VOLATILE {
-		tree_t* node  = (tree_t*)dml_keyword_node("volatile");
+		tree_t* node  = (tree_t*)dml_keyword_node("volatile", &@$);
 		node->ident.type = VOLATILE_TYPE;
 		$$ = node;
 	}
@@ -3414,8 +3423,8 @@ ident
 #include <stdio.h>
 #include <stdlib.h>
 
-extern int column;
-int lineno  = 1;    /* number of current source line */
+//extern int column;
+//int lineno  = 1;    /* number of current source line */
 
 void yyerror(YYLTYPE* location, yyscan_t* scanner, tree_t** root_ptr, char *s) {
 	fflush(stdout);

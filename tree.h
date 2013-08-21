@@ -362,6 +362,14 @@ struct tree_head {
 };
 
 /**
+ * @brief : tree node about foot
+ */
+struct tree_foot {
+	struct tree_common common;
+	const char* str;
+	tree_t* foot;
+};
+/**
  * @brief : tree node about block
  * the block is defined about {}
  */
@@ -874,6 +882,7 @@ union tree_node
 	struct tree_cdecl cdecl;
 	struct tree_cdecl_brack cdecl_brack;
 	struct tree_head head;
+	struct tree_foot foot;
 	struct tree_block block;
 	struct tree_array array;
 	struct tree_if_else if_else;
