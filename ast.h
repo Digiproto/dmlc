@@ -40,6 +40,7 @@ void print_ast (tree_t* root);
 int get_param_num(tree_t* node);
 int get_list_num (tree_t* root);
 void parse_undef_node(symtab_t table);
+int charge_standard_parameter(symtab_t table, parameter_attr_t* attr);
 
 void print_dml(tree_t* node, int pos);
 void print_device(tree_t* node, int pos);

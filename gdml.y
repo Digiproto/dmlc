@@ -88,6 +88,8 @@ typedef struct YYLTYPE
 //extern int  yylex(YYSTYPE *yylval_param, yyscan_t yyscanner);
 extern tree_t* parse_auto_api(void);
 void yyerror(YYLTYPE* location, yyscan_t* scanner, tree_t** root_ptr, char *s);
+extern int charge_standard_parameter(symtab_t table, parameter_attr_t* attr);
+extern void insert_auto_defaut_param(symtab_t table);
 extern void insert_array_index(object_attr_t* attr, symtab_t table);
 extern char* builtin_filename;
 extern const char* import_file_list[];
@@ -256,8 +258,9 @@ dml
 		device_attr_t* attr = (device_attr_t*)malloc(sizeof(device_attr_t));
 		attr->name = $2->ident.str;
 		if (symbol_insert(root_table, $2->ident.str, DEVICE_TYPE, attr) == -1) {
-			fprintf(stderr, "redefined\n");
+			fprintf(stderr, "Line = %d, redefined, device %s\n", __LINE__, $2->ident.str);
 		}
+		insert_auto_defaut_param(current_table);
 		/* FIXME: have any other device */
 
 		tree_t* node = (tree_t*)create_node("device", DEVICE_TYPE, sizeof(struct tree_device));
@@ -345,7 +348,7 @@ syntax_modifier
 		attr->endian = $2->ident.str;
 		attr->common.table_num = current_table->table_num;
 		if (symbol_insert(current_table, $2->ident.str, BITORDER_TYPE, attr) == -1) {
-			fprintf(stderr, "redefined\n");
+			fprintf(stderr, "Line = %d, redefined bitorder %s\n", __LINE__, $2->ident.str);
 		}
 
 		tree_t* node = (tree_t*)create_node("bitorder", BITORDER_TYPE, sizeof(struct tree_bitorder));
@@ -1115,7 +1118,7 @@ toplevel
 		template_attr_t* attr = (template_attr_t*)gdml_zmalloc(sizeof(template_attr_t));
 		attr->name = $2->ident.str;
 		if (symbol_insert(current_table, $2->ident.str, TEMPLATE_TYPE, attr) == -1) {
-			fprintf(stderr, "redefined\n");
+			fprintf(stderr, "Line = %d, redefined template %s\n", __LINE__, $2->ident.str);
 			/* FIXME: handle the error */
 			exit(-1);
 		}
@@ -1369,17 +1372,19 @@ object_spec
 		node->spec.desc = $1;
 
 		tree_t* block = (tree_t*)create_node("block", BLOCK_TYPE, sizeof(struct tree_block));
-	symtab_t table = NULL;
-		if (object_spec_type == TEMPLATE_TYPE) {
+		symtab_t table = NULL;
+		/* only template and object have the object_spec, and object has it own object_comm_attr
+			the template do not have object_comm_attr */
+		if (object_comm_attr == NULL) {
 			table = symtab_create(TEMPLATE_TYPE);
 			table->no_check = 1;
 		}
-		else if (object_spec_type == IMPLEMENT_TYPE) {
+		else if (object_comm_attr->common.obj_type == IMPLEMENT_TYPE) {
 			table = symtab_create(IMPLEMENT_TYPE);
 			table->no_check = 1;
 		}
 		else {
-			table = symtab_create(SPEC_TYPE);
+			table = symtab_create(object_comm_attr->common.obj_type);
 		}
 		table->table_num = ++current_table_num;
 		block->block.table = symtab_insert_child(current_table, table);
@@ -1388,6 +1393,7 @@ object_spec
 		if (object_comm_attr) {
 			object_comm_attr->common.table = current_table;;
 			insert_array_index(object_comm_attr, current_table);
+			insert_auto_defaut_param(current_table);
 		}
 
 		node->spec.block = block;
@@ -1505,7 +1511,9 @@ parameter
 		parameter_attr_t* attr = (parameter_attr_t*)gdml_zmalloc(sizeof(parameter_attr_t));
 		attr->name = $2->ident.str;
 		attr->spec = get_paramspec($3, current_table);
-		symbol_insert(current_table, $2->ident.str, PARAMETER_TYPE, attr);
+		if (charge_standard_parameter(current_table, attr) == 0) {
+			symbol_insert(current_table, $2->ident.str, PARAMETER_TYPE, attr);
+		}
 
 		tree_t* node = (tree_t*)create_node("parameter", PARAMETER_TYPE, sizeof(struct tree_param));
 		node->param.name = $2->ident.str;
@@ -3451,9 +3459,39 @@ void insert_array_index(object_attr_t* attr, symtab_t table) {
 		array_attr = attr->connect.arraydef;
 	}
 
+	/* index and indexvar is auto parameter when an object is array, can not redefined them */
 	if ((array_attr != NULL) && (array_attr->ident != NULL)) {
+		if ((strcmp("index", array_attr->ident) == 0) ||
+				strcmp("indexvar", array_attr->ident) == 0) {
+			fprintf(stderr, "error: duplicate assignment to parameter '%s'\n", array_attr->ident);
+			/* TODO: handle the error*/
+			return;
+		}
 		symbol_insert(table, array_attr->ident, INT_TYPE, NULL);
 	}
+	else if ((array_attr != NULL) && (array_attr->fix_array)) {
+		/* parameter 'i' is the parameter about object array
+		 * when a object is fix array,  such as a[10], it is
+		 * inserted into table automatic
+		 */
+		parameter_attr_t* param_i = (parameter_attr_t*)gdml_zmalloc(sizeof(parameter_attr_t));
+
+		param_i->name = strdup("i");
+		symbol_insert(table, "i", PARAMETER_TYPE, param_i);
+	}
+
+	/* 'index, i, indexvar' is the parameters about object array
+	 * when a object is array, this three parameters are inserted
+	 * into table automatic, but the parameter 'i' can be redefined,
+	 * such as reg[j in 0..15], the 'i' parameter is replaces by j,
+	 * and 'index' can not be muti-defined such as [index .. 0..15]*/
+	parameter_attr_t* param_index = (parameter_attr_t*)gdml_zmalloc(sizeof(parameter_attr_t));
+	param_index->name = strdup("index");
+	symbol_insert(table, "index", PARAMETER_TYPE, param_index);
+
+	parameter_attr_t* param_indexvar = (parameter_attr_t*)gdml_zmalloc(sizeof(parameter_attr_t));
+	param_indexvar->name = strdup("indexvar");
+	symbol_insert(table, "indexvar", PARAMETER_TYPE, param_indexvar);
 
 	return;
 }

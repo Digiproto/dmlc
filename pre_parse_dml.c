@@ -21,10 +21,327 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 #include <stdio.h>
+#include <assert.h>
+#include <string.h>
+#include <stdlib.h>
 
 #include "symbol-common.h"
 #include "types.h"
 #include "pre_parse_dml.h"
+#include "symbol.h"
+#include "ast.h"
+
+standard_param_t object_common_param[] = {
+	{"this",			OBJECT_TYPE,		AUTO_VALUE},
+	{"parent",			OBJECT_TYPE,		AUTO_VALUE},
+	{"desc",			CONST_STRING_TYPE,	UNDEFINED_VALUE},
+	{"documentation",	CONST_STRING_TYPE,	UNDEFINED_VALUE},
+	{"limitations",		CONST_STRING_TYPE,	UNDEFINED_VALUE},
+	{"name",			CONST_STRING_TYPE,	AUTO_VALUE},
+	{"qname",			CONST_STRING_TYPE,  AUTO_VALUE},
+	{"objtype",			CONST_STRING_TYPE,  ASSIGNED_VALUE},
+	{"index",			INT_TYPE,			UNDEFINED_VALUE},
+	{"indexvar",		CONST_STRING_TYPE,	UNDEFINED_VALUE},
+	{"dev",				OBJECT_TYPE,		ASSIGNED_VALUE},
+	{"bank",			OBJECT_TYPE,		ASSIGNED_VALUE},
+	{NULL, 0, 0},
+};
+
+standard_param_t device_param[] = {
+	{"this",			OBJECT_TYPE,		AUTO_VALUE},
+	{"parent",			OBJECT_TYPE,		AUTO_VALUE},
+	{"desc",			CONST_STRING_TYPE,	UNDEFINED_VALUE},
+	{"documentation",	CONST_STRING_TYPE,	UNDEFINED_VALUE},
+	{"limitations",		CONST_STRING_TYPE,	UNDEFINED_VALUE},
+	{"name",			CONST_STRING_TYPE,	AUTO_VALUE},
+	{"qname",			CONST_STRING_TYPE,  AUTO_VALUE},
+	{"objtype",			CONST_STRING_TYPE,  ASSIGNED_VALUE},
+	{"index",			INT_TYPE,			UNDEFINED_VALUE},
+	{"indexvar",		CONST_STRING_TYPE,	UNDEFINED_VALUE},
+	{"dev",				OBJECT_TYPE,		ASSIGNED_VALUE},
+	//{"bank",			OBJECT_TYPE,		ASSIGNED_VALUE},
+
+	{"classname",		CONST_STRING_TYPE,	DEFAULT_VALUE},
+	{"banks",			OBJECT_TYPE,		AUTO_VALUE},
+	{"register_size",	INT_TYPE,			UNDEFINED_VALUE},
+	{"byte_order",		CONST_STRING_TYPE,  DEFAULT_VALUE},
+	{"log_group",		INT_TYPE,			UNDEFINED_VALUE},
+	{"obj",				OBJECT_TYPE,		AUTO_VALUE},
+	{"logobj",			OBJECT_TYPE,		AUTO_VALUE},
+	{NULL, 0, 0},
+};
+
+standard_param_t attribute_param[] = {
+	{"this",			OBJECT_TYPE,		AUTO_VALUE},
+	{"parent",			OBJECT_TYPE,		AUTO_VALUE},
+	{"desc",			CONST_STRING_TYPE,	UNDEFINED_VALUE},
+	{"documentation",	CONST_STRING_TYPE,	UNDEFINED_VALUE},
+	{"limitations",		CONST_STRING_TYPE,	UNDEFINED_VALUE},
+	{"name",			CONST_STRING_TYPE,	AUTO_VALUE},
+	{"qname",			CONST_STRING_TYPE,  AUTO_VALUE},
+	{"objtype",			CONST_STRING_TYPE,  ASSIGNED_VALUE},
+	{"index",			INT_TYPE,			UNDEFINED_VALUE},
+	{"indexvar",		CONST_STRING_TYPE,	UNDEFINED_VALUE},
+	{"dev",				OBJECT_TYPE,		ASSIGNED_VALUE},
+	{"bank",			OBJECT_TYPE,		ASSIGNED_VALUE},
+
+	{"allocate_type",	CONST_STRING_TYPE,	UNDEFINED_VALUE},
+	{"type",			CONST_STRING_TYPE,	DEFAULT_VALUE},
+	{"configuration",	CONST_STRING_TYPE,  DEFAULT_VALUE},
+	{"persistent",		BOOL_TYPE,			DEFAULT_VALUE},
+	{"internal",		BOOL_TYPE,			DEFAULT_VALUE},
+	{"attr_type",		CONST_STRING_TYPE,	AUTO_VALUE},
+	{NULL, 0, 0},
+};
+
+standard_param_t bank_param[] = {
+	{"this",			OBJECT_TYPE,		AUTO_VALUE},
+	{"parent",			OBJECT_TYPE,		AUTO_VALUE},
+	{"desc",			CONST_STRING_TYPE,	UNDEFINED_VALUE},
+	{"documentation",	CONST_STRING_TYPE,	UNDEFINED_VALUE},
+	{"limitations",		CONST_STRING_TYPE,	UNDEFINED_VALUE},
+	{"name",			CONST_STRING_TYPE,	AUTO_VALUE},
+	{"qname",			CONST_STRING_TYPE,  AUTO_VALUE},
+	{"objtype",			CONST_STRING_TYPE,  ASSIGNED_VALUE},
+	{"index",			INT_TYPE,			UNDEFINED_VALUE},
+	{"indexvar",		CONST_STRING_TYPE,	UNDEFINED_VALUE},
+	{"dev",				OBJECT_TYPE,		ASSIGNED_VALUE},
+	{"bank",			OBJECT_TYPE,		ASSIGNED_VALUE},
+
+	{"mapped_registers",	OBJECT_TYPE,	AUTO_VALUE},
+	{"unmapped_registers",	OBJECT_TYPE,	AUTO_VALUE},
+	{"numbered_registers",	OBJECT_TYPE,	UNDEFINED_VALUE},
+	{"mappable",			BOOL_TYPE,		DEFAULT_VALUE},
+	{"function",			INT_TYPE,		UNDEFINED_VALUE},
+	{"overlapping",			BOOL_TYPE,		DEFAULT_VALUE},
+	{"partial",				BOOL_TYPE,		DEFAULT_VALUE},
+	{"signed",				BOOL_TYPE,		DEFAULT_VALUE},
+	{"allocate",			BOOL_TYPE,		DEFAULT_VALUE},
+	{"register_size",		INT_TYPE,		DEFAULT_VALUE},
+	{"byte_order",			CONST_STRING_TYPE,	DEFAULT_VALUE},
+	{"log_group",			INT_TYPE,		DEFAULT_VALUE},
+	{"miss_bank",			OBJECT_TYPE,	UNDEFINED_VALUE},
+	{"miss_bank_offset",	INT_TYPE,		DEFAULT_VALUE},
+	{NULL, 0, 0},
+};
+
+standard_param_t register_param[] = {
+	{"this",			OBJECT_TYPE,		AUTO_VALUE},
+	{"parent",			OBJECT_TYPE,		AUTO_VALUE},
+	{"desc",			CONST_STRING_TYPE,	UNDEFINED_VALUE},
+	{"documentation",	CONST_STRING_TYPE,	UNDEFINED_VALUE},
+	{"limitations",		CONST_STRING_TYPE,	UNDEFINED_VALUE},
+	{"name",			CONST_STRING_TYPE,	AUTO_VALUE},
+	{"qname",			CONST_STRING_TYPE,  AUTO_VALUE},
+	{"objtype",			CONST_STRING_TYPE,  ASSIGNED_VALUE},
+	{"index",			INT_TYPE,			UNDEFINED_VALUE},
+	{"indexvar",		CONST_STRING_TYPE,	UNDEFINED_VALUE},
+	{"dev",				OBJECT_TYPE,		ASSIGNED_VALUE},
+	{"bank",			OBJECT_TYPE,		ASSIGNED_VALUE},
+
+	{"szie",			INT_TYPE,			DEFAULT_VALUE},
+	{"bitsize",			INT_TYPE,			ASSIGNED_VALUE},
+	{"offset",			INT_TYPE,			UNDEFINED_VALUE},
+	{"regnum",			INT_TYPE,			UNDEFINED_VALUE},
+	{"signed",			BOOL_TYPE,			DEFAULT_VALUE},
+	{"allocate",		BOOL_TYPE,			DEFAULT_VALUE},
+	{"fields",			OBJECT_TYPE,		AUTO_VALUE},
+	{"hard_reset_value",INT_TYPE,			DEFAULT_VALUE},
+	{"soft_reset_value", INT_TYPE,			DEFAULT_VALUE},
+	{"logging",			BOOL_TYPE,			DEFAULT_VALUE},
+	{"log_group",		INT_TYPE,			DEFAULT_VALUE},
+	{"read_logging",	BOOL_TYPE,			DEFAULT_VALUE},
+	{"write_logging",	BOOL_TYPE,			DEFAULT_VALUE},
+	{"configuration",	CONST_STRING_TYPE,	DEFAULT_VALUE},
+	{"persistent",		BOOL_TYPE,			DEFAULT_VALUE},
+	{"internal",		BOOL_TYPE,			DEFAULT_VALUE},
+	{"attr_type",		CONST_STRING_TYPE,	ASSIGNED_VALUE},
+	{"notinregister ",	INT_TYPE,			ASSIGNED_VALUE},
+	{NULL, 0, 0},
+};
+
+standard_param_t field_param[] = {
+	{"this",			OBJECT_TYPE,		AUTO_VALUE},
+	{"parent",			OBJECT_TYPE,		AUTO_VALUE},
+	{"desc",			CONST_STRING_TYPE,	UNDEFINED_VALUE},
+	{"documentation",	CONST_STRING_TYPE,	UNDEFINED_VALUE},
+	{"limitations",		CONST_STRING_TYPE,	UNDEFINED_VALUE},
+	{"name",			CONST_STRING_TYPE,	AUTO_VALUE},
+	{"qname",			CONST_STRING_TYPE,  AUTO_VALUE},
+	{"objtype",			CONST_STRING_TYPE,  ASSIGNED_VALUE},
+	{"index",			INT_TYPE,			UNDEFINED_VALUE},
+	{"indexvar",		CONST_STRING_TYPE,	UNDEFINED_VALUE},
+	{"dev",				OBJECT_TYPE,		ASSIGNED_VALUE},
+	{"bank",			OBJECT_TYPE,		ASSIGNED_VALUE},
+
+	{"reg",				OBJECT_TYPE,	ASSIGNED_VALUE},
+	{"explicit",		BOOL_TYPE,		AUTO_VALUE},
+	{"lsb",				INT_TYPE,		UNDEFINED_VALUE},
+	{"msb",				INT_TYPE,		UNDEFINED_VALUE},
+	{"bitsize",			INT_TYPE,		ASSIGNED_VALUE},
+	{"signed",			BOOL_TYPE,		DEFAULT_VALUE},
+	{"allocate",		BOOL_TYPE,		DEFAULT_VALUE},
+	{"hard_reset_value",INT_TYPE,		DEFAULT_VALUE},
+	{"soft_reset_value",INT_TYPE,		DEFAULT_VALUE},
+	{"notinfield",		INT_TYPE,		ASSIGNED_VALUE},
+	{NULL, 0, 0},
+};
+
+standard_param_t connect_param[] = {
+	{"this",			OBJECT_TYPE,		AUTO_VALUE},
+	{"parent",			OBJECT_TYPE,		AUTO_VALUE},
+	{"desc",			CONST_STRING_TYPE,	UNDEFINED_VALUE},
+	{"documentation",	CONST_STRING_TYPE,	UNDEFINED_VALUE},
+	{"limitations",		CONST_STRING_TYPE,	UNDEFINED_VALUE},
+	{"name",			CONST_STRING_TYPE,	AUTO_VALUE},
+	{"qname",			CONST_STRING_TYPE,  AUTO_VALUE},
+	{"objtype",			CONST_STRING_TYPE,  ASSIGNED_VALUE},
+	{"index",			INT_TYPE,			UNDEFINED_VALUE},
+	{"indexvar",		CONST_STRING_TYPE,	UNDEFINED_VALUE},
+	{"dev",				OBJECT_TYPE,		ASSIGNED_VALUE},
+	{"bank",			OBJECT_TYPE,		ASSIGNED_VALUE},
+
+	{"interfaces",		OBJECT_TYPE,		AUTO_VALUE},
+	{"configuration",	CONST_STRING_TYPE,	DEFAULT_VALUE},
+	{"persistent",		BOOL_TYPE,			DEFAULT_VALUE},
+	{"internal",		BOOL_TYPE,			DEFAULT_VALUE},
+	{"attr_type",		CONST_STRING_TYPE,	ASSIGNED_VALUE},
+	{"required",		BOOL_TYPE,			DEFAULT_VALUE},
+	{"c_type",			CONST_STRING_TYPE,	UNDEFINED_VALUE},
+	{"evclass",			POINTER_TYPE,		UNDEFINED_VALUE},
+	{NULL, 0, 0},
+};
+
+standard_param_t interface_param[] = {
+	{"this",			OBJECT_TYPE,		AUTO_VALUE},
+	{"parent",			OBJECT_TYPE,		AUTO_VALUE},
+	{"desc",			CONST_STRING_TYPE,	UNDEFINED_VALUE},
+	{"documentation",	CONST_STRING_TYPE,	UNDEFINED_VALUE},
+	{"limitations",		CONST_STRING_TYPE,	UNDEFINED_VALUE},
+	{"name",			CONST_STRING_TYPE,	AUTO_VALUE},
+	{"qname",			CONST_STRING_TYPE,  AUTO_VALUE},
+	{"objtype",			CONST_STRING_TYPE,  ASSIGNED_VALUE},
+	{"index",			INT_TYPE,			UNDEFINED_VALUE},
+	{"indexvar",		CONST_STRING_TYPE,	UNDEFINED_VALUE},
+	{"dev",				OBJECT_TYPE,		ASSIGNED_VALUE},
+	{"bank",			OBJECT_TYPE,		ASSIGNED_VALUE},
+
+	{"required",		BOOL_TYPE,			DEFAULT_VALUE},
+	{"c_type",			CONST_STRING_TYPE,	DEFAULT_VALUE},
+	{"c_name",			CONST_STRING_TYPE,	DEFAULT_VALUE},
+	{"evclass",			POINTER_TYPE,		UNDEFINED_VALUE},
+	{NULL, 0, 0},
+};
+
+standard_param_t event_param[] = {
+	{"this",			OBJECT_TYPE,		AUTO_VALUE},
+	{"parent",			OBJECT_TYPE,		AUTO_VALUE},
+	{"desc",			CONST_STRING_TYPE,	UNDEFINED_VALUE},
+	{"documentation",	CONST_STRING_TYPE,	UNDEFINED_VALUE},
+	{"limitations",		CONST_STRING_TYPE,	UNDEFINED_VALUE},
+	{"name",			CONST_STRING_TYPE,	AUTO_VALUE},
+	{"qname",			CONST_STRING_TYPE,  AUTO_VALUE},
+	{"objtype",			CONST_STRING_TYPE,  ASSIGNED_VALUE},
+	{"index",			INT_TYPE,			UNDEFINED_VALUE},
+	{"indexvar",		CONST_STRING_TYPE,	UNDEFINED_VALUE},
+	{"dev",				OBJECT_TYPE,		ASSIGNED_VALUE},
+	{"bank",			OBJECT_TYPE,		ASSIGNED_VALUE},
+
+	{"timebase",		CONST_STRING_TYPE, DEFAULT_VALUE},
+	{NULL, 0, 0},
+};
+
+standard_param_t implement_param[] = {
+	{"this",			OBJECT_TYPE,		AUTO_VALUE},
+	{"parent",			OBJECT_TYPE,		AUTO_VALUE},
+	{"desc",			CONST_STRING_TYPE,	UNDEFINED_VALUE},
+	{"documentation",	CONST_STRING_TYPE,	UNDEFINED_VALUE},
+	{"limitations",		CONST_STRING_TYPE,	UNDEFINED_VALUE},
+	{"name",			CONST_STRING_TYPE,	AUTO_VALUE},
+	{"qname",			CONST_STRING_TYPE,  AUTO_VALUE},
+	{"objtype",			CONST_STRING_TYPE,  ASSIGNED_VALUE},
+	{"index",			INT_TYPE,			UNDEFINED_VALUE},
+	{"indexvar",		CONST_STRING_TYPE,	UNDEFINED_VALUE},
+	{"dev",				OBJECT_TYPE,		ASSIGNED_VALUE},
+	{"bank",			OBJECT_TYPE,		ASSIGNED_VALUE},
+
+	{"c_type",			CONST_STRING_TYPE, UNDEFINED_VALUE},
+	{NULL, 0, 0},
+};
+
+char* byte_order_value[] = {
+	"\"little-endian\"",
+	"\"big-endian\"",
+	NULL,
+};
+
+char* configuration_value[] = {
+	"\"none\"",
+	"\"pseudo\"",
+	"\"optional\"",
+	"\"required\"",
+	NULL,
+};
+
+char* type_value[] = {
+	"\"f\"",
+	"\"i\"",
+	"\"s\"",
+	"\"b\"",
+	"\"d\"",
+	"\"D\"",
+	"\"o\"",
+	"\"n\"",
+	"\"a\"",
+	NULL,
+};
+
+#define ALLOCATE_VALUE_NUM 70
+char* allocate_type_value[ALLOCATE_VALUE_NUM] = {
+	"\"double\"",
+	"\"string\"",
+	"\"bool\"",
+};
+
+char* timebase_vale[] = {
+	"\"steps\"",
+	"\"cycles\"",
+	"\"seconds\"",
+	"\"stacked\"",
+	NULL,
+};
+
+special_param_t device_special[] = {
+	{"byte_order",	byte_order_value},
+	{NULL, NULL},
+};
+
+special_param_t attribute_special[] = {
+	{"allocate_type", allocate_type_value},
+	{"type",		type_value},
+	{"configuration", configuration_value},
+	{NULL, NULL},
+};
+
+special_param_t bank_special[] = {
+	{"byte_order", byte_order_value},
+	{NULL, NULL},
+};
+
+special_param_t register_special[] = {
+	{"configuration", configuration_value},
+	{NULL, NULL},
+};
+
+special_param_t connect_special[] = {
+	{"configuration", configuration_value},
+	{NULL, NULL},
+};
+
+special_param_t event_special[] = {
+	{"timebase", timebase_vale},
+	{NULL, NULL},
+};
 
 pre_dml_t pre_dml_struct[] = {
 	/* ------------typedef--------- */
@@ -906,6 +1223,7 @@ pre_dml_t pre_dml_struct[] = {
 	{"Sim_Reg_Type_Floating", CONSTANT_TYPE},
 	{"Sim_Reg_Type_Control", CONSTANT_TYPE},
 
+#if 0
 	/*---------------------- auto type ---------------*/
 	{"parent", AUTO_TYPE},
 	{"name", AUTO_TYPE},
@@ -922,6 +1240,7 @@ pre_dml_t pre_dml_struct[] = {
 	{"_regname", AUTO_TYPE},
 	{"explicit", AUTO_TYPE},
 	{"evclass", AUTO_TYPE},
+#endif
 };
 
 int insert_pre_dml_struct(void) {
@@ -949,4 +1268,397 @@ int find_all_pre_dml_struct(void) {
 	}
 
 	return 0;
+}
+
+standard_param_t* get_standard_param(int type) {
+	standard_param_t* standard_param = NULL;
+
+	switch (type) {
+		case DEVICE_TYPE:
+			standard_param = device_param;
+			break;
+		case BANK_TYPE:
+			standard_param = bank_param;
+			break;
+		case REGISTER_TYPE:
+			standard_param = register_param;
+			break;
+		case FIELD_TYPE:
+			standard_param = field_param;
+			break;
+		case CONNECT_TYPE:
+			standard_param = connect_param;
+			break;
+		case INTERFACE_TYPE:
+			standard_param = interface_param;
+			break;
+		case ATTRIBUTE_TYPE:
+			standard_param = attribute_param;
+			break;
+		case EVENT_TYPE:
+			standard_param = event_param;
+			break;
+		case GROUP_TYPE:
+			standard_param = object_common_param;
+			break;
+		case IMPLEMENT_TYPE:
+			standard_param = implement_param;
+			break;
+		default:
+			standard_param = NULL;
+			break;
+	}
+
+	return standard_param;
+}
+
+int standard_param_type(const char* name, standard_param_t* standard_param) {
+	assert(name != NULL);
+
+	if (standard_param == NULL) {
+		return 0;
+	}
+
+	int i = 0;
+	while (standard_param[i].name != NULL) {
+		if (strcmp(standard_param[i].name, name) == 0) {
+			return standard_param[i].value_type;
+		}
+		i++;
+	}
+
+	return 0;
+}
+
+static int array_paramer(const char* name, symtab_t table) {
+	assert(name != NULL);
+	assert(table != NULL);
+
+	symbol_t symbol = NULL;
+	/* if the parameter is array parameter */
+	if ((strcmp(name, "i") == 0) ||
+			(strcmp(name, "index") == 0) ||
+			(strcmp(name, "indexvar") == 0)) {
+		/* if object is array, the i, index, indexvar parameter insert it's
+		 * table when the object created, and their values are fixed automatic,
+		 * can not assign the again */
+		symbol = symbol_find(table, name, PARAMETER_TYPE);
+		if (symbol != NULL) {
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+int get_standard_param_type(const char* name, standard_param_t* standard_param) {
+	assert(name != NULL);
+	assert(standard_param != NULL);
+
+	int i = 0;
+	while(standard_param[i].name != NULL) {
+		if (strcmp(standard_param[i].name, name) == 0) {
+			return standard_param[i].type;
+		}
+		i++;
+	}
+
+	return 0;
+}
+
+int charge_standard_param_type(int standard_type, int param_type) {
+	int diff_type = 0;
+	switch (standard_type) {
+		case CONST_STRING_TYPE:
+			if (param_type == CONST_STRING_TYPE || param_type == POINTER_TYPE ||
+					param_type == UNDEFINED_TYPE) {
+				diff_type = 0;
+			}
+			else {
+				diff_type = 1;
+			}
+			break;
+		case INT_TYPE:
+			if (param_type == INT_TYPE || param_type == INTEGER_TYPE ||
+					param_type == UNDEFINED_TYPE) {
+				diff_type = 0;
+			}
+			else {
+				diff_type = 1;
+			}
+			break;
+		case BOOL_TYPE:
+			if (param_type == INT_TYPE || param_type == INTEGER_TYPE ||
+					param_type == BOOL_TYPE || param_type == UNDEFINED_TYPE) {
+				diff_type = 0;
+			}
+			else {
+				diff_type = 1;
+			}
+			break;
+		case POINTER_TYPE:
+			if (param_type == POINTER_TYPE || param_type == CONST_STRING_TYPE
+					|| param_type == UNDEFINED_TYPE) {
+				diff_type = 0;
+			}
+			else {
+				diff_type = 1;
+			}
+			break;
+		case OBJECT_TYPE:
+			diff_type = 0;
+			break;
+	}
+
+	return diff_type;
+}
+
+static int bad_value_info(const char* name) {
+	fprintf(stderr, "error: bad value for parameter '%s'\n", name);
+
+	/* TODO: handle  the error*/
+	return 2;
+}
+
+static int duplicate_assign_info(const char* name) {
+	fprintf(stderr, "duplicate assignment to parameter '%s'\n", name);
+
+	/* TODO: handle  the error*/
+	return 2;
+}
+
+static int mismatch_type(const char* name) {
+	fprintf(stderr, "error: illegal comparison; mismatching types to parameter '%s'", name);
+
+	/* TODO: handle  the error*/
+	return 2;
+}
+
+static int special_param_value(const char* param_name, parameter_attr_t* attr, char* special_value[]) {
+	if (attr->spec == NULL) {
+		return 1;
+	}
+
+	if ((attr->spec->is_auto) || (attr->spec->is_default)) {
+		return duplicate_assign_info(param_name);
+	}
+
+	if (attr->spec->type == CONST_STRING_TYPE) {
+		int i = 0;
+		while (special_value[i] != NULL) {
+			if (strcmp(attr->spec->str, special_value[i]) == 0) {
+				return 1;
+			}
+			i++;
+		}
+
+		return bad_value_info(param_name);
+	}
+	else {
+		return mismatch_type(param_name);
+	}
+
+	return 0;
+}
+
+static int obj_special_param(const char* name, parameter_attr_t* attr, special_param_t* special_param) {
+	assert(name != NULL);
+
+	int i = 0;
+	while (special_param[i].name != NULL) {
+		if (strcmp(name, special_param[i].name) == 0) {
+			return special_param_value(name, attr, special_param[i].value);
+		}
+		i++;
+	}
+
+	return 0;
+}
+
+void init_allocate_type_arr() {
+	/* we need to init it only once,
+	 * take this swich to make sure
+	 * it is inited or not */
+	static int inited = 0;
+	if (inited) {
+		return;
+	}
+	inited++;
+	/* allocate_type value can be the types
+	 * bool double sting int int1..32 uint, uint1..32*/
+	const char* int_value = "\"int";
+	const char* uint_value = "\"uint";
+	const char* marks = "\"";
+
+	/* we parse the type is "uint4" "uint32" */
+	int marks_len = strlen(marks);
+	int int_len = strlen(int_value) + marks_len + 3;
+	int uint_len = strlen(uint_value) + marks_len + 3;
+
+	int i = 0;
+
+	allocate_type_value[3] = "\"int\"";
+	/* bool, double, string: 3
+	 * int : 1 */
+	i = 4;
+	for (; i < ALLOCATE_VALUE_NUM - 34; i++) {
+		allocate_type_value[i] = (char*)gdml_zmalloc(int_len);
+		sprintf(allocate_type_value[i], "%s%d%s", int_value, i - 3, marks);
+	}
+
+	allocate_type_value[i] = "\"uint\"";
+	/* bool, double, string: 3 */
+	i = i + 1;
+	for (; i < ALLOCATE_VALUE_NUM - 1; i++) {
+		allocate_type_value[i] = (char*)gdml_zmalloc(uint_len);
+		sprintf(allocate_type_value[i], "%s%d%s", uint_value, i - 36, marks);
+	}
+
+	allocate_type_value[ALLOCATE_VALUE_NUM] = NULL;
+
+	/* this is only for debug */
+	/*
+	i = 0;
+	while (allocate_type_value[i] != NULL) {
+		printf("allocate_type_value: %s\n", allocate_type_value[i]);
+		i++;
+	}
+	*/
+}
+
+static int special_standard_param(int table_type, const char* name, parameter_attr_t* attr) {
+	assert(name != NULL);
+	int is_special = 0;
+	/* the attribute parameter allocate_type has many values
+	 * and most of the value are int1..32, uint1..32*/
+	init_allocate_type_arr();
+	switch (table_type) {
+		case DEVICE_TYPE:
+			is_special = obj_special_param(name, attr, device_special);
+			break;
+		case BANK_TYPE:
+			is_special = obj_special_param(name, attr, bank_special);
+			break;
+		case REGISTER_TYPE:
+			is_special = obj_special_param(name, attr, register_special);
+			break;
+		case CONNECT_TYPE:
+			is_special = obj_special_param(name, attr, connect_special);
+			break;
+		case EVENT_TYPE:
+			is_special = obj_special_param(name, attr, event_special);
+			break;
+		case ATTRIBUTE_TYPE:
+			is_special = obj_special_param(name, attr, attribute_special);
+			break;
+		default:
+			is_special = 0;
+	}
+
+	return is_special;
+
+}
+
+int charge_standard_parameter(symtab_t table, parameter_attr_t* attr) {
+	int obj_type = 0;
+	int param_type = 0;
+	const char* name = attr->name;
+
+	/* when object is array, three paramers(i, index, indexvar) are insert the table
+	 * when the object is created, and after that we can declare them, but
+	 * fobiden assigning value to them */
+	if (array_paramer(name, table)) {
+		if ((attr->spec) != NULL) {
+			fprintf(stderr, "error: duplicate assignment to parameter '%s'\n", name);
+			/* TODO: handle the error */
+			return 1;
+		}
+		return 1;
+	}
+
+	/* some standard parameters have special value
+	 * such as: parameter byte_order can noly have
+	 * two value: little-endian and bit-endian */
+	int is_special = special_standard_param(table->type, name, attr);
+	if (is_special == 1) {
+		symbol_insert(table, name, PARAMETER_TYPE, attr);
+		return 1;
+	}
+	else if (is_special == 2) {
+		return 1;
+	}
+
+
+	standard_param_t* obj_standard_param = NULL;
+
+	/* the standard parameter is contained by object itself
+	 * and we insert the auto, assigned, default value parameter
+	 * into table when the object is created
+	 * the auto and assigned parameter can not be re-assigned
+	 * but parameter with default value can be assigned again
+	 */
+	obj_standard_param = get_standard_param(table->type);
+	param_type = standard_param_type(name, obj_standard_param);
+	if ((param_type == AUTO_VALUE) || (param_type == ASSIGNED_VALUE)) {
+		if (attr->spec != NULL) {
+			fprintf(stderr, "error: duplicate assignment to parameter '%s'\n", name);
+			/* FIXME: only for debug, delete the exit */
+			exit(-1);
+			/* TODO: handle the error */
+			return 1;
+		}
+	}
+	else if ((param_type == DEFAULT_VALUE) || (param_type == UNDEFINED_VALUE)) {
+		symbol_t symbol = symbol_find(table, name, PARAMETER_TYPE);
+		obj_type = get_standard_param_type(name, obj_standard_param);
+		if (charge_standard_param_type(obj_type, attr->spec->type) == 0) {
+			/* the standard parameter with default value in one object is
+			 * inserted when object is created, but it can be assigned again */
+			if (param_type == DEFAULT_VALUE) {
+				symbol->attr = attr;
+			}
+			else {
+				/* the standard parameter that is undefined, and they are not
+				 * inserted when the object create, but it has their type,
+				 * so should charge the type*/
+				symbol_insert(table, name, PARAMETER_TYPE, attr);
+			}
+			return 1;
+		}
+		else {
+			fprintf(stderr, "error: wrong type assign\n");
+			/* FIXME: only for debug, delete the exit */
+			exit(-1);
+			/* TODO: handle the error */
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+void insert_auto_defaut_param(symtab_t table) {
+	assert(table != NULL);
+
+	standard_param_t* obj_standard_param = NULL;
+
+	/* diffrent object has diffrent standard parameters */
+	obj_standard_param = get_standard_param(table->type);
+
+	/* an object contains many standard parameters,
+	 * when the parameter is auto, assigned, or has
+	 * default value, insert them automatic
+	 */
+	int i = 0;
+	parameter_attr_t* param_attr = NULL;
+	while (obj_standard_param[i].name != NULL) {
+		if(obj_standard_param[i].value_type != UNDEFINED_VALUE) {
+			param_attr = (parameter_attr_t*)gdml_zmalloc(sizeof(parameter_attr_t));
+			param_attr->name = strdup(obj_standard_param[i].name);
+			symbol_insert(table, obj_standard_param[i].name, PARAMETER_TYPE, param_attr);
+		}
+		i++;
+	}
+
+	return;
 }

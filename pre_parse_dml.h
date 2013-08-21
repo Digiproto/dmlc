@@ -29,7 +29,27 @@ typedef struct {
 	int type;
 } pre_dml_t;
 
+typedef struct {
+	const char* name;
+	int type;		// int, string, etc
+	int value_type; // auto, undefined
+					// if it is assign, the value_type = -1;
+} standard_param_t;
+
+typedef struct {
+	const char* name;
+	char** value;
+}special_param_t;
+
+typedef enum {
+	AUTO_VALUE = 1,
+	DEFAULT_VALUE,
+	ASSIGNED_VALUE,
+	UNDEFINED_VALUE
+}value_type_t;
+
 int insert_pre_dml_struct(void);
 int find_all_pre_dml_struct(void);
+standard_param_t* get_standard_param(int type);
 
 #endif /* __PRE_PARSE_DML_H__ */

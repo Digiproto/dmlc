@@ -1527,7 +1527,11 @@ int get_allocate_type(symbol_t symbol) {
 	parameter_attr_t* attr = symbol->attr;
 	paramspec_t* spec = attr->spec;
 
-	if (spec->type != CONST_STRING_TYPE) {
+	if (spec == NULL) {
+		fprintf(stderr, "Warning: '%s' no initialized value\n", symbol->name);
+		return NO_TYPE;
+	}
+	else if (spec->type != CONST_STRING_TYPE) {
 		fprintf(stderr, "error: allocate_type of attribute should be string\n");
 		/* TODO: handle the error */
 		exit(-1);
@@ -1743,12 +1747,7 @@ expression_t* get_ident_value(tree_t** node, symtab_t table,  expression_t* expr
 		}
 	}
 	else if (pre_symbol != NULL) {
-		if (pre_symbol->type == AUTO_TYPE) {
-			expr->final_type = NO_TYPE;
-		}
-		else {
 			expr->final_type = pre_symbol->type;
-		}
 	}
 	else {
 		if (strcmp((*node)->ident.str, "false") == 0) {
@@ -1765,13 +1764,9 @@ expression_t* get_ident_value(tree_t** node, symtab_t table,  expression_t* expr
 			//symbol_insert(table, node->ident.str, NO_TYPE, NULL);
 			expr->final_type = NO_TYPE;
 		}
-		else if (expr->is_undeclare == 0) {
+		else {
 			expr->is_undeclare = 1;
 			expr->undecl_name = (*node)->ident.str;
-		}
-		else {
-			fprintf(stderr, "%s no undeclared (first use)\n", (*node)->ident.str);
-			exit(-1);
 		}
 	}
 	expr->node = *node;
@@ -1861,6 +1856,22 @@ void print_reference(reference_t* ref) {
 	return;
 }
 
+symtab_t get_default_symbol_tale(symbol_t symbol) {
+	assert(symbol != NULL);
+	symtab_t table = NULL;
+
+	if (strcmp(symbol->name, "dev") == 0) {
+		table = get_root_table();
+	} // device
+	else {
+		fprintf(stderr, "other default symbol: %s\n", symbol->name);
+		/* TODO: handle the error */
+		exit(-1);
+	}
+
+	return table;
+}
+
 symtab_t get_symbol_table(symbol_t symbol) {
 	assert(symbol != NULL);
 
@@ -1892,6 +1903,9 @@ symtab_t get_symbol_table(symbol_t symbol) {
 		case IMPLEMENT_TYPE:
 			table = ((struct object_common*)attr)->table;
 			break;
+		case PARAMETER_TYPE:
+			table = get_default_symbol_tale(symbol);
+			break;
 		default:
 			fprintf(stderr, "Othe symbol %s(%d)\n", symbol->name, symbol->type);
 			/* FIXME: handle the error */
@@ -1901,22 +1915,14 @@ symtab_t get_symbol_table(symbol_t symbol) {
 	return table;
 }
 
-symtab_t get_default_symbol_tale(symtab_t table, const char* name) {
+static char* get_interface_name(const char* name) {
 	assert(name != NULL);
-	symtab_t tmp_table = NULL;
-	symbol_t symbol = NULL;
-	void* attr = NULL;
+	int name_len = strlen(name) + strlen("_interface_t") + 1;
+	char* new_name = (char*)gdml_zmalloc(name_len);
+	strcpy(new_name, name);
+	strcat(new_name, "_interface_t");
 
-	if (strcmp(name, "dev") == 0) {
-		symbol = symbol_find(table, "device", TEMPLATE_TYPE);
-		attr = symbol->attr;
-		table = ((template_attr_t*)attr)->table;
-	} // device
-	else {
-		return NULL;
-	}
-
-	return table;
+	return new_name;
 }
 
 int check_reference(symtab_t table, reference_t* ref, expression_t* expr) {
@@ -1936,33 +1942,32 @@ int check_reference(symtab_t table, reference_t* ref, expression_t* expr) {
 
 	while (tmp->next) {
 		symbol = symbol_find_notype(table, tmp->name);
-		if (symbol == NULL) {
-			/* some default symbol */
-			ref_table = get_default_symbol_tale(table, tmp->name);
+		if (symbol != NULL) {
+			if (symbol->type == INTERFACE_TYPE) {
+				tmp->name = get_interface_name(symbol->name);
+				continue;
+			}
+			else {
+				ref_table = get_symbol_table(symbol);
+			}
 		}
 		else {
-			ref_table = get_symbol_table(symbol);
-		}
-
-		if ((ref_table == NULL) && (expr->is_undeclare == 0)) {
 			expr->is_undeclare = 1;
+			expr->undecl_name = tmp->name;
 			break;
 		}
-		else if ((ref_table == NULL) && (expr->is_undeclare == 1)){
-			fprintf(stderr, "%s not object or struct!\n", symbol->name);
-			/* FIXME: handle the error */
-			exit(-1);
+
+		if (ref_table == NULL) {
+			expr->is_undeclare = 1;
+			expr->undecl_name = tmp->name;
+			break;
 		}
 
 		ref_symbol = symbol_find_notype(ref_table, tmp->next->name);
-		if ((ref_symbol == NULL) && (expr->is_undeclare == 0)) {
+		if (ref_symbol == NULL) {
 			expr->is_undeclare = 1;
+			expr->undecl_name = tmp->next->name;
 			break;
-		}
-		else if ((ref_symbol == NULL) && (expr->is_undeclare == 1)) {
-			fprintf(stderr, "%s not element of %s\n", tmp->next->name, tmp->name);
-			/* FIXME: handle the error */
-			exit(-1);
 		}
 
 		/* get the type about symbol */
@@ -1974,10 +1979,7 @@ int check_reference(symtab_t table, reference_t* ref, expression_t* expr) {
 		}
 
 		if (type == INTERFACE_TYPE) {
-			char* name = (char*)gdml_zmalloc(name_len);
-			strcpy(name, tmp->next->name);
-			strcat(name, "_interface_t");
-			tmp->next->name = name;
+			tmp->next->name = get_interface_name(tmp->next->name);
 		}
 		if (type == FUNCTION_POINTER_TYPE) {
 			expr->final_type = FUNCTION_POINTER_TYPE;
