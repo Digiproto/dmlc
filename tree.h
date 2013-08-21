@@ -25,6 +25,7 @@
 #define __TREE_H__
 
 #include "symbol-common.h"
+#include "import.h"
 //#include "decl.h"
 
 /**
@@ -62,6 +63,7 @@ struct tree_common
 	void* attr;
 	int type;
 	const char* name;
+	YYLTYPE location;
 };
 
 #if 0

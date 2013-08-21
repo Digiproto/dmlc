@@ -218,10 +218,11 @@ static int node_num = 0;
  * @param name : node name
  * @param type : node type
  * @param size : node size
+ * @param location : node location
  *
  * @return : return a pointer to created node
  */
-tree_t* create_node (char *name, int type, int size)
+tree_t* create_node (char *name, int type, int size, YYLTYPE* location)
 {
 	tree_t* node = (tree_t*)gdml_zmalloc(size) ;
 	node->common.name = strdup (name);
@@ -230,6 +231,9 @@ tree_t* create_node (char *name, int type, int size)
 	node->common.translate = dummy_translate;
 	DEBUG_CREATE_NODE ("In %s, node: 0x%x, name=%s, type = %d\n", __FUNCTION__, node, name, type);
 	node->common.type = type;
+	if(location) {
+		node->common.location = *location;
+	}
 	node_num++;
 
 	return node;
@@ -288,7 +292,7 @@ void parse_undef_node(symtab_t table) {
  * @return : return a pointer to the node
  */
 tree_t* dml_keyword_node(const char* name) {
-    tree_t* node = create_node("dml_keyword", DML_KEYWORD_TYPE, sizeof(struct tree_ident));
+    tree_t* node = create_node("dml_keyword", DML_KEYWORD_TYPE, sizeof(struct tree_ident), NULL);
     node->ident.str = strdup(name);
     node->ident.len = strlen(name);
 	node->common.print_node = print_ident;
@@ -304,7 +308,7 @@ tree_t* dml_keyword_node(const char* name) {
  * @return : return a pointer to node
  */
 tree_t* c_keyword_node (const char* name) {
-    tree_t* node = create_node("c_keyword", C_KEYWORD_TYPE, sizeof(struct tree_ident));
+    tree_t* node = create_node("c_keyword", C_KEYWORD_TYPE, sizeof(struct tree_ident), NULL);
     node->ident.str = strdup(name);
     node->ident.len = strlen(name);
 	node->common.print_node = print_ident;

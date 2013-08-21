@@ -104,7 +104,7 @@ tree_t* copy_data_from_constant(tree_t* node) {
 	tree_t* tmp = NULL;
 	switch (node->common.type) {
 		case INTEGER_TYPE:
-			new_node = (tree_t*)create_node("integer_literal", INTEGER_TYPE, sizeof(struct tree_int_cst));
+			new_node = (tree_t*)create_node("integer_literal", INTEGER_TYPE, sizeof(struct tree_int_cst), &node->common.location);
 			new_node->int_cst.int_str = node->int_cst.int_str;
 			new_node->int_cst.value = node->int_cst.value;
 			new_node->int_cst.out_64bit = node->int_cst.out_64bit;
@@ -112,14 +112,14 @@ tree_t* copy_data_from_constant(tree_t* node) {
 			new_node->common.translate = translate_integer_literal;
 			break;
 		case FLOAT_TYPE:
-			new_node = (tree_t*)create_node("float_literal", FLOAT_TYPE, sizeof(struct tree_float_cst));
+			new_node = (tree_t*)create_node("float_literal", FLOAT_TYPE, sizeof(struct tree_float_cst), &node->common.location);
 			new_node->float_cst.float_str = node->float_cst.float_str;
 			new_node->float_cst.value = node->float_cst.value;
 			new_node->common.print_node = print_float_literal;
 			new_node->common.translate = translate_float;
 			break;
 		case CONST_STRING_TYPE:
-			new_node = (tree_t*)create_node("string_literal", CONST_STRING_TYPE, sizeof(struct tree_string));
+			new_node = (tree_t*)create_node("string_literal", CONST_STRING_TYPE, sizeof(struct tree_string), &node->common.location);
 			new_node->string.length = node->string.length;
 			new_node->string.pointer = node->string.pointer;
 			new_node->common.print_node = print_string;
@@ -670,7 +670,7 @@ int get_left_right_value(tree_t* left, tree_t* right, tree_t** new_node, express
 	if (final_type == FLOAT_TYPE) {
 		char* float_str = (char*)gdml_zmalloc(sizeof(float));
 		sprintf(float_str, "%f", final_value);
-		*new_node = (tree_t*)create_node("float_literal", FLOAT_TYPE, sizeof(struct tree_float_cst));
+		*new_node = (tree_t*)create_node("float_literal", FLOAT_TYPE, sizeof(struct tree_float_cst), &expr->node->common.location);
 		(*new_node)->float_cst.float_str = float_str;
 		(*new_node)->float_cst.value = final_value;
 		(*new_node)->common.print_node = print_float_literal;
@@ -680,7 +680,7 @@ int get_left_right_value(tree_t* left, tree_t* right, tree_t** new_node, express
 		char* int_str = (char*)gdml_zmalloc(sizeof(int));
 		int value = (int)final_value;
 		sprintf(int_str, "%d", value);
-		*new_node = (tree_t*)create_node("integer_literal", INTEGER_TYPE, sizeof(struct tree_int_cst));
+		*new_node = (tree_t*)create_node("integer_literal", INTEGER_TYPE, sizeof(struct tree_int_cst), &expr->node->common.location);
 		(*new_node)->int_cst.value = (int)final_value;
 		(*new_node)->int_cst.int_str = int_str;
 		(*new_node)->common.print_node = print_interger;
@@ -755,7 +755,7 @@ expression_t* cal_add_expr(tree_t** node, symtab_t table, expression_t* expr) {
 			char* str = (char*)gdml_zmalloc(sizeof(char) * len);
 			sprintf(str, "%s", left->string.pointer);
 			str = strcat(str, right->string.pointer);
-			tree_t* str_node = create_node("string_literal", CONST_STRING_TYPE, sizeof(struct tree_string));
+			tree_t* str_node = create_node("string_literal", CONST_STRING_TYPE, sizeof(struct tree_string), &expr->node->common.location);
 			str_node->string.length = len;
 			str_node->string.pointer = str;
 			str_node->common.print_node = print_string;
@@ -764,7 +764,7 @@ expression_t* cal_add_expr(tree_t** node, symtab_t table, expression_t* expr) {
 		}
 		else if ((left->common.type == UNDEFINED_TYPE) &&
 				(right->common.type == UNDEFINED_TYPE)){
-			new_node = (tree_t*)create_node("undefined", UNDEFINED_TYPE, sizeof(struct tree_common));
+			new_node = (tree_t*)create_node("undefined", UNDEFINED_TYPE, sizeof(struct tree_common), &expr->node->common.location);
 			new_node->common.print_node = print_undefined;
 			expr->final_type = UNDEFINED_TYPE;
 		}
@@ -979,7 +979,7 @@ expression_t* binary_expr_int(tree_t** node, symtab_t table, expression_t* expr)
 
 				char* value_str = (char*)gdml_zmalloc(sizeof(int) * 64);
 				sprintf(value_str, "%d", final_value);
-				tree_t* new_node = (tree_t*)create_node("integer_literal", INTEGER_TYPE, sizeof(struct tree_int_cst));
+				tree_t* new_node = (tree_t*)create_node("integer_literal", INTEGER_TYPE, sizeof(struct tree_int_cst), &expr->node->common.location);
 				new_node->int_cst.int_str = value_str;
 				new_node->int_cst.value = final_value;
 				new_node->common.print_node = print_interger;
@@ -1132,7 +1132,7 @@ expression_t* unary_bit_non(tree_t** node, symtab_t table, expression_t* expr) {
 			const int int_length = 64;
 			int value = ~(unary_expr->int_cst.value);
 			char* str = (char*)gdml_zmalloc(int_length);
-			tree_t* new_node = (tree_t*)create_node("integer_literal", INTEGER_TYPE, sizeof(struct tree_int_cst));
+			tree_t* new_node = (tree_t*)create_node("integer_literal", INTEGER_TYPE, sizeof(struct tree_int_cst), &expr->node->common.location);
 			new_node->int_cst.value = value;
 			sprintf(str, "%d", value);
 			new_node->int_cst.int_str = str;
@@ -1235,7 +1235,7 @@ expression_t* unary_expr_common(tree_t** node, symtab_t table, expression_t* exp
 			if (final_type == FLOAT_TYPE) {
 				char* float_str = (char*)gdml_zmalloc(sizeof(char) * 64);
 				sprintf(float_str, "%f", final_value);
-				new_node = (tree_t*)create_node("float_literal", FLOAT_TYPE, sizeof(struct tree_float_cst));
+				new_node = (tree_t*)create_node("float_literal", FLOAT_TYPE, sizeof(struct tree_float_cst), &expr->node->common.location);
 				new_node->float_cst.float_str = float_str;
 				new_node->float_cst.value = final_value;
 				new_node->common.print_node = print_float_literal;
@@ -1244,7 +1244,7 @@ expression_t* unary_expr_common(tree_t** node, symtab_t table, expression_t* exp
 			if (final_type == INTEGER_TYPE) {
 				char* int_str = (char*)gdml_zmalloc(sizeof(char) * 64);
 				sprintf(int_str, "%ld", final_value);
-				new_node = (tree_t*)create_node("integer_literal", INTEGER_TYPE, sizeof(struct tree_int_cst));
+				new_node = (tree_t*)create_node("integer_literal", INTEGER_TYPE, sizeof(struct tree_int_cst), &expr->node->common.location);
 				new_node->int_cst.value = (int)final_value;
 				new_node->int_cst.int_str = int_str;
 				new_node->common.print_node = print_interger;
@@ -1706,7 +1706,7 @@ tree_t* bool_expression(tree_t** node, expression_t* expr, int value) {
 	expr->final_type = BOOL_TYPE;
 	expr->is_const = 1;
 
-	tree_t* new_node = (tree_t*)create_node("bool", BOOL_TYPE, sizeof(struct tree_int_cst));
+	tree_t* new_node = (tree_t*)create_node("bool", BOOL_TYPE, sizeof(struct tree_int_cst), &expr->node->common.location);
 	new_node->int_cst.value = value;
 	new_node->int_cst.int_str = str;
 

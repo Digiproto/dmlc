@@ -24,20 +24,6 @@
 #ifndef __IMPORT_H__
 #define __IMPORT_H__  1
 
-#if 0
-/* Source file current line is coming from.  */
-extern char *input_filename;
-
-/* Top-level source file.  */
-extern char *main_input_filename;
-
-/* Line number in current source file.  */
-extern int lineno;
-
-/* Stream for reading from input file.  */
-extern FILE *finput;
-#endif
-
 struct file_stack
 {
 	char *name;
@@ -45,18 +31,20 @@ struct file_stack
 	/* record files imported.
 	 * it's not a global variable, because considered to reentrant. */
 	struct file_stack *file_history;
-//	int line;
-//	int indent_level;
 };
+
+/* Bison location imformation structure. */
+/* Moved from gdml.y, because tree.h need it. */
+typedef struct YYLTYPE
+{
+	int first_line;
+	int first_column;
+	int last_line;
+	int last_column;
+	struct file_stack* file;
+} YYLTYPE;
 
 extern struct file_stack* push_file_stack(struct file_stack* top, const char* name);
 extern struct file_stack* pop_file_stack(struct file_stack* top);
-
-#if 0
-/* Stack of currently pending input files.
-   The line member is not accurate for the innermost file on the stack.  */
-extern struct file_stack *input_file_stack;
-#endif
-
 
 #endif /* __IMPORT_H__ */
