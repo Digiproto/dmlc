@@ -243,6 +243,226 @@ typedef enum
 	TYPE_END
 } type_t;
 
+#define NEWSTR(X) \
+	[(X) - 1] = #X
+
+static const char *type_name[] = {
+	NEWSTR(NO_TYPE),
+	/* dml */
+	NEWSTR(DML_TYPE),
+	/*object type*/
+	NEWSTR(OBJECT_TYPE),
+	/* device */
+	NEWSTR(DEVICE_TYPE),
+	/* parameter */
+	NEWSTR(PARAMETER_TYPE),
+	/* method */
+	NEWSTR(METHOD_TYPE),
+	/* c function  */
+	NEWSTR(FUNCTION_TYPE),
+	/* c function pointer type*/
+	NEWSTR(FUNCTION_POINTER_TYPE),
+	NEWSTR(FUNCTION_POINTER_VAR),
+	/* bank */
+	NEWSTR(BANK_TYPE),
+	/* register */
+	NEWSTR(REGISTER_TYPE),
+	/* group */
+	NEWSTR(GROUP_TYPE),
+	/* port */
+	NEWSTR(PORT_TYPE),
+	/* import */
+	NEWSTR(IMPORT_TYPE),
+	/* template */
+	NEWSTR(TEMPLATE_TYPE),
+	/* bitorder */
+	NEWSTR(BITORDER_TYPE),
+	/* loggroup */
+	NEWSTR(LOGGROUP_TYPE),
+	/* header */
+	NEWSTR(HEADER_TYPE),
+	/* foreach */
+	NEWSTR(FOREACH_TYPE),
+	/* call  */
+	NEWSTR(CALL_TYPE),
+	/* data */
+	NEWSTR(DATA_TYPE),
+	/* implement */
+	NEWSTR(IMPLEMENT_TYPE),
+	/* field */
+	NEWSTR(FIELD_TYPE),
+	/* attribute */
+	NEWSTR(ATTRIBUTE_TYPE),
+	/* connect */
+	NEWSTR(CONNECT_TYPE),
+	/* interface */
+	NEWSTR(INTERFACE_TYPE),
+	/* event */
+	NEWSTR(EVENT_TYPE),
+	/* identifier */
+	NEWSTR(IDENT_TYPE),
+	/* method param */
+	NEWSTR(PARAM_TYPE),
+	/* constant string */
+	NEWSTR(CONST_STRING_TYPE),
+	/* constant */
+	NEWSTR(CONSTANT_TYPE),
+	/* array type [10] | [i in ...] */
+	NEWSTR(ARRAY_TYPE),
+	/* ... */
+	NEWSTR(ELLIPSIS_TYPE),
+	/* assign type */
+	NEWSTR(ASSIGN_TYPE),
+	/* exprssion = exprssion */
+	NEWSTR(EXPR_ASSIGN_TYPE),
+	/* exprssion with brackets */
+	NEWSTR(EXPR_BRACK_TYPE),
+	/* unary operator */
+	NEWSTR(UNARY_TYPE),
+	/* binary operator */
+	NEWSTR(BINARY_TYPE),
+	/* ternary operator */
+	NEWSTR(TERNARY_TYPE),
+	/* default */
+	NEWSTR(DEFAULT_TYPE),
+	/* auto */
+	NEWSTR(AUTO_TYPE),
+	/* $ */
+	NEWSTR(QUOTE_TYPE),
+	/* dml keyword */
+	NEWSTR(DML_KEYWORD_TYPE),
+	/* c keyword */
+	NEWSTR(C_KEYWORD_TYPE),
+	/* ( decl_list )*/
+	NEWSTR(CDECL_BRACK_TYPE),
+	/* ctypedecl */
+	NEWSTR(CTYPEDECL_TYPE),
+	/* ctypedecl_ptr */
+	NEWSTR(CTYPEDECL_PTR_TYPE),
+	/* ctypedecl_simple */
+	NEWSTR(CTYPEDECL_SIMPLE_TYPE),
+	/* typeoparg */
+	NEWSTR(TYPEOPARG_TYPE),
+	/* stars */
+	NEWSTR(STARS_TYPE),
+	/* new */
+	NEWSTR(NEW_TYPE),
+	/* bit slicing exprssion */
+	NEWSTR(BIT_SLIC_EXPR_TYPE),
+	/* if... else ...*/
+	NEWSTR(IF_ELSE_TYPE),
+	/* log */
+	NEWSTR(LOG_TYPE),
+	/* . | ->*/
+	NEWSTR(COMPONENT_TYPE),
+	/* undefined */
+	NEWSTR(UNDEFINED_TYPE),
+	/* throw */
+	NEWSTR(THROW_TYPE),
+	/* const */
+	NEWSTR(CONST_TYPE),
+	/* extern */
+	NEWSTR(EXTERN_KEY_TYPE),
+	/* method extern  */
+	NEWSTR(METHOD_EXTERN_TYPE),
+	/* goto */
+	NEWSTR(GOTO_TYPE),
+	/* break */
+	NEWSTR(BREAK_TYPE),
+	/* continue */
+	NEWSTR(CONTINUE_TYPE),
+	/* inline */
+	NEWSTR(INLINE_TYPE),
+	/* do while */
+	NEWSTR(DO_WHILE_TYPE),
+	/* for */
+	NEWSTR(FOR_TYPE),
+	/* switch */
+	NEWSTR(SWITCH_TYPE),
+	/* delete */
+	NEWSTR(DELETE_TYPE),
+	/* try catch */
+	NEWSTR(TRY_CATCH_TYPE),
+	/* local_keyword */
+	NEWSTR(LOCAL_KEYWORD_TYPE),
+	/* after call */
+	NEWSTR(AFTER_CALL_TYPE),
+	/* error */
+	NEWSTR(ERROR_TYPE),
+	/* select */
+	NEWSTR(SELECT_TYPE),
+	/* return */
+	NEWSTR(RETURN_TYPE),
+	/* cast */
+	NEWSTR(CAST_TYPE),
+	/* case */
+	NEWSTR(CASE_TYPE),
+	/* assert */
+	NEWSTR(ASSERT_TYPE),
+	/* sizeof */
+	NEWSTR(SIZEOF_TYPE),
+	/* local */
+	NEWSTR(LOCAL_TYPE),
+	/* sizeoftype */
+	NEWSTR(SIZEOFTYPE_TYPE),
+	/* spec of boject */
+	NEWSTR(SPEC_TYPE),
+	/* block  */
+	NEWSTR(BLOCK_TYPE),
+	/* cdecl  */
+	NEWSTR(CDECL_TYPE),
+	/* bitfields */
+	NEWSTR(BITFIELDS_TYPE),
+	/* bitfields decl */
+	NEWSTR(BITFIELDS_DECL_TYPE),
+	/* layout */
+	NEWSTR(LAYOUT_TYPE),
+	/* typedef */
+	NEWSTR(TYPEDEF_TYPE),
+	/* typeof */
+	NEWSTR(TYPEOF_TYPE),
+	/* bool */
+	NEWSTR(BOOL_TYPE),
+	/* const int data: 0, 1), 3 */
+	NEWSTR(INTEGER_TYPE),
+	/* float data */
+	NEWSTR(FLOAT_TYPE),
+	/* c keyword */
+	NEWSTR(CHAR_TYPE),
+	NEWSTR(DOUBLE_TYPE),
+	NEWSTR(INT_TYPE),
+	NEWSTR(LONG_TYPE),
+	NEWSTR(SHORT_TYPE),
+	NEWSTR(SIGNED_TYPE),
+	NEWSTR(UNSIGNED_TYPE),
+	NEWSTR(VOID_TYPE),
+	NEWSTR(ENUM_TYPE),
+	NEWSTR(UNION_TYPE),
+	/* struct */
+	NEWSTR(STRUCT_TYPE),
+	NEWSTR(SIZE_TYPE),
+	NEWSTR(CLASS_TYPE),
+	NEWSTR(NAMESPACE_TYPE),
+	NEWSTR(PRIVATE_TYPE),
+	NEWSTR(PROTECTED_TYPE),
+	NEWSTR(PUBLIC_TYPE),
+	NEWSTR(RESTRICT_TYPE),
+	NEWSTR(USING_TYPE),
+	NEWSTR(VIRTUAL_TYPE),
+	NEWSTR(VOLATILE_TYPE),
+	NEWSTR(FOOTER_TYPE),
+	NEWSTR(THIS_TYPE),
+	NEWSTR(TMP_TYPE),
+	NEWSTR(EXPR_STATEMENT),
+	/* dictionary */
+	NEWSTR(DICTIONARY_TYPE),
+	/* nil */
+	NEWSTR(NIL_TYPE),
+	NEWSTR(TYPE_END),
+};
+
+#define TYPENAME(X) (((X) < 0 || (X) >= (sizeof(type_name)/sizeof(char**))) ? "Unknown_TYPE" : type_name[(X)])
+
 typedef enum {
 	TYPE_START = TYPE_END,
 	/*-----expr assign type----*/
