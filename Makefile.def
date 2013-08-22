@@ -86,7 +86,8 @@ $(TARGET_NAME)_qemu: $(OBJECTS_QEMU)
 
 $(BUILD_DIR)/%.d: %.c
 	@set -e; rm -f $@
-	@$(CC) $(INCLUDE) -MM $(CFLAGS) $< 2>/dev/null | sed 's#^.*:#$(patsubst %.d,%.o,$@):#' > $@
+	@$(CC) $(INCLUDE) -MM $(CFLAGS) $< 2>/dev/null | \
+		sed 's#^.*:#$(patsubst $(BUILD_DIR)/%.d,$(BUILD_DIR)/skyeye/%.o,$@) $(patsubst $(BUILD_DIR)/%.d,$(BUILD_DIR)/qemu/%.o,$@):#' > $@
 #	@echo $(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE) $(LIBRARY_DIR) $(LIBRARY) | \
 #		sed 's/\.d /\.o /g' | sed 's/^/\t/' >> $@
 #	@$(CC) $(INCLUDE) -MM $(CFLAGS) $< | sed -e 's,.*/.o[ :]*,$*.o : ,g' > $@;
