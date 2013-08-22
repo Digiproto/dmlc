@@ -9,6 +9,7 @@
 //#include "Parser.h"
 #include "gen_common.h"
 #include "gen_expression.h"
+#include "info_output.h"
 #define YYDEBUG 1
 //const char* dir = "/opt/virtutech/simics-4.0/simics-model-builder-4.0.16/amd64-linux/bin/dml/1.0/";
 
@@ -223,8 +224,8 @@ begin_unit
 
 		if(*root_ptr != NULL) {
 			/* something wrong */
-			printf("root of ast already exists\n");
-			exit(-1);
+//			printf("root of ast already exists\n");
+			PERROR("(inner) root of ast already exists", @$);
 		}
 		*root_ptr = (tree_t*)create_node("dml", DML_TYPE, sizeof(struct tree_dml), &@$);
 		//printf("root_ptr: 0x%x, *root_ptr: 0x%x\n", root_ptr, *root_ptr);
@@ -249,7 +250,8 @@ dml
 		device_attr_t* attr = (device_attr_t*)malloc(sizeof(device_attr_t));
 		attr->name = $2->ident.str;
 		if (symbol_insert(root_table, $2->ident.str, DEVICE_TYPE, attr) == -1) {
-			fprintf(stderr, "Line = %d, redefined, device %s\n", __LINE__, $2->ident.str);
+//			fprintf(stderr, "Line = %d, redefined, device %s\n", __LINE__, $2->ident.str);
+			PWARN("redefined device \"%s\"", @2, $2->ident.str);
 		}
 		insert_auto_defaut_param(current_table);
 		/* FIXME: have any other device */
@@ -308,7 +310,8 @@ dml
 			$$ = $1;
 		}
 		else {
-			printf("Line = %d, maybe something Wrong\n", __LINE__);
+//			printf("Line = %d, maybe something Wrong\n", __LINE__);
+			PWARN("can't find syntax_modifiers and device_statements", @$);
 			$$ = NULL;
 		}
 	}
@@ -339,7 +342,8 @@ syntax_modifier
 		attr->endian = $2->ident.str;
 		attr->common.table_num = current_table->table_num;
 		if (symbol_insert(current_table, $2->ident.str, BITORDER_TYPE, attr) == -1) {
-			fprintf(stderr, "Line = %d, redefined bitorder %s\n", __LINE__, $2->ident.str);
+//			fprintf(stderr, "Line = %d, redefined bitorder %s\n", __LINE__, $2->ident.str);
+			PWARN("redefined bitorder \"%s\"", @2, $2->ident.str);
 		}
 
 		tree_t* node = (tree_t*)create_node("bitorder", BITORDER_TYPE, sizeof(struct tree_bitorder), &@$);
@@ -366,7 +370,8 @@ device_statements
 			$$ = (tree_t*)create_node_list($1, $2);
 		}
 		else {
-			printf("maybe something wrong in device_statements\n");
+//			printf("maybe something wrong in device_statements\n");
+			PWARN("can't find device_statements and device_statements", @$);
 		}
 	}
 	;
@@ -390,8 +395,8 @@ device_statement
 object
 	: BANK maybe_objident istemplate {
 		if ($2 == NULL) {
-			fprintf(stderr, "There must be objident.\n");
-			exit(-1);
+//			fprintf(stderr, "There must be objident.\n");
+			PERROR("can't find the identifier of bank", @1);
 		}
 		DBG("BANK is %s\n", $2->ident.str);
 
@@ -427,6 +432,9 @@ object
 		$$ = $<tree_type>4;
 	}
 	| REGISTER objident sizespec offsetspec istemplate {
+		if($2 == NULL) {
+			PERROR("can't find the identifier of register", @$);
+		}
 		DBG("register is %s\n", $2->ident.str);
 		object_attr_t* attr = (object_attr_t*)gdml_zmalloc(sizeof(register_attr_t));
 		attr->common.name = $2->ident.str;
@@ -502,8 +510,8 @@ object
 	}
 	| FIELD objident bitrange istemplate {
 		if ($2 == NULL) {
-			fprintf(stderr, "need the identifier of field\n");
-			exit(-1);
+//			fprintf(stderr, "need the identifier of field\n");
+			PERROR("can't find the identifier of field", @$);
 		}
 		object_attr_t* attr = (object_attr_t*)gdml_zmalloc(sizeof(field_attr_t));
 		attr->common.name = $2->ident.str;
@@ -541,8 +549,8 @@ object
 	}
 	| FIELD objident istemplate {
 		if ($2 == NULL) {
-			fprintf(stderr, "need the identifier of field\n");
-			exit(-1);
+//			fprintf(stderr, "need the identifier of field\n");
+			PERROR("can't find the identifier of field", @$);
 		}
 		object_attr_t* attr = (object_attr_t*)gdml_zmalloc(sizeof(field_attr_t));
 		attr->common.name = $2->ident.str;
@@ -586,8 +594,8 @@ object
 	}
 	| CONNECT objident istemplate {
 		if ($2 == NULL) {
-			fprintf(stderr, "need the identifier of field\n");
-			exit(-1);
+//			fprintf(stderr, "need the identifier of field\n");
+			PERROR("can't find the identifier of connect", @$);
 		}
 		object_attr_t* attr = (object_attr_t*)gdml_zmalloc(sizeof(connect_attr_t));
 		attr->common.name = $2->ident.str;
@@ -622,8 +630,8 @@ object
 	}
 	| INTERFACE objident istemplate {
 		if ($2 == NULL) {
-			fprintf(stderr, "need the identifier of field\n");
-			exit(-1);
+//			fprintf(stderr, "need the identifier of field\n");
+			PERROR("can't find the identifier of interface", @$);
 		}
 		object_attr_t* attr = (object_attr_t*)gdml_zmalloc(sizeof(interface_attr_t));
 		attr->common.name = $2->ident.str;
@@ -657,8 +665,8 @@ object
 	}
 	| ATTRIBUTE objident istemplate {
 		if ($2 == NULL) {
-			fprintf(stderr, "need the identifier of field\n");
-			exit(-1);
+//			fprintf(stderr, "need the identifier of field\n");
+			PERROR("can't find the identifier of attribute", @$);
 		}
 		object_attr_t* attr = (object_attr_t*)gdml_zmalloc(sizeof(attribute_attr_t));
 		attr->common.name = $2->ident.str;
@@ -692,6 +700,9 @@ object
 		$$ = node;
 	}
 	| EVENT objident istemplate {
+		if($2 == NULL) {
+			PERROR("can't find the identifier of event", @$);
+		}
 		object_attr_t* attr = (object_attr_t*)gdml_zmalloc(sizeof(event_attr_t));
 		attr->common.name = $2->ident.str;
 		attr->common.templates = get_templates($3);
@@ -721,6 +732,9 @@ object
 		$$ = node;
 	}
 	| GROUP objident istemplate {
+		if($2 == NULL) {
+			PERROR("can't find the identifier of group", @$);
+		}
 		object_attr_t* attr = (object_attr_t*)gdml_zmalloc(sizeof(group_attr_t));
 		attr->common.name = $2->ident.str;
 		attr->common.templates = get_templates($3);
@@ -751,6 +765,9 @@ object
 		$$ = node;
 	}
 	| PORT objident istemplate {
+		if($2 == NULL) {
+			PERROR("can't find the identifier of port", @$);
+		}
 		object_attr_t* attr = (object_attr_t*)gdml_zmalloc(sizeof(port_attr_t));
 		attr->common.name = $2->ident.str;
 		attr->common.templates = get_templates($3);
@@ -781,6 +798,9 @@ object
 		$$ = node;
 	}
 	| IMPLEMENT objident istemplate {
+		if($2 == NULL) {
+			PERROR("can't find the identifier of implement", @$);
+		}
 		object_attr_t* attr = (object_attr_t*)gdml_zmalloc(sizeof(implement_attr_t));
 		attr->common.name = $2->ident.str;
 		attr->common.templates = get_templates($3);
@@ -812,11 +832,14 @@ object
 		$$ = node;
 	}
 	| ATTRIBUTE objident '[' arraydef ']' istemplate {
+		if($2 == NULL) {
+			PERROR("can't find the identifier of attribute", @$);
+		}
 		object_attr_t* attr = (object_attr_t*)gdml_zmalloc(sizeof(attribute_attr_t));
 		attr->common.name = $2->ident.str;
 		attr->attribute.is_array = 1;
 		attr->attribute.arraydef = get_arraydef(&($4), current_table);
-		printf("\nIn %s, line = %d, arraydef: 0x%x\n\n", __func__, __LINE__, attr->attribute.arraydef);
+		printf("\nIn %s, line = %d, arraydef: 0x%p\n\n", __func__, __LINE__, attr->attribute.arraydef);
 		attr->common.templates =  get_templates($6);
 		attr->common.templates_num = get_list_num($6);
 		attr->common.obj_type = ATTRIBUTE_TYPE;
@@ -847,6 +870,9 @@ object
 		$$ = node;
 	}
 	| GROUP objident '[' arraydef ']' istemplate {
+		if($2 == NULL) {
+			PERROR("can't find the identifier of group", @$);
+		}
 		object_attr_t* attr = (object_attr_t*)gdml_zmalloc(sizeof(group_attr_t));
 		attr->common.name = $2->ident.str;
 		attr->group.is_array = 1;
@@ -880,6 +906,9 @@ object
 		$$ = node;
 	}
 	| PORT objident '[' arraydef ']' istemplate {
+		if($2 == NULL) {
+			PERROR("can't find the identifier of port", @$);
+		}
 		object_attr_t* attr = (object_attr_t*)gdml_zmalloc(sizeof(port_attr_t));
 		attr->common.name = $2->ident.str;
 		attr->common.templates = get_templates($6);
@@ -914,6 +943,9 @@ object
 		$$ = node;
 	}
 	| CONNECT objident '[' arraydef ']' istemplate {
+		if($2 == NULL) {
+			PERROR("can't find the identifier of connect", @$);
+		}
 		object_attr_t* attr = (object_attr_t*)gdml_zmalloc(sizeof(connect_attr_t));
 		attr->common.name = $2->ident.str;
 		attr->connect.is_array = 1;
@@ -3417,6 +3449,10 @@ ident
 		node->ident.type = VOLATILE_TYPE;
 		$$ = node;
 	}
+	| {
+		/* only for input error, such as "register @ 0x0;". */
+		$$ = NULL;
+	}
 	;
 
 %%
@@ -3428,14 +3464,15 @@ ident
 
 void yyerror(YYLTYPE* location, yyscan_t* scanner, tree_t** root_ptr, char *s) {
 	fflush(stdout);
-	if(location->file) {
-		fprintf(stderr,"Syntax error on file: %s\n"
-						"line #%d, column #%d\n"
-						"reason: %s\n", location->file->name, location->first_line, location->first_column, s);
-	}else{
-		fprintf(stderr,"Syntax error on line #%d, column #%d: %s\n", location->first_line, location->first_column, s);
-	}
-	exit(1);
+//	if(location->file) {
+//		fprintf(stderr,"Syntax error on file: %s\n"
+//						"line #%d, column #%d\n"
+//						"reason: %s\n", location->file->name, location->first_line, location->first_column, s);
+//	}else{
+//		fprintf(stderr,"Syntax error on line #%d, column #%d: %s\n", location->first_line, location->first_column, s);
+//	}
+//	exit(1);
+	PERROR("%s", *location, s);
 }
 
 void insert_array_index(object_attr_t* attr, symtab_t table) {

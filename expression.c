@@ -33,6 +33,7 @@
 #include "symbol-common.h"
 #include "debug_color.h"
 #include "gen_common.h"
+#include "info_output.h"
 
 void free_sibling(tree_t** node) {
 	assert(*node != NULL);
@@ -136,10 +137,12 @@ tree_t* copy_data_from_constant(tree_t* node) {
 			}
 			break;
 		default:
-			fprintf(stderr, "other constant value type: %s(%d)\n",
-					node->common.name, node->common.type);
-				/* TODO: handle the error */
-				exit(-1);
+//			fprintf(stderr, "other constant value type: %s(%d)\n",
+//					node->common.name, node->common.type);
+//				/* TODO: handle the error */
+//				exit(-1);
+			PERROR("other constant value type type: %s(type: %s)\n", node->common.location,
+					node->common.name, TYPENAME(node->common.type));
 			break;
 	}
 	return new_node;
@@ -148,9 +151,11 @@ tree_t* copy_data_from_constant(tree_t* node) {
 constant_attr_t* get_constant_attr(tree_t** node, symtab_t table) {
 	assert(*node != NULL);
 	if (((*node)->common.type != IDENT_TYPE) && ((*node)->common.type != DML_KEYWORD_TYPE)) {
-		fprintf(stderr, "not constant node %s: %d\n", (*node)->common.name, (*node)->common.type);
-		/* FIXME: handle  the error */
-		exit(-1);
+//		fprintf(stderr, "not constant node %s: %d\n", (*node)->common.name, (*node)->common.type);
+//		/* FIXME: handle  the error */
+//		exit(-1);
+		PERROR("not constant node: %s(type: %s)\n", (*node)->common.location,
+				(*node)->common.name, TYPENAME((*node)->common.type));
 	}
 	symbol_t symbol = symbol_find(table, (*node)->ident.str, CONSTANT_TYPE);
 	if ((symbol == NULL) && (table->no_check == 1)) {
@@ -228,7 +233,8 @@ int charge_type(int type1, int type2) {
 				return type1;
 			}
 			else if (type2 == POINTER_TYPE) {
-				fprintf(stderr, "warning: assignment makes integer from pointer without a cast\n");
+//				fprintf(stderr, "warning: assignment makes integer from pointer without a cast\n");
+				warning("assignment makes %s from %s without a cast", TYPENAME(type1), TYPENAME(type2));
 				/* FIXME: handle the warning */
 				return type2;
 			}
@@ -236,9 +242,10 @@ int charge_type(int type1, int type2) {
 				return type2;
 			}
 			else {
-				fprintf(stderr, "Line: %d, error: incompatible types when assigning to type\n", __LINE__);
+//				fprintf(stderr, "Line: %d, error: incompatible types when assigning to type\n", __LINE__);
+				error("(line: %d)incompatible types when assigning to type: %s", __LINE__, TYPENAME(type2));
 				/* FIXME: handle the error */
-				exit(-1);
+//				exit(-1);
 				return -1;
 			}
 			break;
@@ -254,14 +261,16 @@ int charge_type(int type1, int type2) {
 				return type1;
 			}
 			else if (type2 == POINTER_TYPE) {
-				fprintf(stderr, "warning: assignment makes integer from pointer without a cast\n");
+//				fprintf(stderr, "warning: assignment makes integer from pointer without a cast\n");
+				warning("assignment makes %s from %s without a cast", TYPENAME(type1), TYPENAME(type2));
 				/* FIXME: handle the warning */
 				return type2;
 			}
 			else {
-				fprintf(stderr, "line: %d, error: incompatible types when assigning to type: %d\n", __LINE__, type2);
+//				fprintf(stderr, "line: %d, error: incompatible types when assigning to type: %d\n", __LINE__, type2);
+				error("(line: %d)incompatible types when assigning to type(%s)", __LINE__, TYPENAME(type2));
 				/* FIXME: handle the error */
-				exit(-1);
+//				exit(-1);
 				return -1;
 			}
 			break;
@@ -275,9 +284,10 @@ int charge_type(int type1, int type2) {
 				return type1;
 			}
 			else {
-				fprintf(stderr, "line: %d, error: incompatible types when assigning to type\n", __LINE__);
+//				fprintf(stderr, "line: %d, error: incompatible types when assigning to type\n", __LINE__);
+				error("(line: %d)incompatible types when assigning to type(%s)", __LINE__, TYPENAME(type2));
 				/* FIXME: handle the error */
-				exit(-1);
+//				exit(-1);
 				return -1;
 			}
 			break;
@@ -293,9 +303,10 @@ int charge_type(int type1, int type2) {
 				return type1;
 			}
 			else {
-				fprintf(stderr, "line: %d, error: incompatible types when assigning to type\n", __LINE__);
+//				fprintf(stderr, "line: %d, error: incompatible types when assigning to type\n", __LINE__);
+				error("(line: %d)incompatible types when assigning to type(%s)", __LINE__, TYPENAME(type2));
 				/* FIXME: handle the error */
-				exit(-1);
+//				exit(-1);
 				return -1;
 			}
 			break;
@@ -311,7 +322,8 @@ int charge_type(int type1, int type2) {
 				return type2;
 			}
 			else if (type2 == POINTER_TYPE) {
-				fprintf(stderr, "warning: assignment makes integer from pointer without a cast\n");
+//				fprintf(stderr, "warning: assignment makes integer from pointer without a cast\n");
+				warning("assignment makes %s from %s without a cast", TYPENAME(type1), TYPENAME(type2));
 				return type2;
 			}
 			break;
@@ -327,13 +339,15 @@ int charge_type(int type1, int type2) {
 				return type1;
 			}
 			else if (type2 == POINTER_TYPE) {
-				fprintf(stderr, "warning: assignment makes integer from pointer without a cast\n");
+//				fprintf(stderr, "warning: assignment makes integer from pointer without a cast\n");
+				warning("assignment makes %s from %s without a cast", TYPENAME(type1), TYPENAME(type2));
 				return type2;
 			}
 			else {
-				fprintf(stderr, "line: %d, error: incompatible types when assigning to type\n", __LINE__);
+//				fprintf(stderr, "line: %d, error: incompatible types when assigning to type\n", __LINE__);
+				error("(line: %d)incompatible types when assigning to type(%s)", __LINE__, TYPENAME(type2));
 				/* FIXME: handle the error */
-				exit(-1);
+//				exit(-1);
 			}
 			break;
 		case SIGNED_TYPE:
@@ -350,13 +364,15 @@ int charge_type(int type1, int type2) {
 				return type1;
 			}
 			else if (type2 == POINTER_TYPE) {
-				fprintf(stderr, "warning: assignment makes integer from pointer without a cast\n");
+//				fprintf(stderr, "warning: assignment makes integer from pointer without a cast\n");
+				warning("assignment makes %s from %s without a cast", TYPENAME(type1), TYPENAME(type2));
 				return type2;
 			}
 			else {
-				fprintf(stderr, "line: %d, error: incompatible types when assigning to type\n", __LINE__);
+//				fprintf(stderr, "line: %d, error: incompatible types when assigning to type\n", __LINE__);
+				error("(line: %d)incompatible types when assigning to type(%s)", __LINE__, TYPENAME(type2));
 				/* FIXME: handle the error */
-				exit(-1);
+//				exit(-1);
 				return -1;
 			}
 			break;
@@ -372,9 +388,10 @@ int charge_type(int type1, int type2) {
 				return type1;
 			}
 			else {
-				fprintf(stderr, "Line: %d, error: incompatible types when assigning to type\n", __LINE__);
+//				fprintf(stderr, "Line: %d, error: incompatible types when assigning to type\n", __LINE__);
+				error("(line: %d)incompatible types when assigning to type(%s)", __LINE__, TYPENAME(type2));
 				/* FIXME: handle the error */
-				exit(-1);
+//				exit(-1);
 				return -1;
 			}
 			break;
@@ -384,14 +401,16 @@ int charge_type(int type1, int type2) {
 					|| (type2 == SHORT_TYPE) || (type2 == SIGNED_TYPE)
 					|| (type2 == UNSIGNED_TYPE) || (type2 == BOOL_TYPE)
 					|| (type2 == POINTER_TYPE) || (type2 == NO_TYPE)) {
-				fprintf(stderr, "warning: assignment makes integer from pointer without a cast\n");
+//				fprintf(stderr, "warning: assignment makes integer from pointer without a cast\n");
+				warning("assignment makes %s from %s without a cast", TYPENAME(type1), TYPENAME(type2));
 				return type1;
 			}
 			else {
-				fprintf(stderr, "Line: %d, error: incompatible types when assigning to type: %d\n",
-						__LINE__, type2);
+//				fprintf(stderr, "Line: %d, error: incompatible types when assigning to type: %d\n",
+//						__LINE__, type2);
+				error("(line: %d)incompatible types when assigning to type(%s)", __LINE__, TYPENAME(type2));
 				/* FIXME: handle the error */
-				exit(-1);
+//				exit(-1);
 				return -1;
 			}
 			break;
@@ -400,16 +419,18 @@ int charge_type(int type1, int type2) {
 				return type2;
 			}
 			else if (type2 == POINTER_TYPE) {
-				fprintf(stderr, "warning: assignment makes integer from pointer without a cast\n");
+//				fprintf(stderr, "warning: assignment makes integer from pointer without a cast\n");
+				warning("assignment makes %s from %s without a cast", TYPENAME(type1), TYPENAME(type2));
 				return type2;
 			}
 			else if ((type2 == NO_TYPE) || (type2 == UNDEFINED_TYPE)) {
 				return type1;
 			}
 			else {
-				fprintf(stderr, "Line: %d, error: incompatible types when assigning to type\n", __LINE__);
+//				fprintf(stderr, "Line: %d, error: incompatible types when assigning to type\n", __LINE__);
+				error("(line: %d)incompatible types when assigning to type(%s)", __LINE__, TYPENAME(type2));
 				/* FIXME: handle the error */
-				exit(-1);
+//				exit(-1);
 				return -1;
 			}
 		case UNDEFINED_TYPE:
@@ -424,16 +445,18 @@ int charge_type(int type1, int type2) {
 				return type1;
 			}
 			else {
-				fprintf(stderr, "Line: %d, error: incompatible types when assigning to type %d\n", __LINE__, type2);
+//				fprintf(stderr, "Line: %d, error: incompatible types when assigning to type %d\n", __LINE__, type2);
+				error("(line: %d)incompatible types when assigning to type(%s)", __LINE__, TYPENAME(type2));
 				/* FIXME: handle the error */
-				exit(-1);
+//				exit(-1);
 				return -1;
 			}
 		default:
 			/* TODO: the UNDEFINED_TYPE */
-			fprintf(stderr, "In %s, line = %d, other type: %d\n", __func__, __LINE__, type1);
+//			fprintf(stderr, "In %s, line = %d, other type: %d\n", __func__, __LINE__, type1);
+			error("(line: %d)undefined type(%s)", __LINE__, TYPENAME(type1));
 			/*FIXME: handle the error */
-			exit(-1);
+//			exit(-1);
 			break;
 	}
 
@@ -460,9 +483,10 @@ void cal_assign_left(tree_t** node, symtab_t table, expression_t* left_expr, exp
 
 	tree_t* left_node = (*node)->expr_assign.left;
 	if (left_expr->is_const) {
-		fprintf(stderr, "error: value required as left operand of assignment\n");
+//		fprintf(stderr, "error: value required as left operand of assignment\n");
+		PERROR("value required as left operand of assignment", left_expr->node->common.location);
 		/* FIXME: should handle the error */
-		exit(-1);
+//		exit(-1);
 	}
 
 	if ((left_expr->is_undeclare) || (right_expr->is_undeclare)) {
@@ -544,9 +568,10 @@ expression_t* cal_ternary_expr(tree_t** node, symtab_t table, expression_t* expr
 	if ((((*node)->ternary.cond) == NULL)
 			|| (((*node)->ternary.expr_true) == NULL)
 			|| (((*node)->ternary.expr_false) == NULL)) {
-		fprintf(stderr, " The ternary need expression\n");
+//		fprintf(stderr, " The ternary need expression\n");
+		PERROR("not expression in ternary operation", expr->node->common.location);
 		/* FIXME: handle the error */
-		exit(-1);
+//		exit(-1);
 	}
 
 	int true_type, false_type;
@@ -586,7 +611,9 @@ int get_left_right_value(tree_t* left, tree_t* right, tree_t** new_node, express
 
 	if (left->common.type == INTEGER_TYPE) {
 		if (left->int_cst.out_64bit) {
-			fprintf(stderr, "Pay attention: the binary operator have problems: left: %s\n", left->int_cst.int_str);
+//			fprintf(stderr, "Pay attention: the binary operator have problems: left: %s\n", left->int_cst.int_str);
+			PWARN("the binary operator have problem.(left operand: %s)",
+					left->common.location, left->int_cst.int_str);
 			return -1;
 		}
 		else {
@@ -599,14 +626,18 @@ int get_left_right_value(tree_t* left, tree_t* right, tree_t** new_node, express
 		left_type = FLOAT_TYPE;
 	}
 	else {
-		fprintf(stderr, "line: %d, error: invalid operands to binary\n", __LINE__);
+//		fprintf(stderr, "line: %d, error: invalid operands to binary\n", __LINE__);
+		PERROR("(line: %d)invalid operands(%s and %s) to binary",
+				left->common.location, __LINE__, TYPENAME(left->common.type), TYPENAME(right->common.type));
 		/* FXIME: handle the error */
-		exit(-1);
+//		exit(-1);
 	}
 
 	if (right->common.type == INTEGER_TYPE) {
 		if (right->int_cst.out_64bit) {
-			fprintf(stderr, "Pay attention: the binary operator have problems: left: %s\n", left->int_cst.int_str);
+//			fprintf(stderr, "Pay attention: the binary operator have problems: left: %s\n", left->int_cst.int_str);
+			PWARN("the binary operator have problem.(left operand: %s)",
+					right->common.location, right->int_cst.int_str);
 			return -1;
 		}
 		else {
@@ -619,8 +650,10 @@ int get_left_right_value(tree_t* left, tree_t* right, tree_t** new_node, express
 		right_type = FLOAT_TYPE;
 	}
 	else {
-		fprintf(stderr, "The left(%s) or right(%s) node type is invalid operands\n",
-				right->common.name, right->common.name);
+//		fprintf(stderr, "The left(%s) or right(%s) node type is invalid operands\n",
+//				right->common.name, right->common.name);
+		PWARN("the left(%s) or right(%s) value is invalid oprand",
+				left->common.location, left->common.name, right->common.name);
 		return -1;
 	}
 
@@ -640,10 +673,14 @@ int get_left_right_value(tree_t* left, tree_t* right, tree_t** new_node, express
 			break;
 		case DIV_TYPE:
 		case DIV_ASSIGN_TYPE:
-			if (right_type != INTEGER_TYPE) {
-				fprintf(stderr, "dividor not int\n");
+			if ((right_type != INTEGER_TYPE) && (right_type != INT_TYPE) &&
+				(right_type != CHAR_TYPE)    && (right_type != SHORT_TYPE) && (right_type != LONG_TYPE) &&
+				(right_type != FLOAT_TYPE)   && (right_type != DOUBLE_TYPE) &&
+				(right_type != SIGNED_TYPE)  && (right_type != UNSIGNED_TYPE)) {
+//				fprintf(stderr, "dividor not int\n");
+				PERROR("divisor is invalid type(%s)", right->common.location, TYPENAME(right->common.type));
 				/* TODO: handle the error */
-				exit(-1);
+//				exit(-1);
 				break;
 			}
 			final_value = (left_value / right_value);
@@ -689,9 +726,12 @@ int get_left_right_value(tree_t* left, tree_t* right, tree_t** new_node, express
 
 	if ((left->common.sibling) || (left->common.child)
 			|| (right->common.sibling) || (right->common.child)) {
-		fprintf(stderr, "In %s, the left or right node have sibling or child\n", __FUNCTION__);
+//		fprintf(stderr, "In %s, the left or right node have sibling or child\n", __FUNCTION__);
+		PERROR("(FUNC: %s, Line: %d) the left(%s) or right(%s) node have sibling or child",
+				expr->node->common.location,
+				__FUNCTION__, __LINE__, left->common.name, right->common.name);
 		/* FIXME: only for debugging */
-		exit(-1);
+//		exit(-1);
 
 		return -1;
 	}
@@ -849,8 +889,12 @@ expression_t* binary_expr_common(tree_t** node, symtab_t table, expression_t* ex
 		 tree_t* new_node = NULL;
 		if ((left->common.type == CONST_STRING_TYPE) || (left->common.type == UNDEFINED_TYPE)
 				|| (right->common.type == CONST_STRING_TYPE) || (right->common.type == UNDEFINED_TYPE)) {
-			fprintf(stderr, "The left(%s) or right(%s) node type is wrong!\n",
-					left->common.name, right->common.name);
+//			fprintf(stderr, "The left(%s) or right(%s) node type is wrong!\n",
+//					left->common.name, right->common.name);
+			PWARN("the left(%s, %s) or right(%s, %s) node type is wrong",
+					(*node)->common.location,
+					left->common.name, TYPENAME(left->common.type),
+					right->common.name, TYPENAME(right->common.type));
 			expr->node = *node;
 			/* TODO: handle the error */
 			return expr;
@@ -937,7 +981,7 @@ expression_t* binary_expr_int(tree_t** node, symtab_t table, expression_t* expr)
 			int left_value, right_value, final_value;
 			left_value = right_value = final_value = 0;
 			if ((left->int_cst.out_64bit) || (right->int_cst.out_64bit)){
-				fprintf(stderr, "Pay attention: the binary operator have problems: left: %s\n", left->int_cst.int_str);
+				PWARN("the binary operator have problems.(left: %s)", left->common.location, left->int_cst.int_str);
 				expr->final_type = INTEGER_TYPE;
 				expr->node = *node;
 				return expr;
@@ -972,7 +1016,10 @@ expression_t* binary_expr_int(tree_t** node, symtab_t table, expression_t* expr)
 						final_value = (left_value & right_value);
 						break;
 					default:
-						fprintf(stderr, "The binary operator is other type: %s\n", (*node)->common.name);
+						PWARN("the binary operator is other type(%s, %s)",
+								(*node)->common.location,
+								(*node)->common.name,
+								TYPENAME((*node)->common.type));
 						expr->node = *node;
 						return expr;
 				}
@@ -987,7 +1034,9 @@ expression_t* binary_expr_int(tree_t** node, symtab_t table, expression_t* expr)
 				new_node->common.child = (*node)->common.child;
 				if ((left->common.sibling) || (left->common.child)
 						|| (right->common.sibling) || (right->common.child)) {
-					fprintf(stderr, "The left or right node has sibling or child\n");
+//					fprintf(stderr, "The left or right node has sibling or child\n");
+					PWARN("the left(%s) or right(%s) node has sibling or child",
+							(*node)->common.location, left->common.name, right->common.name);
 				}
 				free((*node)->binary.left);
 				free((*node)->binary.right);
@@ -998,8 +1047,10 @@ expression_t* binary_expr_int(tree_t** node, symtab_t table, expression_t* expr)
 			}
 		}
 		else {
-			fprintf(stderr, "The binary operation's type is wrong, left: %s, right: %s\n",
-					left->common.name, right->common.name);
+//			fprintf(stderr, "The binary operation's type is wrong, left: %s, right: %s\n",
+//					left->common.name, right->common.name);
+			PWARN("the binary operation's type is wrong.(left: %s, right: %s)",
+					(*node)->common.location, left->common.name, right->common.name);
 			expr->final_type = charge_type(left_type, right_type);
 			expr->node = *node;
 		}
@@ -1096,7 +1147,9 @@ expression_t* cal_binary_expr(tree_t** node, symtab_t table, expression_t* expr)
 			expr = binary_expr_int(node, table, expr);
 			break;
 		default:
-			fprintf(stderr, "The binary operation is other type : %s\n", (*node)->common.name);
+//			fprintf(stderr, "The binary operation is other type : %s\n", (*node)->common.name);
+			PWARN("the binary operation is other type(%s, %s)",
+					(*node)->common.location, (*node)->common.name, TYPENAME((*node)->common.type));
 			expr->node = *node;
 			break;
 	}
@@ -1124,9 +1177,11 @@ expression_t* unary_bit_non(tree_t** node, symtab_t table, expression_t* expr) {
 
 	if (charge_node_is_const(unary_expr)) {
 		if (unary_expr->common.type != INTEGER_TYPE) {
-			fprintf(stderr, "The bit non operation expression should int\n");
+//			fprintf(stderr, "The bit non operation expression should int\n");
+			PERROR("the bit non operation expression(%s) require integer",
+					(*node)->common.location, TYPENAME(unary_expr->common.type));
 			/* FIXME: should handle the error */
-			exit(-1);
+//			exit(-1);
 		}
 		else {
 			const int int_length = 64;
@@ -1149,9 +1204,11 @@ expression_t* unary_bit_non(tree_t** node, symtab_t table, expression_t* expr) {
 	}
 	else {
 		if (charge_type_int(expr->final_type) == 0) {
-			fprintf(stderr, "Line: %d, error: invalid operands to binary\n", __LINE__);
+//			fprintf(stderr, "Line: %d, error: invalid operands to binary\n", __LINE__);
+			PERROR("(line: %d) invalid operands to binary",
+					(*node)->common.location, __LINE__);
 			/* TODO: handle the error */
-			exit(-1);
+//			exit(-1);
 		}
 		expr->node = *node;
 	}
@@ -1180,10 +1237,12 @@ expression_t* unary_expr_common(tree_t** node, symtab_t table, expression_t* exp
 	if (charge_node_is_const(unary_expr)) {
 		if ((unary_expr->common.type == CONST_STRING_TYPE)
 				|| (unary_expr->common.type == UNDEFINED_TYPE)) {
-			fprintf(stderr, "The unary operation expression can not be the type: %s\n",
-					unary_expr->common.name);
+//			fprintf(stderr, "The unary operation expression can not be the type: %s\n",
+//					unary_expr->common.name);
+			PERROR("the unary expression can't be type(%s)",
+					(*node)->common.location, TYPENAME(unary_expr->common.type));
 			/* TODO: handle the error */
-			exit(-1);
+//			exit(-1);
 		}
 		else {
 			float value, final_value;
@@ -1192,9 +1251,11 @@ expression_t* unary_expr_common(tree_t** node, symtab_t table, expression_t* exp
 			if (unary_expr->common.type == INTEGER_TYPE) {
 				if (unary_expr->int_cst.out_64bit) {
 					fprintf(stderr, "Pay attention: the binary operator have problems: left: %s\n", unary_expr->int_cst.int_str);
-					expr->node = *node;
+//					expr->node = *node;
+					PERROR("the binary operator have problem.(left: %s, %s)",
+							(*node)->common.location, unary_expr->int_cst.int_str, TYPENAME(unary_expr->common.type));
 					/* TODO: handle the error */
-					exit(-1);
+//					exit(-1);
 				}
 				value = unary_expr->int_cst.value;
 				final_type = INTEGER_TYPE;
@@ -1243,7 +1304,7 @@ expression_t* unary_expr_common(tree_t** node, symtab_t table, expression_t* exp
 			}
 			if (final_type == INTEGER_TYPE) {
 				char* int_str = (char*)gdml_zmalloc(sizeof(char) * 64);
-				sprintf(int_str, "%ld", final_value);
+				sprintf(int_str, "%f", final_value);
 				new_node = (tree_t*)create_node("integer_literal", INTEGER_TYPE, sizeof(struct tree_int_cst), &expr->node->common.location);
 				new_node->int_cst.value = (int)final_value;
 				new_node->int_cst.int_str = int_str;
@@ -1314,9 +1375,10 @@ expression_t* cal_unary_expr(tree_t** node, symtab_t table,  expression_t* expr)
 				expr->final_type = change_node_to_const(&((*node)->unary.expr), table, expr);
 			}
 			if (charge_node_is_const((*node)->unary.expr)) {
-				fprintf(stderr, "The unary operation expression can not constant\n");
+//				fprintf(stderr, "The unary operation expression can not constant\n");
+				PERROR("the unary operation expression isn't constant", (*node)->common.location);
 					/* FIXME: should handle the error */
-					exit(-1);
+//					exit(-1);
 			}
 			expr->node = *node;
 			break;
@@ -1330,7 +1392,9 @@ expression_t* cal_unary_expr(tree_t** node, symtab_t table,  expression_t* expr)
 			}
 			break;
 		default:
-			fprintf(stderr, "Wrong unary type: %s\n", (*node)->common.name);
+//			fprintf(stderr, "Wrong unary type: %s\n", (*node)->common.name);
+			PWARN("wrong unary type(%s, %s)", (*node)->common.location,
+					(*node)->common.name, TYPENAME((*node)->common.type));
 			break;
 	}
 	DEBUG_EXPR("In %s, line = %d, node type: %s, expr->final_type: %d\n",
@@ -1374,9 +1438,10 @@ expression_t* cal_sizeof_expr(tree_t** node, symtab_t table,  expression_t* expr
 	 * */
 	if ((node_expr->common.type == CDECL_TYPE)
 			&& (node_expr->cdecl.is_data)) {
-		fprintf(stderr, "sizeof type is datatype\n");
+//		fprintf(stderr, "sizeof type is datatype\n");
+		PERROR("sizeof type is datatype", (*node)->common.location);
 		/* should handle the error */
-		exit(-1);
+//		exit(-1);
 	}
 	cal_expression(&((*node)->sizeof_tree.expr), table, expr);
 	if (expr->is_undeclare) {
@@ -1399,9 +1464,11 @@ expression_t* cal_quote_expr(tree_t** node, symtab_t table,  expression_t* expr)
 			__func__, __LINE__, (*node)->common.name);
 
 	if (charge_node_is_const(*node)) {
-		fprintf(stderr, "error: lvalue required as unary ‘&’ operand\n");
+//		fprintf(stderr, "error: lvalue required as unary ‘&’ operand\n");
+		PERROR("left value(%s) required as unary \'&\' operand",
+				(*node)->common.location, (*node)->common.name);
 		/* TODO: handle the error */
-		exit(-1);
+//		exit(-1);
 	}
 
 	tree_t* ident = (*node)->quote.ident;
@@ -1501,9 +1568,10 @@ int get_typedef_type(symtab_t table, char* name) {
 
 
 	if (symbol == NULL) {
-		fprintf(stderr, "%s not typdef\n", name);
+//		fprintf(stderr, "%s not typdef\n", name);
+		error("%s is not typedef", name);
 		/* TODO: handle the error */
-		exit(-1);
+//		exit(-1);
 	}
 
 	typedef_attr_t* attr = symbol->attr;
@@ -1528,13 +1596,15 @@ int get_allocate_type(symbol_t symbol) {
 	paramspec_t* spec = attr->spec;
 
 	if (spec == NULL) {
-		fprintf(stderr, "Warning: '%s' no initialized value\n", symbol->name);
+//		fprintf(stderr, "Warning: '%s' no initialized value\n", symbol->name);
+		warning("\'%s\' is not initialized", symbol->name);
 		return NO_TYPE;
 	}
 	else if (spec->type != CONST_STRING_TYPE) {
-		fprintf(stderr, "error: allocate_type of attribute should be string\n");
+//		fprintf(stderr, "error: allocate_type of attribute should be string\n");
+		error("allocate_type of attribute(%s) require a string", TYPENAME(spec->type));
 		/* TODO: handle the error */
-		exit(-1);
+//		exit(-1);
 	}
 
 	str = spec->str;
@@ -1579,9 +1649,10 @@ int get_allocate_type(symbol_t symbol) {
 		type = NO_TYPE;
 	}
 	else {
-		fprintf(stderr, "Warning: other attribute type: %s\n", str);
+//		fprintf(stderr, "Warning: other attribute type: %s\n", str);
+		error("other attribute type(%s)", str);
 		/* TODO: handle the error, this is only for debugging */
-		exit(-1);
+//		exit(-1);
 	}
 
 	return type;
@@ -1602,9 +1673,10 @@ int get_attribute_type(symbol_t symbol) {
 		type = get_allocate_type(type_symbol);
 	}
 	else {
-		fprintf(stderr, "The attribute has no type\n");
+//		fprintf(stderr, "The attribute has no type\n");
+		error("the attribute has no type");
 		/* TODO: The attribute is ok with no type? */
-		exit(-1);
+//		exit(-1);
 	}
 
 	return type;
@@ -1688,10 +1760,10 @@ int get_c_type(symtab_t table, symbol_t symbol) {
 			type = INTERFACE_TYPE;
 			break;
 		default:
-			fprintf(stderr, "In %s, line = %d, other dml %s(%d)\n",
-					__FUNCTION__, __LINE__, symbol->name, symbol->type);
+			error("In %s, line = %d, other dml %s(%s)\n",
+					__FUNCTION__, __LINE__, symbol->name, TYPENAME(symbol->type));
 			/* FIXME: only for debugging */
-			exit(-1);
+//			exit(-1);
 			break;
 	}
 
@@ -1791,9 +1863,9 @@ reference_t*  get_bit_slic_ref(tree_t* node, reference_t* ref) {
 			ref->name = ident_node->ident.str;
 			break;
 		default:
-			fprintf(stderr, "line: %d, other node type: %s\n", __LINE__, expr_node->common.name);
+			error("line: %d, other node type: %s\n", __LINE__, expr_node->common.name);
 			/* FIXME handle the error */
-			exit(-1);
+//			exit(-1);
 			break;
 	}
 
@@ -1833,9 +1905,9 @@ reference_t* get_reference(tree_t* node, reference_t* ref) {
 			new->next = ref;
 			break;
 		default:
-			fprintf(stderr, "other node type: %s\n", node->common.name);
+			error("other node type: %s\n", node->common.name);
 			/* FIXME: handle the error */
-			exit(-1);
+//			exit(-1);
 			break;
 	}
 	return new;
@@ -1864,9 +1936,9 @@ symtab_t get_default_symbol_tale(symbol_t symbol) {
 		table = get_root_table();
 	} // device
 	else {
-		fprintf(stderr, "other default symbol: %s\n", symbol->name);
+		error("other default symbol: %s\n", symbol->name);
 		/* TODO: handle the error */
-		exit(-1);
+//		exit(-1);
 	}
 
 	return table;
@@ -1907,9 +1979,9 @@ symtab_t get_symbol_table(symbol_t symbol) {
 			table = get_default_symbol_tale(symbol);
 			break;
 		default:
-			fprintf(stderr, "Othe symbol %s(%d)\n", symbol->name, symbol->type);
+			error("Othe symbol %s(%d)\n", symbol->name, symbol->type);
 			/* FIXME: handle the error */
-			exit(-1);
+//			exit(-1);
 	}
 
 	return table;
@@ -2204,8 +2276,8 @@ expression_t* get_bit_slic_expr(tree_t** node, symtab_t table,  expression_t* ex
 	}
 	cal_expression(&((*node)->bit_slic.expr), table, expr);
 	if (expr->is_const) {
-		fprintf(stderr, "The bit slic declare should not const!\n");
-		exit(-1);
+		error("The bit slic declare should not const!\n");
+//		exit(-1);
 	}
 	cal_expression(&((*node)->bit_slic.bit), table, expr);
 	if ((*node)->bit_slic.bit_end) {
@@ -2222,9 +2294,9 @@ expression_t* get_bit_slic_expr(tree_t** node, symtab_t table,  expression_t* ex
 	if (endian) {
 		if ((strcmp(endian->ident.str, "le") != 0)
 				|| (strcmp(endian->ident.str, "be") != 0)) {
-			fprintf(stderr, "unknow bitorde: %s\n", endian->ident.str);
+			error("unknow bitorde: %s\n", endian->ident.str);
 			/* TODO: handle the error */
-			exit(-1);
+//			exit(-1);
 		}
 	}
 	expr->node = *node;
@@ -2297,9 +2369,9 @@ expression_t* cal_expression(tree_t** node, symtab_t table, expression_t* expr) 
 			expr = get_bit_slic_expr(node, table, expr);
 			break;
 		default:
-			printf("Pay attention: ther may be other type expression: %s\n", (*node)->common.name);
+			error("ther may be other type expression: %s\n", (*node)->common.name);
 			/* FIXME: Pay attention: The exit function is only for debugging */
-			exit(-1);
+//			exit(-1);
 			break;
 	}
 

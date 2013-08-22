@@ -36,6 +36,7 @@
 #include "types.h"
 #include "symbol.h"
 #include "decl_func.h"
+#include "info_output.h"
 
 #ifdef AST_DEBUG
 #define DBG(fmt, ...) do { fprintf(stderr, fmt, ## __VA_ARGS__); } while (0)
@@ -578,8 +579,9 @@ int get_size(tree_t** node, symtab_t table) {
 			return expr->const_expr->int_value;
 		}
 		else {
-			fprintf(stderr, "The offset final size in other type: %d\n", expr->final_type);
-			exit(-1);
+//			fprintf(stderr, "The offset final size in other type: %s\n", expr->final_type);
+//			exit(-1);
+			error("the offset final size in other type(%s)", TYPENAME(expr->final_type));
 		}
 		printf("In %s, line = %d, get the constant value about size\n", __func__, __LINE__);
 		exit(-1);
@@ -614,8 +616,9 @@ int get_offset(tree_t** node, symtab_t table) {
 			return expr->const_expr->int_value;
 		}
 		else {
-			fprintf(stderr, "The offset final size in other type: %d\n", expr->final_type);
-			exit(-1);
+//			fprintf(stderr, "The offset final size in other type: %d\n", expr->final_type);
+//			exit(-1);
+			error("the offset final size in other type(%s)", TYPENAME(expr->final_type));
 		}
 		printf("In %s, line = %d, get the constant value about offset\n", __func__, __LINE__);
 		exit(-1);
