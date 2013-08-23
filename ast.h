@@ -34,7 +34,7 @@ int get_size(tree_t** node, symtab_t table);
 int get_offset(tree_t** node, symtab_t table);
 method_params_t* get_method_params(tree_t* node, symtab_t table);
 void get_object_template_table(symtab_t table, tree_t* node);
-tree_t* c_keyword_node (const char* name);
+tree_t* c_keyword_node (const char* name, YYLTYPE* location);
 tree_t* dml_keyword_node(const char* name, YYLTYPE* location);
 long long strtoi (char *str);
 void print_ast (tree_t* root);

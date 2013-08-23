@@ -90,14 +90,16 @@ long long get_digits (char *str, int base)
 	}
 
 	if (endptr == str) {
-		fprintf (stderr, "No digits were found\n");
-		exit (EXIT_FAILURE);
+//		fprintf (stderr, "No digits were found\n");
+//		exit (EXIT_FAILURE);
+		error("No digits were found");
 	}
 
 	if (*endptr != '\0') {
-		fprintf (stderr, "Further characters after number(%s : %s)\n", str,
-				 endptr);
-		exit (EXIT_FAILURE);
+//		fprintf (stderr, "Further characters after number(%s : %s)\n", str,
+//				 endptr);
+//		exit (EXIT_FAILURE);
+		error("Further characters after number (%s, %s)", str, endptr);
 	}
 
 	return value;
@@ -118,8 +120,9 @@ long long strtoi (char *str)
 	int length = 0;
 
 	if (str == NULL) {
-		fprintf (stderr, "The string changed to int is NULL\n");
-		return -1;
+//		fprintf (stderr, "The string changed to int is NULL\n");
+//		return -1;
+		error("the string changed to integer isn't exist");
 	}
 
 	if ((strncmp(str, "0x", 2) == 0) ||
@@ -134,9 +137,10 @@ long long strtoi (char *str)
 		int i = 1;
 		for(i = 0; i < strlen(str); i++) {
 			if ((str[i] < '0') || (str[i] > '7')) {
-				fprintf(stderr, "Wrong Octal : %s\n", str);
+//				fprintf(stderr, "Wrong Octal : %s\n", str);
+				error("Wrong Octal \"%s\"", str);
 				/* TODO: handle the error */
-				exit(-1);
+//				exit(-1);
 			}
 		}
 		value = get_digits(str, 8);
@@ -189,7 +193,8 @@ tree_t* find_node (tree_t* node, int type)
 		return find_node (node->common.sibling, type);
 	}
 	else {
-		printf ("Not find the node.\n");
+//		printf ("Not find the node.\n");
+		PWARN("Not find the node (target: %s)", node->common.location, TYPENAME(type));
 		return NULL;
 	}
 }
@@ -252,9 +257,10 @@ void parse_undef(symtab_t table, undef_var_t* undef_head) {
 		node = (tree_t*)(undef->node);
 		expr = parse_expression(&node, table);
 		if (expr->is_undeclare) {
-			fprintf(stderr, "%s no declare(firs use)\n", expr->undecl_name);
+//			fprintf(stderr, "%s no declare(firs use)\n", expr->undecl_name);
+			error("%s isn't declared (first use)", expr->undecl_name);
 			/* TODO: handle the error */
-			exit(-1);
+//			exit(-1);
 		}
 		undef = undef->next;
 	}
@@ -290,6 +296,8 @@ void parse_undef_node(symtab_t table) {
  *
  * @param name: dml keyword
  *
+ * @param location: dml location
+ *
  * @return : return a pointer to the node
  */
 tree_t* dml_keyword_node(const char* name, YYLTYPE* location) {
@@ -306,10 +314,12 @@ tree_t* dml_keyword_node(const char* name, YYLTYPE* location) {
  *
  * @param name : c language keyword
  *
+ * @param location : c language location
+ *
  * @return : return a pointer to node
  */
-tree_t* c_keyword_node (const char* name) {
-    tree_t* node = create_node("c_keyword", C_KEYWORD_TYPE, sizeof(struct tree_ident), NULL);
+tree_t* c_keyword_node (const char* name, YYLTYPE* location) {
+    tree_t* node = create_node("c_keyword", C_KEYWORD_TYPE, sizeof(struct tree_ident), location);
     node->ident.str = strdup(name);
     node->ident.len = strlen(name);
 	node->common.print_node = print_ident;
@@ -387,18 +397,20 @@ int get_int_value(tree_t** node, symtab_t table) {
 	else {
 		expression_t* expr = parse_expression(node, table);
 		if (expr->is_const == 0) {
-			fprintf(stderr, "Non-constant value\n");
-			exit(-1);
+//			fprintf(stderr, "Non-constant value\n");
+//			exit(-1);
+			PERROR("%s(%s) is non-constant value", (*node)->common.location,
+				(*node)->common.name, TYPENAME((*node)->common.type));
 		}
 		else if (expr->final_type == INTEGER_TYPE) {
 			return expr->const_expr->int_value;
 		}
 		else {
-			fprintf(stderr, "final type not int\n");
-			exit(-1);
+//			fprintf(stderr, "final type not int\n");
+//			exit(-1);
+			PERROR("%s(%s) isn't integer type", (*node)->common.location,
+				(*node)->common.name, TYPENAME((*node)->common.type));
 		}
-		printf("In %s, line = %d\n", __FUNCTION__, __LINE__);
-		exit(-1);
 	}
 }
 
@@ -412,29 +424,38 @@ arraydef_attr_t* get_range_arraydef(tree_t** node, symtab_t table, arraydef_attr
 			array->ident = ident->ident.str;
 		}
 		else {
-			fprintf(stderr, "The array identifier type: %d, name: %s\n",
-					ident->common.type, ident->common.name);
-			exit(-1);
+//			fprintf(stderr, "The array identifier type: %d, name: %s\n",
+//					ident->common.type, ident->common.name);
+//			exit(-1);
+			PERROR("the array identifier(%s, %s) isn't IDENT_TYPE",
+					ident->common.location, ident->common.name,
+					TYPENAME(ident->common.type));
 		}
 	}
 	else {
-		fprintf(stderr, "The array need identifier\n");
-		exit(-1);
+//		fprintf(stderr, "The array need identifier\n");
+//		exit(-1);
+		PERROR("can't find array identifier (%s, %s)", (*node)->common.location,
+				(*node)->common.name, TYPENAME((*node)->common.type));
 	}
 
 	if ((*node)->array.expr) {
 		array->low = get_int_value(&((*node)->array.expr), table);
 	}
 	else {
-		fprintf(stderr, "The array need start array number\n");
-		exit(-1);
+//		fprintf(stderr, "The array need start array number\n");
+//		exit(-1);
+		PERROR("the array \"%s\" need start array number",
+				(*node)->common.location, (*node)->array.ident->common.name);
 	}
 	if ((*node)->array.expr_end) {
 		array->high = get_int_value(&((*node)->array.expr_end), table);
 	}
 	else {
-		fprintf(stderr, "The array need end array number\n");
-		exit(-1);
+//		fprintf(stderr, "The array need end array number\n");
+//		exit(-1);
+		PERROR("the array \"%s\"need end array number",
+				(*node)->common.location, (*node)->array.ident->common.name);
 	}
 
 	return array;
@@ -562,29 +583,33 @@ int get_size(tree_t** node, symtab_t table) {
 			return size;
 		}
 		else {
-			fprintf(stderr, "the size(%d) out\n", size);
+//			fprintf(stderr, "the size(%d) out\n", size);
+			PWARN("the size(%d) out", (*node)->common.location, size);
 		}
 	}
 	else {
 		expression_t* expr = parse_expression(node, table);
 		if (expr->is_const == 0) {
-			fprintf(stderr, "Non-constant value\n");
-			exit(-1);
+//			fprintf(stderr, "Non-constant value\n");
+//			exit(-1);
+			PERROR("%s(%s) is non-constan value", expr->node->common.location,
+					expr->node->common.name, TYPENAME(expr->node->common.type));
 		}
 		if (expr->final_type == INTEGER_TYPE) {
 			if (expr->const_expr->out_64bit) {
-				fprintf(stderr, "The register size out\n");
-				exit(-1);
+//				fprintf(stderr, "The register size out\n");
+//				exit(-1);
+				PERROR("the size of expression \"%s\" is out",
+						(*node)->common.location, expr->node->common.name);
 			}
 			return expr->const_expr->int_value;
 		}
 		else {
 //			fprintf(stderr, "The offset final size in other type: %s\n", expr->final_type);
 //			exit(-1);
-			error("the offset final size in other type(%s)", TYPENAME(expr->final_type));
+			PERROR("the offset final size in other type(%s)",
+					(*node)->common.location, TYPENAME(expr->final_type));
 		}
-		printf("In %s, line = %d, get the constant value about size\n", __func__, __LINE__);
-		exit(-1);
 	}
 
 	return 0;
@@ -605,23 +630,26 @@ int get_offset(tree_t** node, symtab_t table) {
 		expression_t* expr = parse_expression(node, table);
 
 		if (expr->is_const == 0) {
-			fprintf(stderr, "Non-constant value\n");
-			exit(-1);
+//			fprintf(stderr, "Non-constant value\n");
+//			exit(-1);
+			PERROR("%s(%s) is non-constan value", (*node)->common.location,
+					expr->node->common.name, TYPENAME(expr->node->common.type));
 		}
 		if (expr->final_type == INTEGER_TYPE) {
 			if (expr->const_expr->out_64bit) {
-				fprintf(stderr, "The offset out_64bit\n");
-				exit(-1);
+//				fprintf(stderr, "The offset out_64bit\n");
+//				exit(-1);
+				PERROR("the size of offset \"%s\" is out",
+						(*node)->common.location, expr->node->common.name);
 			}
 			return expr->const_expr->int_value;
 		}
 		else {
 //			fprintf(stderr, "The offset final size in other type: %d\n", expr->final_type);
 //			exit(-1);
-			error("the offset final size in other type(%s)", TYPENAME(expr->final_type));
+			PERROR("the offset final size in other type(%s)",
+					(*node)->common.location, TYPENAME(expr->final_type));
 		}
-		printf("In %s, line = %d, get the constant value about offset\n", __func__, __LINE__);
-		exit(-1);
 	}
 
 	return 0;
@@ -655,9 +683,10 @@ void add_template_to_table(symtab_t table, const char* template) {
 		template_name = temp_table->template_name;
 		DEBUG_AST("In %s, line = %d, trave templates: %s\n", __func__, __LINE__, template_name);
 		if (strcmp(template, template_name) == 0) {
-			fprintf(stderr, "re-load template: %s\n", template);
+//			fprintf(stderr, "re-load template: %s\n", template);
 			/*FIXME: should handle the error */
-			exit(-1);
+//			exit(-1);
+			error("re-load the template \"%s\"", template);
 		}
 		pre_temp_table = temp_table;
 		temp_table = temp_table->next;
@@ -667,9 +696,10 @@ void add_template_to_table(symtab_t table, const char* template) {
 
 	symbol_t symbol = symbol_find(root_table, template, TEMPLATE_TYPE);
 	if (symbol == NULL) {
-		fprintf(stderr, "can not find the template: %s\n", template);
+//		fprintf(stderr, "can not find the template: %s\n", template);
 		/* FIXME: should handle the error */
-		exit(-1);
+//		exit(-1);
+		error("can't find the template \"%s\"", template);
 	}
 	template_attr_t* attr = symbol->attr;
 	new_table->table = attr->table;
@@ -737,9 +767,11 @@ void get_object_template_table(symtab_t table, tree_t* node) {
 		case TEMPLATE_TYPE:
 			break;
 		default:
-			fprintf(stderr, "unknown object type(%d) : %s",
-					node->common.type, node->common.name);
+//			fprintf(stderr, "unknown object type(%d) : %s",
+//					node->common.type, node->common.name);
 			/* FIXME handle the error */
+			PWARN("unknown object type (%s, %s)", node->common.location,
+					node->common.name, TYPENAME(node->common.type));
 			break;
 	}
 
@@ -763,8 +795,10 @@ char** get_templates(tree_t* head) {
 			DEBUG_AST("identifier:  %s : %s\n", node->ident.str, templates[i - 1]);
 		}
 		else {
-			fprintf(stderr, "The templates'type is(%d) : %s: %s\n",
-					node->common.type, node->common.name, node->ident.str);
+//			fprintf(stderr, "The templates'type is(%d) : %s: %s\n",
+//					node->common.type, node->common.name, node->ident.str);
+			warning("the templates' type is %s (%s, %s)",
+					TYPENAME(node->common.type), node->common.name, node->ident.str);
 		}
 		node = node->common.sibling;
 	}

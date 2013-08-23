@@ -18,11 +18,14 @@
 //#define DBG debug_black
 //#define DBG(fmt, ...) do { fprintf(stderr, fmt, ## __VA_ARGS__); } while (0)
 #define DBG(fmt, ...) do { \
-		fprintf(stderr, "======================================================================================\n"); \
-		fprintf(stderr, ">>>> file: %s <<<<\n", yylloc.file->name); \
-		fprintf(stderr, ">>>> line: %d, column: %d <<<<\n", yylloc.first_line, yylloc.first_column); \
+		fprintf(stderr, \
+				"[Debug]file: %s\n" \
+				"       (line: %d, column: %d) to (line: %d, column: %d)\n" \
+				"       info: ", \
+				yylloc.file->name, \
+				yylloc.first_line, yylloc.first_column, yylloc.last_line, yylloc.last_column); \
 		fprintf(stderr, fmt, ## __VA_ARGS__); \
-		fprintf(stderr, "======================================================================================\n"); \
+		fprintf(stderr, "\n"); \
 	} while (0)
 #else
 #define DBG(fmt, ...) do { } while (0)
@@ -2080,7 +2083,7 @@ ctypedecl_simple
 
 const_opt
 	: CONST  {
-		tree_t* node  = (tree_t*)c_keyword_node("const");
+		tree_t* node  = (tree_t*)c_keyword_node("const", &@$);
 		node->ident.type = CONST_TYPE;
 		$$ = node;
 	}
@@ -2094,54 +2097,54 @@ typeident
 		$$ = $1;
 	}
 	| BOOL {
-		tree_t* node = (tree_t*)c_keyword_node("bool");
+		tree_t* node = (tree_t*)c_keyword_node("bool", &@$);
 		node->ident.type = BOOL_TYPE;
 		node->common.translate = translate_c_keyword;
 		$$ = node;
 	}
 	| CHAR {
-		tree_t* node = (tree_t*)c_keyword_node("char");
+		tree_t* node = (tree_t*)c_keyword_node("char", &@$);
 		node->ident.type = CHAR_TYPE;
 		$$ = node;
 	}
 	| DOUBLE {
-		tree_t* node = (tree_t*)c_keyword_node("double");
+		tree_t* node = (tree_t*)c_keyword_node("double", &@$);
 		node->ident.type = DOUBLE_TYPE;
 		$$ = node;
 	}
 	| FLOAT {
-		tree_t* node = (tree_t*)c_keyword_node("float");
+		tree_t* node = (tree_t*)c_keyword_node("float", &@$);
 		node->ident.type = FLOAT_TYPE;
 		$$ = node;
 	}
 	| INT {
-		tree_t* node = (tree_t*)c_keyword_node($1);
+		tree_t* node = (tree_t*)c_keyword_node($1, &@$);
 		node->ident.type = INT_TYPE;
 		node->common.translate = translate_c_keyword;
 		$$ = node;
 	}
 	| LONG {
-		tree_t* node = (tree_t*)c_keyword_node("long");
+		tree_t* node = (tree_t*)c_keyword_node("long", &@$);
 		node->ident.type = LONG_TYPE;
 		$$ = node;
 	}
 	| SHORT  {
-		tree_t* node = (tree_t*)c_keyword_node("short");
+		tree_t* node = (tree_t*)c_keyword_node("short", &@$);
 		node->ident.type = SHORT_TYPE;
 		$$ = node;
 	}
 	| SIGNED {
-		tree_t* node = (tree_t*)c_keyword_node("signed");
+		tree_t* node = (tree_t*)c_keyword_node("signed", &@$);
 		node->ident.type = SIGNED_TYPE;
 		$$ = node;
 	}
 	| UNSIGNED {
-		tree_t* node = (tree_t*)c_keyword_node("unsigned");
+		tree_t* node = (tree_t*)c_keyword_node("unsigned", &@$);
 		node->ident.type = UNSIGNED_TYPE;
 		$$ = node;
 	}
 	| VOID {
-		tree_t* node = (tree_t*)c_keyword_node("void");
+		tree_t* node = (tree_t*)c_keyword_node("void", &@$);
 		node->ident.type = VOID_TYPE;
 		$$ = node;
 	}
@@ -3278,12 +3281,12 @@ objident
 		$$ = node;
 	}
 	| SIGNED {
-		tree_t* node = (tree_t*)c_keyword_node("signed");
+		tree_t* node = (tree_t*)c_keyword_node("signed", &@$);
 		node->ident.type = SIGNED_TYPE;
 		$$ = node;
 	}
 	| UNSIGNED {
-		tree_t* node = (tree_t*)c_keyword_node("unsigned");
+		tree_t* node = (tree_t*)c_keyword_node("unsigned", &@$);
 		node->ident.type = UNSIGNED_TYPE;
 		$$ = node;
 	}
@@ -3449,10 +3452,6 @@ ident
 		node->ident.type = VOLATILE_TYPE;
 		$$ = node;
 	}
-	| {
-		/* only for input error, such as "register @ 0x0;". */
-		$$ = NULL;
-	}
 	;
 
 %%
@@ -3472,7 +3471,7 @@ void yyerror(YYLTYPE* location, yyscan_t* scanner, tree_t** root_ptr, char *s) {
 //		fprintf(stderr,"Syntax error on line #%d, column #%d: %s\n", location->first_line, location->first_column, s);
 //	}
 //	exit(1);
-	PERROR("%s", *location, s);
+	PERROR("%s (current word \"%s\")", *location, s, yyget_text(scanner));
 }
 
 void insert_array_index(object_attr_t* attr, symtab_t table) {
