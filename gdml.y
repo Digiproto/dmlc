@@ -83,14 +83,13 @@ struct file_stack* filestack_top;
 //extern int  yylex(YYSTYPE *yylval_param, yyscan_t yyscanner);
 extern tree_t* parse_auto_api(void);
 void yyerror(YYLTYPE* location, yyscan_t* scanner, tree_t** root_ptr, char *s);
+extern tree_t* parse_file(const char* name);
 extern int charge_standard_parameter(symtab_t table, parameter_attr_t* attr);
 extern void insert_auto_defaut_param(symtab_t table);
 extern void insert_array_index(object_attr_t* attr, symtab_t table);
 extern char* builtin_filename;
-extern const char* import_file_list[];
 extern symtab_t root_table;
 stack_t* table_stack;
-extern char* file_dir;
 int object_spec_type = -1;
 object_attr_t* object_comm_attr = NULL;
 static symtab_t current_table = NULL;
@@ -1300,50 +1299,16 @@ istemplate_stmt
 import
 	: IMPORT STRING_LITERAL ';' {
 		DBG("import file is %s\n", $2);
-		char fullname[1024];
-		char file_name[1024];
-		int dirlen = strlen(gdml_library_dir);
-		int filelen = strlen($2);
-		int file_dir_len = strlen(file_dir);
 
-		assert((dirlen + filelen) < 1024);
-		if(*($2) == '"') {
-			$2 ++;
+		/* remove \" character. */
+		char filename[DIR_MAX_LEN];
+		int rt = snprintf(filename, DIR_MAX_LEN, "%s", ($2 + 1));
+		if(rt >= DIR_MAX_LEN) {
+			PERROR("import file name too long (>= %d).", @2, DIR_MAX_LEN);
 		}
-		else {
-		/* something wrong */
-			fprintf(stderr, "the import file format is wrong\n");
-		}
+		filename[rt - 1] = '\0';
 
-		if(*($2 + strlen($2) - 1) == '"') {
-			strncpy(file_name, file_dir, file_dir_len);
-			file_name[file_dir_len] = '/';
-			strncpy(&file_name[file_dir_len + 1], $2, filelen - 2);
-			file_name[file_dir_len + filelen - 1] = '\0';
-		}
-		else {
-			/* something wrong */
-			fprintf(stderr, "the import file format is wrong\n");
-		}
-
-		FILE *file = fopen(file_name, "r");
-		if (file == NULL) {
-			strncpy(&fullname[0], gdml_library_dir, dirlen);
-			strncpy(&fullname[dirlen], $2, filelen - 2);
-			fullname[dirlen + filelen - 2] = '\0';
-			file = fopen(fullname, "r");
-		}
-		else {
-			strncpy(fullname, file_name, file_dir_len + filelen - 1);
-		}
-
-		DBG("In IMPORT, fullname=%s, dirlen=%d, filelen=%d\n", fullname, dirlen, filelen);
-
-		if (file == NULL) {
-			printf("Can't open imported file %s.\n", fullname);
-			exit(EXIT_FAILURE);
-		}
-
+#if 0
 		yyscan_t scanner;
 		tree_t* root = (tree_t*)create_node($2, IMPORT_TYPE, sizeof(struct tree_import), &@$);
 		root->import.file_name = strdup(fullname);
@@ -1361,6 +1326,11 @@ import
 		}
 		fclose(file);
 		DBG("End of parse the import file %s\n", fullname);
+#endif
+		/* I replace with the parse_file function.
+		 * Because import file from multiple directory according to priority.
+		 * In other hand linking directory and file name is different on windows or Linux. */
+		tree_t* ast = parse_file(filename);
 
 		import_attr_t* attr = (import_attr_t*)gdml_zmalloc(sizeof(import_attr_t));
 		attr->file = $2;
@@ -3472,6 +3442,32 @@ void yyerror(YYLTYPE* location, yyscan_t* scanner, tree_t** root_ptr, char *s) {
 //	}
 //	exit(1);
 	PERROR("%s (current word \"%s\")", *location, s, yyget_text(scanner));
+}
+
+tree_t* parse_file(const char* name)
+{
+	char fullname[DIR_MAX_LEN];
+	char filename[DIR_MAX_LEN];
+	tree_t* root;
+	int i;
+
+	/* parse dml library in different directory  according to priority. */
+	for(i = 0; import_dir_list[i] != NULL; i++) {
+		/* try open dml file directory. */
+		int rt = link_dir_filename(fullname, DIR_MAX_LEN, import_dir_list[i], name);
+		assert(rt == 0);
+		if(access(fullname, F_OK) == 0) {
+			DBG("Begin parse the import file %s\n", fullname);
+			root = get_ast(fullname);
+			DBG("End of parse the import file %s\n", fullname);
+			break;
+		}
+	}
+	if(import_dir_list[i] == NULL) {
+		error("can't find %s.", name);
+	}
+
+	return root;
 }
 
 void insert_array_index(object_attr_t* attr, symtab_t table) {

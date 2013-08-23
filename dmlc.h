@@ -8,18 +8,9 @@
 #ifndef __DMLC_H__
 #define __DMLC_H__
 
-#ifndef DIR_MAX_LEN
-#define DIR_MAX_LEN 1024
-#endif
+#include "tree.h"
 
-#ifndef GDML_LIBRARY_DIR
-#ifdef _WIN32
-#define GDML_LIBRARY_DIR "..\\include\\gdml\\1.0\\"
-#else
-#define GDML_LIBRARY_DIR "../include/gdml/1.0/"
-#endif
-#endif
-
-char *gdml_library_dir;
+extern tree_t* get_ast(const char* filename);
+extern const char *import_file_list[];
 
 #endif /* __DMLC_H__ */

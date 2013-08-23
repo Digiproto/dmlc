@@ -24,6 +24,14 @@
 #ifndef __IMPORT_H__
 #define __IMPORT_H__  1
 
+/* store library directories and set priority. */
+const char **import_dir_list;
+const char *gdml_library_dir;
+
+#ifndef DIR_MAX_LEN
+#define DIR_MAX_LEN 1024
+#endif
+
 struct file_stack
 {
 	char *name;
@@ -35,6 +43,7 @@ struct file_stack
 
 /* Bison location imformation structure. */
 /* Moved from gdml.y, because tree.h need it. */
+/* Import.h have higher priority in gdml.y. */
 typedef struct YYLTYPE
 {
 	int first_line;
@@ -46,5 +55,7 @@ typedef struct YYLTYPE
 
 extern struct file_stack* push_file_stack(struct file_stack* top, const char* name);
 extern struct file_stack* pop_file_stack(struct file_stack* top);
+extern int link_dir_filename(char* buf, size_t n, const char* dir, const char* filename);
+extern void set_import_dir(const char* execname, const char* filename, const char* extradir);
 
 #endif /* __IMPORT_H__ */

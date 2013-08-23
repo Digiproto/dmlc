@@ -28,14 +28,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
-#include <libgen.h>
 #include "ast.h"
 #include "Parser.h"
 #include "Lexer.h"
 #include "symbol.h"
 #include "pre_parse_dml.h"
 #include "code_gen.h"
-#include "dmlc.h"
+#include "import.h"
 
 #define QEMU 0
 
@@ -48,13 +47,6 @@ const char *simics_dml_dir =
 	"/opt/virtutech/simics-4.0/simics-model-builder-4.0.16/amd64-linux/bin/dml/1.0";
 #endif
 #endif
-
-const char *import_file_list[] = {
-	"simics-auto-api-4_0.dml",
-	"dml-builtins.dml",
-	"simics/C.dml",
-	NULL
-};
 
 extern int yyparse (yyscan_t scanner, tree_t** root_ptr);
 
@@ -91,80 +83,46 @@ tree_t* get_ast (const char *filename)
 	return root;
 }
 
-void set_library_dir(const char *dir_r)
-{
-	int len;
-	char *tmp = malloc(DIR_MAX_LEN);
-
-	/* if exe is on windows, dir is like "d:\mingw\msys\1.0\usr\bin\dmlc" */
-#ifdef _WIN32
-	/* exe is on windows */
-	char *p = strrchr(dir_r, '\\');
-	assert(p);
-	len = p - dir_r + 1;
-	memcpy(tmp, dir_r, len);
-	tmp[len] = '\0';
-#else
-	/* exe is on linux */
-	size_t rt = readlink("/proc/self/exe", tmp, DIR_MAX_LEN);
-	if(rt < 0) {
-		perror("readlink");
-		exit(-1);
-	}
-	char *p = strrchr(tmp, '/');
-	assert(p);
-	len = p - tmp + 1;
-	*(p + 1) = '\0';
-#endif
-
-	/* set library by linking bin path */
-	assert(len + strlen(GDML_LIBRARY_DIR) < DIR_MAX_LEN);
-	gdml_library_dir = strcat(tmp, GDML_LIBRARY_DIR);
-}
-
-char* get_file_dir(char* filename) {
-	assert(filename != NULL);
-
-	char tmp[256];
-	strncpy(tmp, filename, strlen(filename));
-	char* dir = dirname(tmp);
-
-	return strdup(dir);
-}
-
 struct file_stack* filestack_top = NULL;
-char *builtin_filename = NULL;
-char* file_dir = NULL;
 symtab_t root_table = NULL;
 extern void gen_qemu_code(tree_t *root, const char *out_dir);
 extern void gen_skyeye_code(tree_t *root, const char *out_dir);
 int main (int argc, char *argv[])
 {
+	/* initial extra library directory. */
+	char* extra_library_dir = NULL;
+	int file_num = 1;
+
+	/* check argument. */
 	if (argc != 2) {
-		fprintf (stderr, "Usage: %s source\n", argv[0]);
-		exit (-1);
+		if(argc == 4) {
+			int i;
+			for(i = 1; i < argc; i++) {
+				if(strcmp(argv[i], "-L") == 0)
+					break;
+				else
+					file_num = i;
+			}
+			/* -L + library directory. */
+			if(i < (argc - 1)) {
+				if(access(argv[i + 1], F_OK)) {
+					perror(argv[i + 1]);
+					return -1;
+				}
+				extra_library_dir = argv[i + 1];
+				goto normal;
+			}
+		}
+		fprintf (stderr, "Usage: %s source [-L library]\n", argv[0]);
+		return -1;
 	}
 
-	set_library_dir(argv[0]);
-
-	int i = 0;
-	int len = strlen(gdml_library_dir);
-	char* file_path = NULL;
-	/* add the full patch about import file */
-	while (import_file_list[i] != NULL) {
-		len += strlen(import_file_list[i]);
-		file_path = (char*)gdml_zmalloc(len + 1);
-		strcpy(file_path, gdml_library_dir);
-		strcat(file_path, import_file_list[i]);
-		import_file_list[i] = file_path;
-		i++;
-	}
+normal:
+	set_import_dir(argv[0], argv[file_num], extra_library_dir);
 
 	insert_pre_dml_struct();
 	/* main ast */
-	char *filename = argv[1];
-	file_dir = get_file_dir(filename);
-	tree_t* ast = get_ast (filename);
+	tree_t* ast = get_ast (argv[file_num]);
 	assert (ast != NULL);
 	if (root_table->type != DEVICE_TYPE) {
 		fprintf(stderr, "a module should have device\n");
