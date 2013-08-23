@@ -31,6 +31,7 @@
 #include "object.h"
 #include <string.h>
 #include "gen_debug.h"
+#include "info_output.h"
 extern symtab_t root_table;
 object_t *OBJ;
 object_t *DEV;
@@ -609,6 +610,8 @@ static void bank_realize(object_t *obj) {
 		spec = param->spec;
 		expr = spec->expr;
 		if(!expr->is_const) {
+			PERROR("the register_size require a constant value",
+					expr->node->common.location);
 		} else {
 			reg_size = expr->const_expr->int_value;
 		}
@@ -676,6 +679,8 @@ static const char *get_attribute_type(const char *alloc_type) {
 		type = "int32";
 	} else if(!strcmp(alloc_type, "\"int64\"")) {
 		type = "int64";
+	}else{
+		type = NULL;
 	}
 	return type;
 }

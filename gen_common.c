@@ -428,7 +428,7 @@ void translate_expr_list(tree_t *expr,const char *prefix){
 
 	while(it){
 		if(prefix){
-			D(prefix);
+			D("%s", prefix);
 		}
 		translate(it);
 		if(it->common.sibling){
