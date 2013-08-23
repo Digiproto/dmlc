@@ -106,7 +106,11 @@ void set_library_dir(const char *dir_r)
 	tmp[len] = '\0';
 #else
 	/* exe is on linux */
-	readlink("/proc/self/exe", tmp, DIR_MAX_LEN);
+	size_t rt = readlink("/proc/self/exe", tmp, DIR_MAX_LEN);
+	if(rt < 0) {
+		perror("readlink");
+		exit(-1);
+	}
 	char *p = strrchr(tmp, '/');
 	assert(p);
 	len = p - tmp + 1;
