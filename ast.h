@@ -21,15 +21,15 @@ typedef struct level
 
 tree_t* get_ast (const char *filename);
 void* gdml_zmalloc(int size);
-char** get_templates(tree_t* head);
+char** get_templates(char** templates, tree_t* head, int num);
 int get_list_num (tree_t* root);
 symtab_t get_obj_block_table(tree_t* spec);
 arraydef_attr_t* get_arraydef(tree_t** node, symtab_t table);
-//tree_t* create_node (char *name, int type, int size);
-tree_t* create_node (char *name, int type, int size, YYLTYPE* location);
+tree_t* create_node (const char *name, int type, int size, YYLTYPE* location);
 void add_child (tree_t* parent, tree_t* child);
 tree_t* create_node_list (tree_t* root, tree_t* new_node);
-char* get_obj_desc(tree_t* spec);
+obj_spec_t* get_obj_spec(obj_spec_t* obj_spec, tree_t* node);
+char* get_obj_desc(obj_spec_t* spec);
 int get_size(tree_t** node, symtab_t table);
 int get_offset(tree_t** node, symtab_t table);
 method_params_t* get_method_params(tree_t* node, symtab_t table);
@@ -42,6 +42,9 @@ int get_param_num(tree_t* node);
 int get_list_num (tree_t* root);
 void parse_undef_node(symtab_t table);
 int charge_standard_parameter(symtab_t table, parameter_attr_t* attr);
+object_attr_t* create_object(symtab_t table, const char* node_name, const char* symbol_name, int type, int node_size, int attr_size, YYLTYPE* location);
+tree_t* create_template_list(tree_t* head, tree_t* templates);
+tree_t* get_obj_default_param(tree_t* head, tree_t* new, const char* name);
 
 void print_dml(tree_t* node, int pos);
 void print_device(tree_t* node, int pos);

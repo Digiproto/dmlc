@@ -106,6 +106,11 @@ struct tree_object_spec {
 	tree_t* block;
 };
 
+typedef struct obj_spec {
+   tree_t* node;
+   struct obj_spec* next;
+} obj_spec_t;
+
 /**
  * @brief : tree node about bank
  */
@@ -114,7 +119,7 @@ struct tree_bank
 	struct tree_common common;
 	const char* name;
 	tree_t* templates;				// templates that bank inherit
-	tree_t* spec;					// the spec about bank
+	obj_spec_t* spec;					// the spec about bank
 };
 
 /**
@@ -178,7 +183,7 @@ struct tree_register {
 	tree_t* sizespec;			// register size
 	tree_t* offset;				// offset about register start
 	tree_t* templates;			// templates that register inherits
-	tree_t* spec;				// spec about register
+	obj_spec_t* spec;				// spec about register
 	tree_t* array;				// the array about registers that are the same type
 };
 
@@ -190,7 +195,7 @@ struct tree_field {
 	const char* name;
 	tree_t* bitrange;		// the bit range about field
 	tree_t* templates;		// templates that file inherits
-	tree_t* spec;			// spec about field
+	obj_spec_t* spec;			// spec about field
 };
 
 /**
@@ -209,7 +214,7 @@ struct tree_connect {
 	const char* name;
 	tree_t* arraydef;			// the array about connect object
 	tree_t* templates;			// templates that connect inherits
-	tree_t* spec;				// spec about connect
+	obj_spec_t* spec;				// spec about connect
 };
 
 /**
@@ -219,7 +224,7 @@ struct tree_interface {
 	struct tree_common common;
 	const char* name;
 	tree_t* templates;			// templates that interface inherits
-	tree_t* spec;				// spec about interface
+	obj_spec_t* spec;				// spec about interface
 };
 
 /**
@@ -230,7 +235,7 @@ struct tree_attribute {
 	const char* name;
 	tree_t* arraydef;		// array about the same attribute
 	tree_t* templates;		// templates that attribute inherits
-	tree_t* spec;			// spec about attribute
+	obj_spec_t* spec;			// spec about attribute
 };
 
 /**
@@ -242,7 +247,7 @@ struct tree_event {
 	struct tree_common common;
 	const char* name;
 	tree_t* templates;
-	tree_t* spec;
+	obj_spec_t* spec;
 };
 
 /**
@@ -254,7 +259,7 @@ struct tree_implement {
 	struct tree_common common;
 	const char* name;
 	tree_t* templates;
-	tree_t* spec;
+	obj_spec_t* spec;
 };
 
 /**
@@ -300,7 +305,7 @@ struct tree_params {
 struct tree_template {
 	struct tree_common common;
 	const char* name;
-	tree_t* spec;
+	obj_spec_t* spec;
 };
 
 /**
@@ -836,7 +841,7 @@ struct tree_group {
 	const char* name;					// name about identifier
 	int is_array;				// the group is array
 	tree_t* templates;			// templates that inherits
-	tree_t* spec;				// the spec about group
+	obj_spec_t* spec;				// the spec about group
 	tree_t* array;				// the array that about group
 };
 
@@ -848,7 +853,7 @@ struct tree_port {
 	const char* name;					// port name
 	int is_array;
 	tree_t* templates;			// templates that inherited
-	tree_t* spec;				// the spec about port
+	obj_spec_t* spec;				// the spec about port
 	tree_t* array;
 };
 

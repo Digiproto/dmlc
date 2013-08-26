@@ -753,7 +753,7 @@ void params_insert_table(symtab_t table, method_params_t* method_params) {
 			continue;
 		}
 		if (symbol_insert(table, in_list[i]->var_name, PARAM_TYPE, in_list[i]) == -1) {
-			DEBUG_SYMBOL(stderr, "method param : %s redefined\n", in_list[i]->var_name);
+			DEBUG_SYMBOL("method param : %s redefined\n", in_list[i]->var_name);
 			/* FIXME: handle the error */
 			exit(-1);
 		}
@@ -767,7 +767,7 @@ void params_insert_table(symtab_t table, method_params_t* method_params) {
 			continue;
 		}
 		if (symbol_insert(table, ret_list[i]->var_name, PARAM_TYPE, ret_list[i]) == -1) {
-			DEBUG_SYMBOL(stderr, "method param : %s redefined\n", in_list[i]->var_name);
+			DEBUG_SYMBOL("method param : %s redefined\n", in_list[i]->var_name);
 			/* FIXME: handle the error */
 			exit(-1);
 		}
@@ -807,6 +807,18 @@ void undef_var_insert(symtab_t table, tree_t* node) {
 	}
 
 	return;
+}
+
+int symbol_defined(symtab_t table, const char* name) {
+    assert(table != NULL);
+    assert(name != NULL);
+
+    symbol_t symbol = _symbol_find_notype(table->table, name);
+
+    if (symbol)
+        return 1;
+    else
+        return 0;
 }
 
 #ifdef SYMBOL_DEBUG

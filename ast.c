@@ -218,6 +218,7 @@ void dummy_translate(tree_t *node) {
 #endif
 }
 static int node_num = 0;
+
 /**
  * @brief create_node : create a tree node
  *
@@ -228,7 +229,7 @@ static int node_num = 0;
  *
  * @return : return a pointer to created node
  */
-tree_t* create_node (char *name, int type, int size, YYLTYPE* location)
+tree_t* create_node (const char *name, int type, int size, YYLTYPE* location)
 {
 	tree_t* node = (tree_t*)gdml_zmalloc(size) ;
 	node->common.name = strdup (name);
@@ -244,6 +245,45 @@ tree_t* create_node (char *name, int type, int size, YYLTYPE* location)
 
 	return node;
 }
+
+object_attr_t* create_object(symtab_t table, const char* node_name, const char* symbol_name, int type, int node_size, int attr_size, YYLTYPE* location) {
+   assert(table != NULL);
+   assert(node_name != NULL);
+   assert(symbol_name != NULL);
+
+   object_attr_t* attr = NULL;
+   tree_t* node = NULL;
+
+   /* In simics, an object can defined many times, so we should check one
+    * object is defined before, if not, create new, if defined, get it's
+    * node and attribute, and add other default parameter, and also get it's
+    * symbol table, insert other parameters and variables into table, but it's
+    * default parameters can defined only once, such as: size, desc,etc*/
+   if (symbol_defined(table, symbol_name)) {
+       symbol_t symbol = symbol_find(table, symbol_name, type);
+       if (symbol == NULL) {
+           fprintf(stderr, "error: name collision on '%s'\n", symbol_name);
+           /* TODO: handle the error */
+           exit(-1);
+           return NULL;
+       }// usr defined another variable with same name
+       else {
+           attr = symbol->attr;
+           attr->common.is_defined = 1;
+       } // object defined
+   }
+   else {
+           node = (tree_t*)create_node(node_name, type, node_size, location);
+           attr = (object_attr_t*)gdml_zmalloc(attr_size);
+           node->common.attr = attr;
+           attr->common.obj_type = type;
+           attr->common.node = node;
+   }// object not defined, create new one
+
+   return attr;
+}
+
+
 
 void parse_undef(symtab_t table, undef_var_t* undef_head) {
 	assert(table);
@@ -327,6 +367,21 @@ tree_t* c_keyword_node (const char* name, YYLTYPE* location) {
     return node;
 }
 
+static tree_t* node_in_list(tree_t* head, tree_t* new_node) {
+   assert(head != NULL);
+   assert(new_node != NULL);
+
+   tree_t* tmp = head;
+   while (tmp != NULL) {
+       if (tmp == new_node) {
+           return tmp;
+       }
+       tmp = tmp->common.sibling;
+   }
+
+   return NULL;
+}
+
 /**
  * @brief concentrate the two node list
  *
@@ -343,6 +398,10 @@ tree_t* create_node_list (tree_t* root, tree_t* new_node)
 	}
 	assert (new_node != NULL);
 	assert (root != NULL);
+
+   if (node_in_list(root, new_node) != NULL) {
+       return root;
+   }
 
 	tree_t* tail = find_tail (root);
 	assert (tail->common.sibling == NULL);
@@ -372,19 +431,86 @@ int get_list_num (tree_t* root) {
 	return num;
 }
 
-char* get_obj_desc(tree_t* spec) {
+tree_t* create_template_list(tree_t* head, tree_t* templates) {
+    if ((head == NULL) && (templates != NULL)) {
+        return templates;
+    }
+    else if ((head != NULL) && (templates != NULL)) {
+        while (templates != NULL) {
+            create_node_list(head, templates);
+            templates = templates->common.sibling;
+        }
+    }
+
+    return head;
+}
+
+tree_t* get_obj_default_param(tree_t* head, tree_t* new, const char* name) {
+    /* In simics, although a register can defined many times
+     * but the size can defined only once */
+    if (head == NULL && new != NULL) {
+        return new;
+    }
+    else if ((head != NULL) && (new != NULL)) {
+        fprintf(stderr, "error: duplicate assignment to parameter '%s'\n", name);
+        /* TODO: handle the error */
+        exit(-1);
+    }
+
+    return head;
+}
+
+obj_spec_t* get_obj_spec(obj_spec_t* head, tree_t* node) {
+    /* In simics, the same object can be defined several times,
+     * but their parameters can be defined only one time*/
+    obj_spec_t* tmp = head;
+    obj_spec_t* pre_spec = head;
+
+    if ((tmp == NULL) && (node != NULL)) {
+        tmp = (obj_spec_t*)gdml_zmalloc(sizeof(obj_spec_t));
+        tmp->node = node;
+    }
+    else if ((tmp != NULL) && (node != NULL)) {
+        /* scan all the defined about object */
+        while(tmp) {
+            /* the describe is corresponing the desc parameter,
+             * it can only describe once*/
+            if((tmp->node->spec.desc) && (node->spec.desc)) {
+                fprintf(stderr, "error: duplicate assignment to parameter 'desc'\n");
+                /* TODO: handle the error */
+                exit(-1);
+            }
+            pre_spec = tmp;
+            tmp = tmp->next;
+        }
+        tmp = (obj_spec_t*)gdml_zmalloc(sizeof(obj_spec_t));
+        tmp->node = node;
+        pre_spec->next = tmp;
+        tmp = head;
+    }
+
+    return tmp;
+}
+
+char* get_obj_desc(obj_spec_t* spec) {
 	if (spec == NULL) {
 		return NULL;
 	}
-	if (spec->spec.desc) {
-		tree_t* tmp = spec->spec.desc;
-		DEBUG_AST("In %s, line = %d, obj_desc: %s\n",
-				__FUNCTION__, __LINE__, tmp->string.pointer);
-		return (char*)(tmp->string.pointer);
-	}
-	else {
-		return NULL;
-	}
+
+    obj_spec_t* tmp = spec;
+    tree_t* node = NULL;
+    while (tmp) {
+        node = tmp->node;
+        if (node->spec.desc) {
+            tree_t* desc = node->spec.desc;
+            DEBUG_AST("In %s, line = %d, obj_desc: %s\n",
+                    __FUNCTION__, __LINE__, desc->string.pointer);
+            return (char*)(desc->string.pointer);
+        }
+        tmp = tmp->next;
+    }
+
+	return NULL;
 }
 
 int get_int_value(tree_t** node, symtab_t table) {
@@ -397,19 +523,17 @@ int get_int_value(tree_t** node, symtab_t table) {
 	else {
 		expression_t* expr = parse_expression(node, table);
 		if (expr->is_const == 0) {
-//			fprintf(stderr, "Non-constant value\n");
-//			exit(-1);
 			PERROR("%s(%s) is non-constant value", (*node)->common.location,
 				(*node)->common.name, TYPENAME((*node)->common.type));
+//			exit(-1);
 		}
 		else if (expr->final_type == INTEGER_TYPE) {
 			return expr->const_expr->int_value;
 		}
 		else {
-//			fprintf(stderr, "final type not int\n");
-//			exit(-1);
 			PERROR("%s(%s) isn't integer type", (*node)->common.location,
 				(*node)->common.name, TYPENAME((*node)->common.type));
+//			exit(-1);
 		}
 	}
 }
@@ -683,10 +807,9 @@ void add_template_to_table(symtab_t table, const char* template) {
 		template_name = temp_table->template_name;
 		DEBUG_AST("In %s, line = %d, trave templates: %s\n", __func__, __LINE__, template_name);
 		if (strcmp(template, template_name) == 0) {
-//			fprintf(stderr, "re-load template: %s\n", template);
 			/*FIXME: should handle the error */
-//			exit(-1);
 			error("re-load the template \"%s\"", template);
+//			exit(-1);
 		}
 		pre_temp_table = temp_table;
 		temp_table = temp_table->next;
@@ -696,7 +819,6 @@ void add_template_to_table(symtab_t table, const char* template) {
 
 	symbol_t symbol = symbol_find(root_table, template, TEMPLATE_TYPE);
 	if (symbol == NULL) {
-//		fprintf(stderr, "can not find the template: %s\n", template);
 		/* FIXME: should handle the error */
 //		exit(-1);
 		error("can't find the template \"%s\"", template);
@@ -705,17 +827,20 @@ void add_template_to_table(symtab_t table, const char* template) {
 	new_table->table = attr->table;
 	new_table->template_name = strdup(template);
 
-	if (table->template_table == NULL) {
-		table->template_table = new_table;
+	if (new_table->table != NULL) {
+		if (table->template_table == NULL) {
+			table->template_table = new_table;
+		}
+		else {
+			DEBUG_AST("pre_temp_table : %s\n", pre_temp_table->template_name);
+			//table->template_table  = new_table;
+			pre_temp_table->next = new_table;
+		}
 	}
 	else {
-		DEBUG_AST("pre_temp_table : %s\n", pre_temp_table->template_name);
-		//table->template_table  = new_table;
-		pre_temp_table->next = new_table;
+        free(new_table->template_name);
+        free(new_table);
 	}
-
-	DEBUG_ADD_TEMPLATE("In %s, line = %d, insert templates table: %s, num: %d\n",
-			__func__, __LINE__, template, new_table->table->table_num);
 
 	return;
 }
@@ -780,12 +905,14 @@ void get_object_template_table(symtab_t table, tree_t* node) {
 	return;
 }
 
-char** get_templates(tree_t* head) {
+char** get_templates(char** templates, tree_t* head, int num) {
 	if (head == NULL) {
-		return NULL;
+		return templates;
 	}
-	int num = get_list_num(head);
-	char** templates = gdml_zmalloc(num * sizeof(char*));
+	if (templates != NULL)
+       free(templates);
+
+	templates = gdml_zmalloc(num * sizeof(char*));
 	tree_t* node = head;
 	int i = 0;
 	while (node != NULL) {
@@ -1509,10 +1636,12 @@ void print_connect(tree_t* node, int pos) {
 		templates->common.print_node(templates, pos);
 	}
 
-	if (node->connect.spec) {
-		tree_t* obj_spec = node->connect.spec;
-		obj_spec->common.print_node(obj_spec, pos);
-	}
+    obj_spec_t* spec = node->connect.spec;
+    while (spec) {
+        tree_t* obj_spec = spec->node;
+        obj_spec->common.print_node(obj_spec, pos);
+        spec = spec->next;
+    }
 
 	print_sibling(node, pos);
 
@@ -1539,10 +1668,12 @@ void print_interface(tree_t* node, int pos) {
 		templates->common.print_node(templates, pos);
 	}
 
-	if (node->interface.spec) {
-		tree_t* obj_spec = node->interface.spec;
-		obj_spec->common.print_node(obj_spec, pos);
-	}
+    obj_spec_t* spec = node->interface.spec;
+    while (spec) {
+        tree_t* obj_spec = spec->node;
+        obj_spec->common.print_node(obj_spec, pos);
+        spec = spec->next;
+    }
 
 	print_sibling(node, pos);
 
@@ -1574,10 +1705,12 @@ void print_attribute(tree_t* node, int pos) {
 		templates->common.print_node(templates, pos);
 	}
 
-	if (node->attribute.spec) {
-		tree_t* obj_spec = node->attribute.spec;
-		obj_spec->common.print_node(obj_spec, pos);
-	}
+    obj_spec_t* spec = node->attribute.spec;
+    while (spec) {
+        tree_t* obj_spec = spec->node;
+        obj_spec->common.print_node(obj_spec, pos);
+        spec = spec->next;
+    }
 
 	print_sibling(node, pos);
 
@@ -1604,10 +1737,12 @@ void print_event(tree_t* node, int pos) {
 		templates->common.print_node(templates, pos);
 	}
 
-	if (node->event.spec) {
-		tree_t* obj_spec = node->event.spec;
-		obj_spec->common.print_node(obj_spec, pos);
-	}
+    obj_spec_t* spec = node->event.spec;
+    while (spec) {
+        tree_t* obj_spec = spec->node;
+        obj_spec->common.print_node(obj_spec, pos);
+        spec = spec->next;
+    }
 
 	print_sibling(node, pos);
 
@@ -1639,10 +1774,12 @@ void print_group(tree_t* node, int pos) {
 		templates->common.print_node(templates, pos);
 	}
 
-	if (node->group.spec) {
-		tree_t* obj_spec = node->group.spec;
-		obj_spec->common.print_node(obj_spec, pos);
-	}
+    obj_spec_t* spec = node->group.spec;
+    while (spec) {
+        tree_t* obj_spec = spec->node;
+        obj_spec->common.print_node(obj_spec, pos);
+        spec = spec->next;
+    }
 
 	print_sibling(node, pos);
 
@@ -1669,10 +1806,12 @@ void print_port(tree_t* node, int pos) {
 		templates->common.print_node(templates, pos);
 	}
 
-	if (node->port.spec) {
-		tree_t* obj_spec = node->port.spec;
-		obj_spec->common.print_node(obj_spec, pos);
-	}
+    obj_spec_t* spec = node->port.spec;
+    while (spec) {
+        tree_t* obj_spec = spec->node;
+        obj_spec->common.print_node(obj_spec, pos);
+        spec = spec->next;
+    }
 
 	print_sibling(node, pos);
 
@@ -1699,10 +1838,12 @@ void print_implement(tree_t* node, int pos) {
 		templates->common.print_node(templates, pos);
 	}
 
-	if (node->implement.spec) {
-		tree_t* obj_spec = node->implement.spec;
-		obj_spec->common.print_node(obj_spec, pos);
-	}
+    obj_spec_t* spec = node->implement.spec;
+    if (spec) {
+        tree_t* obj_spec = spec->node;
+        obj_spec->common.print_node(obj_spec, pos);
+        spec = spec->next;
+    }
 
 	print_sibling(node, pos);
 
@@ -1905,10 +2046,13 @@ void print_register(tree_t* node, int pos) {
 		tree_t* templates = (tree_t*)(node->reg.templates);
 		templates->common.print_node(templates, pos);
 	}
-	if (node->reg.spec) {
-		tree_t* obj_spec = node->reg.spec;
-		obj_spec->common.print_node(obj_spec, pos);
-	}
+
+    obj_spec_t* spec = node->reg.spec;
+    while (spec) {
+        tree_t* obj_spec = spec->node;
+        obj_spec->common.print_node(obj_spec, pos);
+        spec = spec->next;
+    }
 
 	print_sibling(node, pos);
 
@@ -1933,10 +2077,13 @@ void print_bank(tree_t* node, int pos) {
 		tree_t* templates = node->bank.templates;
 		templates->common.print_node(templates, pos);
 	}
-	if (node->bank.spec) {
-		tree_t* obj_spec = node->bank.spec;
-		obj_spec->common.print_node(obj_spec, pos);
-	}
+
+	obj_spec_t* spec = node->bank.spec;
+    while (spec) {
+        tree_t* obj_spec = spec->node;
+        obj_spec->common.print_node(obj_spec, pos);
+        spec = spec->next;
+    }
 
 	print_sibling(node, pos);
 
@@ -3077,10 +3224,12 @@ void print_field(tree_t* node, int pos) {
 		templates->common.print_node(templates, pos);
 	}
 
-	if (node->field.spec) {
-		tree_t* obj_spec = node->field.spec;
-		obj_spec->common.print_node(obj_spec, pos);
-	}
+    obj_spec_t* spec = node->field.spec;
+    while (spec) {
+        tree_t* obj_spec = spec->node;
+        obj_spec->common.print_node(obj_spec, pos);
+        spec = spec->next;
+    }
 
 	print_sibling(node, pos);
 
@@ -3168,8 +3317,14 @@ void print_template(tree_t* node, int pos) {
 	print_pos(pos);
 	printf("[%s : %s : %d]\n",
 			node->common.name, node->temp.name, pos);
-	tree_t* temp_spec = node->temp.spec;
-	temp_spec->common.print_node(temp_spec, pos);
+
+    obj_spec_t* spec = node->temp.spec;
+    tree_t* temp_spec = NULL;
+    while (spec) {
+        temp_spec = spec->node;
+        temp_spec->common.print_node(temp_spec, pos);
+        spec = spec->next;
+    }
 
 	print_sibling(node, pos);
 
