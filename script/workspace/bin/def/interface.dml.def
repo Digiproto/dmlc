@@ -1,0 +1,34 @@
+// @INTERFACE_NAME@-interface.dml - Skeleton code to base new DML interface types on
+//
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+//
+// Copyright 2010-2011 Intel Corporation
+
+// This is the DML definition of the @INTERFACE_NAME@ interface. See
+// the "Defining a New Interface Type" section of the "Simics Model
+// Builder User Guide" manual for further documentation.
+// The corresponding C definition can be found in
+// @INTERFACE_NAME@-interface.h.
+
+dml 1.2;
+
+header %{
+#include "@INTERFACE_NAME@_interface.h"
+%}
+
+// Add any data types used by the interface here
+extern typedef struct {
+    int level;
+    char *name;
+} @INTERFACE_NAME@_data_t;
+
+// Define the new interface type
+extern typedef struct {
+    bool (*example_method)(conf_object_t *obj, int id,
+                           example_interface_data_t *data);
+    void (*no_python_method)(conf_object_t *obj, size_t bufsize, void *buf);
+} @INTERFACE_NAME@_interface_t;
+
+extern const char *const @INTERFACE_NAME_C@_INTERFACE;

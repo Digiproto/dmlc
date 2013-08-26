@@ -1,0 +1,42 @@
+#!/bin/sh
+# The file created by eJim Lee (lyjforjob@gmail.com)
+
+CURR_DIR=`pwd`
+EXEC_DIR=`dirname $0`
+
+. $EXEC_DIR/../config
+
+# newfile [name path]
+newfile() {
+	TMP_NAME="$1"
+	TMP_NAME_C=`echo $1 | tr a-z A-Z`
+
+	sed -e "s?@INTERFACE_NAME@?$TMP_NAME?g" \
+		-e "s?@INTERFACE_NAME_C@?$TMP_NAME_C?g" \
+		"$EXEC_DIR/def/interface.dml.def" \
+		>> "$2/$TMP_NAME"_interface.dml
+
+	sed -e "s?@INTERFACE_NAME@?$TMP_NAME?g" \
+		-e "s?@INTERFACE_NAME_C@?$TMP_NAME_C?g" \
+		"$EXEC_DIR/def/interface.h.def" \
+		>> "$2/$TMP_NAME"_interface.h
+}
+
+if [ -z "$*" ]; then
+	echo "[ error] please input a interface name, look like:"
+	echo "         workspace-interface new"
+	exit
+fi
+
+for var in $@
+do
+	# create a module in modules directory
+	NEW_DIR=$EXEC_DIR/../interface/"$var"_interface
+	if [ -f $NEW_DIR -o -d $NEW_DIR ]; then
+		echo "[ error]" "$var"_interface have been exist
+	else
+		echo "[normal]" create $var interface
+		mkdir -p "$NEW_DIR"
+		newfile "$var" "$NEW_DIR"
+	fi
+done

@@ -1,0 +1,60 @@
+/*
+  @INTERFACE_NAME@-interface.h - Skeleton code to base new interface modules on
+
+  This Software is part of Wind River Simics. The rights to copy, distribute,
+  modify, or otherwise make use of this Software may be licensed only
+  pursuant to the terms of an applicable Wind River license agreement.
+
+  Copyright 2010-2011 Intel Corporation
+*/
+
+/* This module is a template for defining new interface types. See the
+   "Defining New Interface Types" section of the "Simics Model Builder
+   User Guide" manual for further documentation.
+
+   The corresponding DML definition can be found in @INTERFACE_NAME@_interface.dml */
+
+#ifndef @INTERFACE_NAME_C@_INTERFACE_H
+#define @INTERFACE_NAME_C@_INTERFACE_H
+
+#include <simics/device-api.h>
+#include <simics/pywrap.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/* If you need to define new struct types, a definition like this will make it
+   possible to allocate such structs from Python using @INTERFACE_NAME@_data_t().
+
+   Before doing this, you will have to load the @INTERFACE_NAME@_interface
+   Simics module, and import the @INTERFACE_NAME@_interface Python module. */
+typedef struct {
+        int level;
+        char *name;
+} @INTERFACE_NAME@_data_t;
+SIM_PY_ALLOCATABLE(@INTERFACE_NAME@_data_t);
+
+/* This defines a new interface type. Its corresponding C data type will be
+   called "@INTERFACE_NAME@_interface_t". */
+SIM_INTERFACE(@INTERFACE_NAME@) {
+        bool (*example_method)(conf_object_t *obj, int id,
+                               @INTERFACE_NAME@_data_t *data);
+#ifndef PYWRAP
+        /* methods that cannot be exported to Python, for example as it refers
+           to unknown data types, must be enclosed by "#ifndef PYWRAP" ...
+           "#endif". See the "Restrictions" subsection of "Defining New
+           Interface Types" mentioned above. */
+        void (*no_python_method)(conf_object_t *obj, size_t bufsize, void *buf);
+#endif
+};
+
+/* Use a #define like this whenever you need to use the name of the interface
+   type; the C compiler will then catch any typos at compile-time. */
+#define @INTERFACE_NAME_C@_INTERFACE "@INTERFACE_NAME@"
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* ! @INTERFACE_NAME_C@_INTERFACE_H */

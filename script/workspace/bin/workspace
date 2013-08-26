@@ -171,6 +171,15 @@ case "$1" in
 		shift
 		$EXEC_DIR/workspace-copy "$*"
 	;;
+	"interface")
+		if [ -z $2 ]; then
+			input_error
+			exit
+		fi
+		# remove first parameter and turn to workspace-interface
+		shift
+		$EXEC_DIR/workspace-interface "$*"
+	;;
 	"list")
 		print_file_list $EXEC_DIR/../modules d "[  info] devices:"
 	;;
