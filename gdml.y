@@ -1517,7 +1517,14 @@ parameter
 		attr->name = $2->ident.str;
 		attr->spec = get_paramspec($3, current_table);
 		if (charge_standard_parameter(current_table, attr) == 0) {
-			symbol_insert(current_table, $2->ident.str, PARAMETER_TYPE, attr);
+			if ((attr->spec == NULL) && ((current_table->no_check) == 0)) {
+				fprintf(stderr, "error: no assignment to parameter '%s'\n", attr->name);
+				/* TODO: handle the error*/
+				exit(-1);
+			}
+			else {
+				symbol_insert(current_table, $2->ident.str, PARAMETER_TYPE, attr);
+			}
 		}
 
 		tree_t* node = (tree_t*)create_node("parameter", PARAMETER_TYPE, sizeof(struct tree_param), &@$);
