@@ -3499,7 +3499,9 @@ void insert_array_index(object_attr_t* attr, symtab_t table) {
 			/* TODO: handle the error*/
 			return;
 		}
-		symbol_insert(table, array_attr->ident, INT_TYPE, NULL);
+		parameter_attr_t* param_attr = (parameter_attr_t*)gdml_zmalloc(sizeof(parameter_attr_t));
+		param_attr->name = strdup(array_attr->ident);
+		symbol_insert(table, array_attr->ident, PARAMETER_TYPE, param_attr);
 	}
 	else if ((array_attr != NULL) && (array_attr->fix_array)) {
 		/* parameter 'i' is the parameter about object array

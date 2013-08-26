@@ -61,6 +61,71 @@ void assgin_sibling_child_null(tree_t** node) {
 	return ;
 }
 
+static int dml_struct_type(symbol_t symbol) {
+    assert(symbol != NULL);
+
+    int type = symbol->type;
+    int refer_type = 0;
+
+    switch (type) {
+        case DEVICE_TYPE:
+        case BANK_TYPE:
+        case REGISTER_TYPE:
+        case FIELD_TYPE:
+        case CONNECT_TYPE:
+        case INTERFACE_TYPE:
+        case ATTRIBUTE_TYPE:
+        case EVENT_TYPE:
+        case GROUP_TYPE:
+        case PORT_TYPE:
+        case IMPLEMENT_TYPE:
+        case DATA_TYPE:
+        case METHOD_TYPE:
+        case PARAMETER_TYPE:
+            refer_type = type;
+            break;
+        default:
+            refer_type = 0;
+            break;
+    }
+    return refer_type;
+}
+
+static int find_dml_struct(symtab_t table, const char* name) {
+    assert(name != NULL);
+    assert(table != NULL);
+
+    symbol_t symbol =  symbol_find_curr_notype(table, name);
+    int dml_type = 0;
+    if (symbol) {
+        dml_type = dml_struct_type(symbol);
+        if (dml_type) {
+            return dml_type;
+        }
+    }
+
+    if (table->parent) {
+        dml_type = find_dml_struct(table->parent, name);
+    }
+    else {
+        symtab_t root_table = get_root_table();
+        if (table != root_table) {
+            dml_type = find_dml_struct(root_table, name);
+        }
+    }
+
+    return dml_type;
+}
+
+static int check_refer_dml_struct(tree_t* node, symtab_t table) {
+    assert(node != NULL);
+    assert(table != NULL);
+
+    char* refer_name = (char*)(node->ident.str);
+
+    return find_dml_struct(table, refer_name);
+}
+
 int charge_type_int(int type) {
 	if (type == CHAR_TYPE || (type == INTEGER_TYPE)
 			|| (type == INT_TYPE) || (type == SHORT_TYPE)
@@ -233,7 +298,6 @@ int charge_type(int type1, int type2) {
 				return type1;
 			}
 			else if (type2 == POINTER_TYPE) {
-//				fprintf(stderr, "warning: assignment makes integer from pointer without a cast\n");
 				warning("assignment makes %s from %s without a cast", TYPENAME(type1), TYPENAME(type2));
 				/* FIXME: handle the warning */
 				return type2;
@@ -242,7 +306,6 @@ int charge_type(int type1, int type2) {
 				return type2;
 			}
 			else {
-//				fprintf(stderr, "Line: %d, error: incompatible types when assigning to type\n", __LINE__);
 				error("(line: %d)incompatible types when assigning to type: %s", __LINE__, TYPENAME(type2));
 				/* FIXME: handle the error */
 //				exit(-1);
@@ -261,13 +324,11 @@ int charge_type(int type1, int type2) {
 				return type1;
 			}
 			else if (type2 == POINTER_TYPE) {
-//				fprintf(stderr, "warning: assignment makes integer from pointer without a cast\n");
 				warning("assignment makes %s from %s without a cast", TYPENAME(type1), TYPENAME(type2));
 				/* FIXME: handle the warning */
 				return type2;
 			}
 			else {
-//				fprintf(stderr, "line: %d, error: incompatible types when assigning to type: %d\n", __LINE__, type2);
 				error("(line: %d)incompatible types when assigning to type(%s)", __LINE__, TYPENAME(type2));
 				/* FIXME: handle the error */
 //				exit(-1);
@@ -284,7 +345,6 @@ int charge_type(int type1, int type2) {
 				return type1;
 			}
 			else {
-//				fprintf(stderr, "line: %d, error: incompatible types when assigning to type\n", __LINE__);
 				error("(line: %d)incompatible types when assigning to type(%s)", __LINE__, TYPENAME(type2));
 				/* FIXME: handle the error */
 //				exit(-1);
@@ -303,7 +363,6 @@ int charge_type(int type1, int type2) {
 				return type1;
 			}
 			else {
-//				fprintf(stderr, "line: %d, error: incompatible types when assigning to type\n", __LINE__);
 				error("(line: %d)incompatible types when assigning to type(%s)", __LINE__, TYPENAME(type2));
 				/* FIXME: handle the error */
 //				exit(-1);
@@ -322,7 +381,6 @@ int charge_type(int type1, int type2) {
 				return type2;
 			}
 			else if (type2 == POINTER_TYPE) {
-//				fprintf(stderr, "warning: assignment makes integer from pointer without a cast\n");
 				warning("assignment makes %s from %s without a cast", TYPENAME(type1), TYPENAME(type2));
 				return type2;
 			}
@@ -339,12 +397,10 @@ int charge_type(int type1, int type2) {
 				return type1;
 			}
 			else if (type2 == POINTER_TYPE) {
-//				fprintf(stderr, "warning: assignment makes integer from pointer without a cast\n");
 				warning("assignment makes %s from %s without a cast", TYPENAME(type1), TYPENAME(type2));
 				return type2;
 			}
 			else {
-//				fprintf(stderr, "line: %d, error: incompatible types when assigning to type\n", __LINE__);
 				error("(line: %d)incompatible types when assigning to type(%s)", __LINE__, TYPENAME(type2));
 				/* FIXME: handle the error */
 //				exit(-1);
@@ -364,12 +420,10 @@ int charge_type(int type1, int type2) {
 				return type1;
 			}
 			else if (type2 == POINTER_TYPE) {
-//				fprintf(stderr, "warning: assignment makes integer from pointer without a cast\n");
 				warning("assignment makes %s from %s without a cast", TYPENAME(type1), TYPENAME(type2));
 				return type2;
 			}
 			else {
-//				fprintf(stderr, "line: %d, error: incompatible types when assigning to type\n", __LINE__);
 				error("(line: %d)incompatible types when assigning to type(%s)", __LINE__, TYPENAME(type2));
 				/* FIXME: handle the error */
 //				exit(-1);
@@ -388,7 +442,6 @@ int charge_type(int type1, int type2) {
 				return type1;
 			}
 			else {
-//				fprintf(stderr, "Line: %d, error: incompatible types when assigning to type\n", __LINE__);
 				error("(line: %d)incompatible types when assigning to type(%s)", __LINE__, TYPENAME(type2));
 				/* FIXME: handle the error */
 //				exit(-1);
@@ -401,13 +454,10 @@ int charge_type(int type1, int type2) {
 					|| (type2 == SHORT_TYPE) || (type2 == SIGNED_TYPE)
 					|| (type2 == UNSIGNED_TYPE) || (type2 == BOOL_TYPE)
 					|| (type2 == POINTER_TYPE) || (type2 == NO_TYPE)) {
-//				fprintf(stderr, "warning: assignment makes integer from pointer without a cast\n");
 				warning("assignment makes %s from %s without a cast", TYPENAME(type1), TYPENAME(type2));
 				return type1;
 			}
 			else {
-//				fprintf(stderr, "Line: %d, error: incompatible types when assigning to type: %d\n",
-//						__LINE__, type2);
 				error("(line: %d)incompatible types when assigning to type(%s)", __LINE__, TYPENAME(type2));
 				/* FIXME: handle the error */
 //				exit(-1);
@@ -419,7 +469,6 @@ int charge_type(int type1, int type2) {
 				return type2;
 			}
 			else if (type2 == POINTER_TYPE) {
-//				fprintf(stderr, "warning: assignment makes integer from pointer without a cast\n");
 				warning("assignment makes %s from %s without a cast", TYPENAME(type1), TYPENAME(type2));
 				return type2;
 			}
@@ -427,12 +476,12 @@ int charge_type(int type1, int type2) {
 				return type1;
 			}
 			else {
-//				fprintf(stderr, "Line: %d, error: incompatible types when assigning to type\n", __LINE__);
 				error("(line: %d)incompatible types when assigning to type(%s)", __LINE__, TYPENAME(type2));
 				/* FIXME: handle the error */
 //				exit(-1);
 				return -1;
 			}
+			break;
 		case UNDEFINED_TYPE:
 			return type2;
 			break;
@@ -445,15 +494,14 @@ int charge_type(int type1, int type2) {
 				return type1;
 			}
 			else {
-//				fprintf(stderr, "Line: %d, error: incompatible types when assigning to type %d\n", __LINE__, type2);
 				error("(line: %d)incompatible types when assigning to type(%s)", __LINE__, TYPENAME(type2));
 				/* FIXME: handle the error */
 //				exit(-1);
 				return -1;
 			}
+			break;
 		default:
 			/* TODO: the UNDEFINED_TYPE */
-//			fprintf(stderr, "In %s, line = %d, other type: %d\n", __func__, __LINE__, type1);
 			error("(line: %d)undefined type(%s)", __LINE__, TYPENAME(type1));
 			/*FIXME: handle the error */
 //			exit(-1);
@@ -479,14 +527,43 @@ void cal_assign_left(tree_t** node, symtab_t table, expression_t* left_expr, exp
 	assert(left_expr != NULL);
 	assert(right_expr != NULL);
 
-	left_expr = cal_expression(&((*node)->expr_assign.left), table, left_expr);
+    if (table->no_check) {
+        right_expr->node = *node;
+        right_expr->final_type = NO_TYPE;
+        return;
+    }
 
 	tree_t* left_node = (*node)->expr_assign.left;
-	if (left_expr->is_const) {
-//		fprintf(stderr, "error: value required as left operand of assignment\n");
-		PERROR("value required as left operand of assignment", left_expr->node->common.location);
-		/* FIXME: should handle the error */
-//		exit(-1);
+    if (left_node->common.type == QUOTE_TYPE) {
+        tree_t* ident = left_node->quote.ident;
+        int quote_type = 0;
+        if (strcmp(ident->ident.str, "this") == 0) {
+            left_expr->final_type = INT_TYPE;
+        }
+        else {
+            quote_type = check_refer_dml_struct(ident, table);
+            if (quote_type == REGISTER_TYPE || quote_type == FIELD_TYPE
+                    || quote_type == DATA_TYPE || quote_type == ATTRIBUTE_TYPE) {
+                left_expr = cal_expression(&((*node)->expr_assign.left), table, left_expr);
+            }
+            else if (quote_type > 0 ){
+                fprintf(stderr, "error: cannot assign to this expression, type: %d\n", quote_type);
+                /* TODO: handle the error */
+                exit(-1);
+            }
+            else {
+                left_expr->is_undeclare = 1;
+                left_expr->undecl_name = ident->ident.str;
+            }
+        }
+    }
+	else {
+		left_expr = cal_expression(&((*node)->expr_assign.left), table, left_expr);
+		if (left_expr->is_const) {
+			PERROR("value required as left operand of assignment", left_expr->node->common.location);
+			/* FIXME: should handle the error */
+	//		exit(-1);
+		}
 	}
 
 	if ((left_expr->is_undeclare) || (right_expr->is_undeclare)) {
@@ -515,6 +592,10 @@ expression_t* cal_common_assign(tree_t** node, symtab_t table, expression_t* exp
 	}
 	expression_t* left_expr = (expression_t*)gdml_zmalloc(sizeof(expression_t));
 	cal_assign_left(node, table, left_expr, expr);
+    if (left_expr->is_undeclare) {
+        expr->is_undeclare = 1;
+        expr->undecl_name = left_expr->undecl_name;
+    }
 	expr->is_const = 0;
 	expr->node = *node;
 
@@ -1204,7 +1285,6 @@ expression_t* unary_bit_non(tree_t** node, symtab_t table, expression_t* expr) {
 	}
 	else {
 		if (charge_type_int(expr->final_type) == 0) {
-//			fprintf(stderr, "Line: %d, error: invalid operands to binary\n", __LINE__);
 			PERROR("(line: %d) invalid operands to binary",
 					(*node)->common.location, __LINE__);
 			/* TODO: handle the error */
@@ -1463,8 +1543,13 @@ expression_t* cal_quote_expr(tree_t** node, symtab_t table,  expression_t* expr)
 	DEBUG_EXPR("IN %s, line = %d, node->type: %s\n",
 			__func__, __LINE__, (*node)->common.name);
 
+    if (table->no_check) {
+        expr->node = *node;
+        expr->final_type = NO_TYPE;
+        return expr;
+    }
+
 	if (charge_node_is_const(*node)) {
-//		fprintf(stderr, "error: lvalue required as unary ‘&’ operand\n");
 		PERROR("left value(%s) required as unary \'&\' operand",
 				(*node)->common.location, (*node)->common.name);
 		/* TODO: handle the error */
@@ -1472,12 +1557,18 @@ expression_t* cal_quote_expr(tree_t** node, symtab_t table,  expression_t* expr)
 	}
 
 	tree_t* ident = (*node)->quote.ident;
-	/* FIXME: this may something wrong */
-	if (strcmp(ident->ident.str, "this") == 0) {
-		expr->node = *node;
-		expr->final_type = NO_TYPE;
-		return expr;
-	}
+
+    /*to reference something in the DML object structure
+     * the reference must be prefixed by '$' character*/
+    int is_dml_struct = check_refer_dml_struct(ident, table);
+    if (is_dml_struct == 0) {
+        expr->is_undeclare = 1;
+        expr->undecl_name = ident->ident.str;
+
+        fprintf(stderr, "reference to unknown object '%s'\n", ident->ident.str);
+        /* TODO: handle the error */
+        //exit(-1);
+    }
 
 	cal_expression(&((*node)->quote.ident), table, expr);
 
