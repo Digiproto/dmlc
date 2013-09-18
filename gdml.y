@@ -13,7 +13,7 @@
 #define YYDEBUG 1
 //const char* dir = "/opt/virtutech/simics-4.0/simics-model-builder-4.0.16/amd64-linux/bin/dml/1.0/";
 
-//#define PARSE_DEBUG
+#define PARSE_DEBUG
 #ifdef PARSE_DEBUG
 //#define DBG debug_black
 //#define DBG(fmt, ...) do { fprintf(stderr, fmt, ## __VA_ARGS__); } while (0)
@@ -2499,6 +2499,7 @@ expression
 		node->binary.left = $1;
 		node->binary.right = $3;
 		node->common.print_node = print_binary;
+		node->common.translate = translate_binop_expr;
 		$$ = node;
 	}
 	| CAST '(' expression ',' ctypedecl ')' {
