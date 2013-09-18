@@ -1854,7 +1854,7 @@ int get_c_type(symtab_t table, symbol_t symbol) {
 			error("In %s, line = %d, other dml %s(%s)\n",
 					__FUNCTION__, __LINE__, symbol->name, TYPENAME(symbol->type));
 			/* FIXME: only for debugging */
-//			exit(-1);
+			//exit(-1);
 			break;
 	}
 
