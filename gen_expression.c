@@ -102,8 +102,36 @@ void translate_unary_expr(tree_t *t) {
 	tree_t *node;
 
 	D("%s",t->unary.operat);
+	if(!strcmp(t->unary.operat, "~")) {
+	}
+
 	node = t->unary.expr;
 	translate(node);
+}
+
+void translate_pre_expr(tree_t *t) {
+	const char *op;
+
+	op = t->unary.operat;
+	if(!strcmp(op, "pre_dec")) {
+		D("--");
+	} else {
+		D("++");
+	}
+	translate(t->unary.expr);
+}
+
+
+void translate_post_expr(tree_t *t) {
+	const char *op;
+
+	op = t->unary.operat;
+	translate(t->unary.expr);
+	if(!strcmp(op, "aft_inc")) {
+		D("++");
+	} else {
+		D("--");
+	}
 }
 
 /*
