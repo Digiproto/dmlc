@@ -1038,6 +1038,8 @@ void translate_inline(tree_t *t) {
 	tree_t *ret = t->call_inline.ret_args;
 	symbol_t sym;
 	symtab_t table;
+	object_t *saved_obj;
+	symtab_t saved_table;
 
 	sym = get_call_expr_info(expr->expr_brack.expr);
 	if(sym) {
@@ -1045,6 +1047,10 @@ void translate_inline(tree_t *t) {
 	} else {
 		my_DBG("sym not found\n");
 	}
+	if(sym->owner != OBJ) {
+		saved_obj = OBJ;				
+	}
+	saved_table = current_table;
 	/*get sym info*/
 	//translate(expr);
 	tree_t *expr_list = expr->expr_brack.expr_in_brack;
