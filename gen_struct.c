@@ -22,6 +22,10 @@
  */
 #include "gen_struct.h"
 extern symtab_t root_table;
+
+static void gen_device_data_struct(object_t *obj, FILE *f) {
+}
+
 static void gen_field_struct(object_t *obj, FILE *f) {
     field_t *fld = (field_t *)obj;
     const char *type;
