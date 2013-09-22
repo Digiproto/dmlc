@@ -2521,6 +2521,7 @@ expression
 		node->unary.type = NEGATIVE_TYPE;
 		node->unary.expr = $2;
 		node->common.print_node = print_unary;
+		node->common.translate = translate_unary_expr;
 		$$ = node;
 	}
 	| '+' expression {
@@ -2529,6 +2530,7 @@ expression
 		node->unary.type = CONVERT_TYPE;
 		node->unary.expr = $2;
 		node->common.print_node = print_unary;
+		node->common.translate = translate_unary_expr;
 		$$ = node;
 	}
 	| '!' expression {
@@ -2545,6 +2547,7 @@ expression
 		node->unary.type = BIT_NON_TYPE;
 		node->unary.expr = $2;
 		node->common.print_node = print_unary;
+		DBG("~~~~~~~~ %s\n", node->unary.expr->int_cst.int_str);
 		node->common.translate = translate_unary_expr; 
 		$$ = node;
 	}
@@ -2587,6 +2590,7 @@ expression
 		node->unary.type = PRE_INC_OP_TYPE;
 		node->unary.expr = $2;
 		node->common.print_node = print_unary;
+		node->common.translate = translate_pre_expr;
 		$$ = node;
 	}
 	| DEC_OP expression {
@@ -2595,6 +2599,7 @@ expression
 		node->unary.type = PRE_DEC_OP_TYPE;
 		node->unary.expr = $2;
 		node->common.print_node = print_unary;
+		node->common.translate = translate_pre_expr;
 		$$ = node;
 	}
 	| expression INC_OP {
@@ -2603,6 +2608,7 @@ expression
 		node->unary.type = AFT_INC_OP_TYPE;
 		node->unary.expr = $1;
 		node->common.print_node = print_unary;
+		node->common.translate = translate_post_expr;
 		$$ = node;
 	}
 	| expression DEC_OP {
@@ -2611,6 +2617,7 @@ expression
 		node->unary.type = AFT_DEC_OP_TYPE;
 		node->unary.expr = $1;
 		node->common.print_node = print_unary;
+		node->common.translate = translate_post_expr;
 		$$ = node;
 	}
 	| expression '(' expression_list ')' {
