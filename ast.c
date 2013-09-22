@@ -214,7 +214,7 @@ void add_child (tree_t* parent, tree_t* child)
 
 void dummy_translate(tree_t *node) {
 #ifndef RELEASE
-	printf("not correct, should call you own translate function, node name %s\n", node->common.name);
+	printf("not correct, should call you own translate function, node name %s, file %s, lineno %d\n", node->common.name, node->common.location.file, node->common.location.first_line);
 #endif
 }
 static int node_num = 0;
