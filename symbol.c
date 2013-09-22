@@ -200,13 +200,16 @@ static symbol_t symbol_new(const char *name, type_t type, void *attr)
 
 symbol_t symbol_find_from_templates(struct template_table* templates, const char* name, type_t type) {
 	symbol_t rt;
+	symtab_t table;
 
 	while (templates != NULL) {
-        rt = _symbol_find(templates->table->table, name, type);
-        if(rt) {
-            return rt;
-        }
-
+		table = templates->table;
+		if(table) {
+        	rt = _symbol_find(table->table, name, type);
+        	if(rt) {
+            	return rt;
+        	}
+		}
 		templates = templates->next;
 	}
 
