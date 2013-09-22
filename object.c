@@ -345,6 +345,13 @@ static void create_attribute_object(symbol_t sym) {
 	init_object(&att->obj, sym->name, "attribute", attr->common.node, table);
 }
 
+static void create_data_object(symbol_t sym) {
+	if(!OBJ || strcmp(OBJ->obj_type, "device")) 
+		BE_DBG(OBJ, "data should in top level\n");
+	data_t *data = (data_t *)gdml_zmalloc(sizeof (*data));
+	init_object(&data->obj, NULL, "data", NULL, NULL );
+}
+
 static void create_connect_objs(symtab_t table) {
 	symbol_list_t *list = symbol_list_find(table, CONNECT_TYPE);
 	symbol_list_t *head = list;
@@ -374,6 +381,21 @@ static void create_attribute_objs(symtab_t table) {
 	}
 	symbol_list_free(head);
 } 
+
+static void create_data_objs(symtab_t table) {
+	symbol_list_t *list = symbol_list_find(table, DATA_TYPE);
+	symbol_list_t *head = list;
+	symbol_t sym;
+	object_t *obj = OBJ;
+
+	while(list) {
+		sym = list->sym;
+		create_data_object(sym);
+		OBJ = obj;
+		list = list->next;
+	}
+	symbol_list_free(head);
+}
 
 static void create_register_objs(symtab_t table){
 	symbol_list_t *list = symbol_list_find(table, REGISTER_TYPE);
@@ -516,7 +538,11 @@ static void register_realize(object_t *obj) {
 	}
 	if(reg->is_array) {
 		arraydef = reg_attr->arraydef;
-		reg->array_size = arraydef->high - arraydef->low + 1;
+		if(!arraydef->fix_array) {
+			reg->array_size = arraydef->high - arraydef->low + 1;
+		} else {
+			reg->array_size = arraydef->fix_array;
+		}
 		obj->array_size = reg->array_size;
 	}
 	reg->offset = reg_attr->offset;
@@ -810,6 +836,7 @@ static void add_default_template(object_t *obj){
 	create_template_name(obj, obj->obj_type);
 	table = obj->symtab->sibling;
 	if(table) {
+		BE_DBG(OBJ, "%s\n", obj->obj_type);
 		add_template_to_table(table, obj->obj_type);
 	}
 }
@@ -847,20 +874,45 @@ static void process_bank_template(object_t *obj){
 	bank_t *bank = (bank_t *)obj;
 	int i;
 	param_value_t tmp;
+	dml_register_t *reg;
+	int undefined = 0;
+	int defined = 0;
 
+	for(i = 0; i < bank->reg_count; i++) {
+		reg = (dml_register_t *)bank->regs[i];
+		if(!reg->is_undefined) {
+			defined++;
+		} else {
+			undefined++;
+		}
+	}
 	param_value_t *val = gdml_zmalloc(sizeof(*val));
 	val->type = param_type_list;
-	val->u.list.size = bank->reg_count;
+	val->u.list.size = defined;
 	val->u.list.vector = gdml_zmalloc(sizeof(*val) * bank->reg_count);
-	for(i = 0; i < bank->reg_count; i++) {
-		tmp.type = param_type_ref;
-		tmp.u.ref = bank->regs[i];
-		val->u.list.vector[i] = tmp;
+	for(i = 0; i < defined; i++) {
+		reg = (dml_register_t *)bank->regs[i];
+		if(!reg->is_undefined) {
+			tmp.type = param_type_ref;
+			tmp.u.ref = bank->regs[i];
+			val->u.list.vector[i] = tmp;
+		}
 	}
 	symbol_insert(table, "mapped_registers", PARAMETER_TYPE, val);
 	val = gdml_zmalloc(sizeof(*val));
 	val->type = param_type_list;
-	val->u.list.size = 0;
+	val->u.list.size = undefined;
+	if(undefined > 0) {
+		for(i = 0; i < undefined; i++) {
+			reg = (dml_register_t *)bank->regs[i];
+			if(reg->is_undefined) {
+				tmp.type = param_type_ref;
+				tmp.u.ref = bank->regs[i];
+				val->u.list.vector[i] = tmp;
+			}
+		}		
+	}
+
 	symbol_insert(table, "unmapped_registers", PARAMETER_TYPE, val);
 }
 
