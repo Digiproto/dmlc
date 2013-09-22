@@ -52,6 +52,7 @@ static void gen_bank_read_access(object_t *obj, FILE *f) {
 
 	fprintf(f, "\nstatic uint64_t\n");
 	fprintf(f, "%s_mmio_read(void *opaque, hwaddr addr, unsigned size) {\n", name);
+	F_HEAD;
 	fprintf(f, "\t%s_t *_dev = (%s_t *)opaque;\n", dev_name, dev_name);
 	fprintf(f, "\tgeneric_transaction_t v%d_memop;\n", index);
 	fprintf(f, "\tbool v%d_ret = 0;\n", index2);
@@ -66,6 +67,7 @@ static void gen_bank_read_access(object_t *obj, FILE *f) {
 	fprintf(f, "\t\tSIM_log_err(&_dev->obj.qdev, 0, \"MMIO unkown read addr=%s\\n\", (unsigned int)addr);\n", fmt);
 	fprintf(f, "\t\tv%d_val = 0;\n", index3);
 	fprintf(f, "\t}\n");
+	F_END;
 	fprintf(f, "\treturn v%d_val;\n", index3);
 	fprintf(f, "}\n");
 }
@@ -78,6 +80,7 @@ static void gen_bank_write_access(object_t *obj, FILE *f) {
 
 	fprintf(f, "\nstatic void\n");
 	fprintf(f, "%s_mmio_write(void *opaque, hwaddr addr, uint64_t val, unsigned size) {\n", name);
+	F_HEAD;
 	fprintf(f, "\t%s_t *_dev = (%s_t *)opaque;\n", dev_name, dev_name);
 	fprintf(f, "\tgeneric_transaction_t v%d_memop;\n", index);
 	fprintf(f, "\tbool v%d_ret = 0;\n ", index2);
@@ -87,6 +90,7 @@ static void gen_bank_write_access(object_t *obj, FILE *f) {
 	fprintf(f, "\tSIM_set_mem_op(&v%d_memop, %s);\n", index, "SIM_Trans_Store");
 	fprintf(f, "\tSIM_mem_op_set_value(&v%d_memop, val);\n", index);
 	fprintf(f, "\tv%d_ret = _DML_M_%s__access(_dev, &v%d_memop, (physical_address_t)addr, (physical_address_t)size);\n", index2, name, index);
+	F_END;
 	fprintf(f, "}\n");
 }	
 
@@ -133,6 +137,7 @@ static void gen_mmio_setup(device_t *dev, FILE *f) {
 	gen_banks_mr(dev, f);
 	fprintf(f, "\nstatic void\n");
 	fprintf(f, "%s_mmio_setup(%s_t *_dev) {\n", dev_name, dev_name);
+	F_HEAD;
 	for(i = 0; i < dev->bank_count; i++) {
 		obj = dev->banks[i];
 		cap = to_upper(obj->name);
@@ -141,6 +146,7 @@ static void gen_mmio_setup(device_t *dev, FILE *f) {
 		fprintf(f, "\tsysbus_init_mmio(&_dev->obj, &_dev->mr_%s);\n", obj->name);
 		free(cap);
 	}
+	F_END;
 	fprintf(f, "}\n");
 }
 
@@ -151,12 +157,14 @@ void gen_device_init(device_t *dev, FILE *f) {
 	add_object_method(&dev->obj, "init");
 	gen_mmio_setup(dev, f);
 	fprintf(f, "\nstatic int %s_init(SysBusDevice *dev) {\n", dev_name);
+	F_HEAD;
 	fprintf(f, "\t%s_t *_dev = DO_UPCAST(%s_t, obj, dev);\n", dev_name, dev_name);
 	fprintf(f, "\tbool v%d_exec = 0;\n", index);
 	fprintf(f, "\tUNUSED(v%d_exec);\n", index);
 	fprintf(f, "\n\t%s_hard_reset(_dev);\n", dev_name);
 	fprintf(f, "\tv%d_exec = _DML_M_init(_dev);\n", index);
 	fprintf(f, "\t%s_mmio_setup(_dev);\n", dev_name);
+	F_END;
 	fprintf(f, "\treturn 0;\n");
 	fprintf(f, "}\n");
 }
@@ -191,10 +199,12 @@ static void gen_device_vmstate(device_t *dev, FILE *f)
 static void gen_dc_reset(device_t *dev, FILE *f) {
 	const char *name = dev->obj.name;
 
-    fprintf (f, "\nstatic void %s_reset(DeviceState *dev){\
-            \n\t%s_t *_dev = DO_UPCAST(%s_t, obj.qdev, dev);\
-            \n", name, name, name);
+    fprintf (f, "\nstatic void %s_reset(DeviceState *dev){", name);
+	F_HEAD;
+    fprintf (f, "\n\t%s_t *_dev = DO_UPCAST(%s_t, obj.qdev, dev);\
+            \n", name, name);
 	fprintf(f, "\t%s_hard_reset(_dev);\n", name);	
+	F_END;
 	fprintf(f, "}\n");
 }
 
@@ -236,16 +246,18 @@ static void gen_device_class_init(device_t *dev, FILE *f)
     gen_device_vmstate(dev, f);
 	gen_device_connect(dev, f);
 
-    fprintf (f, "\nstatic void %s_class_init(ObjectClass *klass,void *data){ \
-            \n\tDeviceClass *dc = DEVICE_CLASS(klass); \
+    fprintf (f, "\nstatic void %s_class_init(ObjectClass *klass,void *data){", name);
+	F_HEAD;
+    fprintf (f, "\n\tDeviceClass *dc = DEVICE_CLASS(klass); \
             \n\tSysBusDeviceClass *k = SYS_BUS_DEVICE_CLASS(klass);\
             \n\n\tk->init = %s_init; \
             \n\tdc->reset = %s_reset; \
             \n\tdc->desc = \"%s\"; \
             \n\tdc->props = %s_props; \
             \n\tdc->vmsd = &%s_vmstate; \
-			\n\tdc->connects = %s_connects; \
-            \n}\n", name, name, name, name, name, name, name);
+			\n\tdc->connects = %s_connects;", name, name, name, name, name, name);
+	F_END;
+    fprintf (f, "\n}\n");
 }
 
 void gen_device_type_info(device_t * dev, FILE *f)
@@ -261,9 +273,11 @@ void gen_device_type_info(device_t * dev, FILE *f)
     \n\t.class_init = %s_class_init,\
     \n};\n", dev_name, dev_name, dev_name, dev_name);
 
-    fprintf (f, "\nstatic void %s_register_types(void){ \
-            \n\ttype_register_static(&%s_info);\
-            \n}\n", dev_name, dev_name);
+    fprintf (f, "\nstatic void %s_register_types(void){", dev_name);
+	F_HEAD;
+    fprintf (f, "\n\ttype_register_static(&%s_info);", dev_name);
+	F_END;
+    fprintf (f, "\n}\n");
 
     fprintf (f, "\ntype_init(%s_register_types)\n", dev_name);
 }

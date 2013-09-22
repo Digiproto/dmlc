@@ -1617,6 +1617,7 @@ static void gen_method_block(object_t *obj, tree_t *m){
 	}
 
 	D("{\n");
+	D_HEAD;
 	tabcount_add(1);
 	POS;
 	D("{\n");
@@ -1624,6 +1625,7 @@ static void gen_method_block(object_t *obj, tree_t *m){
 	POS;
 	do_block_logic(block);
 	/*default return value*/
+	D_END;
 	D("return 0;\n");
 	tabcount_sub(1);
 	POS;

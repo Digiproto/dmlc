@@ -56,6 +56,19 @@ void tabcount_sub(int num);
 #define D(fmt,...) fprintf(out, fmt,  ## __VA_ARGS__)
 #define POS fprintf(out, "%s", get_tabstr())
 
+#define DEVICE_TEST
+#ifdef DEVICE_TEST
+#define D_HEAD do{D("\n\tFUNC_HEAD;\n");}while(0)
+#define D_END  do{D("\n\tFUNC_END;\n");}while(0)
+#define F_HEAD do{fprintf(f, "\n\tFUNC_HEAD;\n");}while(0)
+#define F_END  do{fprintf(f, "\n\tFUNC_END;\n");}while(0)
+#else // else DEVICE_TEST
+#define D_HEAD do{}while(0)
+#define D_END  do{}while(0)
+#define F_HEAD do{}while(0)
+#define F_END  do{}while(0)
+#endif // endif DEVICE_TEST
+
 static void new_line(void) {
     D("\n");
 }

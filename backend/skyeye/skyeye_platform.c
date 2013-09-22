@@ -53,6 +53,7 @@ static void gen_bank_read_access(object_t *obj, FILE *f) {
 
 	fprintf(f, "\nstatic exception_t\n");
 	fprintf(f, "%s_read(conf_object_t *obj, generic_address_t addr, void *buf, size_t count) {\n", name);
+	F_HEAD;
 	fprintf(f, "\t%s_t *_dev = (%s_t *)obj;\n", dev_name, dev_name);
 	fprintf(f, "\tgeneric_transaction_t memop;\n");
 	fprintf(f, "\tbool ret = 0;\n");
@@ -64,6 +65,7 @@ static void gen_bank_read_access(object_t *obj, FILE *f) {
 	fprintf(f, "\tret = _DML_M_%s__access(_dev, &memop, (physical_address_t)addr, (physical_address_t)count);\n",  name);
 	fprintf(f, "\tval = SIM_mem_op_get_value(&memop);\n");
 	fprintf(f, "\tmemcpy(buf, &val, count);\n");
+	F_END;
 	fprintf(f, "\treturn No_exp;\n");
 	fprintf(f, "}\n");
 }
@@ -74,6 +76,7 @@ static void gen_bank_write_access(object_t *obj, FILE *f) {
 
 	fprintf(f, "\nstatic exception_t\n");
 	fprintf(f, "%s_write(conf_object_t *obj, generic_address_t addr, const void *buf, size_t count) {\n", name);
+	F_HEAD;
 	fprintf(f, "\t%s_t *_dev = (%s_t *)obj;\n", dev_name, dev_name);
 	fprintf(f, "\tgeneric_transaction_t memop;\n");
 	fprintf(f, "\tbool ret = 0;\n");
@@ -84,6 +87,7 @@ static void gen_bank_write_access(object_t *obj, FILE *f) {
 	fprintf(f, "\tSIM_set_mem_op(&memop, SIM_Trn_Write);\n");
 	fprintf(f, "\tSIM_mem_op_set_value(&memop, val);\n");
 	fprintf(f, "\tret = _DML_M_%s__access(_dev, &memop, (physical_address_t)addr, (physical_address_t)count);\n",  name);
+	F_END;
 	fprintf(f, "\treturn No_exp;\n");
 	fprintf(f, "}\n");
 }
@@ -114,10 +118,12 @@ static void gen_mmio_setup(device_t *dev, FILE *f) {
     for(i = 0; i < dev->bank_count; i++) {
         obj = dev->banks[i];
 		fprintf(f, "\t{\n");
+		F_HEAD;
 		fprintf(f, "\t\t_dev->mr_%s.conf_obj = &_dev->obj;\n", obj->name);	
 		fprintf(f, "\t\t_dev->mr_%s.read = %s_read;\n", obj->name, obj->name);
 		fprintf(f, "\t\t_dev->mr_%s.write = %s_write;\n", obj->name, obj->name);
 		fprintf(f, "\t\tSKY_register_interface(&_dev->mr_%s, _dev->obj.objname, MEMORY_SPACE_INTF_NAME);\n", obj->name);
+		F_END;
 		fprintf(f, "\t}\n");
     }
     fprintf(f, "}\n");
@@ -131,6 +137,7 @@ void gen_device_init(device_t *dev, FILE *f) {
     add_object_method(&dev->obj, "init");
     gen_mmio_setup(dev, f);
     fprintf(f, "\nstatic conf_object_t  *%s_create(const char *name) {\n", dev_name);
+	F_HEAD;
     fprintf(f, "\t%s_t *_dev = skyeye_mm_zero(sizeof(*_dev));\n", dev_name);
 	fprintf(f, "\tconf_object_register(&_dev->obj, name);\n");
     fprintf(f, "\tbool v%d_exec = 0;\n", index);
@@ -138,6 +145,7 @@ void gen_device_init(device_t *dev, FILE *f) {
     fprintf(f, "\n\t%s_hard_reset(_dev);\n", dev_name);
     fprintf(f, "\tv%d_exec = _DML_M_init(_dev);\n", index);
     fprintf(f, "\t%s_mmio_setup(_dev);\n", dev_name);
+	F_END;
     fprintf(f, "\treturn &_dev->obj;\n");
     fprintf(f, "}\n");
 }
@@ -204,6 +212,8 @@ void gen_device_type_info(device_t *dev, FILE *f) {
 
 	gen_device_connect(dev, f);	
 	fprintf(f, "\nvoid init_%s(void) {\n", name);
+	fprintf(f, "\tdebug_function_pos = 0;\n");
+	F_HEAD;
 	fprintf(f, "\tstatic skyeye_class_t class_data = {\n");
 	fprintf(f, "\t\t.class_name = \"%s\",\n", name);	
 	fprintf(f, "\t\t.class_desc = \"%s\",\n", name);	
@@ -214,6 +224,7 @@ void gen_device_type_info(device_t *dev, FILE *f) {
 	fprintf(f, "\t\t.connects = %s_connects,\n", name);
 	fprintf(f, "\t};\n");
 	fprintf(f, "\tSKY_register_class(class_data.class_name, &class_data);\n");
+	F_END;
 	fprintf(f, "}\n");
 }
 

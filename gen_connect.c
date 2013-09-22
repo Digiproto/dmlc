@@ -32,6 +32,7 @@ static void gen_connect_set(object_t *obj, FILE *f) {
 	int is_array = obj->is_array;
 
 	fprintf(f, "\nstatic int %s_set(conf_object_t *obj, conf_object_t *peer, const char *port, int _idx) {\n", name);
+	F_HEAD;
 	fprintf(f, "\t%s_t *_dev = (%s_t *)obj;\n", dev_name, dev_name);
 	fprintf(f, "\tint ret = 0;\n");
 	fprintf(f, "\tvoid const *iface = NULL;\n");
@@ -41,6 +42,7 @@ static void gen_connect_set(object_t *obj, FILE *f) {
 	} else {
 		fprintf(f, "\tif(_dev->%s[_idx].obj == peer && _dev->%s[_idx].port == port) {\n", name, name);
 	}
+	F_END;
 	fprintf(f, "\t\treturn 0;\n");
 	fprintf(f, "\t}\n");
 	if(!is_array) {
@@ -85,6 +87,7 @@ static void gen_connect_set(object_t *obj, FILE *f) {
 			fprintf(f, "\t_dev->%s[_idx].%s = iface;\n", name, iface);
 		}
 	}
+	F_END;
 	fprintf(f, "\treturn ret;\n");
 	fprintf(f, "}\n");
 }
@@ -93,8 +96,10 @@ static void gen_connect_get(object_t *obj, FILE *f) {
 	const char *name = obj->name;
 	/*dummy get function*/	
 	fprintf(f, "\nstatic int %s_get(conf_object_t *obj, conf_object_t **peer, char **port, int index) {\n", name);
+	F_HEAD;
 	fprintf(f, "\tint ret = 0;\n");
 	fprintf(f, "\tUNUSED(ret);\n");
+	F_END;
 	fprintf(f, "\treturn ret;\n");
 	fprintf(f, "}\n");
 }
