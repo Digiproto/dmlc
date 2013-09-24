@@ -2501,6 +2501,35 @@ void print_switch(tree_t* node, int pos) {
 	return;
 }
 
+
+
+void print_case(tree_t* node, int pos) {
+   print_pos(pos);
+    printf("[%s : %s : %d]\n",
+           node->common.name, "case", pos);
+   
+   if (node->case_tree.expr) {
+       tree_t* expr = node->case_tree.expr;
+       expr->common.print_node(expr, pos);
+   }
+
+   if (node->case_tree.block) {
+       tree_t* block = node->case_tree.block;
+       if ((block->common.type) == BLOCK_TYPE) {
+           tree_t* statement = block->block.statement;
+           statement->common.print_node(statement, pos);
+       }
+       else {
+           block->common.print_node(block, pos);
+       }
+   }
+
+   print_sibling(node, pos);
+
+   return;
+}
+
+
 /**
  * @brief print_for : print for tree node information
  *
@@ -2926,7 +2955,8 @@ void print_method (tree_t* node, int pos) {
 		tree_t* block = node->method.block;
 		tree_t* statement = block->block.statement;
 		//printf("LINE: %d, name: %s\n", __LINE__, statement->common.name);
-		statement->common.print_node(statement, --pos);
+		//statement->common.print_node(statement, --pos);
+		statement->common.print_node(statement, ++pos);
 	}
 
 	print_sibling(node, pos);
@@ -3249,7 +3279,7 @@ void print_obj_block(tree_t* node, int pos) {
 	 */
 	if (node->block.statement != NULL) {
 		tree_t* statement = node->block.statement;
-		statement->common.print_node(statement, --pos);
+		statement->common.print_node(statement, ++pos);
 	}
 
 	print_sibling(node, pos);
@@ -3349,7 +3379,7 @@ void print_struct(tree_t* node, int pos) {
 
 	if (node->struct_tree.block) {
 		tree_t* block = node->struct_tree.block;
-		block->common.print_node(block, --pos);
+		block->common.print_node(block, ++pos);
 	}
 
 	print_sibling(node, pos);
@@ -3390,7 +3420,7 @@ void print_dml(tree_t* node, int pos) {
  */
 void print_ast (tree_t* root)
 {
-	int init_pos = 25;
+	int init_pos = 0;
 	tree_t* it = root;
 	tree_t* child = NULL;
 	printf ("begin print the ast(total node num is %d):\n", node_num);
