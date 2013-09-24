@@ -68,4 +68,10 @@ void translate_after_call(tree_t *t);
 void translate_cdecl3_array(tree_t *t);
 void translate_while(tree_t *t);
 void translate_float(tree_t *t);
+void translate_for(tree_t *t);
+void translate_break(tree_t *t);
+void translate_continue(tree_t *t);
+void translate_switch(tree_t *t);
+void translate_case(tree_t *t);
+void translate_default(tree_t *t);
 #endif /* __GEN_COMMON_H__ */

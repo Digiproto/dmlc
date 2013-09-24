@@ -834,7 +834,7 @@ static void translate_comma_expr_opt(tree_t *t) {
 	}
 }
 
-static void translate_for(tree_t *t) {
+void translate_for(tree_t *t) {
 	tree_t *node;
 	
 	node = t->for_tree.init;
@@ -912,6 +912,36 @@ static void translate_throw(tree_t *t) {
 	exit_scope();
 }
 
+void translate_break(tree_t *t) {
+	D("break;");
+}
+
+void translate_continue(tree_t *t) {
+	D("continue;");
+}
+
+void translate_switch(tree_t *t) {
+	D("switch");
+	D(" ( ");
+	translate(t->switch_tree.cond);
+	D(" )");
+	translate(t->switch_tree.block);
+}
+
+void translate_case(tree_t *t) {
+	tree_t *expr;
+
+	expr = t->case_tree.expr;
+	D("case ");
+	translate(expr);
+	D(" :");
+	translate(t->case_tree.block);
+}
+
+void translate_default(tree_t *t) {
+	D("default :");
+}
+
 static symbol_t  get_expression_sym(tree_t *node) {
 	symbol_t sym;
 	tree_t *tmp;
@@ -975,18 +1005,18 @@ void translate_foreach(tree_t *t) {
 		my_DBG("--------object %s\n", obj->name);
 		enter_scope();
 		node = t->foreach.block;
-		/*
+		
 		if(obj->is_array) {
 			D("int _idx0;");
 			new_line();
 			POS;
-			D("for(_idx0 = 0; _idx0 < %d; _idx++)", obj->array_size);
+			D("for(_idx0 = 0; _idx0 < %d; _idx0++)", obj->array_size);
 			enter_scope();
-		}*/
+		}
 		translate(node);
-		/*if(obj->is_array) {
+		if(obj->is_array) {
 			exit_scope();
-		}*/
+		}
 		if (node->common.type == BLOCK_TYPE) {
 			new_line();
 			exit_scope();
