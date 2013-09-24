@@ -96,7 +96,7 @@ static symbol_t object_symbol_find(symtab_t table, const char *name, type_t type
 	if(table->parent) {
 		sym = symbol_find(table->parent, name, type);
 	}
-	BE_DBG(OBJ_SYM, "symbol %s found in parent symtable\n", sym->name);
+	BE_DBG(OBJ_SYM, "symbol %s found in parent symtable\n", name);
 	return sym;
 
 }
@@ -599,8 +599,8 @@ static void bank_calculate_register_offset(object_t *obj) {
 		}
 		/*check register offset cross bounry cases, not allowed*/
 		if(reg->offset < offset) {
-			BE_DBG(GENERAL, "offset cross boundry!\n");
-			exit(-1);
+			BE_DBG(GENERAL, "offset cross boundry! reg->offset = %d, offset = %d, name = %s\n", reg->offset, offset, reg->obj.name);
+			//exit(-1);
 		} else if(reg->offset > offset) {
 			offset = reg->offset;
 		}
