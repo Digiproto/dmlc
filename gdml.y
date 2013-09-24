@@ -2336,6 +2336,7 @@ expression
 		node->binary.left = $1;
 		node->binary.right = $3;
 		node->common.print_node = print_binary;
+		node->common.translate = translate_binop_expr;
 		$$ = node;
 	}
 	| expression '-' expression {
@@ -2481,6 +2482,7 @@ expression
 		node->binary.left = $1;
 		node->binary.right = $3;
 		node->common.print_node = print_binary;
+		node->common.translate = translate_binop_expr;
 		$$ = node;
 	}
 	| expression '^' expression {
@@ -2914,6 +2916,7 @@ statement
 		node->for_tree.cond = $5;
 		node->for_tree.update = $7;
 		node->common.print_node = print_for;
+		node->common.translate = translate_for;
 
 		parse_comma_expression(&($3), current_table);
 		parse_expression(&($5), current_table);
@@ -2937,7 +2940,7 @@ statement
 		parse_expression(&($3), current_table);
 
 		current_table = change_table(current_table, table_stack, &current_table_num, SWITCH_TYPE);
-
+		node->common.translate = translate_switch;
 		$<tree_type>$ = node;
 	}
 	statement {
@@ -3148,7 +3151,8 @@ statement
 		parse_expression(&($2), current_table);
 
 		current_table = change_table(current_table, table_stack, &current_table_num, CASE_TYPE);
-
+		node->common.print_node = print_case;
+		node->common.translate = translate_case;
 		$<tree_type>$ = node;
 	}
 	statement {
@@ -3161,7 +3165,7 @@ statement
 		tree_t* node = (tree_t*)create_node("default", DEFAULT_TYPE, sizeof(struct tree_default), &@$);
 
 		current_table = change_table(current_table, table_stack, &current_table_num, DEFAULT_TYPE);
-
+		node->common.translate = translate_default;
 		$<tree_type>$ = node;
 	}
 	statement {
@@ -3180,11 +3184,13 @@ statement
 	| BREAK ';' {
 		tree_t* node = (tree_t*)create_node("break", BREAK_TYPE, sizeof(struct tree_common), &@$);
 		node->common.print_node = print_break;
+		node->common.translate = translate_break;
 		$$ = node;
 	}
 	| CONTINUE ';' {
 		tree_t* node = (tree_t*)create_node("continue", CONTINUE_TYPE, sizeof(struct tree_common), &@$);
 		node->common.print_node = print_continue;
+		node->common.translate = translate_continue;
 		$$ = node;
 	}
 	| THROW ';' {
