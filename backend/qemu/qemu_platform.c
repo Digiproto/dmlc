@@ -24,6 +24,7 @@
 #include "gen_object.h"
 #include "platform.h"
 #include "gen_connect.h"
+#include "gen_implement.h"
 #include <time.h>
 extern object_t *DEV;
 
@@ -234,6 +235,10 @@ static void gen_device_connect(device_t *dev, FILE *f) {
 
 }
 
+static void gen_device_implement(device_t *dev, FILE *f) {
+		gen_device_implement_desc(dev, f);
+}
+
 void gen_platform_device_module(device_t *dev, const char *out) {
 }
 
@@ -245,6 +250,7 @@ static void gen_device_class_init(device_t *dev, FILE *f)
     gen_device_props(dev, f);
     gen_device_vmstate(dev, f);
 	gen_device_connect(dev, f);
+	gen_device_implement(dev, f);
 
     fprintf (f, "\nstatic void %s_class_init(ObjectClass *klass,void *data){", name);
 	F_HEAD;
@@ -255,7 +261,8 @@ static void gen_device_class_init(device_t *dev, FILE *f)
             \n\tdc->desc = \"%s\"; \
             \n\tdc->props = %s_props; \
             \n\tdc->vmsd = &%s_vmstate; \
-			\n\tdc->connects = %s_connects;", name, name, name, name, name, name);
+			\n\tdc->connects = %s_connects;\
+			\n\tdc->ifaces = %s_ifaces;", name, name, name, name, name, name, name);
 	F_END;
     fprintf (f, "\n}\n");
 }
