@@ -30,6 +30,10 @@
 void gen_code_once_noplatform(device_t *dev, FILE *f);
 typedef struct register_array_list {
 	int size;
+	int base;
+	int len;
+	int interval;
+	int arg; 
 	struct list_head list;
 } reg_array_t;
 

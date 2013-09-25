@@ -355,7 +355,7 @@ static void reg_array_free(reg_array_t *list) {
 	list_count = LIST_SZ;
 }
 
-static int find_slot(reg_array_t *list, int size) {
+static int find_slot(reg_array_t *list, int base,  int size) {
 	int i = 1;
 	reg_array_t *e;
 
@@ -384,6 +384,7 @@ static int find_slot(reg_array_t *list, int size) {
 	i = list_count/2;
 	e = &list[i];	
 	e->size = size;
+	e->base = base;
 	return i;
 }
 
@@ -413,7 +414,7 @@ static reg_array_t *sort_register_array(bank_t *b) {
 			continue;
 		}
 		if(reg->is_array) {
-			i = find_slot(list, reg->array_size);		
+			i = find_slot(list, reg->offset,  reg->array_size);		
 			reg_list_insert(list, i, obj);
 		} else {
 			reg_list_insert(list, 0, obj);
