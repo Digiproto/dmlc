@@ -95,6 +95,7 @@ typedef struct register_def {
     object_t obj;
     int size;
     int offset;
+	int interval;
 	int is_array;
 	int array_size;
 	int field_count;

@@ -483,34 +483,54 @@ end:
 	add_object_templates(obj, templates);	
 }
 
-static int get_reg_offset(paramspec_t *t) {
+static int get_binopnode_constant(tree_t *t, type_t op, int *result) {
+	tree_t *left, *right;
+	int ret = -1;
+
+	left = t->binary.left;
+	right = t->binary.right;
+	if(t->common.type != BINARY_TYPE || t->binary.type != op) {
+		*result = -1;
+		return ret;
+	}
+	if(left->common.type == INTEGER_TYPE) {
+		*result = left->int_cst.value;
+		ret = 0;
+	} else if(right->common.type == INTEGER_TYPE) {
+		*result = right->int_cst.value;
+		ret = 1;
+	}
+	return ret;
+}
+
+static int get_reg_offset(paramspec_t *t, int *interval) {
 	tree_t *node;
 	int offset = 0;
-	tree_t *left;
-	tree_t *right;
+	tree_t *tmp;
+	int ret;
 
 	if(t->type == INTEGER_TYPE) {
 		offset = t->expr->const_expr->int_value;
+		*interval = 0;
 		return offset;
 	} else if(t->type ==  UNDEFINED_TYPE) {
 		return -1;
 	} else {
 		node = t->expr->node;
-		if(node->common.type == BINARY_TYPE && !strcmp(node->binary.operat, "+")) {
-			/*get base offset for register array */
-			left = node->binary.left;
-			if(left->common.type == INTEGER_TYPE) {
-				offset = left->int_cst.value;
-				return offset;
-			} 
-			right = node->binary.right;
-			if(right->common.type == INTEGER_TYPE) {
-				offset = right->int_cst.value;
-				return offset;
-			}
-		} else {
+		ret = get_binopnode_constant(node, ADD_TYPE, &offset);
+		if(ret < 0) {
 			/*wrong format base + $i * register_size */
-			BE_DBG(GENERAL, "wrong register offset format, node type %d, expected format %d\n", node->common.type, BINARY_TYPE);
+			BE_DBG(GENERAL, "wrong register offset format, node type %d, expected format %d(+)\n", node->common.type, ADD_TYPE);
+			exit(-1);
+			
+		} else if(!ret) {
+			tmp = node->binary.right;
+		} else {
+			tmp = node->binary.left;
+		}
+		ret = get_binopnode_constant(tmp, MUL_TYPE, interval);
+		if(ret < 0) {
+			BE_DBG(GENERAL, "wrong register offset format, node type %d, expected format %d(*)\n", node->common.type, MUL_TYPE);
 		}
 	}
 	return offset;
@@ -554,9 +574,13 @@ static void register_realize(object_t *obj) {
 			reg->is_undefined = 1;
 		} else {
 			parameter_attr  = (parameter_attr_t *)sym->attr;		
-			reg->offset = get_reg_offset(parameter_attr->spec);
+			reg->offset = get_reg_offset(parameter_attr->spec, &reg->interval);
 			if(reg->offset == -1) {
 				reg->is_undefined = 1;
+			}
+			if(reg->interval == -1) {
+				BE_DBG(GENERAL, "register array interval not right\n");
+				exit(-1);
 			}
 			BE_DBG(GENERAL, "reg offset 0x%x\n", reg->offset);
 		}	
