@@ -21,6 +21,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 #include "gen_method_protos.h"
+#include "gen_implement.h"
 extern FILE *out;
 void gen_obj_method_protos(object_t *obj) {
 	struct list_head *p;
@@ -61,4 +62,9 @@ void gen_device_method_protos(device_t *dev, FILE *f) {
 		tmp = list_entry(p, object_t, entry);
 		gen_obj_method_protos(tmp);
 	}
+	list_for_each(p, &dev->implements) {
+		tmp = list_entry(p, object_t, entry);
+		gen_obj_method_protos(tmp);
+	}
+	gen_device_implement_header(dev, f);
 }
