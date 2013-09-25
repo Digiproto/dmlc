@@ -40,7 +40,8 @@ typedef struct ref_ret {
 } ref_ret_t;
 
 symbol_t get_ref_sym(tree_t *t, ref_ret_t *ret);
-
+const char *get_cdecl_name(tree_t *node);
+const char *get_type_info(tree_t *node);
 void gen_dml_method_header(object_t *obj, tree_t *m);
 void cdecl_or_ident_list_params_alias(tree_t *params, int ret);
 void do_block_logic(tree_t *block);

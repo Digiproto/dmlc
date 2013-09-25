@@ -1156,7 +1156,6 @@ void translate_cdecl(tree_t *t) {
 
 static void print_basetype(tree_t *node) {
 	const char *name;
-	
 
 	if(node->common.type == IDENT_TYPE) {
 		my_DBG("name %s\n", node->ident.str);
@@ -1169,6 +1168,20 @@ static void print_basetype(tree_t *node) {
 		my_DBG("other base type\n");
 	}
 }
+
+static const char *get_basetype_type(tree_t *node) {
+	const char *name = NULL;
+	
+	if(node->common.type == IDENT_TYPE) {
+		name = node->ident.str;
+	} else if(node->common.type == C_KEYWORD_TYPE) {
+		name = node->ident.str;
+    }else {
+		my_DBG("other base type\n");
+	}
+	return name;
+}
+
 static void print_cdecl2(tree_t *t);
 static void  print_cdecl1(tree_t *t, int ret) {
 	if(t->cdecl.is_const) {
@@ -1183,8 +1196,15 @@ static void  print_cdecl1(tree_t *t, int ret) {
 }
 
 static const char *get_cdecl2_name(tree_t *t);
-static const char *get_cdecl_name(tree_t *node) {
+const char *get_cdecl_name(tree_t *node) {
 	return get_cdecl2_name(node->cdecl.decl);
+}
+
+const char *get_type_info(tree_t *node) {
+	if(node->cdecl.is_const) {
+		my_DBG("TODO get type info:");
+	}
+	return get_basetype_type(node->cdecl.basetype);
 }
 
 static int block_has_call(tree_t *t) {
