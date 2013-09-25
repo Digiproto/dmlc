@@ -24,5 +24,7 @@
 #ifndef __GEN_IMPLEMENT_H__ 
 #define __GEN_IMPLEMENT_H__  
 #include "gen_common.h"
-
+void gen_device_implement_code(device_t *dev, FILE *f);
+void gen_device_implement_desc(device_t *dev, FILE *f);
+void gen_device_implement_header(device_t *dev, FILE *f);
 #endif /* __GEN_IMPLEMENT_H__ */
