@@ -177,6 +177,10 @@ typedef struct data {
 	object_t obj;
 } data_t;
 
+typedef struct implement {
+	object_t obj;
+} implement_t;
+
 device_t *create_device_tree(tree_t *root);
 void add_object_method(object_t *obj, const char *name);
 void add_object_generated_method(object_t *obj);

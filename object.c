@@ -202,6 +202,7 @@ static void process_object_relationship(object_t *obj) {
 static void create_bank_objs(symtab_t table);
 static void create_connect_objs(symtab_t table);
 static void create_attribute_objs(symtab_t table);
+static void create_implement_objs(symtab_t table);
 object_t *create_device_object(symbol_t sym){
 	int i = 0;
 	struct list_head *p;
@@ -221,6 +222,7 @@ object_t *create_device_object(symbol_t sym){
 	create_bank_objs(root_table);
 	create_connect_objs(root_table);
 	create_attribute_objs(root_table);
+	create_implement_objs(root_table);
 	return &dev->obj;
 }
 
@@ -345,6 +347,15 @@ static void create_attribute_object(symbol_t sym) {
 	init_object(&att->obj, sym->name, "attribute", attr->common.node, table);
 }
 
+static void create_implement_object(symbol_t sym){
+	if(!OBJ || strcmp(OBJ->obj_type, "device"))
+		BE_DBG(OBJ, "implement %s not in right place\n", sym->name);
+	implement_t *impl = (implement_t *)gdml_zmalloc(sizeof (*impl));
+	implement_attr_t *attr = (implement_attr_t *)sym->attr;
+	symtab_t table = attr->common.table;
+	init_object(&impl->obj, sym->name, "implement", attr->common.node, table);	
+}
+
 static void create_data_object(symbol_t sym) {
 	if(!OBJ || strcmp(OBJ->obj_type, "device")) 
 		BE_DBG(OBJ, "data should in top level\n");
@@ -391,6 +402,21 @@ static void create_data_objs(symtab_t table) {
 	while(list) {
 		sym = list->sym;
 		create_data_object(sym);
+		OBJ = obj;
+		list = list->next;
+	}
+	symbol_list_free(head);
+}
+
+static void create_implement_objs(symtab_t table) {
+	symbol_list_t *list = symbol_list_find(table, IMPLEMENT_TYPE);
+	symbol_list_t *head = list;
+	symbol_t sym;
+	object_t *obj = OBJ;
+
+	while(list) {
+		sym = list->sym;
+		create_implement_object(sym);
 		OBJ = obj;
 		list = list->next;
 	}
