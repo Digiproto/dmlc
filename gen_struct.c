@@ -84,6 +84,10 @@ static void gen_device_connect(device_t *dev, FILE *f) {
     }
 }
 
+static void gen_device_notifier(device_t *dev, FILE *f) {
+	fprintf(f, "\tNotifier notifier;\n");
+}
+
 static void gen_register_struct(object_t *obj, FILE *f) {
     object_t *fld;
     dml_register_t *reg = (dml_register_t *)obj;
@@ -199,4 +203,5 @@ void gen_device_struct(device_t *dev, FILE *f) {
 	gen_banks_struct(dev, f);
 	gen_device_connect(dev, f);
 	gen_device_attribute(dev, f);
+	gen_device_notifier(dev, f);
 }
