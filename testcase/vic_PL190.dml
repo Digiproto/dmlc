@@ -1,0 +1,254 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+// 
+// Copyright 2010-2011 Intel Corporation
+dml 1.2;
+
+device vic_PL190;
+
+import "utility.dml";
+import "simics/devs/signal.dml";
+
+parameter desc = "Vectored Interrupt Control";
+
+parameter documentation = "PrimeCell Vectrored Interrupt Control(PL190)";
+
+constant PL190_NUM_PRIO = 17;
+constant NUM1 = 8;
+constant NUM2 = 16;
+constant NUM3 = 32;
+
+
+method pl190_irq_level()->(uint32 level) {
+	level = (($regs.level | $regs.soft_int)) & ($regs.int_enable) & ~($regs.fiq_select);
+}
+
+connect intr_cpu {
+	parameter documentation = "Interrupt target port";
+	parameter configuration = "required";
+	interface simple_interrupt;
+}
+
+method pl190_send_irq(int irq, bool raise) {
+	if (raise) {
+		$intr_cpu.simple_interrupt.interrupt(irq);
+	}
+	else {
+		$intr_cpu.simple_interrupt.interrupt_clear(irq);
+	}
+}
+
+method pl190_update() {
+	local uint32 level;
+	local bool raise;
+
+	call $pl190_irq_level()->(level);
+
+	/* standard interrupt */
+	raise = ((level & $regs.prio_mask[$regs.priority]) != 0);
+	call $pl190_send_irq(0, raise);
+
+	/* fast interrrupt */
+	raise = ((($regs.level | $regs.soft_int) & $regs.fiq_select) != 0);
+	call $ pl190_send_irq(1, raise);
+}
+
+method pl190_update_vectors() {
+	local uint32 mask;
+	local int i;
+	local int n;
+
+	mask = 0;
+
+	for (i = 0; i < 16; i++) {
+		$regs.prio_mask[i] = mask;
+		if (($regs.vect_ctr[i] & 0x20) != 0) {
+			n = $regs.vect_ctr[i] & 0x1f;
+			mask |= 1 << n;
+		}
+	}
+	$regs.prio_mask[16] = mask;
+	call $pl190_update();
+}
+
+/* copy from qemu
+static void pl190_set_irq(void *opaque, int irq, int level)
+{
+    pl190_state *s = (pl190_state *)opaque;
+
+    if (level)
+        s->level |= 1u << irq;
+    else
+        s->level &= ~(1u << irq);
+    pl190_update(s);
+} */
+
+method pl190_set_irq(int irq, int level) {
+	if(level) {
+		$regs.level |= (0x1 << irq);
+	} else {
+		$regs.level &= ~(0x1 << irq);
+	}
+	call $pl190_update();
+}
+
+implement simple_interrupt {
+	method interrupt(int irq) {
+		call $pl190_set_irq(irq, 1); 
+	}
+	method interrupt_clear(int irq) {
+		call $pl190_set_irq(irq, 0);
+	}
+}
+
+// Basic bank declaration
+bank regs {
+    parameter register_size = 4;
+    register irq_status @ 0x00 "IRQ Status Register" {
+		method read()->(typeof($this) value) {
+			call $pl190_irq_level()->(value);
+		}
+		method write(value) {
+		}
+	}
+	register fiq_status @ 0x04  "FIQ Status Register" {
+		method read()->(typeof($this) value) {
+			value = ($regs.level | $regs.soft_int) & $regs.int_enable & $regs.fiq_select;
+		}
+		method write(value) {
+		}
+	}
+	register raw_int @ 0x08 "Raw Interrupt Status Register" {
+		method read()->(typeof($this) value) {
+			value = $regs.level | $regs.soft_int;
+		}
+		method write(value) {
+		}
+	}
+	register fiq_select @ 0x0C  "Interrupt select register";
+	register int_enable @ 0x10  "Interrupt enable register" {
+		method write(typeof($this) value) {
+			$this |= value;
+		}
+	}
+	register int_en_clear @ 0x14  " Interrupt enable clear register" {
+		method write(typeof($this) value) {
+			$regs.int_enable &= ~value;
+		}
+	}
+	register soft_int @ 0x18  " Software Interrupt register" {
+		method writre(typeof($this) value) {
+			$this |= value;
+		}
+	}
+	register soft_int_clear @ 0x1c  "Software interrupt clear register" {
+		method write(typeof($this) value) {
+			$regs.soft_int &= ~value;
+		}
+	}
+	register protection @ 0x20 "Protection enable register" {
+		/*TODO: protection(supervisor only access) is not implement */
+		method write(typeof($this) value) {
+			$this = value & 1;
+		}
+	}
+	register vect_addr @ 0x30  "Vector address register" {
+		method read()->(typeof($this) value) {
+			local int i = 0;
+			for (i = 0; i < $regs.priority; i++) {
+				if ((($regs.level | $regs.soft_int) & $regs.prio_mask[i + 1]) != 0) {
+					break;
+				}
+			}
+			if (i == PL190_NUM_PRIO) {
+				value = $regs.def_vect_addr;
+			}
+			if (i < $regs.priority) {
+				$regs.prev_prio[i] = $regs.priority;
+				$regs.priority = i;
+				/* call interrupt method */
+				call $pl190_update();
+			}
+			value = $regs.vect_addr_arr[$regs.priority];
+		}
+		/* Restore the previous priority level, the value written is ignored*/
+		method write(typeof($this) value) {
+			if ($regs.priority < PL190_NUM_PRIO) {
+				$regs.priority = $regs.prev_prio[$regs.priority];
+			}
+		}
+	}
+	register def_vect_addr @ 0x34  "Default vector address register";
+	register vect_addr_arr[i in 0 .. 15]  "Vector address register" {
+		parameter offset = 0x100 + $i * 0x4;
+		method after_write(generic_transaction_t *memop) {
+			/* update the vectors */
+			call $pl190_update_vectors();
+		}
+	}
+	register vect_ctr[i in 0 .. 15] "vector control register" {
+		parameter offset = 0x200 + $i * 0x4;
+		method after_write(generic_transaction_t *memop) {
+			/* update the vectors */
+			call $pl190_update_vectors();
+		}
+
+	}
+	register periphid0 @ 0xFE0  "Perihperal identification register" {
+		method read()->(typeof($this) value) {
+			value = 0x90;
+		}
+	}
+	register periphid1 @ 0xFE4  "Perihheral identification register" {
+		method read()->(typeof($this) value) {
+			value = 0x11;
+		}
+	}
+	register periphid2 @ 0xFE8  "Perihheral identification register" {
+		method read()->(typeof($this) value) {
+			value = 0x04;
+		}
+	}
+	register periphid3 @ 0xFEC "Perihheral identification register" {
+		method read()->(typeof($this) value) {
+			value = 0x0;
+		}
+	}
+	register pcellid0 @ 0xFF0 "Prime cell identification register" {
+		method read()->(typeof($this) value) {
+			value = 0x0D;
+		}
+	}
+	register pcellid1 @ 0xFF4  "Prime cell identification register" {
+		method read()->(typeof($this) value) {
+			value = 0xF0;
+		}
+	}
+	register pcellid2 @ 0xFF8  "Prime cell identification register" {
+		method read()->(typeof($this) value) {
+			value = 0x05;
+		}
+	}
+	register pcellid3 @ 0xFFC  "Prime cell identification register" {
+		method read()->(typeof($this) value) {
+			value = 0xB1;
+		}
+	}
+	register level @ undefined;
+	register priority @ undefined;
+	register prio_mask [i in 0 .. (PL190_NUM_PRIO+1)] @ undefined;
+	register prev_prio [i in 0 .. PL190_NUM_PRIO] @ undefined;
+}
+
+method init() {
+	$regs.prio_mask[17] = 0xFFFFFFFF;
+	$regs.priority = PL190_NUM_PRIO;
+}
+
+// USER-TODO: Add init() and post_init() methods here, if needed.
+// init() will be run to set the empty state of the model, before any
+// configuration or checkpointed attributes are set.  post_init() is run after
+// all configuration attributes have been set.  This happens both when the
+// initial configuration is set and when the configuration is loaded from a
+// checkpoint.
