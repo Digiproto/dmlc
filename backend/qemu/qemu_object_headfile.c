@@ -40,6 +40,7 @@ void gen_object_struct(device_t *dev, FILE *f) {
 	fprintf(f, "#define %s_STRUCT_H\n", cap_name);
 	fprintf(f, "\n#include \"hw/sysbus.h\"\n");
 	fprintf(f, "#include \"qemu/log.h\"\n");
+	fprintf(f, "#include \"simics/notifier.h\"\n");
 	fprintf(f, "#include \"simics/dev_iface.h\"\n");
 	fprintf(f, "\ntypedef struct %s %s_t;\n", dev_name, dev_name);
 	gen_device_macros(dev, f);
