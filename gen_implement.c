@@ -202,6 +202,9 @@ static void gen_device_iface_desc(device_t *dev, FILE *f) {
 	fprintf(f, "\nstatic const struct InterfaceDescription %s_ifaces[] = {\n", dev_name);
 	list_for_each(p, &dev->implements) {
 		tmp = list_entry(p, object_t, entry);
+		if(!strcmp(tmp->name, "io_memory")) {
+			continue;
+		}
 		fprintf(f, "\t[%d] = (struct InterfaceDescription ) {\n", i++);
 		fprintf(f, "\t\t.name = \"%s\",\n", tmp->name);
 		fprintf(f, "\t\t.iface = &%s_iface,\n", tmp->qname);
@@ -217,6 +220,9 @@ void gen_device_implement_code(device_t *dev, FILE *f) {
 
 	list_for_each(p, &dev->implements) {
 		tmp = list_entry(p, object_t, entry);
+		if(!strcmp(tmp->name, "io_memory")) {
+			continue;
+		}
 		gen_implement_code(tmp, f);
 	}
 }
@@ -227,6 +233,9 @@ void gen_device_implement_desc(device_t *dev, FILE *f) {
 
 	list_for_each(p, &dev->implements) {
 		tmp = list_entry(p, object_t, entry);
+		if(!strcmp(tmp->name, "io_memory")) {
+			continue;
+		}
 		gen_iface(tmp, f);
 	}
 	gen_device_iface_desc(dev, f);
@@ -238,6 +247,9 @@ void gen_device_implement_header(device_t *dev, FILE *f) {
 
 	list_for_each(p, &dev->implements) {
 		tmp = list_entry(p, object_t, entry);
+		if(!strcmp(tmp->name, "io_memory")) {
+			continue;
+		}
 		gen_implement_header(tmp, f);
 	}
 }
