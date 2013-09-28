@@ -166,9 +166,6 @@ static void gen_post_init(device_t *dev, FILE *f) {
 	const char *name = dev->obj.name;
 
 	gen_notifier_func(dev, f);
-	fprintf(f, "\nstatic Notifier notify = {\n");
-	fprintf(f, "\t.notify = %s_notify,\n", name);
-	fprintf(f, "};\n");
 }
 
 void gen_device_init(device_t *dev, FILE *f) {
@@ -187,7 +184,8 @@ void gen_device_init(device_t *dev, FILE *f) {
 	fprintf(f, "\n\t%s_hard_reset(_dev);\n", dev_name);
 	fprintf(f, "\tv%d_exec = _DML_M_init(_dev);\n", index);
 	fprintf(f, "\t%s_mmio_setup(_dev);\n", dev_name);
-	fprintf(f, "\tSIM_add_device_post_init(&notify);\n");
+	fprintf(f, "\t_dev->notifier.notify = %s_notify;\n", dev_name);
+	fprintf(f, "\tSIM_add_device_post_init(&_dev->notifier);\n");
 	F_END;
 	fprintf(f, "\treturn 0;\n");
 	fprintf(f, "}\n");
