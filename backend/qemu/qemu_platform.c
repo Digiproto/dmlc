@@ -157,6 +157,7 @@ static void gen_notifier_func(device_t *dev, FILE *f) {
 	fprintf(f, "\nstatic void %s_notify(Notifier *n, void *data){\n", name);
 	fprintf(f, "\t%s_t *_dev = container_of(n, %s_t, notifier);\n", name, name);
 	fprintf(f, "\tbool ret;\n");
+	fprintf(f, "\tUNUSED(ret);\n");
 	fprintf(f, "\tret = _DML_M_post_init(_dev);\n");
 	fprintf(f, "}\n");
 }
