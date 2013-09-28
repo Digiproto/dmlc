@@ -49,7 +49,8 @@ void gen_object_struct(device_t *dev, FILE *f) {
 	gen_device_struct(dev, f);
 	/*more here */
 	fprintf(f,"};\n");
-	fprintf(f, "\nint debug_function_pos;\n");
+#ifdef DEVICE_TEST
+	fprintf(f, "\nstatic int debug_function_pos;\n");
     fprintf(f, "\n#define FUNC_HEAD \\\n"
 			   "\tdo{ \\\n"
 			   "\t\tint i; \\\n"
@@ -64,6 +65,7 @@ void gen_object_struct(device_t *dev, FILE *f) {
 			   "\t\tfor(i = 0; i < debug_function_pos; i++) {printf(\"|---\");} \\\n"
 			   "\t\tprintf(\"[DML] Exit: %%s, %%s, %%d\\n\", __FILE__, __FUNCTION__, __LINE__); \\\n"
 			   "\t}while(0)\n");
+#endif
 	fprintf(f, "\n#endif\n");
 	free(cap_name);
 }
