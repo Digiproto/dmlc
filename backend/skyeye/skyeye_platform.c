@@ -114,7 +114,7 @@ static void gen_mmio_setup(device_t *dev, FILE *f) {
 
     gen_banks_mr(dev, f);
     fprintf(f, "\nstatic void\n");
-    fprintf(f, "%s_mmio_setup(%s_t *_dev) {\n", dev_name, dev_name);
+    fprintf(f, "%s_mmio_setup(%s_t *_dev, const char *objname) {\n", dev_name, dev_name);
     for(i = 0; i < dev->bank_count; i++) {
         obj = dev->banks[i];
 		fprintf(f, "\t{\n");
@@ -122,7 +122,7 @@ static void gen_mmio_setup(device_t *dev, FILE *f) {
 		fprintf(f, "\t\t_dev->mr_%s.conf_obj = &_dev->obj;\n", obj->name);	
 		fprintf(f, "\t\t_dev->mr_%s.read = %s_read;\n", obj->name, obj->name);
 		fprintf(f, "\t\t_dev->mr_%s.write = %s_write;\n", obj->name, obj->name);
-		fprintf(f, "\t\tSKY_register_interface(&_dev->mr_%s, _dev->obj.objname, MEMORY_SPACE_INTF_NAME);\n", obj->name);
+		fprintf(f, "\t\tSKY_register_interface(&_dev->mr_%s, objname, MEMORY_SPACE_INTF_NAME);\n", obj->name);
 		F_END;
 		fprintf(f, "\t}\n");
     }
@@ -144,7 +144,7 @@ void gen_device_init(device_t *dev, FILE *f) {
     fprintf(f, "\tUNUSED(v%d_exec);\n", index);
     fprintf(f, "\n\t%s_hard_reset(_dev);\n", dev_name);
     fprintf(f, "\tv%d_exec = _DML_M_init(_dev);\n", index);
-    fprintf(f, "\t%s_mmio_setup(_dev);\n", dev_name);
+    fprintf(f, "\t%s_mmio_setup(_dev, name);\n", dev_name);
 	F_END;
     fprintf(f, "\treturn &_dev->obj;\n");
     fprintf(f, "}\n");
@@ -176,7 +176,7 @@ static void gen_device_connect(device_t *dev, FILE *f) {
 
 }
 
-void gen_device_module(device_t *dev, FILE *f) {
+static void gen_device_module(device_t *dev, FILE *f) {
 	const char *name = dev->obj.name;
 
 	fprintf(f, "#include \"skyeye_module.h\"\n");
@@ -212,7 +212,9 @@ void gen_device_type_info(device_t *dev, FILE *f) {
 
 	gen_device_connect(dev, f);	
 	fprintf(f, "\nvoid init_%s(void) {\n", name);
+#ifdef DEVICE_TEST
 	fprintf(f, "\tdebug_function_pos = 0;\n");
+#endif
 	F_HEAD;
 	fprintf(f, "\tstatic skyeye_class_t class_data = {\n");
 	fprintf(f, "\t\t.class_name = \"%s\",\n", name);	
