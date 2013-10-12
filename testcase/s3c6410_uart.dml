@@ -1,0 +1,92 @@
+dml 1.0; 
+
+device uart_device;
+
+parameter desc = "S3c6410x uart model";
+
+import "utility.dml";
+//import "signal.dml";
+//import "serial_device.dml";
+
+connect uart_proxy {
+	interface serial_device;
+}
+
+
+connect irq {
+	interface signal; 
+}
+
+bank regs {
+	parameter register_size = 4;
+
+	register ulcon @ 0x0 {
+	}
+	register ucon  @ 0x4 {
+	}
+	register ufcon @ 0x8 {
+	}
+	register umcon @ 0xc {
+	}
+	register utrstat @ 0x10 {
+		parameter hard_reset_value = 0x6;
+	}
+	register uerstat  @0x14 {
+	}
+	register ufstat  @ 0x18 {
+	}
+	register umstat  @ 0x1c {
+	}
+	register utxh   @ 0x20 {
+		method after_read(generic_transaction_t *memop) {
+			$utrstat &= ~0x1;
+			$ufstat  &= ~0x1;
+		}
+		method write(typeof($this) value) {
+			$this = value;
+			local int c = value;
+
+			$uart_proxy.serial_device.write(c);
+		}
+		method after_write(generic_transaction_t *memop) {
+			$utrstat |= 0x6;
+			$ufstat &= 0xff;
+			$uintp |= (0x4 & ~$uintm);
+			$uintsp |= 0x4;
+			$irq.signal.signal_raise();
+		}
+	}
+	register urxh @ 0x24 {
+		method after_read(generic_transaction_t *memop) {
+			$utrstat &= (~0x01);
+			$ufstat &= (~0x01);
+		}
+	}
+	register ubrdiv @ 0x28 {
+	
+	}
+	register ubrdivslot @ 0x2c {
+	}
+	register uintp @ 0x30 {
+		method write(typeof($this) value) {
+			$this &= ~value;
+		}
+	}
+
+	register uintsp @ 0x34 {
+		method write(typeof($this) value) {
+			$this &= ~value;
+		}
+	}
+	register uintm @ 0x38 {
+		method after_write(generic_transaction_t *memop) {
+			$uintp |= (0x4 & ~$uintm); 
+			$uintsp |= 0x4;
+			$irq.signal.signal_raise();
+		}
+	}
+}
+
+method init {	
+	$regs.utrstat = 0x6;
+}
