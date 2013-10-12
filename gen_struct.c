@@ -203,5 +203,7 @@ void gen_device_struct(device_t *dev, FILE *f) {
 	gen_banks_struct(dev, f);
 	gen_device_connect(dev, f);
 	gen_device_attribute(dev, f);
+#if backend == 1
 	gen_device_notifier(dev, f);
+#endif
 }
