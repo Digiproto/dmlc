@@ -25,6 +25,7 @@
 #include <time.h>
 #include "gen_method_protos.h"
 #include "gen_connect.h"
+#include "gen_implement.h"
 
 extern object_t *DEV;
 
@@ -207,10 +208,16 @@ void gen_platform_device_module(device_t *dev, const char *out) {
 		printf("failed to open file %s\n", tmp);
 	}
 }
+
+static void gen_device_implement(device_t *dev, FILE *f) {
+	gen_device_implement_desc(dev, f);
+}
+
 void gen_device_type_info(device_t *dev, FILE *f) {
 	const char *name = dev->obj.name;
 
 	gen_device_connect(dev, f);	
+	gen_device_implement(dev, f);
 	fprintf(f, "\nvoid init_%s(void) {\n", name);
 #ifdef DEVICE_TEST
 	fprintf(f, "\tdebug_function_pos = 0;\n");
@@ -224,6 +231,7 @@ void gen_device_type_info(device_t *dev, FILE *f) {
 	fprintf(f, "\t\t.set_attr = NULL,\n");
 	fprintf(f, "\t\t.get_attr = NULL,\n");
 	fprintf(f, "\t\t.connects = %s_connects,\n", name);
+	fprintf(f, "\t\t.ifaces = %s_ifaces,\n", name);
 	fprintf(f, "\t};\n");
 	fprintf(f, "\tSKY_register_class(class_data.class_name, &class_data);\n");
 	F_END;
