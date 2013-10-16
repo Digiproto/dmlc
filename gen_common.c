@@ -360,9 +360,6 @@ void translate_ref_expr(tree_t *t){
 
 
 	sym = get_ref_sym(t, &ref_ret);
-	if(!strcmp(sym->name, "DMA_interrupt_posted")){
-		exit(-1);
-	}
 	if(sym && !ref_ret.is_obj){
 		translate_c_ref(t);
 		return;
