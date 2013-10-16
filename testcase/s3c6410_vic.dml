@@ -1,0 +1,146 @@
+dml 1.0; 
+
+device vic_device;
+
+parameter desc = "s3c6410x vic";
+
+import "utility.dml";
+import "interrupt.dml";
+
+connect irq {
+	interface simple_interrupt;
+}
+
+method vic_update_irq {
+	if($regs.fiqstatus != 0) {
+		$irq.simple_interrupt.interrupt(1);	
+	} else {
+		$irq.simple_interrupt.interrupt_clear(1);
+	}
+	if($regs.irqstatus != 0) {
+		$irq.simple_interrupt.interrupt(0);
+	} else {
+		$irq.simple_interrupt.interrupt_clear(0);
+	}
+}
+
+implement int_update {
+	method int_update() {
+		call $vic_update_irq();
+	}
+}
+
+implement simple_interrupt {
+	method interrupt(int num) {
+		$regs.rawintr = 1 << num;
+		$regs.irqstatus |= ((1 << num) & ~($regs.intselect) & $regs.intenable);
+		$regs.fiqstatus |= ((1 << num) & ($regs.intselect) & $regs.intenable);
+		call $vic_update_irq();
+	}
+	/*maybe a dummy function */
+	method interrupt_clear(int num) {
+		//$regs.rawintr &= ~(1 << num);
+		$regs.irqstatus &= ~(1 << num);
+		//$regs.fiqstatus &= ~(1 << num);
+		call $vic_update_irq();
+	}
+}
+
+bank regs {
+	parameter register_size = 4;
+	register irqstatus @ 0x0  {
+		method after_read(generic_transaction_t *mop) {
+			$this = 0;
+			/*update int*/
+			call $vic_update_irq();
+		}
+		method write(val) {
+		}
+	}
+
+	register fiqstatus @ 0x4 {
+		method after_read(generic_transaction_t *mop) {
+			$this = 0;
+		}
+		method write(val) {
+		}
+	}
+
+	register rawintr @ 0x8  {
+		method after_read(generic_transaction_t *mop) {
+			$this = 0;
+		}
+		method write(val) {
+		}
+	}
+
+	register intselect @ 0xc {
+		
+	}
+
+	register intenable @ 0x10 {
+		method write(typeof($this) value) {
+			$this |= value;
+		}
+	}
+
+	register intenclear @ 0x14 {
+		method write(typeof($this) value) {
+			$this &= ~value;
+		}
+	}
+
+	register softint @ 0x18 {
+	}
+
+	register softintclear @ 0x1c {
+		method write(typeof($this) value) {
+			$this &= ~value;
+		}
+
+	}
+
+	register protection @ 0x20 {
+	}
+
+	register swproritymask @ 0x24 {
+	}
+	
+	register proritydaisy @ 0x28 {
+	}
+
+	register vectaddr[i in 0 .. 31] {
+		parameter offset = $i * 4 + 0x100;
+	}
+
+	register vectprority[i in 0 .. 31] {
+		parameter offset = $i * 4 + 0x200;
+	}
+
+	register periphid0 @ 0xfe0  {
+		method read ->(typeof($this) value) {
+			value = 0x192;
+		}
+		method write(val) {
+		}
+	}
+
+	register periphid1 @ 0xfe4  {
+		method read ->(typeof($this) value) {
+			value = 0x11;
+		}
+		method write(val) {
+		}
+	}
+
+	register periphid2 @ 0xfe8  {
+		method read ->(typeof($this) value) {
+			value = 0x04;
+		}
+		method write(val) {
+		}
+	}
+
+	register periphid3 @ 0xfec {
+	}
+}
