@@ -758,6 +758,9 @@ static const char *get_attribute_type(const char *alloc_type) {
 	}else{
 		type = NULL;
 	}
+	else {
+		type = NULL;
+	}
 	return type;
 }
 

@@ -132,7 +132,7 @@ void print_bitfields(tree_t* node, int pos);
 void print_goto(tree_t* node, int pos);
 void print_case(tree_t* node, int pos);
 
-#define DEBUG_AST_TREE
+//#define DEBUG_AST_TREE
 
 #ifdef DEBUG_AST_TREE
 #define DEBUG_ADD_TEMPLATE debug_brown

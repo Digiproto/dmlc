@@ -202,16 +202,16 @@ symbol_t symbol_find_from_templates(struct template_table* templates, const char
 	symbol_t rt;
 	symtab_t table;
 
-	while (templates != NULL) {
-		table = templates->table;
-		if(table) {
-        	rt = _symbol_find(table->table, name, type);
-        	if(rt) {
-            	return rt;
-        	}
-		}
-		templates = templates->next;
-	}
+        while (templates != NULL) {
+                table = templates->table;
+                if(table) {
+                rt = _symbol_find(table->table, name, type);
+                if(rt) {
+                return rt;
+                }
+                }
+                templates = templates->next;
+        }
 
 	return NULL;
 }

@@ -214,7 +214,7 @@ void add_child (tree_t* parent, tree_t* child)
 
 void dummy_translate(tree_t *node) {
 #ifndef RELEASE
-	printf("not correct, should call you own translate function, node name %s, file %s, lineno %d\n", node->common.name, node->common.location.file, node->common.location.first_line);
+	printf("not correct, should call you own translate function, node name %s\n", node->common.name);
 #endif
 }
 static int node_num = 0;
@@ -282,9 +282,6 @@ object_attr_t* create_object(symtab_t table, const char* node_name, const char* 
 
    return attr;
 }
-
-
-
 void parse_undef(symtab_t table, undef_var_t* undef_head) {
 	assert(table);
 	assert(undef_head);
@@ -381,7 +378,6 @@ static tree_t* node_in_list(tree_t* head, tree_t* new_node) {
 
    return NULL;
 }
-
 /**
  * @brief concentrate the two node list
  *
@@ -399,10 +395,9 @@ tree_t* create_node_list (tree_t* root, tree_t* new_node)
 	assert (new_node != NULL);
 	assert (root != NULL);
 
-   if (node_in_list(root, new_node) != NULL) {
-       return root;
-   }
-
+	if (node_in_list(root, new_node) != NULL) {
+		return root;
+	}
 	tree_t* tail = find_tail (root);
 	assert (tail->common.sibling == NULL);
 	tail->common.sibling = new_node;
@@ -523,17 +518,15 @@ int get_int_value(tree_t** node, symtab_t table) {
 	else {
 		expression_t* expr = parse_expression(node, table);
 		if (expr->is_const == 0) {
-			PERROR("%s(%s) is non-constant value", (*node)->common.location,
-				(*node)->common.name, TYPENAME((*node)->common.type));
-//			exit(-1);
+			PERROR("%s(%s) is non-constant value", node->common.location,
+				node->common.name, TYPENAME(node->common.type));
 		}
 		else if (expr->final_type == INTEGER_TYPE) {
 			return expr->const_expr->int_value;
 		}
 		else {
-			PERROR("%s(%s) isn't integer type", (*node)->common.location,
-				(*node)->common.name, TYPENAME((*node)->common.type));
-//			exit(-1);
+			PERROR("%s(%s) isn't integer type", node->common.location,
+				node->common.name, TYPENAME(node->common.type));
 		}
 	}
 }
@@ -838,8 +831,8 @@ void add_template_to_table(symtab_t table, const char* template) {
 		}
 	}
 	else {
-        free(new_table->template_name);
-        free(new_table);
+		free(new_table->template_name);
+		free(new_table);
 	}
 
 	return;
@@ -910,7 +903,7 @@ char** get_templates(char** templates, tree_t* head, int num) {
 		return templates;
 	}
 	if (templates != NULL)
-       free(templates);
+		free(templates);
 
 	templates = gdml_zmalloc(num * sizeof(char*));
 	tree_t* node = head;
