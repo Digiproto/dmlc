@@ -141,6 +141,12 @@ struct template_name {
 	struct list_head entry;
 };
 
+struct template_list {
+	const char* src_name;
+	const char* name;
+	struct template_list* next;
+};
+
 struct method_name {
 	const char *name;
 	tree_t *method;

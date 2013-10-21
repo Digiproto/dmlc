@@ -690,6 +690,37 @@ paramspec_t* get_paramspec(tree_t* node, symtab_t table) {
 	return spec;
 }
 
+static void parse_parameter_spec(symtab_t table, symbol_t symbol) {
+	assert(table != NULL);
+	assert(symbol != NULL);
+
+	parameter_attr_t* attr =  symbol->attr;
+	tree_t* node = attr->node;
+	attr->spec = get_paramspec(node->param.paramspec, table);
+
+	return;
+}
+
+void parse_parameter(symtab_t table) {
+	assert(table != NULL);
+	if (table->is_parsed) {
+		return;
+	}
+	symbol_list_t* list = symbol_list_find(table, PARAMETER_TYPE);
+	symbol_list_t* head = list;
+	symbol_t symbol = NULL;
+	int i = 0;
+
+	while (list) {
+		symbol = list->sym;
+		printf("parameter name[%d]: %s, table_num: %d\n", i++, symbol->name, table->table_num);
+		parse_parameter_spec(table, symbol);
+		list = list->next;
+	}
+
+	return;
+}
+
 int get_size(tree_t** node, symtab_t table) {
 	if (*node == NULL) {
 		return -1;
@@ -770,6 +801,67 @@ int get_offset(tree_t** node, symtab_t table) {
 	}
 
 	return 0;
+}
+
+void parse_register(tree_t* node, symtab_t table) {
+	assert(node != NULL);
+	assert(table != NULL);
+
+	object_attr_t* attr = node->common.attr;
+	attr->reg.size = get_size(&(node->reg.sizespec), table);
+	attr->reg.offset = get_offset(&(node->reg.offset), table);
+	if (node->reg.array) {
+		attr->reg.is_array = 1;
+		attr->reg.arraydef = get_arraydef(&(node->reg.array), table);
+	}
+	attr->common.desc = get_obj_desc(node->reg.spec);
+
+	return;
+}
+
+static void parse_bitrange(tree_t* node, symtab_t table) {
+	assert(node != NULL);
+	assert(table != NULL);
+
+	bitrange_attr_t* attr = node->common.attr;
+	attr->expr = parse_expression(&(node->array.expr), table);
+	attr->expr_end = parse_expression(&(node->array.expr_end), table);
+
+	return;
+}
+
+void parse_field(tree_t* node, symtab_t table) {
+	assert(node != NULL);
+	assert(table != NULL);
+
+	object_attr_t* attr = node->common.attr;
+	tree_t* node_range = node->field.bitrange;
+	if (node_range) {
+		parse_bitrange(node_range, table);
+		attr->field.bitrange = node_range->common.attr;
+	}
+
+	return;
+}
+
+void parse_connect(tree_t* node, symtab_t table) {
+	assert(node != NULL);
+	assert(table != NULL);
+
+	object_attr_t* attr = node->common.attr;
+	attr->connect.arraydef = get_arraydef(&(node->connect.arraydef), table);
+
+	return;
+}
+
+void parse_attribute(tree_t* node, symtab_t table) {
+	assert(node != NULL);
+	assert(table != NULL);
+
+	object_attr_t* attr = node->common.attr;
+	attr->attribute.arraydef = get_arraydef(&(node->attribute.arraydef), table);
+
+	return;
 }
 
 void print_templates(symtab_t table) {

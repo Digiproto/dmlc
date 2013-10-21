@@ -73,6 +73,7 @@ struct symtab {
 	int table_num;
 	type_t type;
 	int no_check;
+	int is_parsed;
 	void *obj;
 	symbol_find_fn_t cb;
 	symbol_find_notype_fn_t notype_cb;

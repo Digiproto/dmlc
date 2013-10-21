@@ -50,6 +50,7 @@ struct indentifier {
 };
 
 typedef void (*translate_t)(tree_t *t);
+typedef void (*parse_t)(tree_t* ident, tree_t** expr, symtab_t table);
 /**
  * @brief : the common part about tree node
  */
@@ -60,6 +61,7 @@ struct tree_common
 	tree_t* chain;
 	print_node_t print_node;
 	translate_t translate;
+	parse_t parse;
 	void* attr;
 	int type;
 	const char* name;

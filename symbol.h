@@ -109,6 +109,7 @@ typedef struct paramspec {
 typedef struct parameter_attr
 {
 	const char *name;
+	tree_t* node;
 	paramspec_t* spec;
 } parameter_attr_t;
 

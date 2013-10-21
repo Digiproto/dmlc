@@ -45,6 +45,11 @@ int charge_standard_parameter(symtab_t table, parameter_attr_t* attr);
 object_attr_t* create_object(symtab_t table, const char* node_name, const char* symbol_name, int type, int node_size, int attr_size, YYLTYPE* location);
 tree_t* create_template_list(tree_t* head, tree_t* templates);
 tree_t* get_obj_default_param(tree_t* head, tree_t* new, const char* name);
+void parse_parameter(symtab_t table);
+void parse_register(tree_t* node, symtab_t table);
+void parse_field(tree_t* node, symtab_t table);
+void parse_connect(tree_t* node, symtab_t table);
+void parse_attribute(tree_t* node, symtab_t table);
 
 void print_dml(tree_t* node, int pos);
 void print_device(tree_t* node, int pos);

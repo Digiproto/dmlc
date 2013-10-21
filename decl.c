@@ -1668,6 +1668,7 @@ void parse_local_decl(tree_t* node, symtab_t table) {
 			__func__, __LINE__, decl->decl_str);
 	}
 
+#if 0
 	if (node->local_tree.expr) {
 		expression_t* expr = parse_expression(&(node->local_tree.expr), table);
 		type_t type_decl = get_decl_type(decl);
@@ -1680,6 +1681,7 @@ void parse_local_decl(tree_t* node, symtab_t table) {
 		}
 		decl->value =  expr;
 	}
+#endif
 
 	if (decl->type->aggregate_defined == 0) {
 		insert_ident_decl(table, decl);

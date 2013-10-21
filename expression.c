@@ -608,6 +608,11 @@ expression_t* cal_assign_expr(tree_t** node, symtab_t table, expression_t* expr)
 	assert(*node != NULL);
 	assert(expr != NULL);
 	assert(table != NULL);
+	if (expr->is_constant_op) {
+		fprintf(stderr, "Non constant expression '='\n");
+		/* TODO: handle the error*/
+		exit(-1);
+	}
 	switch((*node)->expr_assign.type) {
 			/* = */
 		case EXPR_ASSIGN_TYPE:
@@ -1489,6 +1494,11 @@ expression_t* cal_cast_expr(tree_t** node, symtab_t table, expression_t* expr) {
 	assert(expr != NULL);
 	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
 			__func__, __LINE__, (*node)->common.name);
+	if (expr->is_constant_op) {
+		fprintf(stderr, "error: none-constant exprsion: cast\n");
+		/* TODO: handle the error*/
+		exit(-1);
+	}
 
 	cal_expression(&((*node)->cast.expr), table, expr);
 
@@ -1510,6 +1520,11 @@ expression_t* cal_sizeof_expr(tree_t** node, symtab_t table,  expression_t* expr
 	assert(expr != NULL);
 	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
 			__func__, __LINE__, (*node)->common.name);
+	if (expr->is_constant_op) {
+		fprintf(stderr, "error: none-constant expression : sizeof\n");
+		/* TODO: handle the error*/
+		exit(-1);
+	}
 
 	tree_t* node_expr = (*node)->sizeof_tree.expr;
 	/* The sizeof operator can only be used on expressions
@@ -1557,6 +1572,12 @@ expression_t* cal_quote_expr(tree_t** node, symtab_t table,  expression_t* expr)
 	}
 
 	tree_t* ident = (*node)->quote.ident;
+
+	if (expr->is_constant_op) {
+		fprintf(stderr, "error: none-constant expression : $%s\n", ident->ident.str);
+		/* TODO: handle the error */
+		exit(-1);
+	}
 
     /*to reference something in the DML object structure
      * the reference must be prefixed by '$' character*/
@@ -1896,6 +1917,22 @@ expression_t* get_ident_value(tree_t** node, symtab_t table,  expression_t* expr
 		symbol = get_symbol_from_root_table((*node)->ident.str, 0);
 	}
 	pre_parse_symbol_t* pre_symbol =  pre_symbol_find((*node)->ident.str);
+	if (expr->is_constant_op) {
+		if (symbol != NULL) {
+			if (symbol->type != CONSTANT_TYPE) {
+				fprintf(stderr, "error: none-constant expression : %s\n", symbol->name);
+				/* TODO: handle the error */
+				exit(-1);
+			}
+			expr->final_type = CONSTANT_TYPE;
+		}
+		else {
+			expr->is_undeclare = 1;
+			expr->undecl_name = symbol->name;
+		}
+		expr->node = *node;
+		return expr;
+	}
 	if ((symbol != NULL)) {
 		DEBUG_EXPR("symbol name: %s, type: %d\n", symbol->name, symbol->type);
 		if (is_c_type(symbol->type) == 1) {
@@ -2171,6 +2208,13 @@ expression_t* get_component_expr(tree_t** node, symtab_t table,  expression_t* e
 	tree_t* ident = (*node)->component.ident;
 	reference->name = ident->ident.str;
 
+	if (expr->is_constant_op) {
+		fprintf(stderr, "error: none-constant expression : %s\n",
+				reference->is_pointer ? "->": ".");
+		/* TODO: handle the error */
+		exit(-1);
+	}
+
 	reference = get_reference((*node)->component.expr, reference);
 	print_reference(reference);
 	expr->final_type = check_reference(table, reference, expr);
@@ -2188,8 +2232,16 @@ expression_t* get_sizeoftype_expr(tree_t** node, symtab_t table,  expression_t* 
 	assert(expr != NULL);
 	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
 			__func__, __LINE__, (*node)->common.name);
+	if (expr->is_constant_op) {
+		fprintf(stderr, "error: none-constant expression : sizeoftype\n");
+		/* TODO: handle the error */
+		exit(-1);
+	}
 	/* FIXME: should charge the identifier type */
 	expr->node = *node;
+	printf("In %s, line = %d, can not implement the sizeoftype\n", __FUNCTION__, __LINE__);
+	/* TODO: it is only for debugging, delete */
+	exit(-1);
 	return expr;
 }
 
@@ -2199,6 +2251,11 @@ expression_t* get_new_expr(tree_t** node, symtab_t table,  expression_t* expr) {
 	assert(expr != NULL);
 	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
 			__func__, __LINE__, (*node)->common.name);
+	if (expr->is_constant_op) {
+		fprintf(stderr, "error: none-constant expression : new\n");
+		/* TODO: handle the error */
+		exit(-1);
+	}
 
 	parse_ctypedecl((*node)->new_tree.type, table);
 	if ((*node)->new_tree.count) {
@@ -2339,6 +2396,12 @@ expression_t* get_array_expr(tree_t** node, symtab_t table,  expression_t* expr)
 	tree_t* node_arr = (*node)->array.expr;
 	tree_t* pre_node = (*node)->array.expr;
 
+	if (expr->is_constant_op) {
+		fprintf(stderr, "error: none-constant expression : []\n");
+		/* TODO: handle the error */
+		exit(-1);
+	}
+
 	cal_expression(&((*node)->array.expr), table, expr);
 
 	while(node_arr->common.sibling) {
@@ -2361,10 +2424,16 @@ expression_t* get_bit_slic_expr(tree_t** node, symtab_t table,  expression_t* ex
 	assert(expr != NULL);
 	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
 			__func__, __LINE__, (*node)->common.name);
+	if (expr->is_constant_op) {
+		fprintf(stderr, "error: none-constant expression : []\n");
+		/* TODO: handle the error */
+		exit(-1);
+	}
 
 	if (expr->is_undeclare) {
 		return expr;
 	}
+
 	cal_expression(&((*node)->bit_slic.expr), table, expr);
 	if (expr->is_const) {
 		error("The bit slic declare should not const!\n");
@@ -2526,6 +2595,40 @@ void parse_log_args(tree_t** node, symtab_t table) {
 	while (((*arg_node)->common.sibling) != NULL) {
 		*arg_node = (*arg_node)->common.sibling;
 		parse_expression(arg_node, table);
+	}
+
+	return;
+}
+
+static void parse_constant_expr(symtab_t table, symbol_t symbol) {
+	assert(table != NULL);
+	assert(symbol != NULL);
+	constant_attr_t* attr = symbol->attr;
+	tree_t* node = attr->common.node;
+	tree_t* expr_node = node->assign.expr;
+
+	expression_t* expr = (expression_t*)gdml_zmalloc(sizeof(expression_t));
+	expr->is_constant_op = 1;
+	attr->value = cal_expression(&(node->assign.expr), table, expr);
+	if (expr->is_undeclare) {
+		fprintf(stderr, " error: unknown identifier: '%s'\n", expr->undecl_name);
+		/* TODO: handle the error */
+		exit(-1);
+	}
+
+	return;
+}
+
+void parse_constant(symtab_t table) {
+	assert(table != NULL);
+	symbol_list_t* list = symbol_list_find(table, CONSTANT_TYPE);
+	symbol_list_t* head = list;
+	symbol_t symbol = NULL;
+
+	while (list) {
+		symbol = list->sym;
+		parse_constant_expr(table, symbol);
+		list = list->next;
 	}
 
 	return;

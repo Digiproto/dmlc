@@ -46,7 +46,9 @@ typedef struct const_expr {
 }const_expr_t;
 
 typedef struct expression {
-    int is_const;
+    int is_const; // the expression result value is constant
+	int is_constant_op; // the calculate expression is for constant
+						// the grammar: constant ident = expression
 	int final_type;
 	/* undefined type */
     int is_undefined;
@@ -72,6 +74,7 @@ expression_t* cal_binary_expr(tree_t** node, symtab_t table, expression_t* expr)
 extern expression_t* cal_expression(tree_t** node, symtab_t table, expression_t* expr);
 int get_typedef_type(symtab_t table, char* name);
 int charge_type(int type1, int type2);
+void parse_constant(symtab_t table);
 
 //#define DEBUG_EXPRESSION
 

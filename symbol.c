@@ -241,7 +241,7 @@ symbol_t default_symbol_find(symtab_t symtab, const char* name, type_t type)
 		if (rt) {
 			return rt;
 		}
-		DEBUG_SYMBOL("goto parent table %s\n", name);
+		DEBUG_SYMBOL("current table: %d, goto parent table: %d: %s\n", symtab->table_num, tmp->parent->table_num, name);
         tmp = tmp->parent;
 		if(tmp) {
 			return symbol_find(tmp, name, type);
