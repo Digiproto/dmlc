@@ -26,6 +26,7 @@
 
 #include "tree.h"
 #include "debug_color.h"
+#include "decl.h"
 
 typedef struct const_expr {
     int is_undefined;
@@ -61,11 +62,70 @@ typedef struct expression {
 	void* func;
 } expression_t;
 
+typedef struct value {
+	int i[2];
+	struct int_value {
+		int out_64bit;
+		union {
+			long long value;
+			char* int_str;
+		};
+	}int_v;
+	double d;
+	void* p;
+}value_t;
+
+typedef struct expr {
+	cdecl_t* type;
+	int isarray : 1;
+	int isfunc : 1;
+	int lvalue : 1;
+	int is_const : 1;
+	int is_undefined : 1;
+	int is_null : 1;
+	int is_obj : 1;
+	int op : 25;
+	struct expr* kids[2];
+	value_t* val;
+	tree_t* node;
+}expr_t;
+
+#define is_scalar_type(type) ((type->common.categ >= BOOL_T) && (type->common.categ <= POINTER_T))
+#define both_scalar_type(type1, type2) (is_scalar_type(type1) && is_scalar_type(type2))
+
+#define is_int_type(type) ((type->common.categ >= BOOL_T) && (type->common.categ <= LONG_T))
+#define both_int_type(type1, type2) (is_int_type(type1) && is_int_type(type2))
+
+#define is_double_type(type) ((type->common.categ >= FLOAT_T) && (type->common.categ <= DOUBLE_T))
+#define both_double_type(type1, type2) (is_double_type(type1) && is_double_type(type2))
+
+#define is_arith_type(type) ((type->common.categ >= BOOL_T) && (type->common.categ <= DOUBLE_T))
+#define both_arith_type(type1, type2) (is_arith_type(type1) && is_arith_type(type2))
+
+#define is_function_prt(type) ((type->common.categ == POINTER_T) && (type->common.bty->common.categ == FUNCTION_T))
+
+#define is_ptr_type(type) (type->common.categ == POINTER_T || type->common.categ == STRING_T)
+#define is_null_ptr(expr) (expr->is_null)
+
+#define is_common_type(categ) (categ >= BOOL_T && (categ <= TYPEDEF_T))
+
+#define no_common_type(type) (type->common.categ >= STRING_T && type->common.categ <= FUNCTION_T)
+#define both_no_common_type(type1, type2) (no_common_type(type1) && no_common_type(type2))
+
+#define is_array_type(type) (type->common.categ == ARRAY_T || type->common.categ == POINTER_T)
+#define both_array_type(type1, type2) (is_array_type(type1) && is_array_type(type2))
+
+#define is_same_type(type1, type2) (type1->common.categ == type2->common.categ)
+#define is_no_type(type1) (type1->common.categ == NO_TYPE)
+
 typedef struct reference {
 	const char* name;
 	unsigned is_pointer;
 	struct reference* next;
 } reference_t;
+
+expr_t* check_expr(tree_t* node, symtab_t table);
+cdecl_t* get_typeof_type(tree_t* node, symtab_t table);
 
 expression_t* parse_expression(tree_t** node, symtab_t table);
 void parse_log_args(tree_t** node, symtab_t table);

@@ -547,14 +547,14 @@ static int get_reg_offset(paramspec_t *t, int *interval) {
 	tree_t *tmp;
 	int ret;
 
-	if(t->type == INTEGER_TYPE) {
-		offset = t->expr->const_expr->int_value;
+	if(t->value->type == PARAM_TYPE_INT) {
+		offset = t->value->u.integer;
 		*interval = 0;
 		return offset;
-	} else if(t->type ==  UNDEFINED_TYPE) {
+	} else if(t->value->type ==  UNDEFINED_TYPE) {
 		return -1;
 	} else {
-		node = t->expr->node;
+		node = t->expr_node;
 		ret = get_binopnode_constant(node, ADD_TYPE, &offset);
 		if(ret < 0) {
 			/*wrong format base + $i * register_size */
@@ -631,7 +631,7 @@ static void register_realize(object_t *obj) {
 			reg->is_undefined = 1;
 		} else {
 			parameter_attr  = (parameter_attr_t *)sym->attr;		
-			reg->offset = get_reg_offset(parameter_attr->spec, &reg->interval);
+			reg->offset = get_reg_offset(parameter_attr->param_spec, &reg->interval);
 			if(reg->offset == -1) {
 				reg->is_undefined = 1;
 			}
@@ -700,7 +700,7 @@ static void bank_realize(object_t *obj) {
 	int offset = 0;
 	parameter_attr_t *param;
 	paramspec_t *spec;
-	expression_t *expr;
+	param_value_t* value;
 
 	list_for_each(p, &obj->childs) {
 		i++;
@@ -725,13 +725,13 @@ static void bank_realize(object_t *obj) {
 	sym = symbol_find(obj->symtab, "register_size", PARAMETER_TYPE);
 	if(sym) {
 		param = (parameter_attr_t *)sym->attr;
-		spec = param->spec;
-		expr = spec->expr;
-		if(!expr->is_const) {
+		spec = param->param_spec;
+		value = spec->value;
+		if(!value->is_const) {
 			PERROR("the register_size require a constant value",
-					expr->node->common.location);
+					spec->expr_node->common.location);
 		} else {
-			reg_size = expr->const_expr->int_value;
+			reg_size = value->u.integer;
 		}
 	} else {
 		reg_size = 4;
@@ -815,8 +815,8 @@ static void attribute_realize(object_t *obj) {
 
 	sym  = symbol_find(obj->symtab, "allocate_type", PARAMETER_TYPE);
 	attr = (parameter_attr_t *)sym->attr;
-	spec = attr->spec;
-	alloc_type = get_attribute_type(spec->str);
+	spec = attr->param_spec;
+	alloc_type = get_attribute_type(spec->value->u.string);
 	attr_obj->alloc_type = alloc_type;
 }
 

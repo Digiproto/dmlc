@@ -115,7 +115,7 @@ tree_t* current_object_node = NULL;
 %token IN TEMPLATE HEADER FOOTER BODY LOGGROUP IMPORT SIZE LAYOUT BITFIELDS
 %token USING PORT PUBLIC PROTECTED PRIVATE STRICT THIS SELECT IS IMPLEMENT VECT WHERE
 %token DEVICE DEFINED AFTER ASSERT BITORDER CATCH TRY THROW CLASS LOG METHOD
-%token CALL CAST CONSTANT ERROR FOREACH INLINE LOCAL NAMESPACE 
+%token CALL CAST CONSTANT ERROR FOREACH INLINE LOCAL NAMESPACE
 %token RESTRICT SIZEOFTYPE TYPEOF UNDEFINED VIRTUAL NEW DELETE
 
 %start begin_unit
@@ -3373,9 +3373,7 @@ tree_t* parse_file(const char* name)
 		int rt = link_dir_filename(fullname, DIR_MAX_LEN, import_dir_list[i], name);
 		assert(rt == 0);
 		if(access(fullname, F_OK) == 0) {
-			DBG("Begin parse the import file %s\n", fullname);
 			root = get_ast(fullname);
-			DBG("End of parse the import file %s\n", fullname);
 			break;
 		}
 	}

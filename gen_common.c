@@ -455,8 +455,8 @@ static symbol_t  get_call_expr_info(tree_t *node) {
 
 static int check_param_type(tree_t* node, params_t** list, int args, int in_line) {
 	int i = 0;
-	int type = 0;
-	expression_t* expr = NULL;
+	cdecl_t* type = 0;
+	expr_t* expr = NULL;
 	tree_t* tmp = node;
 
 	while (tmp != NULL) {
@@ -464,13 +464,12 @@ static int check_param_type(tree_t* node, params_t** list, int args, int in_line
 			error(" no type for input/output parameter\n");
 			return 1;
 		}
-		type = get_decl_type(list[i]->decl);
-		expr = parse_expression(&tmp, current_table);
-		if (charge_type(type, expr->final_type) == -1)
+		type = list[i]->decl;
+		expr = check_expr(tmp, current_table);
+		if ((!both_scalar_type(type, expr->type)) &&
+				(!(is_same_type(type, expr->type)))) {
 			return 1;
-		if (expr->const_expr)
-			free(expr->const_expr);
-		free(expr);
+		}
 		tmp = tmp->common.sibling;
 		i++;
 	}
@@ -546,7 +545,6 @@ static int check_method_param(symbol_t sym, tree_t* call_expr, tree_t* ret_expr,
 }
 
 static int block_empty(tree_t *t);
-
 static void translate_call_common(tree_t *expr, tree_t *ret){
 	//tree_t *expr = t->call_inline.expr;
 	//tree_t *ret = t->call_inline.ret_args;
@@ -585,7 +583,8 @@ static void translate_call_common(tree_t *expr, tree_t *ret){
 			my_DBG("method object cannot empty\n");
 		} else {
 			my_DBG("obj name %s, method name %s\n", obj->name, method_sym->name);
-			add_object_method(obj, method_sym->name);
+			if (!block_empty(block))
+				add_object_method(obj, method_sym->name);
 		}
 	} else {
 		my_DBG("method not right %p, %d\n", method_sym, method_sym->type);
@@ -1594,7 +1593,7 @@ static const char *get_cdecl2_name(tree_t *t) {
 }
 
 static void print_cdecl3(tree_t *t) {
-	if(t->common.type == IDENT_TYPE) {
+	if (t->common.type == IDENT_TYPE || t->common.type == DML_KEYWORD_TYPE) {
 		D("%s", t->ident.str);
 	} else {
 		my_DBG("TODO: other cdecl3 type\n");
@@ -1602,7 +1601,7 @@ static void print_cdecl3(tree_t *t) {
 }
 
 static const char *get_cdecl3_name(tree_t *t) {
-	if(t->common.type == IDENT_TYPE) {
+	if (t->common.type == IDENT_TYPE || t->common.type == DML_KEYWORD_TYPE) {
 		return t->ident.str;
 	} else {
 		my_DBG("TODO: get_name:other cdecl3 type\n");

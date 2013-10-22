@@ -85,7 +85,7 @@ typedef struct constant_attr
 {
 	const char *name;
 	struct symbol_common common;
-	expression_t *value;
+	expr_t *value;
 } constant_attr_t;
 typedef struct struct_attr
 {
@@ -94,33 +94,23 @@ typedef struct struct_attr
 	decl_t* decl;
     symtab_t table;
 } struct_attr_t;
-typedef struct object_stmt_node
-{
-} stmt_attr_t;
 
 typedef struct paramspec {
-	int is_default;
-	int is_auto;
-	int type;
-	const char* str;
-	expression_t *expr;
-	param_value_t val;
+	tree_t* expr_node;
+	param_value_t* value;
 }paramspec_t;
 
 typedef struct parameter_attr
 {
 	struct symbol_common common;
 	const char *name;
-	paramspec_t* spec;
+	paramspec_t* param_spec;
 } parameter_attr_t;
-
-typedef struct value {
-}value_t;
 
 typedef struct params {
 	int is_notype;
-	decl_t* decl;
-	char* var_name;
+	cdecl_t* decl;
+	const char* var_name;
 }params_t;
 
 typedef struct method_params {
@@ -162,8 +152,7 @@ typedef struct select_attr {
 typedef struct foreach_attr {
 	struct symbol_common common;
 	const char* ident;
-	int type;
-	expression_t* expr;
+	expr_t* expr;
 	symtab_t table;
 }foreach_attr_t;
 
@@ -239,8 +228,8 @@ typedef struct register_array_attr
 typedef struct bitrange_attr{
 	struct symbol_common common;
 	int is_fix;
-	expression_t* expr;
-	expression_t* expr_end;
+	expr_t* expr;
+	expr_t* expr_end;
 }bitrange_attr_t;
 
 typedef struct field_attr

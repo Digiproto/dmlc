@@ -1435,18 +1435,19 @@ static int mismatch_type(const char* name) {
 }
 
 static int special_param_value(const char* param_name, parameter_attr_t* attr, char* special_value[]) {
-	if (attr->spec == NULL) {
+	if (attr->param_spec == NULL) {
 		return 1;
 	}
 
-	if ((attr->spec->is_auto) || (attr->spec->is_default)) {
+	if ((attr->param_spec->value->flag == PARAM_FLAG_AUTO) ||
+			(attr->param_spec->value->flag == PARAM_FLAG_DEFAULT)) {
 		return duplicate_assign_info(param_name);
 	}
 
-	if (attr->spec->type == CONST_STRING_TYPE) {
+	if (attr->param_spec->value->type == PARAM_TYPE_STRING) {
 		int i = 0;
 		while (special_value[i] != NULL) {
-			if (strcmp(attr->spec->str, special_value[i]) == 0) {
+			if (strcmp(attr->param_spec->value->u.string, special_value[i]) == 0) {
 				return 1;
 			}
 			i++;
@@ -1568,7 +1569,7 @@ int charge_standard_parameter(symtab_t table, parameter_attr_t* attr) {
 	 * when the object is created, and after that we can declare them, but
 	 * fobiden assigning value to them */
 	if (array_paramer(name, table)) {
-		if ((attr->spec) != NULL) {
+		if ((attr->param_spec) != NULL) {
 			fprintf(stderr, "error: duplicate assignment to parameter '%s'\n", name);
 			/* TODO: handle the error */
 			return 1;
@@ -1600,7 +1601,7 @@ int charge_standard_parameter(symtab_t table, parameter_attr_t* attr) {
 	obj_standard_param = get_standard_param(table->type);
 	param_type = standard_param_type(name, obj_standard_param);
 	if ((param_type == AUTO_VALUE) || (param_type == ASSIGNED_VALUE)) {
-		if (attr->spec != NULL) {
+		if (attr->param_spec != NULL) {
 			fprintf(stderr, "error: duplicate assignment to parameter '%s'\n", name);
 			/* FIXME: only for debug, delete the exit */
 			exit(-1);
@@ -1611,6 +1612,7 @@ int charge_standard_parameter(symtab_t table, parameter_attr_t* attr) {
 	else if ((param_type == DEFAULT_VALUE) || (param_type == UNDEFINED_VALUE)) {
 		symbol_t symbol = symbol_find(table, name, PARAMETER_TYPE);
 		obj_type = get_standard_param_type(name, obj_standard_param);
+#if 0
 		if (charge_standard_param_type(obj_type, attr->spec->type) == 0) {
 			/* the standard parameter with default value in one object is
 			 * inserted when object is created, but it can be assigned again */
@@ -1632,6 +1634,7 @@ int charge_standard_parameter(symtab_t table, parameter_attr_t* attr) {
 			/* TODO: handle the error */
 			return 1;
 		}
+#endif
 	}
 
 	return 0;

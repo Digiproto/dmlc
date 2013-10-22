@@ -549,21 +549,21 @@ char* get_obj_desc(obj_spec_t* spec) {
 	return NULL;
 }
 
-int get_int_value(tree_t** node, symtab_t table) {
-	if (*node == NULL) {
+int get_int_value(tree_t* node, symtab_t table) {
+	if (node == NULL) {
 		return -1;
 	}
-	if ((*node)->common.type == INTEGER_TYPE) {
-		return (*node)->int_cst.value;
+	if (node->common.type == INTEGER_TYPE) {
+		return node->int_cst.value;
 	}
 	else {
-		expression_t* expr = parse_expression(node, table);
+		expr_t* expr = check_expr(node, table);
 		if (expr->is_const == 0) {
 			PERROR("%s(%s) is non-constant value", node->common.location,
 				node->common.name, TYPENAME(node->common.type));
 		}
-		else if (expr->final_type == INTEGER_TYPE) {
-			return expr->const_expr->int_value;
+		else if (expr->type->common.categ == INT_T) {
+			return expr->val->int_v.value;
 		}
 		else {
 			PERROR("%s(%s) isn't integer type", node->common.location,
@@ -572,60 +572,49 @@ int get_int_value(tree_t** node, symtab_t table) {
 	}
 }
 
-arraydef_attr_t* get_range_arraydef(tree_t** node, symtab_t table, arraydef_attr_t* array) {
-	if (*node == NULL) {
+arraydef_attr_t* get_range_arraydef(tree_t* node, symtab_t table, arraydef_attr_t* array) {
+	if (node == NULL) {
 		return NULL;
 	}
-	if ((*node)->array.ident) {
-		tree_t* ident = (*node)->array.ident;
+	if (node->array.ident) {
+		tree_t* ident = node->array.ident;
 		if (ident->common.type == IDENT_TYPE) {
 			array->ident = ident->ident.str;
 		}
 		else {
-//			fprintf(stderr, "The array identifier type: %d, name: %s\n",
-//					ident->common.type, ident->common.name);
-//			exit(-1);
-			PERROR("the array identifier(%s, %s) isn't IDENT_TYPE",
-					ident->common.location, ident->common.name,
-					TYPENAME(ident->common.type));
+			PERROR("the array identifier%s isn't IDENT_TYPE",
+					ident->common.location, ident->common.name);
 		}
 	}
 	else {
-//		fprintf(stderr, "The array need identifier\n");
-//		exit(-1);
-		PERROR("can't find array identifier (%s, %s)", (*node)->common.location,
-				(*node)->common.name, TYPENAME((*node)->common.type));
+		PERROR("can't find array identifier %s ", node->common.location, node->common.name);
 	}
 
-	if ((*node)->array.expr) {
-		array->low = get_int_value(&((*node)->array.expr), table);
+	if (node->array.expr) {
+		array->low = get_int_value(node->array.expr, table);
 	}
 	else {
-//		fprintf(stderr, "The array need start array number\n");
-//		exit(-1);
 		PERROR("the array \"%s\" need start array number",
-				(*node)->common.location, (*node)->array.ident->common.name);
+				node->common.location, node->array.ident->common.name);
 	}
-	if ((*node)->array.expr_end) {
-		array->high = get_int_value(&((*node)->array.expr_end), table);
+	if (node->array.expr_end) {
+		array->high = get_int_value(node->array.expr_end, table);
 	}
 	else {
-//		fprintf(stderr, "The array need end array number\n");
-//		exit(-1);
 		PERROR("the array \"%s\"need end array number",
-				(*node)->common.location, (*node)->array.ident->common.name);
+				node->common.location, node->array.ident->common.name);
 	}
 
 	return array;
 }
 
-arraydef_attr_t* get_arraydef(tree_t** node, symtab_t table) {
-	if (*node == NULL) {
+arraydef_attr_t* get_arraydef(tree_t* node, symtab_t table) {
+	if (node == NULL) {
 		return NULL;
 	}
 	arraydef_attr_t* arraydef = (arraydef_attr_t*)gdml_zmalloc(sizeof(arraydef_attr_t));
-	if (((*node)->array.is_fix) == 1) {
-		arraydef->fix_array = get_int_value(&((*node)->array.expr), table);
+	if ((node->array.is_fix) == 1) {
+		arraydef->fix_array = get_int_value(node->array.expr, table);
 	}
 	else {
 		arraydef = get_range_arraydef(node, table, arraydef);
@@ -708,6 +697,7 @@ method_params_t* get_method_params(tree_t* node, symtab_t table) {
 	return params;
 }
 
+#if 0
 paramspec_t* get_paramspec(tree_t* node, symtab_t table) {
 	if (node == NULL) {
 		return NULL;
@@ -730,83 +720,127 @@ paramspec_t* get_paramspec(tree_t* node, symtab_t table) {
 
 	return spec;
 }
+#endif
 
-int get_size(tree_t** node, symtab_t table) {
-	if (*node == NULL) {
+paramspec_t* get_param_spec(tree_t* node, symtab_t table) {
+	assert(table != NULL);
+	if (node == NULL) {
+		return NULL;
+	}
+	paramspec_t* spec = (paramspec_t*)gdml_zmalloc(sizeof(paramspec_t));
+	param_value_t* value = (param_value_t*)gdml_zmalloc(sizeof(param_value_t));
+	spec->value = value;
+
+	if (node->paramspec.is_auto) {
+		value->type = PARAM_TYPE_NONE;
+		value->flag = PARAM_FLAG_AUTO;
+	}
+
+	if (node->paramspec.string) {
+		value->is_const = 1;
+		value->type = PARAM_TYPE_STRING;
+		value->u.string = strdup(node->paramspec.string->string.pointer);
+	}
+
+	if (node->paramspec.is_default) {
+		value->flag = PARAM_FLAG_DEFAULT;
+	}
+
+	if (node->paramspec.expr) {
+		expr_t* expr = check_expr(node->paramspec.expr, table);
+		spec->expr_node = node->paramspec.expr;
+		if (expr->is_undefined) {
+			value->type = PARAM_TYPE_UNDEF;
+		}
+		else if (expr->type->common.categ == INT_T) {
+			value->is_const = expr->is_const ? 1 : 0;
+			value->type = PARAM_TYPE_INT;
+			if (expr->val) {
+				value->u.integer = expr->val->int_v.value;
+				printf("expr->val: %d\n", value->u.integer);
+			}
+		}
+		else if (expr->type->common.categ == DOUBLE_T) {
+			value->is_const = expr->is_const ? 1 : 0;
+			value->type = PARAM_TYPE_FLOAT;
+			if (expr->val)
+				value->u.floating = expr->val->d;
+		}
+		else {
+			if (table->no_check) {
+				value->type = PARAM_TYPE_NONE;
+				value->flag = PARAM_FLAG_NONE;
+			}
+			else {
+				fprintf(stderr, "other parameter type\n");
+				exit(-1);
+			}
+		}
+	}
+
+	return spec;
+}
+
+int get_size(tree_t* node, symtab_t table) {
+	if (node == NULL) {
 		return -1;
 	}
-	if ((*node)->common.type == INTEGER_TYPE) {
-		int size = (*node)->int_cst.value;
+	if (node->common.type == INTEGER_TYPE) {
+		int size = node->int_cst.value;
 		if ((size > 0) && (size <= 8)) {
 			return size;
 		}
 		else {
-//			fprintf(stderr, "the size(%d) out\n", size);
-			PWARN("the size(%d) out", (*node)->common.location, size);
+			PWARN("the size(%d) out", node->common.location, size);
 		}
 	}
 	else {
-		expression_t* expr = parse_expression(node, table);
+		expr_t* expr = check_expr(node, table);
 		if (expr->is_const == 0) {
-//			fprintf(stderr, "Non-constant value\n");
-//			exit(-1);
-			PERROR("%s(%s) is non-constan value", expr->node->common.location,
-					expr->node->common.name, TYPENAME(expr->node->common.type));
+			PERROR("%s is non-constan value", expr->node->common.location, expr->node->common.name);
 		}
-		if (expr->final_type == INTEGER_TYPE) {
-			if (expr->const_expr->out_64bit) {
-//				fprintf(stderr, "The register size out\n");
-//				exit(-1);
+		if (expr->type->common.categ == INT_T) {
+			if (expr->val->int_v.out_64bit) {
 				PERROR("the size of expression \"%s\" is out",
-						(*node)->common.location, expr->node->common.name);
+						node->common.location, expr->node->common.name);
 			}
-			return expr->const_expr->int_value;
+			return expr->val->int_v.value;
 		}
 		else {
-//			fprintf(stderr, "The offset final size in other type: %s\n", expr->final_type);
-//			exit(-1);
-			PERROR("the offset final size in other type(%s)",
-					(*node)->common.location, TYPENAME(expr->final_type));
+			PERROR("the offset final size in other type", node->common.location);
 		}
 	}
 
 	return 0;
 }
 
-int get_offset(tree_t** node, symtab_t table) {
-	if (*node == NULL) {
+int get_offset(tree_t* node, symtab_t table) {
+	if (node == NULL) {
 		return -1;
 	}
-	if ((*node)->common.type == INTEGER_TYPE) {
-		int offset = (*node)->int_cst.value;
+	if (node->common.type == INTEGER_TYPE) {
+		int offset = node->int_cst.value;
 		return offset;
 	}
-	else if ((*node)->common.type == UNDEFINED_TYPE) {
+	else if (node->common.type == UNDEFINED_TYPE) {
 		return -1;
 	}
 	else {
-		expression_t* expr = parse_expression(node, table);
+		expr_t* expr = check_expr(node, table);
 
 		if (expr->is_const == 0) {
-//			fprintf(stderr, "Non-constant value\n");
-//			exit(-1);
-			PERROR("%s(%s) is non-constan value", (*node)->common.location,
-					expr->node->common.name, TYPENAME(expr->node->common.type));
+			PERROR("%s is non-constan value",
+					node->common.location, expr->node->common.name);
 		}
-		if (expr->final_type == INTEGER_TYPE) {
-			if (expr->const_expr->out_64bit) {
-//				fprintf(stderr, "The offset out_64bit\n");
-//				exit(-1);
+		if (expr->type->common.categ == INT_T) {
+			if (expr->val->int_v.out_64bit) {
 				PERROR("the size of offset \"%s\" is out",
-						(*node)->common.location, expr->node->common.name);
+						node->common.location, expr->node->common.name);
 			}
-			return expr->const_expr->int_value;
+			return expr->val->int_v.value;
 		}
 		else {
-//			fprintf(stderr, "The offset final size in other type: %d\n", expr->final_type);
-//			exit(-1);
-			PERROR("the offset final size in other type(%s)",
-					(*node)->common.location, TYPENAME(expr->final_type));
+			PERROR("the offset final size in other type", node->common.location);
 		}
 	}
 
@@ -842,11 +876,11 @@ void parse_register_attr(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
 	object_attr_t* attr = node->common.attr;
-	attr->reg.size = get_size(&(node->reg.sizespec), table);
-	attr->reg.offset = get_offset(&(node->reg.offset), table);
+	attr->reg.size = get_size(node->reg.sizespec, table);
+	attr->reg.offset = get_offset(node->reg.offset, table);
 	if (node->reg.array) {
 		attr->reg.is_array = 1;
-		attr->reg.arraydef = get_arraydef(&(node->reg.array), table);
+		attr->reg.arraydef = get_arraydef(node->reg.array, table);
 	}
 	attr->common.desc = get_obj_desc(node->reg.spec);
 
@@ -856,9 +890,14 @@ void parse_register_attr(tree_t* node, symtab_t table) {
 static void parse_bitrange(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
-	bitrange_attr_t* attr = node->common.attr;
-	attr->expr = parse_expression(&(node->array.expr), table);
-	attr->expr_end = parse_expression(&(node->array.expr_end), table);
+	tree_t* tmp = node;
+	bitrange_attr_t* attr = tmp->common.attr;
+	if (tmp->array.expr) {
+		attr->expr = check_expr(tmp->array.expr, table);
+	}
+	if (tmp->array.expr_end) {
+		attr->expr_end = check_expr(tmp->array.expr_end, table);
+	}
 
 	return;
 }
@@ -880,7 +919,7 @@ void parse_connect_attr(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
 	object_attr_t* attr = node->common.attr;
-	attr->connect.arraydef = get_arraydef(&(node->connect.arraydef), table);
+	attr->connect.arraydef = get_arraydef(node->connect.arraydef, table);
 
 	return;
 }
@@ -890,7 +929,7 @@ void parse_attribute_attr(tree_t* node, symtab_t table) {
 	assert(table != NULL);
 
 	object_attr_t* attr = node->common.attr;
-	attr->attribute.arraydef = get_arraydef(&(node->attribute.arraydef), table);
+	attr->attribute.arraydef = get_arraydef(node->attribute.arraydef, table);
 
 	return;
 }
@@ -899,7 +938,7 @@ void parse_group_attr(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
 	object_attr_t* attr = node->common.attr;
-	attr->group.arraydef = get_arraydef(&(node->group.array), table);
+	attr->group.arraydef = get_arraydef(node->group.array, table);
 
 	return;
 }
@@ -908,7 +947,7 @@ void parse_port_attr(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
 	object_attr_t* attr = node->common.attr;
-	attr->port.arraydef = get_arraydef(&(node->port.array), table);
+	attr->port.arraydef = get_arraydef(node->port.array, table);
 
 	return;
 }
@@ -944,7 +983,10 @@ void parse_device(tree_t* node, symtab_t table) {
 }
 
 void parse_obj_spec(obj_spec_t* spec, symtab_t table) {
-	assert(spec != NULL); assert(table != NULL);
+	assert(table != NULL);
+	if (spec == NULL) {
+		return;
+	}
 	tree_t* spec_node = NULL;
 	tree_t* block = NULL;
 	tree_t* statement = NULL;
@@ -976,6 +1018,17 @@ void parse_bank(tree_t* node, symtab_t table) {
 
 void parse_register(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
+	object_attr_t* attr = node->common.attr;
+	if ((attr->reg.is_array) && (attr->reg.arraydef->ident)) {
+		cdecl_t* type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
+		type->common.categ = INT_T;
+		type->common.size = sizeof(int) * 8;
+		if (table->table_num != 0) {
+			symbol_insert(table, attr->reg.arraydef->ident, PARAMETER_TYPE, type);
+		} else {
+			free(type);
+		}
+	}
 
 	obj_spec_t* spec = node->reg.spec;
 	parse_obj_spec(spec, table);
@@ -1087,13 +1140,9 @@ void parse_parameter(tree_t* node, symtab_t table) {
 
 	parameter_attr_t* attr = (parameter_attr_t*)gdml_zmalloc(sizeof(parameter_attr_t));
 	attr->name = node->ident.str;
-	attr->spec = get_paramspec(node->param.paramspec, table);
 	attr->common.node = node;
+	attr->param_spec = get_param_spec(node->param.paramspec, table);
 	node->common.attr = attr;
-
-	tree_t* spec = node->param.paramspec;
-	param_value_t* val = (param_value_t*)gdml_zmalloc(sizeof(param_value_t));
-	/* TODO: check the spec, as parameter can not be no spec */
 	symbol_insert(table, node->ident.str, PARAMETER_TYPE, attr);
 
 	return;
@@ -1106,7 +1155,7 @@ void parse_obj_if_else(tree_t* node, symtab_t table) {
 	 * with the following steps to parsing it*/
 	/* step 1: check the condition expression */
 	tree_t* cond_node = node->if_else.cond;
-	parse_expression(&cond_node, table);
+	check_expr(cond_node, table);
 
 	/* step 2: goto the if block to parse expressions and symbols */
 	tree_t* if_node = node->if_else.if_block;
@@ -1151,6 +1200,7 @@ void parse_method(tree_t* node, symtab_t table) {
 	if (symbol_defined(table, node->method.name))
 		error("duplicate definition of method '%s'\n", node->method.name);
 
+	printf("method name: %s\n", node->ident.str);
 	method_attr_t* attr = (method_attr_t*)gdml_zmalloc(sizeof(method_attr_t));
 	attr->name = node->ident.str;
 	attr->is_extern = node->method.is_extern;
@@ -1206,24 +1256,15 @@ void parse_constant(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
 	if (symbol_defined(table, node->assign.decl->ident.str))
-		error("duplicate assignment to parameter '%s'\n", node->ident.str);
+		error("duplicate assignment to parameter '%s'\n", node->assign.decl->ident.str);
 
 	constant_attr_t* attr = (constant_attr_t*)gdml_zmalloc(sizeof(constant_attr_t));
 	attr->name = node->assign.decl->ident.str;
 	attr->common.node = node;
 	node->common.attr = attr;
 
-	expression_t* expr = (expression_t*)gdml_zmalloc(sizeof(expression_t));
-	expr->is_constant_op = 1;
 	/*the constant symbol must be defined before used*/
-	attr->value = cal_expression(&(node->assign.expr), table, expr);
-	if (expr->is_undeclare) {
-		free(attr->value->const_expr);
-		free(attr->value);
-		free(attr);
-		error("unknown identifier: '%s'\n", attr->value->undecl_name);
-	}
-
+	attr->value = check_expr(node->assign.expr, table);
 	symbol_insert(table, node->assign.decl->ident.str, CONSTANT_TYPE, attr);
 
 	return;
@@ -1247,7 +1288,7 @@ void parse_typedef(tree_t* node, symtab_t table) {
 
 void parse_struct_top(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
-	printf("In %s, line = %d\n", __func__, __LINE__);
+	printf("In %s, line = %d ,exit\n", __func__, __LINE__);
 	exit(-1);
 
 	if (symbol_defined(table, node->ident.str))
@@ -1292,7 +1333,7 @@ void parse_expr(tree_t* node, symtab_t table) {
 	assert(table != NULL); assert(table != NULL);
 
 	tree_t* tmp = node;
-	parse_expression(&tmp, table);
+	check_expr(tmp, table);
 
 	return;
 }
@@ -1321,7 +1362,7 @@ void parse_if_else(tree_t* node, symtab_t table) {
 
 	/* step 1: check the condition expression */
 	tree_t* cond = node->if_else.cond;
-	parse_expression(&cond, table);
+	check_expr(cond, table);
 
 	/* step 2: goto the if block to parse elements
 	 * as if block has two style:
@@ -1670,8 +1711,7 @@ void parse_foreach(tree_t* node, symtab_t table) {
 	symbol_insert(node->foreach.table, ident->ident.str, FOREACH_TYPE, attr);
 
 	tree_t* in_expr = node->foreach.in_expr;
-	attr->expr = parse_expression(&in_expr, table);
-	attr->type = attr->expr->final_type;
+	attr->expr = check_expr(in_expr, table);
 	attr->table = node->foreach.table;
 
 	/* goto the statement to parse elements
@@ -1719,9 +1759,8 @@ void parse_case(tree_t* node, symtab_t table) {
 	/* Grammar:
 	 *		CASE expression ':' statement */
 	tree_t* expr_node = node->case_tree.expr;
-	expression_t* expr = parse_expression(&expr_node, table);
-	int type = expr->final_type;
-	if ((type != CHAR_TYPE) && (type != INTEGER_TYPE) && (type != INT_TYPE))
+	expr_t* expr = check_expr(expr_node, table);
+	if (!is_int_type(expr->type))
 		error("case label does not reduce to an integer constant\n");
 
 	tree_t* block = node->case_tree.block;

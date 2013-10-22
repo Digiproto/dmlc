@@ -138,6 +138,7 @@ normal:
 #endif
 #if  1 || QEMU
 	gen_code (ast, "./output/");
+	printf("generate code ok!\n");
 #else
 	//generate_simics_code (ast, "./output/");
 #endif

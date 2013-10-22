@@ -245,6 +245,28 @@ typedef enum
 	TYPE_END
 } type_t;
 
+enum data_type {
+	BOOL_T = TYPE_END,
+	CHAR_T,
+	SHORT_T,
+	INT_T,
+	UINT_T,
+	LONG_T,
+	FLOAT_T,
+	DOUBLE_T,
+	STRING_T,
+	POINTER_T,
+	VOID_T,
+	STRUCT_T,
+	LAYOUT_T,
+	BITFIELDS_T,
+	ARRAY_T,
+	TYPEDEF_T,
+	FUNCTION_T,
+	INTERFACE_T,
+	DATA_TYPE_END
+}data_type_t;
+
 #define NEWSTR(X) \
 	[(X) - 1] = #X
 
@@ -468,7 +490,7 @@ static const char *type_name[] = {
 #define TYPENAME(X) (((X) < 0 || (X) >= (sizeof(type_name)/sizeof(char**))) ? "Unknown_TYPE" : type_name[(X)])
 
 typedef enum {
-	TYPE_START = TYPE_END,
+	TYPE_START = DATA_TYPE_END,
 	/*-----expr assign type----*/
 	/* += */
 	ADD_ASSIGN_TYPE,

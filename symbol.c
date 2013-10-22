@@ -873,15 +873,10 @@ void params_insert_table(symtab_t table, method_params_t* method_params) {
 	int ret_argc = method_params->ret_argc;
 	params_t** in_list = method_params->in_list;
 	params_t** ret_list = method_params->ret_list;
-	decl_t* param_decl = NULL; 
+	cdecl_t* param_decl = NULL;
 
 	for (i = 0; i < in_argc; i++) {
 		param_decl = in_list[i]->decl;
-		if (param_decl->is_defined) {
-			DEBUG_SYMBOL("In %s, line = %d, %s defined!\n",
-					__func__, __LINE__, in_list[i]->var_name);
-			continue;
-		}
 		if (symbol_insert(table, in_list[i]->var_name, PARAM_TYPE, in_list[i]) == -1) {
 			DEBUG_SYMBOL("method param : %s redefined\n", in_list[i]->var_name);
 			/* FIXME: handle the error */
@@ -891,11 +886,6 @@ void params_insert_table(symtab_t table, method_params_t* method_params) {
 
 	for (i = 0; i < ret_argc; i++) {
 		param_decl = ret_list[i]->decl;
-		if (param_decl->is_defined) {
-			DEBUG_SYMBOL("In %s, line = %d, %s defined!\n",
-					__func__, __LINE__, ret_list[i]->var_name);
-			continue;
-		}
 		if (symbol_insert(table, ret_list[i]->var_name, PARAM_TYPE, ret_list[i]) == -1) {
 			DEBUG_SYMBOL("method param : %s redefined\n", in_list[i]->var_name);
 			/* FIXME: handle the error */
@@ -910,7 +900,7 @@ symtab_t change_table(symtab_t current_table, stack_t* table_stack, long int* cu
 	assert(current_table != NULL);
 	assert(table_stack != NULL);
 
-	symtab_t table = symtab_create(IF_ELSE_TYPE);
+	symtab_t table = symtab_create(type);
 	table->table_num = ++(*current_table_num);
 	//printf("LIne = %d, current_table num: %d, parent table: 0x%x--------------------\n",
 	//__LINE__, current_table->table_num, current_table->parent);

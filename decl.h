@@ -23,37 +23,21 @@
 
 #ifndef __DECL_H__
 #define __DECL_H__
-//#include "symbol.h"
+#include "types.h"
 
 enum { CONST_QUAL = 0x1, VECT_QUAL = 0x2 };
 enum { POINTER_TO, ARRAY_OF, FUNCTION_RETURN };
 
-enum data_type {
-	BOOL_T = 1,
-	CHAR_T,
-	SHORT_T,
-	INT_T,
-	UINT_T,
-	LONG_T,
-	FLOAT_T,
-	DOUBLE_T,
-	POINTER_T,
-	VOID_T,
-	STRUCT_T,
-	LAYOUT_T,
-	BITFIELDS_T,
-	ARRAY_T,
-	FUNCTION_T,
-	TYPEDEF_T
-}data_type_t;
-
 struct cdecl;
 struct type_deriv_list;
 #define TYPE_COMMON \
-	int categ : 8;	\
-	int qual : 8;	\
-	int is_extern : 16; \
-	int is_typedef;	\
+	int categ : 16;	\
+	int qual : 16;	\
+	int is_extern : 4; \
+	int is_typedef : 4;	\
+	int is_static : 2; \
+	int is_local : 2; \
+	int is_auto : 4; \
 	int no_decalare : 16; \
 	int size;		\
 	struct cdecl* bty; \
@@ -266,7 +250,8 @@ typedef struct decl {
 	int is_defined;
 	char* defined_name;
 	decl_type_t* type;
-	expression_t* value;
+	//expression_t* value;
+	void* value;
 	var_name_t* var;
 }decl_t;
 
@@ -274,8 +259,8 @@ struct array_decl {
 	decl_t* decl;
 	int is_fix;
 	char* ident;
-	expression_t* expr;
-	expression_t* expr_end;
+	void* expr;
+	void* expr_end;
 	struct array_decl* next;
 };
 
@@ -290,6 +275,11 @@ decl_t* parse_ctypedecl(tree_t* node, symtab_t table);
 decl_t* parse_ctypedecl(tree_t* node, symtab_t table);
 void parse_typedef_cdecl(tree_t* node, symtab_t table);
 void parse_top_struct_cdecl(tree_t* node, symtab_t table);
+
+int record_type(cdecl_t* type);
+cdecl_t* pointer_to(cdecl_t* type);
+cdecl_t* parse_ctype_decl(tree_t* node, symtab_t table);
+cdecl_t* parse_typeoparg(tree_t* node, symtab_t table);
 
 //#define DEBUG_DECLARE
 

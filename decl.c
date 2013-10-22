@@ -802,6 +802,7 @@ void parse_basetype(tree_t* node, symtab_t table, decl_t* decl) {
 	return ;
 }
 
+static cdecl_t* parse_cdecl(tree_t* node, symtab_t table);
 params_t* get_param_decl(tree_t* node, symtab_t table) {
 	assert(node != NULL);
 	if (node->common.type != CDECL_TYPE) {
@@ -809,28 +810,22 @@ params_t* get_param_decl(tree_t* node, symtab_t table) {
 		exit(-1);
 	}
 	params_t* param = (params_t*)gdml_zmalloc(sizeof(params_t));
-	decl_t* decl = (decl_t*)gdml_zmalloc(sizeof(decl_t));
-	decl_type_t* type = (decl_type_t*)gdml_zmalloc(sizeof(decl_type_t));
-	decl->type = type;
-	param->decl = decl;
-
-	//parse_cdecl(node, table, decl);
-	if (decl->is_defined) {
-		param->var_name = decl->defined_name;
-	}
-	else if ((decl->var == NULL) && (decl->type->pre_dml_name)) {
-		param->var_name = decl->type->pre_dml_name;
+	table->pass_num = 0;
+	cdecl_t* decl = parse_cdecl(node, table);
+	table->pass_num = 1;
+	if (decl->common.no_decalare) {
+		param->var_name = decl->var_name;
 		param->is_notype = 1;
+		decl->common.categ = NO_TYPE;
+		param->decl = decl;
 	}
 	else {
-		param->var_name = (char*)(decl->var->var_name);
-		if ((node->cdecl.decl) == NULL) {
-			param->is_notype = 1;
-		}
+		param->var_name = decl->var_name;
+		param->decl = decl;
 	}
 
-	DEBUG_DECL("IN %s, line = %d, decl_str: %s, va_name: %s\n",
-			__func__, __LINE__, decl->decl_str, param->var_name);
+	printf("IN %s, line = %d, va_name: %s, type: %d, INT_T: %d, TYPEDEF_T: %d\n",
+			__func__, __LINE__,  param->var_name, decl->common.categ, INT_T, TYPEDEF_T);
 
 	return param;
 }
@@ -1409,33 +1404,21 @@ void parse_data_cdecl(tree_t* node, symtab_t table) {
 
 void parse_local_decl(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
-	printf("In %s, line = %d\n", __func__, __LINE__);
-	exit(-1);
 
-	decl_t* decl = (decl_t*)gdml_zmalloc(sizeof(decl_t));
-	decl_type_t* type = (decl_type_t*)gdml_zmalloc(sizeof(decl_type_t));
-	decl->type = type;
+	cdecl_t* decl = parse_cdecl(node->local_tree.cdecl, table);
 
 	if (node->local_tree.is_static) {
-		type->is_static = 1;
-		decl->decl_str = malloc(sizeof("static "));
-		sprintf(decl->decl_str, "%s", "static ");
+		decl->common.is_static = 1;
 	}
 
 	if (node->local_tree.local_keyword) {
 		tree_t* keyword = node->local_tree.local_keyword;
 		char* keyword_name = (char*)(keyword->local_keyword.name);
 		if (strcmp(keyword_name, "auto") == 0) {
-			type->is_auto = 1;
-			//decl->decl_str = malloc(sizeof("auto "));
-			//sprintf(decl->decl_str, "%s", "auto ");
-			decl->decl_str = add_type_str(decl->decl_str, "auto ");
+			decl->common.is_auto = 1;
 		}
 		else if (strcmp(keyword_name, "local") == 0) {
-			type->is_local = 1;
-			//decl->decl_str = malloc(sizeof("local "));
-			//sprintf(decl->decl_str, "%s", "local ");
-			decl->decl_str = add_type_str(decl->decl_str, "local ");
+			decl->common.is_local = 1;
 		}
 		else {
 			fprintf(stderr, "Other local keyword: %s\n", keyword_name);
@@ -1444,45 +1427,18 @@ void parse_local_decl(tree_t* node, symtab_t table) {
 		}
 	}
 
-	if ((node->local_tree.cdecl) == NULL) {
-		fprintf(stderr, "local decal need decl!\n");
-		/* FIXME: handle the error */
-		exit(-1);
-	}
-
-	//parse_cdecl(node->local_tree.cdecl, table, decl);
-
-	if (decl->var) {
-		DEBUG_DECL("\nIn %s, line = %d, decl_str: %s, var_name: %s\n\n",
-			__func__, __LINE__, decl->decl_str, decl->var->var_name);
-	}
-	else {
-		DEBUG_DECL("\nIn %s, line = %d, decl_str: %s\n\n",
-			__func__, __LINE__, decl->decl_str);
-	}
-
-#if 0
 	if (node->local_tree.expr) {
-		expression_t* expr = parse_expression(&(node->local_tree.expr), table);
-		type_t type_decl = get_decl_type(decl);
-		if (type_decl == TYPEDEF_TYPE) {
-			type_decl = get_typedef_type(table, decl->type->typedef_name);
+		expr_t* expr = check_expr(node->local_tree.expr, table);
+		cdecl_t* type = expr->type;
+		if (!both_scalar_type(decl, expr->type) &&
+				!(both_array_type(decl, expr->type)) &&
+				!(is_same_type(decl, expr->type)) &&
+				!(is_no_type(decl))) {
+			error("incompatible types when initializing\n");
 		}
-		if (charge_type(expr->final_type, type_decl) < 0) {
-			fprintf(stderr, "Line: %d, error: invalid initializer\n", __LINE__);
-			return;
-		}
-		decl->value =  expr;
 	}
-#endif
 
-	if (decl->type->aggregate_defined == 0) {
-		insert_ident_decl(table, decl);
-	}
-	if (decl->is_defined) {
-		int type = get_decl_type(decl);
-		symbol_insert(table, decl->defined_name, type, decl);
-	}
+	symbol_insert(table, decl->var_name, decl->common.categ, decl);
 
 	return;
 }
@@ -1844,9 +1800,7 @@ static cdecl_t* parse_bitfields(tree_t* node, symtab_t table) {
 
 static cdecl_t* parse_typeof(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
-	cdecl_t* type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
-	fprintf(stderr, "IN %s, line = %d, parse_typeof not implement\n", __func__, __LINE__);
-	exit(-1);
+	cdecl_t* type = get_typeof_type(node, table);
 
 	return type;
 }
@@ -1909,7 +1863,7 @@ static cdecl_t* parse_type_ident(tree_t* node, symtab_t table) {
 				type->common.categ = SHORT_T;
 				type->common.size = sizeof(short) * 8;
 				break;
-			case  VOID_TYPE:
+			case VOID_TYPE:
 				type->common.categ = VOID_T;
 				break;
 			default:
@@ -1919,6 +1873,10 @@ static cdecl_t* parse_type_ident(tree_t* node, symtab_t table) {
 	}
 	else {
 		symbol_t symbol = symbol_find_notype(table, node->ident.str);
+		if (symbol == NULL) {
+			symtab_t root_table = get_root_table();
+			symbol = symbol_find_notype(root_table, node->ident.str);
+		}
 		//fprintf(stderr, "In %s, line = %d, base type: %s, symbol: 0x%x\n", __func__, __LINE__, node->ident.str, symbol);
 		/* In simics, some method parameter can not have type*/
 		if (symbol) {
@@ -2168,7 +2126,7 @@ static cdecl_t* qualify(int qual, cdecl_t* type) {
 	return ty;
 }
 
-static cdecl_t* pointer_to(cdecl_t* type) {
+cdecl_t* pointer_to(cdecl_t* type) {
 	assert(type != NULL);
 	cdecl_t* ty = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
 	ty->common.categ = POINTER_T;
@@ -2328,7 +2286,7 @@ void parse_extern_cdecl_or_ident(tree_t* node, symtab_t table) {
 	return;
 }
 
-static int record_type(cdecl_t* type) {
+int record_type(cdecl_t* type) {
 	assert(type != NULL);
 	int is_record_type = 0;
 	switch(type->common.categ) {
@@ -2431,3 +2389,69 @@ void parse_top_struct_cdecl(tree_t* node, symtab_t table) {
 
 	return;
 }
+
+static void parse_star(tree_t* node, symtab_t table, cdecl_t* type) {
+	assert(node != NULL); assert(table != NULL); assert(type != NULL);
+	type_deriv_list_t* drv = (type_deriv_list_t*)gdml_zmalloc(sizeof(type_deriv_list_t));
+	if (node->stars.is_const)
+		drv->qual |= CONST_QUAL;
+	drv->ctor = POINTER_TO;
+	drv->next = type->common.drv;
+	type->common.drv = drv;
+
+	if (node->stars.stars) {
+		parse_star(node->stars.stars, table, type);
+	}
+
+	return;
+}
+
+static void parse_ctype_decl_prt(tree_t* node, symtab_t table, cdecl_t* type);
+static void parse_ctypedecl_arr(tree_t* node, symtab_t table, cdecl_t* type) {
+	assert(node != NULL); assert(table != NULL); assert(type != NULL);
+	if (node->cdecl_brack.decl_list) {
+		parse_ctype_decl_prt(node->cdecl_brack.decl_list, table, type);
+	}
+
+	return;
+}
+
+static void parse_ctype_decl_prt(tree_t* node, symtab_t table, cdecl_t* type) {
+	assert(node != NULL); assert(table != NULL); assert(type != NULL);
+	if (node->ctypedecl_ptr.stars) {
+		parse_star(node->ctypedecl_ptr.stars, table, type);
+	}
+
+	if (node->ctypedecl_ptr.array) {
+		parse_ctypedecl_arr(node->ctypedecl_ptr.array, table, type);
+	}
+
+	return;
+}
+
+cdecl_t* parse_ctype_decl(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+	cdecl_t* type = parse_base(node->ctypedecl.basetype, table, 0);
+	if (node->ctypedecl.const_opt)
+		type->common.qual |= CONST_QUAL;
+
+	if (node->ctypedecl.ctypedecl_ptr) {
+		parse_ctype_decl_prt(node, table, type);
+	}
+
+	type = derive_type(type);
+	if (type == NULL)
+		error("illegal type\n");
+
+	return type;
+}
+
+cdecl_t* parse_typeoparg(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+	tree_t* tmp = node->typeoparg.ctypedecl;
+	tree_t* type_node = tmp ? tmp : node->typeoparg.ctypedecl_brack;
+	cdecl_t* type = parse_ctype_decl(type_node, table);
+
+	return type;
+}
+
