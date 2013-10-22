@@ -813,6 +813,31 @@ int get_offset(tree_t** node, symtab_t table) {
 	return 0;
 }
 
+#include <unistd.h>
+void parse_undef_list(symtab_t table) {
+	assert(table != NULL);
+	undef_var_t* var = table->undef_list;
+	tree_t* tmp = NULL;
+	table->pass_num = 1;
+	while (var) {
+		tmp = var->node;
+		if (tmp->common.parse)
+			tmp->common.parse(tmp, table);
+		var = var->next;
+	}
+
+	if ((table->sibling == NULL) && (table->child == NULL))
+		return;
+	if (table->sibling) {
+		parse_undef_list(table->sibling);
+	}
+	if (table->child) {
+		parse_undef_list(table->child);
+	}
+
+	return;
+}
+
 void parse_register_attr(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -907,8 +932,13 @@ void parse_device(tree_t* node, symtab_t table) {
 	/* In device parsing, we only parse the symbols and
 	 * calculate the expressions that in device table,
 	 * the other table of object, they will be parsed in
-	 * other objects*/
+	 * other objects, and they will be parsed two times
+	 * as some variables can be used befor defined*/
+	/* the first time to parse the symbols and expressions */
 	parse_object(node, table);
+
+	/* the second time to parse symbols and expressions */
+	parse_undef_list(table);
 
 	return;
 }
@@ -927,6 +957,9 @@ void parse_obj_spec(obj_spec_t* spec, symtab_t table) {
 		}
 		spec = spec->next;
 	}
+
+	/* the second time to parse symbols */
+	parse_undef_list(table);
 
 	return;
 }
@@ -1078,6 +1111,7 @@ void parse_obj_if_else(tree_t* node, symtab_t table) {
 	/* step 2: goto the if block to parse expressions and symbols */
 	tree_t* if_node = node->if_else.if_block;
 	symtab_t if_table = node->if_else.if_table;
+	if_table->pass_num = if_table->parent->pass_num;
 	if (if_node->common.parse)
 		if_node->common.parse(if_node, if_table);
 
@@ -1103,6 +1137,7 @@ void parse_obj_if_else(tree_t* node, symtab_t table) {
 	if (node->if_else.else_block) {
 		tree_t* else_node = node->if_else.else_block;
 		symtab_t else_table = node->if_else.else_table;
+		else_table->pass_num = else_table->parent->pass_num;
 		if(else_node->common.parse)
 			else_node->common.parse(else_node, else_table);
 	}
@@ -1149,6 +1184,10 @@ void parse_method_block(tree_t* node) {
 		tmp = tmp->common.sibling;
 	}
 
+	/* if the table have undefined symbol, will go to the second
+	 * time to parse them as symbol can be used before defined */
+	parse_undef_list(table);
+
 	return;
 }
 
@@ -1193,7 +1232,7 @@ void parse_constant(tree_t* node, symtab_t table) {
 void parse_extern_decl(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
-	parse_extern_cdecl_or_ident(node->cdecl.decl, table);
+	parse_extern_cdecl_or_ident(node, table);
 
 	return;
 }
@@ -1208,6 +1247,8 @@ void parse_typedef(tree_t* node, symtab_t table) {
 
 void parse_struct_top(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
+	printf("In %s, line = %d\n", __func__, __LINE__);
+	exit(-1);
 
 	if (symbol_defined(table, node->ident.str))
 		error("name collision on '%s'\n", node->ident.str);
@@ -1219,14 +1260,20 @@ void parse_struct_top(tree_t* node, symtab_t table) {
 	node->common.attr = attr;
 	symbol_insert(table, node->ident.str, STRUCT_TYPE, attr);
 
-	/* goto struct block to parse elements*/
-	parse_struct_decls(node->struct_tree.block, node->struct_tree.table);
+	printf("start parse the top struct\n");
+	sleep(5);
+	/* parse the struct elements, and insert them into table*/
+	parse_top_struct_cdecl(node, table);
+	printf("parse the top struct finished\n");
+	sleep(2);
 
 	return;
 }
 
 void parse_data(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
+	printf("In %s, line = %d\n", __func__, __LINE__);
+	exit(-1);
 
 	parse_data_cdecl(node, table);
 

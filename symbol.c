@@ -410,8 +410,8 @@ int symbol_insert(symtab_t symtab, const char* name, type_t type, void* attr)
     symbol_t new_symbol = symbol_new(name, type, attr);
 
 	if ((symtab->table_num) == 1) {
-		DEBUG_TOP_LEVEL("In %s, name = %s, type = %d, hash value = %d, table num: %d\n",
-				__FUNCTION__, name, type, str_hash (name), symtab->table_num);
+		DEBUG_TOP_LEVEL("In %s, name = %s, type = %d, hash value = %d, table num: %d, attr: 0x%X\n",
+				__FUNCTION__, name, type, str_hash (name), symtab->table_num, attr);
 	}
 	else {
 		DEBUG_OTHER_LEVEL("\tIn %s, name = %s, type = %d, hash value = %d, table num: %d\n",
@@ -921,8 +921,7 @@ symtab_t change_table(symtab_t current_table, stack_t* table_stack, long int* cu
 }
 
 void undef_var_insert(symtab_t table, tree_t* node) {
-	assert(table != NULL);
-	assert(node != NULL);
+	assert(table != NULL); assert(node != NULL);
 
 	undef_var_t* var = (undef_var_t*)gdml_zmalloc(sizeof(undef_var_t));
 	var->node= node;

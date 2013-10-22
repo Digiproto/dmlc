@@ -1819,7 +1819,7 @@ struct
 		tree_t* node = $<tree_type>3;
 		node->struct_tree.block = $4;
 
-		parse_struct_decls($4, current_table);
+		//parse_struct_decls($4, current_table);
 		current_table = pop(table_stack);
 
 		$$ = node;
@@ -1865,7 +1865,7 @@ layout
 		tree_t* node = $<tree_type>4;
 		node->layout.block = $5;
 
-		parse_layout_decls($5, current_table);
+		//parse_layout_decls($5, current_table);
 		current_table = pop(table_stack);
 		$$ = node;
 	}
@@ -1905,7 +1905,7 @@ bitfields
 	bitfields_decls '}' {
 		tree_t* node = $<tree_type>4;
 		node->bitfields.block = $5;
-		parse_bitfields_decls($5, current_table);
+		//parse_bitfields_decls($5, current_table);
 		current_table = pop(table_stack);
 		$$ = node;
 	}
@@ -1915,8 +1915,8 @@ bitfields_decls
 	: bitfields_decls cdecl '@' '[' expression ':' expression ']' ';' {
 		tree_t* node = (tree_t*)create_node("bitfields_decls", BITFIELDS_DECL_TYPE, sizeof(struct tree_bitfields_dec), &@$);
 		node->bitfields_dec.decl = $2;
-		node->bitfields_dec.start = $5;
-		node->bitfields_dec.end = $7;
+		node->bitfields_dec.start = $7;
+		node->bitfields_dec.end = $5;
 		node->common.print_node = print_bitfields_decls;
 		if ($1 != NULL) {
 			create_node_list($1, node);

@@ -25,9 +25,134 @@
 #define __DECL_H__
 //#include "symbol.h"
 
+enum { CONST_QUAL = 0x1, VECT_QUAL = 0x2 };
+enum { POINTER_TO, ARRAY_OF, FUNCTION_RETURN };
+
+enum data_type {
+	BOOL_T = 1,
+	CHAR_T,
+	SHORT_T,
+	INT_T,
+	UINT_T,
+	LONG_T,
+	FLOAT_T,
+	DOUBLE_T,
+	POINTER_T,
+	VOID_T,
+	STRUCT_T,
+	LAYOUT_T,
+	BITFIELDS_T,
+	ARRAY_T,
+	FUNCTION_T,
+	TYPEDEF_T
+}data_type_t;
+
+struct cdecl;
+struct type_deriv_list;
+#define TYPE_COMMON \
+	int categ : 8;	\
+	int qual : 8;	\
+	int is_extern : 16; \
+	int is_typedef;	\
+	int no_decalare : 16; \
+	int size;		\
+	struct cdecl* bty; \
+	struct type_deriv_list* drv;
+
+struct type_common {
+	TYPE_COMMON;
+};
+
+typedef struct element
+{
+    struct cdecl* decl;
+    struct element *next;
+} element_t;
+
+struct type_struct {
+	TYPE_COMMON;
+	int is_defined;
+	const char* id;
+	element_t* elem;
+	symtab_t table;
+};
+
+struct type_layout {
+	TYPE_COMMON;
+	int is_defined;
+	const char* id;
+	const char* bitorder;
+	element_t* elem;
+	symtab_t table;
+};
+
+typedef struct bit_elem {
+    struct cdecl* decl;
+    struct bit_elem* next;
+	int start;
+	int end;
+	int size;
+} bit_element_t;;
+
+struct type_bitfields {
+	TYPE_COMMON;
+	int is_defined;
+	int bit_size;
+	const char* id;
+	bit_element_t* elem;
+	symtab_t table;
+};
+
+typedef struct vector
+{
+    void **data;
+    int len;
+} vector_t;
+
+typedef struct signature
+{
+	int has_no_decalare : 16;
+    int has_ellipse : 16;
+    vector_t* params;
+} signature_t;
+
+typedef struct function_type
+{
+	TYPE_COMMON;
+    signature_t* sig;
+} function_type_t;
+
+typedef struct cdecl {
+	union {
+		struct type_common common;
+		struct type_struct struc;
+		struct type_layout layout;
+		struct type_bitfields bitfields;
+		struct function_type function;
+	};
+	const char* var_name;
+} cdecl_t;
+
+typedef struct type_deriv_list {
+    int ctor;
+    union {
+        int len;
+        int qual;
+        signature_t* sig;
+    };
+    struct type_deriv_list *next;
+} type_deriv_list_t;
+
+typedef struct param
+{
+	int is_ellipsis;
+    const char *id;
+    cdecl_t* ty;
+} param_t;
+
 typedef struct array_decl array_decl_t;
 
-typedef struct type {
+typedef struct {
 	unsigned char_type : 1;
 	unsigned int_type  : 1;
 	unsigned double_type : 1;
@@ -154,7 +279,7 @@ struct array_decl {
 	struct array_decl* next;
 };
 
-decl_t*  parse_extern_cdecl_or_ident(tree_t* node, symtab_t table);
+void parse_extern_cdecl_or_ident(tree_t* node, symtab_t table);
 void add_template_to_table(symtab_t table, const char* template_name);
 void print_templates(symtab_t table);
 void parse_local_decl(tree_t* node, symtab_t table);
@@ -163,14 +288,8 @@ void set_decl_type(decl_type_t* decl_type, type_t type);
 type_t get_decl_type(decl_t* decl);
 decl_t* parse_ctypedecl(tree_t* node, symtab_t table);
 decl_t* parse_ctypedecl(tree_t* node, symtab_t table);
-int parse_typeident(tree_t* node, symtab_t table, decl_t* decl);
-int parse_cdecl(tree_t* node, symtab_t table, decl_t* decl);
-int parse_cdecl2(tree_t* node, symtab_t table, decl_t* decl);
-int parse_cdecl3(tree_t* node, symtab_t table, decl_t* decl);
-int parse_struct_decls(tree_t* node, symtab_t table);
-int parse_layout_decls(tree_t* node, symtab_t table);
-int parse_bitfields_decls(tree_t* node, symtab_t table);
 void parse_typedef_cdecl(tree_t* node, symtab_t table);
+void parse_top_struct_cdecl(tree_t* node, symtab_t table);
 
 //#define DEBUG_DECLARE
 

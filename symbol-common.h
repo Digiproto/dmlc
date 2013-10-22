@@ -72,6 +72,7 @@ struct symtab {
     symbol_t table[MAX_SYMBOLS];
 	undef_var_t* undef_list;
 	int table_num;
+	int pass_num;
 	type_t type;
 	int no_check;
 	int is_parsed;
