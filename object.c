@@ -842,15 +842,6 @@ void device_realize(device_t *dev) {
 	 * and parameters into table, and calculate expressions,
 	 * as something can be detemined after the object instantiated*/
 	parse_device(dev->obj.node, dev->obj.symtab->sibling);
-	/* add default templates "template device" into device*/
-	add_object_templates(&dev->obj, NULL);
-	/* calculate the expression about parameter after the calculation
-	 * about constant and the templates it delies as parameter
-	 * can use the value about constant and the content about templates,
-	 * but constant expression can not use the value about parameter
-	 * can templates can noly use the content about themsevles*/
-	//parse_parameter(dev->obj.symtab->sibling);
-	/* parse declares and insert them into table */
 
 	list_for_each(p, &dev->obj.childs) {
 		tmp = list_entry(p, object_t, entry);

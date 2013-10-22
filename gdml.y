@@ -3054,6 +3054,7 @@ compound_statement
 	: '{' statement_list '}' {
 		tree_t* node = (tree_t*)create_node("block", BLOCK_TYPE, sizeof(struct tree_block), &@$);
 		node->common.translate = translate_block;
+		node->block.table = current_table;
 		node->block.statement = $2;
 		$$ = node;
 	}
