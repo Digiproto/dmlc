@@ -149,6 +149,8 @@ typedef enum
 	METHOD_EXTERN_TYPE,
 	/* goto */
 	GOTO_TYPE,
+	/* label */
+	LABEL_TYPE,
 	/* break */
 	BREAK_TYPE,
 	/* continue */
@@ -367,6 +369,8 @@ static const char *type_name[] = {
 	NEWSTR(METHOD_EXTERN_TYPE),
 	/* goto */
 	NEWSTR(GOTO_TYPE),
+	/* label */
+	NEWSTR(LABEL_TYPE),
 	/* break */
 	NEWSTR(BREAK_TYPE),
 	/* continue */

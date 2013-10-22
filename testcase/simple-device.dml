@@ -4,6 +4,11 @@ dml 1.2;
 device simple_device;
 
 parameter desc = "DML device template";
+parameter bangang = "bangbang";
+parameter oubang = "oubang";
+
+constant OU = "ou";
+constant BANG = "bang";
 
 import "utility.dml";
 
@@ -12,6 +17,15 @@ bank regs {
     register counter @ 0x00 {
         parameter documentation = "A simple counter.";
     }
+}
+
+bank regs {
+	parameter ou = "oubang";
+	parameter shen = "shenoubang";
+	register counter {
+		parameter reg_bangbang = "bangbang";
+		parameter reg_ou = "out";
+	}
 }
 // The init and post_init methods can be removed if they are not needed
 

@@ -547,6 +547,33 @@ symtab_t symtab_insert_sibling(symtab_t symtab, symtab_t newtab)
     return newtab;
 }
 
+void change_old_table(symtab_t parent, symtab_t old, symtab_t new) {
+	assert(parent != NULL); assert(old != NULL); assert(new != NULL);
+	symtab_t* tmp = &(parent->child);
+	symtab_t* pre = &(parent->child);
+	int i = 0;
+	while (*tmp != NULL) {
+		if (*tmp == old) {
+			*tmp = new;
+			new->parent = old->parent;
+			new->no_check = old->no_check;
+			(*pre)->sibling = new;
+			break;
+		}
+		else {
+			pre = tmp;
+			tmp = &((*tmp)->sibling);
+		}
+	}
+	if (*tmp == NULL) {
+		fprintf(stderr, "no such table(%d)\n", old->table_num);
+		/* TODO: handle the error */
+		exit(-1);
+	}
+
+	return;
+}
+
 /**
  * @brief create a symbol table into the child.
  *
@@ -785,6 +812,8 @@ symtab_t change_table(symtab_t current_table, stack_t* table_stack, long int* cu
 
 	symtab_t table = symtab_create(IF_ELSE_TYPE);
 	table->table_num = ++(*current_table_num);
+	//printf("LIne = %d, current_table num: %d, parent table: 0x%x--------------------\n",
+	//__LINE__, current_table->table_num, current_table->parent);
 	symtab_insert_child(current_table, table);
 	push(table_stack, current_table);
 

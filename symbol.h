@@ -44,22 +44,23 @@ typedef struct variable {
 
 typedef struct dml_attr
 {
-	const char* version;
 	struct symbol_common common;
+	const char* version;
 } dml_attr_t;
 
 
 typedef struct bitorder_attr
 {
-	const char* endian;
 	struct symbol_common common;
+	const char* name;
+	const char* endian;
 } bitorder_attr_t;
 
 typedef struct import_attr
 {
-	const char *file;
 	struct symbol_common common;
 	symtab_t table;
+	const char *file;
 } import_attr_t;
 
 typedef struct template_attr
@@ -108,8 +109,8 @@ typedef struct paramspec {
 
 typedef struct parameter_attr
 {
+	struct symbol_common common;
 	const char *name;
-	tree_t* node;
 	paramspec_t* spec;
 } parameter_attr_t;
 
@@ -151,6 +152,13 @@ typedef struct arraydef_attr {
 	int high;
 }arraydef_attr_t;
 
+typedef struct select_attr {
+	struct symbol_common common;
+	const char* ident;
+	int type;
+	expression_t* in_expr;
+}select_attr_t;
+
 typedef struct foreach_attr {
 	struct symbol_common common;
 	const char* ident;
@@ -158,6 +166,12 @@ typedef struct foreach_attr {
 	expression_t* expr;
 	symtab_t table;
 }foreach_attr_t;
+
+typedef struct label_attr {
+	struct symbol_common common;
+	const char* name;
+	symtab_t table;
+}label_attr_t;
 
 struct object_common {
    tree_t* node;

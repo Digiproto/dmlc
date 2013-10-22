@@ -246,6 +246,41 @@ tree_t* create_node (const char *name, int type, int size, YYLTYPE* location)
 	return node;
 }
 
+static int check_object_place(symtab_t table, int obj_type) {
+	assert(table != NULL);
+	int type = table->type;
+	int ret = 0;
+
+   /* In simics, there are some rules about object:
+	* 1. attribute, bank, implement, connect may only appear in device
+	* 2. register only appear in bank or group
+	* 3. field may only appear in register
+	* 4. interface may only appear in connect */
+	switch(obj_type) {
+		case BANK_TYPE:
+		case ATTRIBUTE_TYPE:
+		case CONNECT_TYPE:
+		case IMPLEMENT_TYPE:
+			ret = (type == DEVICE_TYPE) ? 0 : 1;
+			break;
+		case REGISTER_TYPE:
+			if ((type != BANK_TYPE) && (type != GROUP_TYPE))
+				ret = 1;
+			break;
+		case FIELD_TYPE:
+			ret = (type == REGISTER_TYPE) ? 0 : 1;
+			break;
+		case INTERFACE_TYPE:
+			ret = (type == CONNECT_TYPE) ? 0 : 1;
+			break;
+		default:
+			ret = 0;
+			break;
+	}
+
+	return ret;
+}
+
 object_attr_t* create_object(symtab_t table, const char* node_name, const char* symbol_name, int type, int node_size, int attr_size, YYLTYPE* location) {
    assert(table != NULL);
    assert(node_name != NULL);
@@ -253,6 +288,12 @@ object_attr_t* create_object(symtab_t table, const char* node_name, const char* 
 
    object_attr_t* attr = NULL;
    tree_t* node = NULL;
+
+   /* in simics, some object can appear in speial place */
+   if (check_object_place(table, type)) {
+	   error("this object '%s' is not allowed here\n", symbol_name);
+	   return NULL;
+   }
 
    /* In simics, an object can defined many times, so we should check one
     * object is defined before, if not, create new, if defined, get it's
@@ -690,37 +731,6 @@ paramspec_t* get_paramspec(tree_t* node, symtab_t table) {
 	return spec;
 }
 
-static void parse_parameter_spec(symtab_t table, symbol_t symbol) {
-	assert(table != NULL);
-	assert(symbol != NULL);
-
-	parameter_attr_t* attr =  symbol->attr;
-	tree_t* node = attr->node;
-	attr->spec = get_paramspec(node->param.paramspec, table);
-
-	return;
-}
-
-void parse_parameter(symtab_t table) {
-	assert(table != NULL);
-	if (table->is_parsed) {
-		return;
-	}
-	symbol_list_t* list = symbol_list_find(table, PARAMETER_TYPE);
-	symbol_list_t* head = list;
-	symbol_t symbol = NULL;
-	int i = 0;
-
-	while (list) {
-		symbol = list->sym;
-		printf("parameter name[%d]: %s, table_num: %d\n", i++, symbol->name, table->table_num);
-		parse_parameter_spec(table, symbol);
-		list = list->next;
-	}
-
-	return;
-}
-
 int get_size(tree_t** node, symtab_t table) {
 	if (*node == NULL) {
 		return -1;
@@ -803,9 +813,8 @@ int get_offset(tree_t** node, symtab_t table) {
 	return 0;
 }
 
-void parse_register(tree_t* node, symtab_t table) {
-	assert(node != NULL);
-	assert(table != NULL);
+void parse_register_attr(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
 
 	object_attr_t* attr = node->common.attr;
 	attr->reg.size = get_size(&(node->reg.sizespec), table);
@@ -820,8 +829,7 @@ void parse_register(tree_t* node, symtab_t table) {
 }
 
 static void parse_bitrange(tree_t* node, symtab_t table) {
-	assert(node != NULL);
-	assert(table != NULL);
+	assert(node != NULL); assert(table != NULL);
 
 	bitrange_attr_t* attr = node->common.attr;
 	attr->expr = parse_expression(&(node->array.expr), table);
@@ -830,9 +838,8 @@ static void parse_bitrange(tree_t* node, symtab_t table) {
 	return;
 }
 
-void parse_field(tree_t* node, symtab_t table) {
-	assert(node != NULL);
-	assert(table != NULL);
+void parse_field_attr(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
 
 	object_attr_t* attr = node->common.attr;
 	tree_t* node_range = node->field.bitrange;
@@ -844,9 +851,8 @@ void parse_field(tree_t* node, symtab_t table) {
 	return;
 }
 
-void parse_connect(tree_t* node, symtab_t table) {
-	assert(node != NULL);
-	assert(table != NULL);
+void parse_connect_attr(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
 
 	object_attr_t* attr = node->common.attr;
 	attr->connect.arraydef = get_arraydef(&(node->connect.arraydef), table);
@@ -854,12 +860,856 @@ void parse_connect(tree_t* node, symtab_t table) {
 	return;
 }
 
-void parse_attribute(tree_t* node, symtab_t table) {
+void parse_attribute_attr(tree_t* node, symtab_t table) {
 	assert(node != NULL);
 	assert(table != NULL);
 
 	object_attr_t* attr = node->common.attr;
 	attr->attribute.arraydef = get_arraydef(&(node->attribute.arraydef), table);
+
+	return;
+}
+
+void parse_group_attr(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+
+	object_attr_t* attr = node->common.attr;
+	attr->group.arraydef = get_arraydef(&(node->group.array), table);
+
+	return;
+}
+
+void parse_port_attr(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+
+	object_attr_t* attr = node->common.attr;
+	attr->port.arraydef = get_arraydef(&(node->port.array), table);
+
+	return;
+}
+
+static void parse_object(tree_t* node, symtab_t table) {
+	assert(table != NULL);
+	/* the symbols, parameters, constant, expressions that
+	 * in the current table are the sibling about the object node*/
+	tree_t* tmp = node;
+	while (tmp) {
+		if (tmp->common.parse) {
+			tmp->common.parse(tmp, table);
+		}
+		tmp = tmp->common.sibling;
+	}
+
+	return;
+}
+
+void parse_device(tree_t* node, symtab_t table) {
+	/* In device parsing, we only parse the symbols and
+	 * calculate the expressions that in device table,
+	 * the other table of object, they will be parsed in
+	 * other objects*/
+	parse_object(node, table);
+
+	return;
+}
+
+void parse_obj_spec(obj_spec_t* spec, symtab_t table) {
+	assert(spec != NULL); assert(table != NULL);
+	tree_t* spec_node = NULL;
+	tree_t* block = NULL;
+	tree_t* statement = NULL;
+	while (spec) {
+		spec_node = spec->node;
+		block = spec_node->spec.block;
+		if (block != NULL) {
+			statement = block->block.statement;
+			parse_object(statement, table);
+		}
+		spec = spec->next;
+	}
+
+	return;
+}
+
+void parse_bank(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+
+	/* parsing the symbols that in bank table */
+	obj_spec_t* spec = node->bank.spec;
+	parse_obj_spec(spec, table);
+
+	return;
+}
+
+void parse_register(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+
+	obj_spec_t* spec = node->reg.spec;
+	parse_obj_spec(spec, table);
+
+	return;
+}
+
+void parse_field(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+
+	obj_spec_t* spec = node->field.spec;
+	parse_obj_spec(spec, table);
+
+	return;
+}
+
+void parse_connect(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+
+	obj_spec_t* spec = node->connect.spec;
+	parse_obj_spec(spec, table);
+
+	return;
+}
+
+void parse_interface(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+
+	obj_spec_t* spec = node->interface.spec;
+	parse_obj_spec(spec, table);
+
+	return;
+}
+
+void parse_attribute(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+
+	obj_spec_t* spec = node->attribute.spec;
+	parse_obj_spec(spec, table);
+
+	return;
+}
+
+void parse_event(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+
+	obj_spec_t* spec = node->event.spec;
+	parse_obj_spec(spec, table);
+
+	return;
+}
+
+void parse_group(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+
+	obj_spec_t* spec = node->group.spec;
+	parse_obj_spec(spec, table);
+
+	return;
+}
+
+void parse_port(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+
+	obj_spec_t* spec = node->port.spec;
+	parse_obj_spec(spec, table);
+
+	return;
+}
+
+void parse_implement(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+
+	obj_spec_t* spec = node->implement.spec;
+	parse_obj_spec(spec, table);
+
+	return;
+}
+
+void parse_bitorder(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+
+	if (symbol_defined(table, "bitorder"))
+		error("name collision on 'bitorder'\n");
+
+	bitorder_attr_t* attr = (bitorder_attr_t*)gdml_zmalloc(sizeof(bitorder_attr_t));
+	attr->name = strdup("bitorder");
+	attr->endian = node->bitorder.endian;
+
+	if ((strcmp(attr->endian, "le") == 0) || (strcmp(attr->endian, "be") == 0)) {
+		attr->endian = node->ident.str;
+		attr->common.node = node;
+		node->common.attr = attr;
+		symbol_insert(table, "bitorder", BITORDER_TYPE, attr);
+	}
+	else {
+		free((void*)(attr->name)); free((void*)attr);
+		error("illegal bitorder: '%s'", node->ident.str);
+	}
+
+	return;
+}
+
+void parse_parameter(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+
+	if (symbol_defined(table, node->ident.str))
+	   error( "duplicate assignment to parameter '%s'\n", node->ident.str);
+
+	parameter_attr_t* attr = (parameter_attr_t*)gdml_zmalloc(sizeof(parameter_attr_t));
+	attr->name = node->ident.str;
+	attr->spec = get_paramspec(node->param.paramspec, table);
+	attr->common.node = node;
+	node->common.attr = attr;
+
+	tree_t* spec = node->param.paramspec;
+	param_value_t* val = (param_value_t*)gdml_zmalloc(sizeof(param_value_t));
+	/* TODO: check the spec, as parameter can not be no spec */
+	symbol_insert(table, node->ident.str, PARAMETER_TYPE, attr);
+
+	return;
+}
+
+void parse_obj_if_else(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+
+	/*if one node is object if node, we should go
+	 * with the following steps to parsing it*/
+	/* step 1: check the condition expression */
+	tree_t* cond_node = node->if_else.cond;
+	parse_expression(&cond_node, table);
+
+	/* step 2: goto the if block to parse expressions and symbols */
+	tree_t* if_node = node->if_else.if_block;
+	symtab_t if_table = node->if_else.if_table;
+	if (if_node->common.parse)
+		if_node->common.parse(if_node, if_table);
+
+	/* step 3: if the shape about if grammar is :
+	 *  if (cond) {
+	 *		...
+	 *  }
+	 *  else if (cond) {
+	 *		...
+	 *  }
+	 *  else {
+	 *		...
+	 *  }
+	 *  we should goto parsing the else if block
+	 *  actually the else if block node is the if node*/
+	if (node->if_else.else_if) {
+		tree_t*  else_if_node = node->if_else.else_if;
+		if (else_if_node->common.parse)
+			else_if_node->common.parse(else_if_node, table);
+	}
+
+	/* step 4: goto else blok to parse */
+	if (node->if_else.else_block) {
+		tree_t* else_node = node->if_else.else_block;
+		symtab_t else_table = node->if_else.else_table;
+		if(else_node->common.parse)
+			else_node->common.parse(else_node, else_table);
+	}
+
+	return;
+}
+
+void parse_method(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+
+	if (symbol_defined(table, node->method.name))
+		error("duplicate definition of method '%s'\n", node->method.name);
+
+	method_attr_t* attr = (method_attr_t*)gdml_zmalloc(sizeof(method_attr_t));
+	attr->name = node->ident.str;
+	attr->is_extern = node->method.is_extern;
+	attr->is_default = node->method.is_default;
+	attr->method_params = get_method_params(node->method.params, table);
+	attr->table = node->method.block->block.table;
+	attr->common.node = node;
+	node->common.attr = attr;
+	symbol_insert(table, node->ident.str, METHOD_TYPE, attr);
+	/* insert the parameters of method into method table */
+	params_insert_table(attr->table, attr->method_params);
+
+	return;
+}
+
+void parse_method_block(tree_t* node) {
+	assert(node != NULL);
+	method_attr_t* attr = node->common.attr;
+	symtab_t table = attr->table;
+	tree_t* block = node->method.block;
+
+	if (block->block.statement == NULL)
+		return;
+	/*goto the method block to parse elements
+	 * and calculate expressions */
+	tree_t* tmp = block->block.statement;
+	while (tmp) {
+		if (tmp->common.parse) {
+			tmp->common.parse(tmp, table);
+		}
+		tmp = tmp->common.sibling;
+	}
+
+	return;
+}
+
+void parse_loggroup(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+
+	if (symbol_defined(table, node->loggroup.name))
+		error("name collision on '%s'\n", node->loggroup.name);
+
+	symbol_insert(table, node->ident.str, LOGGROUP_TYPE, NULL);
+
+	return;
+}
+
+void parse_constant(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+
+	if (symbol_defined(table, node->assign.decl->ident.str))
+		error("duplicate assignment to parameter '%s'\n", node->ident.str);
+
+	constant_attr_t* attr = (constant_attr_t*)gdml_zmalloc(sizeof(constant_attr_t));
+	attr->name = node->assign.decl->ident.str;
+	attr->common.node = node;
+	node->common.attr = attr;
+
+	expression_t* expr = (expression_t*)gdml_zmalloc(sizeof(expression_t));
+	expr->is_constant_op = 1;
+	/*the constant symbol must be defined before used*/
+	attr->value = cal_expression(&(node->assign.expr), table, expr);
+	if (expr->is_undeclare) {
+		free(attr->value->const_expr);
+		free(attr->value);
+		free(attr);
+		error("unknown identifier: '%s'\n", attr->value->undecl_name);
+	}
+
+	symbol_insert(table, node->assign.decl->ident.str, CONSTANT_TYPE, attr);
+
+	return;
+}
+
+void parse_extern_decl(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+
+	parse_extern_cdecl_or_ident(node->cdecl.decl, table);
+
+	return;
+}
+
+void parse_typedef(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+
+	parse_typedef_cdecl(node, table);
+
+	return;
+}
+
+void parse_struct_top(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+
+	if (symbol_defined(table, node->ident.str))
+		error("name collision on '%s'\n", node->ident.str);
+
+	struct_attr_t* attr = (struct_attr_t*)gdml_zmalloc(sizeof(struct_attr_t));
+	attr->name = strdup(node->ident.str);
+	attr->table = node->struct_tree.table;
+	attr->common.node = node;
+	node->common.attr = attr;
+	symbol_insert(table, node->ident.str, STRUCT_TYPE, attr);
+
+	/* goto struct block to parse elements*/
+	parse_struct_decls(node->struct_tree.block, node->struct_tree.table);
+
+	return;
+}
+
+void parse_data(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+
+	parse_data_cdecl(node, table);
+
+	return;
+}
+
+void parse_local(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+
+	parse_local_decl(node, table);
+
+	return;
+}
+
+void parse_expr(tree_t* node, symtab_t table) {
+	assert(table != NULL); assert(table != NULL);
+
+	tree_t* tmp = node;
+	parse_expression(&tmp, table);
+
+	return;
+}
+
+static void parse_compound_statement(tree_t* node) {
+	assert(node != NULL);
+
+	symtab_t table = node->block.table;
+	tree_t* statement = node->block.statement;
+	while (statement) {
+		if (statement->common.parse)
+			statement->common.parse(statement, table);
+		statement = statement->common.sibling;
+	}
+
+	return;
+}
+
+void parse_if_else(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+
+	/* if one node is if node, should go with
+	 * the following steps to parsing it, as the
+	 * if grammar can be the two style with brace
+	 * and no brace that diff with object if */
+
+	/* step 1: check the condition expression */
+	tree_t* cond = node->if_else.cond;
+	parse_expression(&cond, table);
+
+	/* step 2: goto the if block to parse elements
+	 * as if block has two style:
+	 * (1). if (cond)
+	 *			statement
+	 * (2). if (cond) {
+	 *			statements
+	 *		}*/
+	tree_t* if_node = node->if_else.if_block;
+	symtab_t if_table = NULL;
+	if (if_node->common.type != BLOCK_TYPE) {
+		if (if_node->common.parse)
+			if_node->common.parse(if_node, node->if_else.if_table);
+	} else {
+		parse_compound_statement(if_node);
+	}
+
+	/* step 3: if the style if:
+	 * if (cond)		|	if (cond) {
+	 *		statement	|		statement
+	 *	else if (cond)	|	}
+	 *		statement	|	else if (cond) {
+	 *	...				|		statement
+	 *	else			|	}
+	 *		statement	|	else if (cond)
+	 *					|		statement
+	 *					|	else {
+	 *					|		statement
+	 *					|	}
+	 * like this, we should goto else if block
+	 * to parse elements and calculate expressions
+	 * but actually, it is a if node*/
+	if (node->if_else.else_if) {
+		tree_t* else_if_node = node->if_else.else_if;
+		else_if_node->common.parse(else_if_node, table);
+	}
+
+	/* step 4: goto the else block to parse
+	 * elements and calculate expressions*/
+	tree_t* else_block = node->if_else.else_block;
+	/* not have the else block */
+	if (else_block== NULL)
+		return;
+
+	/* else block have two style:
+	 * (1). else
+	 *			statement
+	 * (2). else {
+	 *			statements
+	 *		}*/
+	if (else_block->common.type != BLOCK_TYPE) {
+		if (else_block->common.parse)
+			else_block->common.parse(else_block, node->if_else.else_table);
+	} else {
+		parse_compound_statement(else_block);
+	}
+
+	return;
+}
+
+void parse_do_while(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+	/* as the do while or while grammar can be:
+	 * (1). do {				| (1).	do
+	 *			statements		|			statement
+	 *		} while(cond)		|		while(cond)
+	 * (2). while(cond) {		| (2). while(cond)
+	 *			statements					statement
+	 *		}
+	 **/
+	/* check the condition expression */
+	tree_t* cond = node->do_while.cond;
+	parse_expression(&cond, table);
+
+	/* goto the block table to parsing elements
+	 * and calculate expressions*/
+	tree_t* block_node = node->do_while.block;
+	if (block_node->common.type != BLOCK_TYPE) {
+		if (block_node->common.parse)
+			block_node->common.parse(block_node, node->do_while.table);
+	} else {
+		parse_compound_statement(block_node);
+	}
+
+	return;
+}
+
+void parse_for(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+
+	tree_t* init = node->for_tree.init;
+	parse_comma_expression(&init, table);
+	tree_t* cond = node->for_tree.cond;
+	parse_expression(&cond, table);
+	tree_t* update = node->for_tree.update;
+	parse_comma_expression(&update, table);
+
+	tree_t* block = node->for_tree.block;
+	if (block->common.type != BLOCK_TYPE) {
+		if (block->common.parse)
+			block->common.parse(block, node->for_tree.table);
+	} else {
+		parse_compound_statement(block);
+	}
+
+	return;
+}
+
+void parse_switch(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+
+	tree_t* cond = node->switch_tree.cond;
+	parse_expression(&(cond), table);
+
+	tree_t* block = node->switch_tree.block;
+	if (block->common.type != BLOCK_TYPE) {
+		if (block->common.parse)
+			block->common.parse(block, node->switch_tree.table);
+	} else {
+		parse_compound_statement(block);
+	}
+
+	return;
+}
+
+void parse_delete(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+
+	/* the function of delete is to deallocate the
+	 * memory pointed by the result of evaluating expr */
+	tree_t* expr_node = node->delete_tree.expr;
+	expression_t* expr = parse_expression(&expr_node, table);
+	if(expr->final_type != POINTER_TYPE)
+		error("delete expression not pointer\n");
+
+	return;
+}
+
+void parse_try_catch(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+
+	/* goto try block to parse elements and
+	 * calculate expressions */
+	tree_t* try_block = node->try_catch.try_block;
+	if (try_block->common.type != BLOCK_TYPE) {
+		if (try_block->common.parse)
+			try_block->common.parse(try_block, node->try_catch.try_table);
+	} else {
+		parse_compound_statement(try_block);
+	}
+
+	/* goto catch block to pase elements
+	 * and calculate expressions */
+	tree_t* catch_block = node->try_catch.catch_block;
+	if (catch_block->common.type != BLOCK_TYPE) {
+		if (catch_block->common.parse)
+			catch_block->common.parse(catch_block, node->try_catch.catch_table);
+	} else {
+		parse_compound_statement(catch_block);
+	}
+
+	return;
+}
+
+void parse_after_call(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+
+	/* Grammar:
+	 *		after '(' expression ')' call expression */
+
+	/* parse after expression */
+	tree_t* cond = node->after_call.cond;
+	parse_expression(&(cond), table);
+
+	/* parse call expression */
+	tree_t* call_expr = node->after_call.call_expr;
+	/* the call method expression will be implemented at
+	 * the function of translate_call*/
+
+	return;
+}
+
+void parse_assert(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+	/* Grammar:
+	 *		assert expression */
+	/* In assert, we should only check the symbol is defined or not
+	 * and check the type is ok*/
+	tree_t* expr_node = node->assert_tree.expr;
+	parse_expression(&expr_node, table);
+
+	return;
+}
+
+static void check_log_type(const char* str) {
+	const char* log_type[] =
+	{"\"info\"", "\"error\"", "\"undefined\"", "\"spec_violation\"", "\"unimplemented\"", NULL};
+
+	int i = 0;
+	while (log_type[i]) {
+		if (strcmp(str, log_type[i]) == 0)
+			return;
+		else
+			i++;
+	}
+	error(" invalid log type: '%s'\n", str);
+
+	return;
+}
+
+static void check_log_level(tree_t* node, symtab_t table) {
+	if (node == NULL)
+		return;
+
+	tree_t* level = node;
+	expression_t* expr = parse_expression(&level, table);
+	if ((expr->final_type == INTEGER_TYPE) || (expr->final_type == INT_TYPE)) {
+		if (expr->is_const) {
+			int value = expr->const_expr->int_value;
+			if ((value > 0) && (value < 5))
+				return;
+			else
+				error("out of log leve(1..4) : %d\n", value);
+		}
+	}
+	else
+		error("invalid log level: %s\n", TYPENAME(expr->final_type));
+
+	return;
+}
+
+static void check_log_group(tree_t* node, symtab_t table) {
+	assert(table != NULL);
+	if (node == NULL)
+		return;
+
+	tree_t* group = node;
+	expression_t* expr = parse_expression(&group, table);
+
+	return;
+}
+
+extern int scanfstr(const char *str, char ***typelist);
+static void parse_log_format(const char* format, tree_t* args) {
+	assert(format != NULL); assert(args != NULL);
+	char** typelist = NULL;
+	int arg_num = 0;
+	int argc = 0;
+
+	argc = scanfstr(format, &typelist);
+	arg_num = get_list_num(args);
+
+	if (argc > arg_num)
+		warning("warning: too few arguments for format\n");
+
+	return;
+}
+
+void parse_log(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+	/* Grammar:
+	 *		log string_literal ',' expression ',' expression ':' string_literal ',' log_args
+	 *		log string_literal ',' expression ':' string_literal log_args
+	 *and it equal to: log log-type, level, groups: format-string, e1, ..., eN; */
+
+	/* the log-type must be one of the string constants:
+	 * "info", "error", "undefined", "spec_violation", "unimplemented"*/
+	const char* log_type = node->log.log_type;
+	check_log_type(log_type);
+
+	/* the value of level must be an interger from 1 to 4,
+	 * if omitted, the default level is 1. The meaning
+	 * about 1 to 4, please refer to dml reference manual */
+	tree_t* level = node->log.level;
+	check_log_level(level, table);
+
+	/* the groups must be declared using the loggroup
+	 * if omitted, the default value is 0 */
+	tree_t* group = node->log.group;
+	check_log_group(group, table);
+
+	/* check the log format and the log args, that
+	 * like the printf's format, and args*/
+	tree_t* log_args = node->log.args;
+	parse_log_args(&log_args, table);
+	parse_log_format(node->log.format, log_args);
+
+	return;
+}
+
+void parse_select(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+	/* Grammar:
+	 * select ident in '(' expression ')' where '(' expression ')' statement else statement */
+	tree_t* ident = node->select.ident;
+	/* insert the ident into table */
+	select_attr_t* attr = (select_attr_t*)gdml_zmalloc(sizeof(select_attr_t));
+	attr->ident = ident->ident.str;
+	attr->common.node = node;
+	symbol_insert(node->select.where_table, ident->ident.str, SELECT_TYPE, attr);
+
+	tree_t* in_expr = node->select.in_expr;
+	attr->in_expr = parse_expression(&in_expr, table);
+	attr->type = attr->in_expr->final_type;
+
+	tree_t* cond = node->select.cond;
+	/* as we insert the ident into where block, so
+	 * check the conditional expression and find
+	 * the symbol from where table*/
+	parse_expression(&cond, node->select.where_table);
+
+	/* goto the statement to parse elements
+	 * and calculate expressions */
+	tree_t* where_block = node->select.where_block;
+	if (where_block->common.type != BLOCK_TYPE) {
+		if (where_block->common.parse)
+			where_block->common.parse(where_block, node->select.where_table);
+	} else {
+		parse_compound_statement(where_block);
+	}
+
+	tree_t* else_block = node->select.else_block;
+	if (else_block->common.type != BLOCK_TYPE) {
+		if (else_block->common.parse)
+			else_block->common.parse(else_block, node->select.else_table);
+	} else {
+		parse_compound_statement(else_block);
+	}
+
+	return;
+}
+
+void parse_foreach(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+
+	/* Grammar:
+	 *		foreach ident in '(' expression ')' statement
+	 */
+	/* insert ident into table of foreach */
+	tree_t* ident = node->foreach.ident;
+	foreach_attr_t* attr = (foreach_attr_t*)gdml_zmalloc(sizeof(foreach_attr_t));
+	attr->ident = ident->ident.str;
+	attr->common.node = node;
+	attr->table = node->foreach.table;
+	node->common.attr = attr;
+	symbol_insert(node->foreach.table, ident->ident.str, FOREACH_TYPE, attr);
+
+	tree_t* in_expr = node->foreach.in_expr;
+	attr->expr = parse_expression(&in_expr, table);
+	attr->type = attr->expr->final_type;
+	attr->table = node->foreach.table;
+
+	/* goto the statement to parse elements
+	 * and calculate expressions */
+	tree_t* block = node->foreach.block;
+	if (block->common.type != BLOCK_TYPE) {
+		if (block->common.parse)
+			block->common.parse(block, node->foreach.table);
+	} else {
+		parse_compound_statement(block);
+	}
+
+	return;
+}
+
+void parse_label(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+
+	/*Grammar:
+	 *		ident ':' statement */
+	tree_t* ident = node->label.ident;
+	if (symbol_defined(table, ident->ident.str))
+		error("duplicate definition of label '%s'\n", ident->ident.str);
+	label_attr_t* attr = (label_attr_t*)gdml_zmalloc(sizeof(label_attr_t));
+	attr->name = ident->ident.str;
+	attr->table = node->label.table;
+	attr->common.node = node;
+	symbol_insert(table, ident->ident.str, LABEL_TYPE, attr);
+
+	/* goto block to parse elements
+	 * and calculate expressions */
+	tree_t* block = node->label.block;
+	if (block->common.type != BLOCK_TYPE) {
+		if (block->common.parse)
+			block->common.parse(block, node->label.table);
+	} else {
+		parse_compound_statement(block);
+	}
+
+	return;
+}
+
+void parse_case(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+	/* Grammar:
+	 *		CASE expression ':' statement */
+	tree_t* expr_node = node->case_tree.expr;
+	expression_t* expr = parse_expression(&expr_node, table);
+	int type = expr->final_type;
+	if ((type != CHAR_TYPE) && (type != INTEGER_TYPE) && (type != INT_TYPE))
+		error("case label does not reduce to an integer constant\n");
+
+	tree_t* block = node->case_tree.block;
+	if (block->common.type != BLOCK_TYPE) {
+		if (block->common.parse)
+			block->common.parse(block, node->case_tree.table);
+	} else {
+		parse_compound_statement(block);
+	}
+
+	return;
+}
+
+void parse_default(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+
+	tree_t* block = node->default_tree.block;
+	if (block->common.type != BLOCK_TYPE) {
+		if (block->common.parse)
+			block->common.parse(block, node->default_tree.table);
+	} else {
+		parse_compound_statement(block);
+	}
+
+	return;
+}
+
+void parse_goto(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+
+	tree_t* ident = node->goto_tree.label;
+	const char* label_name = ident->ident.str;
+	symbol_t symbol = symbol_find(table, label_name, LABEL_TYPE);
+	if (symbol == NULL)
+		error("label ‘%s’ used but not defined\n", label_name);
 
 	return;
 }
@@ -3039,9 +3889,8 @@ void print_method (tree_t* node, int pos) {
 	if (node->method.block) {
 		tree_t* block = node->method.block;
 		tree_t* statement = block->block.statement;
-		//printf("LINE: %d, name: %s\n", __LINE__, statement->common.name);
-		//statement->common.print_node(statement, --pos);
-		statement->common.print_node(statement, ++pos);
+		if (statement)
+			statement->common.print_node(statement, --pos);
 	}
 
 	print_sibling(node, pos);
@@ -3290,6 +4139,32 @@ void print_foreach(tree_t* node, int pos) {
 	}
 
 	print_sibling(node, pos);
+
+	return;
+}
+
+void print_label(tree_t* node, int pos) {
+	/*
+	 * Grammar:
+	 *		ident ':' statement
+	 */
+	if (node->label.ident) {
+		tree_t* ident = node->label.ident;
+		print_pos(pos);
+		printf("[%s : %s IN : %d]\n",
+				node->common.name, ident->ident.str, pos);
+	}
+
+	if (node->label.block) {
+		tree_t* block = node->label.block;
+		if (block->common.type == BLOCK_TYPE) {
+			tree_t* statement = block->block.statement;
+			statement->common.print_node(statement, (pos - 1));
+		}
+		else {
+			block->common.print_node(block, (pos -1));
+		}
+	}
 
 	return;
 }

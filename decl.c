@@ -32,6 +32,7 @@
 #include "ast.h"
 #include "decl.h"
 #include "expression.h"
+#include "info_output.h"
 
 void* gdml_realloc(void* addr, int size) {
 	if (addr == NULL) {
@@ -1610,7 +1611,10 @@ void parse_data_cdecl(tree_t* node, symtab_t table) {
 	decl->type = type;
 
 	parse_cdecl(node, table, decl);
-	insert_ident_decl(table, decl);
+	var_name_t* var = decl->var;
+	if (symbol_defined(table, var->var_name))
+		error("name collision on '%s'\n", var->var_name);
+	symbol_insert(table, var->var_name, DATA_TYPE, decl);
 
 	return;
 }
@@ -1785,14 +1789,9 @@ decl_t*  parse_extern_cdecl_or_ident(tree_t* node, symtab_t table) {
 	parse_cdecl(node, table, decl);
 	if (decl->type->is_func) {
 		function_t* func = (function_t*)(decl->type->func_decl);
-		if (table->table_num == 1) {
-			symbol_insert(table, func->func_name, FUNCTION_TYPE, func);
-		}
-		else {
-			fprintf(stderr, "extern function should the topest!\n");
-			/* TODO: handle the error */
-			exit(-1);
-		}
+		if (symbol_defined(table, func->func_name))
+			error("name collision on '%s'\n", func->func_name);
+		symbol_insert(table, func->func_name, FUNCTION_TYPE, func);
 	}
 	else if (decl->type->aggregate_defined) {
 		/* do nothing as we insert it as declare */
@@ -1802,7 +1801,8 @@ decl_t*  parse_extern_cdecl_or_ident(tree_t* node, symtab_t table) {
 				__func__, __LINE__, decl->decl_str);
 		var_name_t* var = decl->var;
 		while (var) {
-			DEBUG_DECL("name: %s\n", var->var_name);
+			if (symbol_defined(table, var->var_name))
+				error("In %s, line = %d, name collision on '%s'\n", __func__, __LINE__, var->var_name);
 			symbol_insert(table, var->var_name, IDENT_TYPE, decl);
 			var = var->next;
 		}
@@ -1887,7 +1887,7 @@ int parse_bitfields_decls(tree_t* node, symtab_t table) {
 	return 0;
 }
 
-int parse_typedef(tree_t* node, symtab_t table) {
+void parse_typedef_cdecl(tree_t* node, symtab_t table) {
 	assert(node != NULL);
 	assert(table != NULL);
 
@@ -1906,12 +1906,12 @@ int parse_typedef(tree_t* node, symtab_t table) {
 	parse_cdecl(node->cdecl.decl, table, decl);
 
 	if (decl->type->aggregate_defined) {
-		return 0;
+		return ;
 	}
 	else if (decl->type->func_decl) {
 		function_t* func = (function_t*)(decl->type->func_decl);
 		symbol_insert(table, func->func_name, FUNCTION_POINTER_TYPE, func);
-		return 0;
+		return ;
 	}
 
 	var_name_t* var = decl->var;
@@ -1954,5 +1954,5 @@ int parse_typedef(tree_t* node, symtab_t table) {
 	DEBUG_DECL("In %s, line = %d, typedef name: %s\n",
 			__func__, __LINE__, attr->name);
 
-	return 0;
+	return ;
 }

@@ -159,7 +159,6 @@ void add_template_to_table(symtab_t table, const char* template_name);
 void print_templates(symtab_t table);
 void parse_local_decl(tree_t* node, symtab_t table);
 void parse_data_cdecl(tree_t* node, symtab_t table);
-struct log_args* parse_log(tree_t* node);
 void set_decl_type(decl_type_t* decl_type, type_t type);
 type_t get_decl_type(decl_t* decl);
 decl_t* parse_ctypedecl(tree_t* node, symtab_t table);
@@ -171,7 +170,7 @@ int parse_cdecl3(tree_t* node, symtab_t table, decl_t* decl);
 int parse_struct_decls(tree_t* node, symtab_t table);
 int parse_layout_decls(tree_t* node, symtab_t table);
 int parse_bitfields_decls(tree_t* node, symtab_t table);
-int parse_typedef(tree_t* node, symtab_t table);
+void parse_typedef_cdecl(tree_t* node, symtab_t table);
 
 //#define DEBUG_DECLARE
 

@@ -22,6 +22,10 @@
  */
 
 #include "gen_common.h"
+#include "info_output.h"
+#include "parameter_type.h"
+
+#include <assert.h>
 
 symtab_t current_table;
 	
@@ -319,19 +323,19 @@ static void translate_parameter(symbol_t sym) {
 	val = (param_value_t *)sym->attr;
 	type = val->type;
 	switch(type) {
-		case param_type_int:
+		case PARAM_TYPE_INT:
 			D("0x%x", val->u.integer);
 			break;
-		case param_type_float:
+		case PARAM_TYPE_FLOAT:
 			D("%f", val->u.floating);
 			break;
-		case param_type_bool:
+		case PARAM_TYPE_BOOL:
 			D("%d", val->u.boolean);
 			break;
-		case param_type_string:
+		case PARAM_TYPE_STRING:
 			D("%s", val->u.string);
 			break;
-		case param_type_ref:
+		case PARAM_TYPE_REF:
 			obj = val->u.ref;
 			if(!strcmp(obj->obj_type, "device")) {
 #if backend == 1
@@ -449,6 +453,98 @@ static symbol_t  get_call_expr_info(tree_t *node) {
 	return tmp;
 }
 
+static int check_param_type(tree_t* node, params_t** list, int args, int in_line) {
+	int i = 0;
+	int type = 0;
+	expression_t* expr = NULL;
+	tree_t* tmp = node;
+
+	while (tmp != NULL) {
+		if ((list[i]->is_notype) && (in_line == 0)) {
+			error(" no type for input/output parameter\n");
+			return 1;
+		}
+		type = get_decl_type(list[i]->decl);
+		expr = parse_expression(&tmp, current_table);
+		if (charge_type(type, expr->final_type) == -1)
+			return 1;
+		if (expr->const_expr)
+			free(expr->const_expr);
+		free(expr);
+		tmp = tmp->common.sibling;
+		i++;
+	}
+
+	return 0;
+}
+
+static tree_t* get_method_param_node(tree_t* node) {
+	assert(node != NULL);
+	/* base on the grammar, if an expression have brack
+	 * the topest node about the expression is brack */
+	if (node->common.type == EXPR_BRACK_TYPE)
+		return node->expr_brack.expr_in_brack;
+	else
+		return NULL;
+}
+
+static int check_method_in_param(symbol_t sym, tree_t* call_expr, int in_line) {
+	assert(sym != NULL); assert(call_expr != NULL);
+	method_attr_t* attr = sym->attr;
+	method_params_t* params = attr->method_params;
+	tree_t* expr = call_expr;
+	int ret = 0;
+
+	tree_t* param_node = get_method_param_node(call_expr);
+	int arg_num = (param_node == NULL) ? 0 : get_param_num(param_node);
+	if ((params == NULL) && (arg_num == 0)) {
+		ret = 0;
+	} else if (params->in_argc != arg_num) {
+		error("wrong number of input arguments\n");
+		ret = 1;
+	} else {
+		/* check the type of parameters */
+		ret = check_param_type(param_node, params->in_list, params->in_argc, in_line);
+	}
+
+	return ret;
+}
+
+static int check_method_out_param(symbol_t sym, tree_t* ret_expr, int in_line) {
+	assert(sym != NULL);
+	method_attr_t* attr = sym->attr;
+	method_params_t* params = attr->method_params;
+	tree_t* expr = ret_expr;
+	int ret = 0;
+
+	int arg_num = get_param_num(ret_expr);
+	if ((params == NULL) && (arg_num == 0)) {
+		ret = 0;
+	}
+	else if (params->ret_argc != arg_num) {
+		error("wrong number of output arguments\n");
+		ret = 1;
+	} else {
+		ret = check_param_type(expr, params->ret_list, params->ret_argc, in_line);
+	}
+
+	return ret;
+}
+
+static int check_method_param(symbol_t sym, tree_t* call_expr, tree_t* ret_expr, int in_line) {
+	assert(sym != NULL);
+	method_attr_t* attr = sym->attr;
+	tree_t* expr = call_expr;
+	tree_t* ret = ret_expr;
+	int ret_value = 0;
+
+	ret_value = check_method_in_param(sym, expr, in_line);
+	if (!ret)
+		ret_value = check_method_out_param(sym, ret_expr, in_line);
+
+	return ret_value;
+}
+
 static int block_empty(tree_t *t);
 
 static void translate_call_common(tree_t *expr, tree_t *ret){
@@ -476,6 +572,9 @@ static void translate_call_common(tree_t *expr, tree_t *ret){
 	} else {
 		my_DBG("method not found in call \n");
 	}
+
+	if (check_method_param(method_sym, expr, ret, 0))
+		return;
 
 	sym = symbol_find(current_table,"exec",TMP_TYPE);
 	name = get_symbol_alias(sym);
@@ -978,7 +1077,7 @@ void translate_foreach(tree_t *t) {
 	if(list->type != ARRAY_TYPE){
 		if(list->type == PARAMETER_TYPE ) {
 			val = list->attr;
-			if(val->type == param_type_list) {
+			if(val->type == PARAM_TYPE_LIST) {
 				len = val->u.list.size;		
 			} else {
 				my_DBG("error type in foreach\n");
@@ -992,7 +1091,7 @@ void translate_foreach(tree_t *t) {
 		current_table = table;
 	}
 	tmp = symbol_find(current_table, ident, FOREACH_TYPE);
-	if(val->u.list.vector[0].type == param_type_ref) {
+	if(val->u.list.vector[0].type == PARAM_TYPE_REF) {
 		symbol_set_type(tmp, OBJECT_TYPE);
 	}
 	enter_scope();
@@ -1087,6 +1186,15 @@ void translate_inline(tree_t *t) {
 	table = method->table;
 	table->parent = current_table;
 	current_table = table;
+	/* In inline, the method can be a marco, it will be to expand the
+	 * method code of the calles method at the place of inline call,
+	 * so we should change the method table's parent to the current_table,
+	 * and then check the number and type about method parameters,
+	 * at last, goto the method block to parsing elements and so on*/
+	if (check_method_param(sym, expr, ret, 1))
+		return;
+	parse_method_block(method->common.node);
+
 	enter_scope();
 	process_inline_start(method, expr_list);
 	process_inline_block(method);
@@ -1731,6 +1839,10 @@ void post_gen_method(object_t *obj, tree_t *method) {
 void gen_dml_method(object_t *obj, struct method_name *m) {
 	tree_t *method = m->method;
 
+	/* we should pase the elements and calcualate the
+	 * expressions that in the method block, as we did
+	 * not do them before */
+	parse_method_block(method);
 	pre_gen_method(obj, method);
 	gen_dml_method_header(obj, method);
 	do_method_params_alias(obj, method);

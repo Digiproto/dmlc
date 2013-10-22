@@ -502,7 +502,10 @@ static void field_realize(object_t *obj) {
 
 	/* parse default parameters about registers
 	 * such as: size, offset, array*/
-	parse_field(obj->node, obj->symtab->parent);
+	parse_field_attr(obj->node, obj->symtab->parent);
+	/* parse the elements that in filed table*/
+	//parse_field(obj->node, obj->symtab->sibling);
+	parse_field(obj->node, obj->symtab);
 
 	bitrange = obj->node->field.bitrange;	
 	expr = bitrange->array.expr;
@@ -596,12 +599,11 @@ static void register_realize(object_t *obj) {
 	}
 
 	add_object_templates(obj, obj->node->reg.templates);
-	/* calculate the expression about parameters
-	 * that defined in the register block */
-	parse_parameter(reg->obj.symtab->sibling);
-	/* parse default parameters about registers
+	/* parse the attribute about registers
 	 * such as: size, offset, array*/
-	parse_register(reg->obj.node, obj->symtab->parent);
+	parse_register_attr(reg->obj.node, obj->symtab->parent);
+	/* parse the elements that in the register table */
+	parse_register(obj->node, obj->symtab->sibling);
 
 	reg_attr = reg->obj.node->common.attr;
 	reg->is_array = reg_attr->is_array;
@@ -714,8 +716,10 @@ static void bank_realize(object_t *obj) {
 	}
 
 	add_object_templates(obj, obj->node->bank.templates);
-	/* calculate the expression about parameter*/
-	parse_parameter(obj->symtab->sibling);
+
+	/* parse the symbols, parameters and check expressions
+	 * that in the bank table */
+	parse_bank(obj->node, obj->symtab->sibling);
 	
 	BE_DBG(OBJ, "object name %s\n", obj->name);
 	sym = symbol_find(obj->symtab, "register_size", PARAMETER_TYPE);
@@ -749,10 +753,10 @@ static void connect_realize(object_t *obj) {
 	connect_attr_t *attr;
 
 	/* parse the connect arraydef expression */
+	parse_connect_attr(obj->node, obj->symtab->parent);
+	/* parse elements and calculate expressions that
+	 * in  connect table*/
 	parse_connect(obj->node, obj->symtab->sibling);
-	/* calculate the expression about parameters
-	 * that defined in the connect block */
-	parse_parameter(obj->symtab->sibling);
 
 	node = obj->node;
 	attr = node->common.attr;
@@ -804,10 +808,9 @@ static void attribute_realize(object_t *obj) {
     paramspec_t* spec; 
 	attribute_t *attr_obj = (attribute_t *)obj;
 
-	/* calculate the expression about parameters
-	 * that defined in the register block */
-	parse_parameter(obj->symtab->sibling);
 	/* parse the arraydef about attribute */
+	parse_attribute_attr(obj->node, obj->symtab->parent);
+	/* parse the elements that in the attribute table*/
 	parse_attribute(obj->node, obj->symtab->sibling);
 
 	sym  = symbol_find(obj->symtab, "allocate_type", PARAMETER_TYPE);
@@ -830,10 +833,15 @@ void device_realize(device_t *dev) {
 	}
 	dev->bank_count = i;
 
-	/* In pasing, we only insert the constant and parameter
-	 * symbol into table, but not calculate their expression,
+	/* add default templates "template device" into device,
+	 * and insert symbols into table of templates */
+	add_object_templates(&dev->obj, NULL);
+	/* In parsing, we only insert the object and method symbol
+	 * into table, and create the table, but the constant, parameters
+	 * and expression are not handled, we should insert the constant,
+	 * and parameters into table, and calculate expressions,
 	 * as something can be detemined after the object instantiated*/
-	parse_constant(dev->obj.symtab->sibling);
+	parse_device(dev->obj.node, dev->obj.symtab->sibling);
 	/* add default templates "template device" into device*/
 	add_object_templates(&dev->obj, NULL);
 	/* calculate the expression about parameter after the calculation
@@ -930,11 +938,9 @@ int add_temp_in_list(struct template_list* list, struct template_list* new) {
 	struct template_list* tmp = list;
 	struct template_list* pre = list;
 
-
-	print_rely_temp(list);
-	printf("-------------------------------------\n");
-	printf("add template: %s\n", new->name);
-	printf("-------------------------------------\n");
+	/* call this function only for debugging to
+	 * print the templates that in list */
+	//print_rely_temp(list);
 	while (tmp) {
 		if (strcmp(tmp->name, new->name) == 0) {
 			fprintf(stderr, "error: template '%s' is confilct in template '%s' and '%s'\n",
@@ -946,7 +952,6 @@ int add_temp_in_list(struct template_list* list, struct template_list* new) {
 		pre = tmp;
 		tmp = tmp->next;
 	}
-
 	pre->next = new;
 
 	return 0;
@@ -958,7 +963,6 @@ static void add_rely_templates(struct template_def* def, struct template_table* 
 	if (templates == NULL) {
 		return;
 	}
-	printf("In %s, line = %d, name: %s\n", __func__, __LINE__, templates->template_name);
 
 	int i = 0;
 	struct list_head* list = &def->templates;
@@ -990,6 +994,7 @@ struct template_def *create_template_def(const char* name, struct template_list*
 
 	symbol_t symbol = symbol_find(root_table, name, TEMPLATE_TYPE);
 	template_attr_t* attr = symbol->attr;
+	tree_t* node = attr->common.node;
 	symtab_t temp_table = attr->table;
 	struct template_table* templates = temp_table->template_table;
 	struct template_def* def = (struct template_def*)gdml_zmalloc(sizeof(struct template_def));
@@ -1000,9 +1005,35 @@ struct template_def *create_template_def(const char* name, struct template_list*
 	for (i = 0; i < 3; i++, head++) {
 		INIT_LIST_HEAD(head);
 	}
-	print_rely_temp(list);
+	/* print_rely_temp is only for debugging, it will
+	 * print the templates that relied */
+	//print_rely_temp(list);
 	add_rely_templates(def, templates, list);
-	parse_parameter(temp_table);
+
+	/* one template can be contained by many kind of object,
+	 * but it can be parsed and calculated only once */
+	if (temp_table->is_parsed == 1)
+		return def;
+
+	/* one template can */
+	obj_spec_t* tmp = node->temp.spec;
+	tree_t* block = NULL;
+	tree_t* statement = NULL;
+	while (tmp) {
+		block = tmp->node->spec.block;
+		if (block != NULL)
+			statement = block->block.statement;
+		if ((block == NULL) || (statement == NULL))
+			return def;
+		my_DBG("-----------------start parsing template %s-------------\n", name);
+		while (statement) {
+			if (statement->common.parse)
+				statement->common.parse(statement, attr->table);
+			statement = statement->common.sibling;
+		}
+		my_DBG("-----------------finish parsing template %s-------------\n", name);
+		tmp = tmp->next;
+	}
 	temp_table->is_parsed = 1;
 
 	return def;
@@ -1065,21 +1096,21 @@ static void process_device_template(object_t *obj){
 	param_value_t tmp;
 
 	param_value_t *val = gdml_zmalloc(sizeof(*val));	
-	val->type = param_type_list;
+	val->type = PARAM_TYPE_LIST;
 	val->u.list.size = dev->bank_count;
 	val->u.list.vector = gdml_zmalloc(sizeof(*val) * val->u.list.size);
 	for(i = 0; i < dev->bank_count; i++) {
-		tmp.type = param_type_ref;
+		tmp.type = PARAM_TYPE_REF;
 		tmp.u.ref = dev->banks[i];
 		val->u.list.vector[i] = tmp;
 	}
 	symbol_insert(table, "banks", PARAMETER_TYPE, val);
 	val = (param_value_t *)gdml_zmalloc(sizeof(*val));	
-	val->type = param_type_ref;
+	val->type = PARAM_TYPE_REF;
 	val->u.ref = obj;
 	symbol_insert(table, "obj", PARAMETER_TYPE, val);
 	val = (param_value_t *)gdml_zmalloc(sizeof(*val));	
-	val->type = param_type_ref;
+	val->type = PARAM_TYPE_REF;
 	val->u.ref = obj;
 	symbol_insert(table, "logobj", PARAMETER_TYPE, val);
 	symbol_insert(table, "dev", OBJECT_TYPE, obj);
@@ -1103,26 +1134,26 @@ static void process_bank_template(object_t *obj){
 		}
 	}
 	param_value_t *val = gdml_zmalloc(sizeof(*val));
-	val->type = param_type_list;
+	val->type = PARAM_TYPE_LIST;
 	val->u.list.size = defined;
 	val->u.list.vector = gdml_zmalloc(sizeof(*val) * bank->reg_count);
 	for(i = 0; i < defined; i++) {
 		reg = (dml_register_t *)bank->regs[i];
 		if(!reg->is_undefined) {
-			tmp.type = param_type_ref;
+			tmp.type = PARAM_TYPE_REF;
 			tmp.u.ref = bank->regs[i];
 			val->u.list.vector[i] = tmp;
 		}
 	}
 	symbol_insert(table, "mapped_registers", PARAMETER_TYPE, val);
 	val = gdml_zmalloc(sizeof(*val));
-	val->type = param_type_list;
+	val->type = PARAM_TYPE_LIST;
 	val->u.list.size = undefined;
 	if(undefined > 0) {
 		for(i = 0; i < undefined; i++) {
 			reg = (dml_register_t *)bank->regs[i];
 			if(reg->is_undefined) {
-				tmp.type = param_type_ref;
+				tmp.type = PARAM_TYPE_REF;
 				tmp.u.ref = bank->regs[i];
 				val->u.list.vector[i] = tmp;
 			}
@@ -1143,32 +1174,32 @@ static void process_register_template(object_t *obj){
 	node = obj->node;
 	attr = node->common.attr;
 	param_value_t *val = gdml_zmalloc(sizeof(*val));
-	val->type = param_type_list;
+	val->type = PARAM_TYPE_LIST;
 	val->u.list.size = reg->field_count;
 	val->u.list.vector = gdml_zmalloc(sizeof(*val) * reg->field_count);
 	for(i = 0; i < reg->field_count; i++) {
-		tmp.type = param_type_ref;
+		tmp.type = PARAM_TYPE_REF;
 		tmp.u.ref = reg->fields[i];
 		val->u.list.vector[i] = tmp;
 	}
 	symbol_insert(table, "fields", PARAMETER_TYPE, val);
 	val = gdml_zmalloc(sizeof(*val));
-	val->type = param_type_string;
+	val->type = PARAM_TYPE_STRING;
 	val->u.string = strdup(obj->name);
 	symbol_insert(table, "_regname", PARAMETER_TYPE, val);
 	val = gdml_zmalloc(sizeof(*val));
-	val->type = param_type_int;
+	val->type = PARAM_TYPE_INT;
 	val->u.integer = 0;
 	symbol_insert(table, "hard_reset_value", PARAMETER_TYPE, val);
 
 	val = gdml_zmalloc(sizeof(*val));
-	val->type = param_type_int;
+	val->type = PARAM_TYPE_INT;
 	bank_t *bank = (bank_t *)reg->obj.parent;
 	val->u.integer = bank->register_size * 8;
 	symbol_insert(table, "bitsize", PARAMETER_TYPE, val);
 
 	val = gdml_zmalloc(sizeof(*val));
-	val->type = param_type_bool;
+	val->type = PARAM_TYPE_BOOL;
 	val->u.boolean = 1;
 	if(attr->reg.offset == -1) {
 		val->u.boolean = 0;
@@ -1181,7 +1212,7 @@ static void process_field_template(object_t *obj){
 	field_t *field = (field_t *)obj;
 
 	param_value_t *val = gdml_zmalloc(sizeof(*val));
-	val->type = param_type_bool;
+	val->type = PARAM_TYPE_BOOL;
 	if(field->is_dummy) {
 		val->u.boolean = 0;
 	} else {
@@ -1189,20 +1220,20 @@ static void process_field_template(object_t *obj){
 	}
 	symbol_insert(table, "explicit", PARAMETER_TYPE, val);
 	val = gdml_zmalloc(sizeof(*val));
-	val->type = param_type_int;
+	val->type = PARAM_TYPE_INT;
 	val->u.integer = field->low;
 	symbol_insert(table, "lsb", PARAMETER_TYPE, val);
 	val = gdml_zmalloc(sizeof(*val));
-	val->type = param_type_int;
+	val->type = PARAM_TYPE_INT;
 	val->u.integer = field->high;
 	symbol_insert(table, "msb", PARAMETER_TYPE, val);
 
 	val = gdml_zmalloc(sizeof(*val));
-	val->type = param_type_int;
+	val->type = PARAM_TYPE_INT;
 	val->u.integer = field->len;
 	symbol_insert(table, "bitsize", PARAMETER_TYPE, val);
 	val = gdml_zmalloc(sizeof(*val));
-	val->type = param_type_int;
+	val->type = PARAM_TYPE_INT;
 	val->u.integer = 0;
 	symbol_insert(table, "hard_reset_value", PARAMETER_TYPE, val);
 }
@@ -1212,7 +1243,7 @@ static void free_rely_temp_list(struct template_list* list) {
 	struct template_list* old = list;
 	while (tmp) {
 		tmp = tmp->next;
-		printf("Free: src_name: %s, name: %s\n", old->src_name, old->name);
+		//printf("Free: src_name: %s, name: %s\n", old->src_name, old->name);
 		free((void*)(old->src_name));
 		free((void*)(old->name));
 		old = tmp;
@@ -1234,27 +1265,34 @@ static void process_object_template(object_t *obj, struct template_name *name){
 	symbol_t sym;
 	paramspec_t *spec;
 
-	BE_DBG(TEMPLATE, "template name %s, obj name %s\n", name->name, obj->name);
-	//list = symbol_list_find(table, PARAMETER_TYPE);
+	//BE_DBG(TEMPLATE, "\ntemplate name %s, obj name %s--------------\n\n", name->name, obj->name);
+	struct template_list* rely_temp_list = (struct template_list*)gdml_zmalloc(sizeof(struct template_list));
+	rely_temp_list->src_name = strdup(obj->name);
+	rely_temp_list->name = strdup(name->name);
+	name->def = create_template_def(name->name, rely_temp_list);
+	free_rely_temp_list(rely_temp_list);
 }
 
 static void process_basic_template(object_t *obj) {
 	/*hardcode object auto parameter in object symtab*/
 	symtab_t table = obj->symtab;
 	param_value_t *val = gdml_zmalloc(sizeof(*val));
-	val->type = param_type_ref;
+	val->type = PARAM_TYPE_REF;
 	val->u.ref = obj->parent;
 	symbol_insert(table, "parent", PARAMETER_TYPE, val);
+
 	val = gdml_zmalloc(sizeof(*val));
-	val->type = param_type_string;
+	val->type = PARAM_TYPE_STRING;
 	val->u.string = strdup(obj->name);
 	symbol_insert(table, "name", PARAMETER_TYPE, val);
+
 	val = gdml_zmalloc(sizeof(*val));
-	val->type = param_type_string;
+	val->type = PARAM_TYPE_STRING;
 	val->u.string = strdup(obj->qname);
 	symbol_insert(table, "qname", PARAMETER_TYPE, val);
+
 	val = gdml_zmalloc(sizeof(*val));
-	val->type = param_type_ref;
+	val->type = PARAM_TYPE_REF;
 	val->u.ref = obj;
 	symbol_insert(table, "this", PARAMETER_TYPE, val);
 }

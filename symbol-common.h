@@ -112,6 +112,7 @@ symtab_t symtab_create(type_t type);
 symtab_t symtab_create_with_cb(type_t type, symbol_find_fn_t cb, symbol_find_notype_fn_t notype);
 symtab_t symtab_insert_sibling(symtab_t symtab, symtab_t newtab);
 symtab_t symtab_insert_child(symtab_t symtab, symtab_t newtab);
+void change_old_table(symtab_t parent, symtab_t old, symtab_t new);
 void symtab_free(symtab_t symtab, int table_num);
 
 int pre_symbol_insert(pre_dml_t pre_dml);

@@ -2599,37 +2599,3 @@ void parse_log_args(tree_t** node, symtab_t table) {
 
 	return;
 }
-
-static void parse_constant_expr(symtab_t table, symbol_t symbol) {
-	assert(table != NULL);
-	assert(symbol != NULL);
-	constant_attr_t* attr = symbol->attr;
-	tree_t* node = attr->common.node;
-	tree_t* expr_node = node->assign.expr;
-
-	expression_t* expr = (expression_t*)gdml_zmalloc(sizeof(expression_t));
-	expr->is_constant_op = 1;
-	attr->value = cal_expression(&(node->assign.expr), table, expr);
-	if (expr->is_undeclare) {
-		fprintf(stderr, " error: unknown identifier: '%s'\n", expr->undecl_name);
-		/* TODO: handle the error */
-		exit(-1);
-	}
-
-	return;
-}
-
-void parse_constant(symtab_t table) {
-	assert(table != NULL);
-	symbol_list_t* list = symbol_list_find(table, CONSTANT_TYPE);
-	symbol_list_t* head = list;
-	symbol_t symbol = NULL;
-
-	while (list) {
-		symbol = list->sym;
-		parse_constant_expr(table, symbol);
-		list = list->next;
-	}
-
-	return;
-}

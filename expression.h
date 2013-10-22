@@ -74,7 +74,6 @@ expression_t* cal_binary_expr(tree_t** node, symtab_t table, expression_t* expr)
 extern expression_t* cal_expression(tree_t** node, symtab_t table, expression_t* expr);
 int get_typedef_type(symtab_t table, char* name);
 int charge_type(int type1, int type2);
-void parse_constant(symtab_t table);
 
 //#define DEBUG_EXPRESSION
 

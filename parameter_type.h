@@ -25,22 +25,22 @@
 #define __PARAMETER_TYPE_H__  
 #include <stdio.h>
 typedef enum parameter_type {
-	param_type_none,
-	param_type_int,
-	param_type_float,
-	param_type_bool,
-	param_type_string,
-	param_type_list,
-	param_type_ref,
-	param_type_undef,
-	param_type_max
+	PARAM_TYPE_NONE,
+	PARAM_TYPE_INT,
+	PARAM_TYPE_FLOAT,
+	PARAM_TYPE_BOOL,
+	PARAM_TYPE_STRING,
+	PARAM_TYPE_LIST,
+	PARAM_TYPE_REF,
+	PARAM_TYPE_UNDEF,
+	PARAM_TYPE_MAX
 } param_type_t;
 
 typedef enum parameter_flag {
-	param_flag_none,
-	param_flag_default,
-	param_flag_auto,
-	param_flag_MAX
+	PARAM_FLAG_NONE,
+	PARAM_FLAG_DEFAULT,
+	PARAM_FLAG_AUTO,
+	PARAM_FLAG_MAX
 } param_flag_t;
 
 typedef struct param_value {

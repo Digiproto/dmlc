@@ -50,7 +50,7 @@ struct indentifier {
 };
 
 typedef void (*translate_t)(tree_t *t);
-typedef void (*parse_t)(tree_t* ident, tree_t** expr, symtab_t table);
+typedef void (*parse_t)(tree_t* ident, symtab_t table);
 /**
  * @brief : the common part about tree node
  */
@@ -437,6 +437,7 @@ struct tree_do_while {
 	int have_do;			// is do...while?
 	tree_t* cond;			// condition about while
 	tree_t* block;			// the body about while
+	symtab_t table;
 };
 
 /**
@@ -448,6 +449,7 @@ struct tree_for {
 	tree_t* cond;				// condition about for
 	tree_t* update;				// update value when body run once
 	tree_t* block;				// block about for
+	symtab_t table;
 };
 
 /**
@@ -457,6 +459,7 @@ struct tree_switch {
 	struct tree_common common;
 	tree_t* cond;				// condition aoubt switch
 	tree_t* block;				// block about switch
+	symtab_t table;
 };
 
 struct tree_expr_statement {
@@ -479,7 +482,9 @@ struct tree_delete {
 struct tree_try_catch {
 	struct tree_common common;
 	tree_t* try_block;			// block about try
+	symtab_t try_table;
 	tree_t* catch_block;		// block about catch
+	symtab_t catch_table;
 };
 
 /**
@@ -525,7 +530,7 @@ struct tree_log {
 	tree_t* group;				// the group the log belonged
 	const char* format;				// the format aobut log information
 	//int argc;					// number about information
-	struct log_args* log_info;
+	//struct log_args* log_info;
 	tree_t* args;				// log information
 };
 
@@ -538,7 +543,9 @@ struct tree_select {
 	tree_t* in_expr;			// expression about in
 	tree_t* cond;				// condition expression about where
 	tree_t* where_block;		// block about where
+	symtab_t where_table;
 	tree_t* else_block;			// block about else
+	symtab_t else_table;
 };
 
 /**
@@ -549,6 +556,14 @@ struct tree_foreach {
 	tree_t* ident;				// indentifier about foreach
 	tree_t* in_expr;			// expression about in
 	tree_t* block;				// block about block
+	symtab_t table;
+};
+
+struct tree_label {
+	struct tree_common common;
+	tree_t* ident;
+	tree_t* block;
+	symtab_t table;
 };
 
 /**
@@ -558,6 +573,7 @@ struct tree_case {
 	struct tree_common common;
 	tree_t* expr;				// expr about case
 	tree_t* block;				// block about case
+	symtab_t table;
 };
 
 /**
@@ -567,6 +583,7 @@ struct tree_case {
 struct tree_default {
 	struct tree_common common;
 	tree_t* block;
+	symtab_t table;
 };
 
 /**
@@ -841,7 +858,6 @@ struct tree_local_keyword {
 struct tree_group {
 	struct tree_common common;
 	const char* name;					// name about identifier
-	int is_array;				// the group is array
 	tree_t* templates;			// templates that inherits
 	obj_spec_t* spec;				// the spec about group
 	tree_t* array;				// the array that about group
@@ -853,7 +869,6 @@ struct tree_group {
 struct tree_port {
 	struct tree_common common;
 	const char* name;					// port name
-	int is_array;
 	tree_t* templates;			// templates that inherited
 	obj_spec_t* spec;				// the spec about port
 	tree_t* array;
@@ -904,6 +919,7 @@ union tree_node
 	struct tree_log log;
 	struct tree_select select;
 	struct tree_foreach foreach;
+	struct tree_label label;
 	struct tree_default default_tree;
 	struct tree_goto goto_tree;
 	struct tree_error error;
