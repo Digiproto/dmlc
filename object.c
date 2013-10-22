@@ -230,7 +230,7 @@ object_t *create_device_object(symbol_t sym){
 
 static void create_bank_object(symbol_t sym);
 void create_bank_objs(symtab_t table) {
-	symbol_list_t *list = symbol_list_find(table, BANK_TYPE);
+	symbol_list_t *list = symbol_list_find_type(table, BANK_TYPE);
 	symbol_list_t *head = list;
 	object_t *obj = OBJ;
 
@@ -270,7 +270,7 @@ static void create_field_objs(symtab_t symtab){
 		create_dummy_field();
 		return;
 	} else {
-		list = symbol_list_find(symtab, FIELD_TYPE);
+		list = symbol_list_find_type(symtab, FIELD_TYPE);
 	}
 	while(list){
 		sym = list->sym;
@@ -315,7 +315,7 @@ static void create_ifaces_objs(symtab_t table) {
 	object_t *obj;
 
 	obj = OBJ;
-	list = head = symbol_list_find(table, INTERFACE_TYPE);
+	list = head = symbol_list_find_type(table, INTERFACE_TYPE);
 	while(list) {
 		sym = list->sym;
 		create_iface_object(sym);
@@ -366,7 +366,7 @@ static void create_data_object(symbol_t sym) {
 }
 
 static void create_connect_objs(symtab_t table) {
-	symbol_list_t *list = symbol_list_find(table, CONNECT_TYPE);
+	symbol_list_t *list = symbol_list_find_type(table, CONNECT_TYPE);
 	symbol_list_t *head = list;
 	symbol_t sym;
 	object_t *obj = OBJ;
@@ -381,7 +381,7 @@ static void create_connect_objs(symtab_t table) {
 } 
 
 static void create_attribute_objs(symtab_t table) {
-	symbol_list_t *list = symbol_list_find(table, ATTRIBUTE_TYPE);
+	symbol_list_t *list = symbol_list_find_type(table, ATTRIBUTE_TYPE);
 	symbol_list_t *head = list;
 	symbol_t sym;
 	object_t *obj = OBJ;
@@ -396,7 +396,7 @@ static void create_attribute_objs(symtab_t table) {
 } 
 
 static void create_data_objs(symtab_t table) {
-	symbol_list_t *list = symbol_list_find(table, DATA_TYPE);
+	symbol_list_t *list = symbol_list_find_type(table, DATA_TYPE);
 	symbol_list_t *head = list;
 	symbol_t sym;
 	object_t *obj = OBJ;
@@ -411,7 +411,7 @@ static void create_data_objs(symtab_t table) {
 }
 
 static void create_implement_objs(symtab_t table) {
-	symbol_list_t *list = symbol_list_find(table, IMPLEMENT_TYPE);
+	symbol_list_t *list = symbol_list_find_type(table, IMPLEMENT_TYPE);
 	symbol_list_t *head = list;
 	symbol_t sym;
 	object_t *obj = OBJ;
@@ -426,7 +426,7 @@ static void create_implement_objs(symtab_t table) {
 }
 
 static void create_register_objs(symtab_t table){
-	symbol_list_t *list = symbol_list_find(table, REGISTER_TYPE);
+	symbol_list_t *list = symbol_list_find_type(table, REGISTER_TYPE);
 	symbol_list_t *head = list;
 	symbol_t sym;
 
@@ -457,7 +457,7 @@ device_t *create_device_tree(tree_t  *root){
 	object_t *obj;
 
 	//print_all_symbol(root_table);
-	symbol_list_t *dev_list = symbol_list_find(root_table, DEVICE_TYPE);
+	symbol_list_t *dev_list = symbol_list_find_type(root_table, DEVICE_TYPE);
 	if(!dev_list || dev_list->next) {
 		BE_DBG(OBJ, "device not correct\n");
 		exit(-1);

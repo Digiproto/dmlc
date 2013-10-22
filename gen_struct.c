@@ -175,7 +175,7 @@ void gen_device_loggroup(device_t *dev, FILE *f) {
     symbol_t sym;
     int i;
 
-    list = head = symbol_list_find(root_table, LOGGROUP_TYPE);
+    list = head = symbol_list_find_type(root_table, LOGGROUP_TYPE);
     if(list) {
         fprintf(f, "typedef enum %s_log_group {\n", dev_name);
         i = 1;

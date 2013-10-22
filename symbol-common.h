@@ -58,6 +58,7 @@ typedef struct undef_var {
 	struct undef_var* next;
 }undef_var_t;
 
+typedef int (*match_func_t) (symbol_t sym, void *arg);
 typedef symbol_t (*symbol_find_fn_t)(symtab_t tab, const char *name, type_t type);
 typedef symbol_t (*symbol_find_notype_fn_t)(symtab_t tab, const char *name);
 /* a hash table for storing symbols. it have a pointer to a brother,
@@ -90,6 +91,11 @@ typedef struct pre_parse_symbol {
 	struct pre_parse_symbol* next;
 }pre_parse_symbol_t;
 
+typedef struct search_arg {
+	const char *name;
+	type_t type;
+} search_arg_t;
+
 /* find and insert symbol from the symbol table.  */
 symbol_t default_symbol_find(symtab_t symtab, const char* name, type_t type);
 symbol_t symbol_find(symtab_t symtab, const char* name, type_t type);
@@ -99,7 +105,10 @@ symbol_t symbol_find_from_templates(struct template_table *table, const char *na
 symbol_t symbol_find_curr(symtab_t symtab, const char* name, type_t type);
 symbol_t symbol_find_notype(symtab_t symtab, const char* name);
 symbol_t symbol_find_curr_notype(symtab_t symtab, const char* name);
-symbol_list_t *symbol_list_find(symtab_t tab, type_t type);
+symbol_list_t *symbol_list_find_type(symtab_t tab, type_t type);
+symbol_list_t *symbol_list_find_name(symtab_t tab, const char *name);
+symbol_list_t *symbol_list_find_full(symtab_t tab, const char *name, type_t type);
+symbol_list_t *local_list_find_type(symtab_t tab, type_t type);
 void symbol_list_free(symbol_list_t *list);
 int symbol_find_type_curr(symtab_t symtab, type_t type, symbol_t **result);
 int symbol_insert(symtab_t symtab, const char* name, type_t type, void* attr);

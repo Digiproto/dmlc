@@ -649,15 +649,19 @@ void print_all_symbol(symtab_t table) {
 	return ;
 }
 
-symbol_list_t *symbol_list_find(symtab_t tab, type_t type) {
+static symbol_list_t *symbol_list_match(symtab_t tab, match_func_t match, void *arg) {
 	symbol_list_t *first = NULL;
 	symbol_list_t *cur = NULL;
 	symbol_list_t *tmp = NULL;
 
+	if (!tab) {
+		return NULL;
+	}
+
 	symbol_t sym = tab->list;
 
 	while(sym) {
-		if(sym->type == type) {
+		if (match(sym, arg)) {
 			if(!first) {
 				first = (symbol_list_t *)malloc(sizeof(*first));
 				first->next = NULL;
@@ -674,6 +678,102 @@ symbol_list_t *symbol_list_find(symtab_t tab, type_t type) {
 		sym = sym->lnext;
 	}
 	return first;
+}
+
+static void list_join(symbol_list_t *first, symbol_list_t *new) {
+	symbol_list_t *tmp;
+	symbol_list_t *next;
+	symbol_list_t *last;
+
+	if(first) {
+		last = first;
+		tmp = first->next;
+		while(tmp) {
+			last = tmp;
+			tmp = tmp->next;
+		}
+		last->next = new;
+	}
+}
+
+symbol_list_t *_symbol_list_find(symtab_t tab, match_func_t match, void *arg, int depth) {
+	symbol_list_t *first = NULL;
+	symbol_list_t *tmp = NULL;
+	struct template_table *tmpl;
+	symtab_t table;
+
+	/*find in table*/
+	first = symbol_list_match(tab, match, arg);
+	if(depth == 1) {
+		return first;
+	}
+	tmpl = tab->template_table;
+	while(tmpl) {
+		table = tmpl->table;
+		tmp = symbol_list_match(table, match, arg);
+		if(tmp) {
+			list_join(first, tmp);	
+		}
+		tmpl = tmpl->next;
+	}
+	return first;
+}
+
+static int match_type(symbol_t sym, void *arg) {
+	type_t type = (type_t )arg;
+
+	if(sym->type == type) {
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
+static int match_name(symbol_t sym, void *arg) {
+	const char *name = arg;
+	
+	if(!strcmp(sym->name, name)) {
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
+static int match_specific(symbol_t sym, void *arg) {
+	search_arg_t *sarg = arg;
+
+	if(sarg->type == sym->type && !strcmp(sarg->name, sym->name)) {
+		return 1;
+	}
+	return 0;
+}
+
+symbol_list_t *symbol_list_find_type(symtab_t tab, type_t type) {
+	return _symbol_list_find(tab, match_type, (void *) type, 2);
+}
+
+symbol_list_t *symbol_list_find_name(symtab_t tab, const char *name) {
+	return _symbol_list_find(tab, match_name, (void*)name, 2);
+}
+
+symbol_list_t *symbol_list_find_full(symtab_t tab, const char *name, type_t type) {
+	search_arg_t arg = {.name = name, .type = type};
+
+	return _symbol_list_find(tab, match_specific, (void *)&arg, 2);
+}
+
+symbol_list_t *local_list_find_type(symtab_t tab, type_t type) {
+	return _symbol_list_find(tab, match_type, (void *)type, 1);
+}
+
+symbol_list_t* local_list_find_name(symtab_t tab, const char* name) {
+	return _symbol_list_find(tab, match_name, (void*)name, 1);
+}
+
+symbol_list_t* local_list_find_full(symtab_t tab, const char* name, type_t type) {
+	search_arg_t arg = {.name = name, .type = type};
+
+	return _symbol_list_find(tab, match_specific, (void *)&arg, 1);
 }
 
 void symbol_list_free(symbol_list_t *list) {
