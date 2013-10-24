@@ -2026,7 +2026,6 @@ static signature_t* parse_function_param(tree_t* node, symtab_t table) {
 
 static void parse_function(tree_t* node, symtab_t table, cdecl_t* type) {
 	assert(node != NULL); assert(table != NULL); assert(type != NULL);
-
 	parse_cdecl3(node->cdecl_brack.cdecl, table, type);
 	signature_t* sig = parse_function_param(node->cdecl_brack.decl_list, table);
 	if (sig && (sig->has_no_decalare)) {
@@ -2035,7 +2034,6 @@ static void parse_function(tree_t* node, symtab_t table, cdecl_t* type) {
 		return;
 	}
 	DEBUG_DECL("function name: %s\n", type->var_name);
-
 	type_deriv_list_t* drv = (type_deriv_list_t*)gdml_zmalloc(sizeof(type_deriv_list_t));
 	drv->ctor = FUNCTION_RETURN;
 	drv->sig = sig;
@@ -2365,6 +2363,7 @@ void parse_typedef_cdecl(tree_t* node, symtab_t table) {
 		}
 		else {
 			if (type->var_name) {
+				type->typedef_name = strdup(type->var_name);
 				symbol_insert(table, type->var_name, TYPEDEF_T, type);
 			} else {
 				error("useless type name in empty declaration\n");
@@ -2373,6 +2372,7 @@ void parse_typedef_cdecl(tree_t* node, symtab_t table) {
 	}
 	else {
 		if ((type->var_name) && (type->common.no_decalare == 0)) {
+			type->typedef_name = strdup(type->var_name);
 			if (symbol_insert(table, type->var_name, TYPEDEF_T, type))
 				error("duplicate defined '%s'\n", type->var_name);
 		}

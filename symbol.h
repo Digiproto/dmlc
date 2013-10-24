@@ -236,7 +236,7 @@ typedef struct field_attr
 {
 	struct object_common common;
 	bitrange_attr_t* bitrange;
-	int is_range;
+	int is_array;
 } field_attr_t;
 
 typedef struct data_attr

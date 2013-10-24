@@ -133,7 +133,7 @@ normal:
 	}
 #ifndef RELEASE
 	printf("node name: %s\n", ast->common.name);
-	print_ast (ast);
+	//print_ast (ast);
 	printf("Print the syntax tree ok!\n");
 #endif
 #if  1 || QEMU

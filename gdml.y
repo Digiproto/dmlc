@@ -509,7 +509,7 @@ object
                 node->field.name = $2->ident.str;
 
                 attr->common.name = $2->ident.str;
-                attr->field.is_range = 1;
+                attr->field.is_array = 1;
                 symbol_insert(current_table, $2->ident.str, FIELD_TYPE, attr);
             }
             node->field.bitrange = get_obj_default_param(node->field.bitrange, $3, "bitrange");
@@ -549,7 +549,7 @@ object
                 node->field.bitrange = NULL;
 
                 attr->common.name = $2->ident.str;
-                attr->field.is_range = 0;
+                attr->field.is_array = 0;
                 symbol_insert(current_table, $2->ident.str, FIELD_TYPE, attr);
             }
             node->field.templates = create_template_list(node->field.templates, $3);

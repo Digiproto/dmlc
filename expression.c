@@ -1986,9 +1986,10 @@ expression_t* get_ident_value(tree_t** node, symtab_t table,  expression_t* expr
 	return expr;
 }
 
-reference_t*  get_bit_slic_ref(tree_t* node, reference_t* ref) {
-	assert(node != NULL);
-	assert(ref != NULL);
+static int check_dml_obj_refer(tree_t* node, symtab_t table);
+reference_t*  get_bit_slic_ref(tree_t* node, reference_t* ref, expr_t* expr, symtab_t table) {
+	assert(node != NULL); assert(ref != NULL);
+	assert(expr != NULL); assert(table != NULL);
 
 	tree_t* expr_node = node->bit_slic.expr;
 	tree_t* ident_node = NULL;
@@ -2001,6 +2002,14 @@ reference_t*  get_bit_slic_ref(tree_t* node, reference_t* ref) {
 		case QUOTE_TYPE:
 			ident_node = expr_node->quote.ident;
 			ref->name = ident_node->ident.str;
+			if (check_dml_obj_refer(ident_node, table) == 0) {
+				fprintf(stderr, "reference to unknown object '%s', table_num: %d\n", ident_node->ident.str, table->table_num);
+				/* TODO: handle the error */
+				exit(-1);
+			}
+			else {
+				expr->is_obj = 1;
+			}
 			break;
 		default:
 			error("line: %d, other node type: %s\n", __LINE__, expr_node->common.name);
@@ -2012,9 +2021,9 @@ reference_t*  get_bit_slic_ref(tree_t* node, reference_t* ref) {
 	return ref;
 }
 
-reference_t* get_reference(tree_t* node, reference_t* ref) {
-	assert(node != NULL);
-	assert(ref != NULL);
+reference_t* get_reference(tree_t* node, reference_t* ref, expr_t* expr, symtab_t table) {
+	assert(node != NULL); assert(ref != NULL);
+	assert(expr != NULL); assert(table != NULL);
 
 	tree_t* ident_node = NULL;
 	reference_t* new = (reference_t*)gdml_zmalloc(sizeof(reference_t));
@@ -2028,15 +2037,24 @@ reference_t* get_reference(tree_t* node, reference_t* ref) {
 			}
 			/* insert it in head */
 			new->next = ref;
-			new = get_reference(node->component.expr, new);
+			new = get_reference(node->component.expr, new, expr, table);
 			break;
 		case BIT_SLIC_EXPR_TYPE:
 			new->next = ref;
-			new = get_bit_slic_ref(node, new);
+			new = get_bit_slic_ref(node, new, expr, table);
+			new->is_array = 1;
 			break;
 		case QUOTE_TYPE:
 			ident_node = node->quote.ident;
 			new->name = ident_node->ident.str;
+			if (check_dml_obj_refer(ident_node, table) == 0) {
+				fprintf(stderr, "reference to unknown object '%s', table_num: %d\n", ident_node->ident.str, table->table_num);
+				/* TODO: handle the error */
+				exit(-1);
+			}
+			else {
+				expr->is_obj = 1;
+			}
 			new->next = ref;
 			break;
 		case IDENT_TYPE:
@@ -2227,7 +2245,7 @@ expression_t* get_component_expr(tree_t** node, symtab_t table,  expression_t* e
 		exit(-1);
 	}
 
-	reference = get_reference((*node)->component.expr, reference);
+	reference = get_reference((*node)->component.expr, reference, expr, table);
 	print_reference(reference);
 	expr->final_type = check_reference(table, reference, expr);
 	expr->node = *node;
@@ -3503,9 +3521,16 @@ static int find_dml_obj(symtab_t table, const char* name) {
 static int check_dml_obj_refer(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
+	int obj_type = 0;
 	char* refer_name = (char*)(node->ident.str);
+	if (strcmp(refer_name, "this") == 0) {
+		obj_type = 1;
+	} else {
+		obj_type = find_dml_obj(table, refer_name);
+	}
 
-	return find_dml_obj(table, refer_name);
+	return obj_type;
+
 }
 
 expr_t* check_quote_expr(tree_t* node, symtab_t table, expr_t* expr) {
@@ -3516,9 +3541,8 @@ expr_t* check_quote_expr(tree_t* node, symtab_t table, expr_t* expr) {
     /*to reference something in the DML object structure
      * the reference must be prefixed by '$' character*/
 	int is_obj = check_dml_obj_refer(ident, table);
-	is_obj = (strcmp(ident->ident.str, "this") == 0) ? 1 : is_obj;
 	if (is_obj == 0) {
-        fprintf(stderr, "reference to unknown object '%s', table_num: %d\n", ident->ident.str, table->table_num);
+		fprintf(stderr, "reference to unknown object '%s', table_num: %d\n", ident->ident.str, table->table_num);
 		/* TODO: handle the error */
 		exit(-1);
 	}
@@ -3745,6 +3769,46 @@ expr_t* check_ident_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	return expr;
 }
 
+#define object_is_array(attr, type) \
+	if (((type*)attr)->is_array) { \
+		return 1; \
+	} else { \
+		fprintf(stderr, "subscripted value is neither array nor vector\n"); \
+		exit(-1); \
+	}
+
+static int check_array_symbol(symtab_t table, symbol_t symbol) {
+	assert(table != NULL); assert(symbol != NULL);
+	printf("In %s, line = %d, symbol name: %s\n", __FUNCTION__, __LINE__, symbol->name);
+	exit(-1);
+	void* attr = NULL;
+	switch (symbol->type) {
+		case REGISTER_TYPE:
+			object_is_array(attr, register_attr_t);
+		break;
+		case FIELD_TYPE:
+			object_is_array(attr, field_attr_t);
+		break;
+		case ATTRIBUTE_TYPE:
+			object_is_array(attr, attribute_attr_t);
+		break;
+		case GROUP_TYPE:
+			object_is_array(attr, group_attr_t);
+		break;
+		case CONNECT_TYPE:
+			object_is_array(attr, connect_attr_t);
+		break;
+		case  ARRAY_T:
+			return 1;
+		break;
+		default:
+			fprintf(stderr, "symbol'%s' not array\n", symbol->name);
+			exit(-1);
+	}
+
+	return 0;
+}
+
 expr_t* check_refer(symtab_t table, reference_t* ref, expr_t* expr) {
 	assert(table != NULL); assert(ref != NULL); assert(expr != NULL);
 	printf("In %s, line = %d\n", __func__, __LINE__);
@@ -3759,15 +3823,15 @@ expr_t* check_refer(symtab_t table, reference_t* ref, expr_t* expr) {
 		return expr;
 	}
 
+	symbol = symbol_find_notype(table, tmp->name);
+	symbol = (symbol == NULL) ? get_symbol_from_root_table(tmp->name, 0) : symbol;
 	while (tmp->next) {
-		symbol = symbol_find_notype(table, tmp->name);
-		symbol = (symbol == NULL) ? get_symbol_from_root_table(tmp->name, 0) : symbol;
+		if (symbol->type == INTERFACE_TYPE) {
+			tmp->name = get_interface_name(symbol->name);
+			symbol = get_symbol_from_root_table(tmp->name, 0);
+		}
 		if (symbol != NULL) {
-			if (symbol->type == INTERFACE_TYPE) {
-				tmp->name = get_interface_name(symbol->name);
-				continue;
-			}
-			else if (symbol->type == TYPEDEF_T) {
+			if (symbol->type == TYPEDEF_T) {
 				cdecl_t* type = (cdecl_t*)(symbol->attr);
 				if (record_type(type)) {
 					switch (type->common.categ) {
@@ -3788,6 +3852,9 @@ expr_t* check_refer(symtab_t table, reference_t* ref, expr_t* expr) {
 			}
 			else {
 				ref_table = get_symbol_table(symbol);
+			}
+			if (tmp->is_array) {
+				check_array_symbol(table, symbol);
 			}
 		}
 		else {
@@ -3815,12 +3882,17 @@ expr_t* check_refer(symtab_t table, reference_t* ref, expr_t* expr) {
 		else {
 			cdecl_t* decl = get_common_type(ref_table, ref_symbol, expr);
 			expr->type = decl;
-			if (decl->common.categ == INTERFACE_T) {
-				tmp->next->name = get_interface_name(tmp->next->name);
-			}
 		}
 
+		table = ref_table; symbol = ref_symbol;
 		tmp = tmp->next;
+	}
+	if (expr->type->common.categ == INTERFACE_TYPE) {
+		fprintf(stderr, "the last elment about compent can not be interface\n");
+		exit(-1);
+	}
+	if (tmp->is_array) {
+		check_array_symbol(table, ref_symbol);
 	}
 	return expr;
 }
@@ -3835,7 +3907,7 @@ expr_t* check_component_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	}
 	tree_t* ident = node->component.ident;
 	reference->name = ident->ident.str;
-	reference = get_reference(node->component.expr, reference);
+	reference = get_reference(node->component.expr, reference, expr, table);
 	print_reference(reference);
 	expr = check_refer(table, reference, expr);
 	expr->node = node;
@@ -3870,13 +3942,13 @@ expr_t* check_new_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	return expr;
 }
 
-void check_func_param(tree_t* node, symtab_t table, signature_t* sig) {
+void check_func_param(tree_t* node, symtab_t table, signature_t* sig, int param_start) {
 	assert(node != NULL); assert(table != NULL);
 	expr_t* expr = NULL;
 	vector_t* vect = sig->params;
 	param_t* param = NULL;
 
-	int i = 0;
+	int i = param_start;
 	while (node) {
 		param = (param_t*)(vect->data[i]);
 		if (param->is_ellipsis) {
@@ -3898,36 +3970,57 @@ void check_func_param(tree_t* node, symtab_t table, signature_t* sig) {
 	return;
 }
 
+static int first_param_is_obj(signature_t* sig) {
+	if (sig == NULL)
+		return 0;
+	vector_t* vect = sig->params;
+	param_t* param = vect->data[0];
+	cdecl_t* type = param->ty;
+	if (type->common.categ == POINTER_T) {
+		cdecl_t* new_type = type->common.bty;
+		if ((new_type->typedef_name) && !strcmp(new_type->typedef_name, "conf_object_t")) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
 expr_t* check_function_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 	expr_t* func = check_expr(node->expr_brack.expr, table);
+	printf("IN %s, line = %d, expr->is_obj: %d, func type: %d : %d, point: %d\n\n", __FUNCTION__, __LINE__, func->is_obj, func->type->common.categ, FUNCTION_T, POINTER_T);
 	if (func->is_const) {
 		error("The expression is wrong\n");
 	}
 	signature_t* sig = NULL;
+	int argc = 0;
+	int param_start = 0;
 	if (func->type->common.categ == FUNCTION_T) {
 		sig = func->type->function.sig;
+		expr->type = func->type->common.bty;
+		argc = sig->params->len;
 	}
 	else if (func->type->common.categ == POINTER_T) {
-		printf("In %s, line = %d, Pay attention: not implement the pointer function\n", __func__, __LINE__);
-		printf("bty: %d, func: %d\n",
-			func->type->common.bty->common.categ, FUNCTION_T);
 		sig = func->type->common.bty->function.sig;
+		cdecl_t* bty = func->type->common.bty;
+		expr->type = bty->common.bty;
+		argc = sig->params->len;
+		if (func->is_obj && first_param_is_obj(sig)) {
+			argc -= 1;
+			param_start = 1;
+		}
 	}
 	int arg_num = get_param_num(node->expr_brack.expr_in_brack);
-	int argc = sig->params->len;
 	printf("argc: %d, argnum: %d\n", arg_num, argc);
-	if ((arg_num != argc) && (arg_num != (argc -1))) {
+	if (arg_num != argc) {
 		fprintf(stderr, "error: too %s arguments to function\n",
 				(arg_num < argc) ? "few": "many");
 		/* FIXME: handle the error */
 		exit(-1);
 	}
 	else {
-		expr->type = func->type->common.bty;
-		printf("expr type: %d\n", expr->type->common.categ);
 		if (arg_num != 0)
-			check_func_param(node->expr_brack.expr_in_brack, table, sig);
+			check_func_param(node->expr_brack.expr_in_brack, table, sig, param_start);
 	}
 
 	return expr;

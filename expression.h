@@ -120,6 +120,7 @@ typedef struct expr {
 
 typedef struct reference {
 	const char* name;
+	int is_array;
 	unsigned is_pointer;
 	struct reference* next;
 } reference_t;

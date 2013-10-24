@@ -26,7 +26,7 @@
 #include "types.h"
 
 enum { CONST_QUAL = 0x1, VECT_QUAL = 0x2 };
-enum { POINTER_TO, ARRAY_OF, FUNCTION_RETURN };
+enum { POINTER_TO = 1, ARRAY_OF, FUNCTION_RETURN };
 
 struct cdecl;
 struct type_deriv_list;
@@ -114,13 +114,14 @@ typedef struct cdecl {
 		struct type_bitfields bitfields;
 		struct function_type function;
 	};
+	const char* typedef_name;
 	const char* var_name;
 } cdecl_t;
 
 typedef struct type_deriv_list {
     int ctor;
     union {
-        int len;
+        void* len;
         int qual;
         signature_t* sig;
     };
