@@ -125,6 +125,7 @@ typedef struct reference {
 } reference_t;
 
 expr_t* check_expr(tree_t* node, symtab_t table);
+void check_comma_expr(tree_t* node, symtab_t table);
 cdecl_t* get_typeof_type(tree_t* node, symtab_t table);
 
 expression_t* parse_expression(tree_t** node, symtab_t table);

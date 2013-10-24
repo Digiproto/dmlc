@@ -1221,6 +1221,7 @@ void parse_method_block(tree_t* node) {
 	method_attr_t* attr = node->common.attr;
 	symtab_t table = attr->table;
 	tree_t* block = node->method.block;
+	printf("parse method '%s' block\n", attr->name);
 
 	if (block->block.statement == NULL)
 		return;
@@ -1265,7 +1266,12 @@ void parse_constant(tree_t* node, symtab_t table) {
 
 	/*the constant symbol must be defined before used*/
 	attr->value = check_expr(node->assign.expr, table);
-	symbol_insert(table, node->assign.decl->ident.str, CONSTANT_TYPE, attr);
+	if (attr->value->is_const) {
+		symbol_insert(table, node->assign.decl->ident.str, CONSTANT_TYPE, attr);
+	} else {
+		fprintf(stderr, "none-constant exprsion '%s'\n", attr->name);
+		exit(-1);
+	}
 
 	return;
 }
@@ -1453,12 +1459,9 @@ void parse_do_while(tree_t* node, symtab_t table) {
 void parse_for(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
-	tree_t* init = node->for_tree.init;
-	parse_comma_expression(&init, table);
-	tree_t* cond = node->for_tree.cond;
-	parse_expression(&cond, table);
-	tree_t* update = node->for_tree.update;
-	parse_comma_expression(&update, table);
+	check_comma_expr(node->for_tree.init, table);
+	check_expr(node->for_tree.cond, table);
+	check_comma_expr(node->for_tree.update, table);
 
 	tree_t* block = node->for_tree.block;
 	if (block->common.type != BLOCK_TYPE) {

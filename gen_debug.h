@@ -25,7 +25,7 @@
 #define __GEN_DEBUG_H__  
 #include <stdio.h>
 
-//#define DEBUG_BACKEND
+#define DEBUG_BACKEND
 #ifdef DEBUG_BACKEND
 enum {
 	DEBUG_BACKEND_GENERAL,

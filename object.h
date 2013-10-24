@@ -177,6 +177,9 @@ typedef struct attribute {
 	object_t obj;
 	const char *alloc_type;
 	const char *type;
+	const char* configuration;
+	const char* persistent;
+	const char* internal;
 } attribute_t;
 
 typedef struct data {

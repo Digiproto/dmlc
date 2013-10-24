@@ -232,18 +232,18 @@ symbol_t default_symbol_find(symtab_t symtab, const char* name, type_t type)
     symbol_t rt;
     if(tmp != NULL) {
 		DEBUG_SYMBOL("before search self table %s\n", name);
-        rt = _symbol_find(tmp->table, name, type);
-        if(rt) {
-            return rt;
-        }
+		rt = _symbol_find(tmp->table, name, type);
+		if(rt) {
+		    return rt;
+		}
 		DEBUG_SYMBOL("try to search template %s\n", name);
-		rt = symbol_find_from_templates(symtab->template_table, name, type);
+		rt = symbol_find_from_templates(tmp->template_table, name, type);
 		if (rt) {
 			return rt;
 		}
-		DEBUG_SYMBOL("current table: %d, goto parent table: %d: %s\n", symtab->table_num, tmp->parent->table_num, name);
-        tmp = tmp->parent;
+		tmp = tmp->parent;
 		if(tmp) {
+			DEBUG_SYMBOL("goto parent table: %d: %s\n", tmp->table_num, name);
 			return symbol_find(tmp, name, type);
 		}
     }

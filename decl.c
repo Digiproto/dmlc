@@ -1955,8 +1955,7 @@ static void parse_c_array(tree_t* node, symtab_t table, cdecl_t* type) {
 	//printf("\npay attention: In %s, line = %d, calculate the expression value\n\n", __func__, __LINE__);
 	type_deriv_list_t* drv = (type_deriv_list_t*)gdml_zmalloc(sizeof(type_deriv_list_t));
 	drv->ctor = ARRAY_OF;
-	/* get the expression value */
-	//drv->len =
+	drv->len = check_expr(node->array.expr, table);
 	drv->next = type->common.drv;
 	type->common.drv = drv;
 
@@ -2138,7 +2137,7 @@ cdecl_t* pointer_to(cdecl_t* type) {
 	return ty;
 }
 
-static cdecl_t* array_of(cdecl_t* type, int len) {
+cdecl_t* array_of(cdecl_t* type, int len) {
 	assert(type != NULL);
 	cdecl_t* ty = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
 	ty->common.categ = ARRAY_T;
@@ -2365,10 +2364,11 @@ void parse_typedef_cdecl(tree_t* node, symtab_t table) {
 			free(type);
 		}
 		else {
-			if (type->var_name)
+			if (type->var_name) {
 				symbol_insert(table, type->var_name, TYPEDEF_T, type);
-			else
+			} else {
 				error("useless type name in empty declaration\n");
+			}
 		}
 	}
 	else {

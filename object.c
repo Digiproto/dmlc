@@ -96,8 +96,8 @@ static symbol_t object_symbol_find(symtab_t table, const char *name, type_t type
 	BE_DBG(OBJ_SYM, "here goto parent\n");
 	if(table->parent) {
 		sym = symbol_find(table->parent, name, type);
+		BE_DBG(OBJ_SYM, "symbol %s found in parent symtable\n", name);
 	}
-	BE_DBG(OBJ_SYM, "symbol %s found in parent symtable\n", sym->name);
 	return sym;
 
 }
@@ -551,7 +551,7 @@ static int get_reg_offset(paramspec_t *t, int *interval) {
 		offset = t->value->u.integer;
 		*interval = 0;
 		return offset;
-	} else if(t->value->type ==  UNDEFINED_TYPE) {
+	} else if(t->value->type == PARAM_TYPE_UNDEF) {
 		return -1;
 	} else {
 		node = t->expr_node;
@@ -716,7 +716,6 @@ static void bank_realize(object_t *obj) {
 	}
 
 	add_object_templates(obj, obj->node->bank.templates);
-
 	/* parse the symbols, parameters and check expressions
 	 * that in the bank table */
 	parse_bank(obj->node, obj->symtab->sibling);
@@ -794,18 +793,39 @@ static const char *get_attribute_type(const char *alloc_type) {
 	} else if(!strcmp(alloc_type, "\"int64\"")) {
 		type = "int64";
 	}else {
-		type = NULL;
+		fprintf(stderr, "The attribute alloc type not wright '%s'\n", alloc_type);
+		exit(-1);
 	}
 	return type;
+}
+
+static const char* get_configuration(const char* str) {
+	if (str == NULL)
+		return NULL;
+	const char* config = NULL;
+	if (!strcmp(str, "\"required\"")) {
+		config = "required";
+	} else if (!strcmp(str, "\"optional\"")) {
+		config = "optional";
+	} else if (!strcmp(str, "\"pseudo\"")) {
+		config = "pseudo";
+	} else if (!strcmp(str, "\"none\"")) {
+		config = "none";
+	} else {
+		fprintf(stderr, "The attribute configuration value no right '%s'\n", str);
+		exit(-1);
+	}
+
+	return config;
 }
 
 static void attribute_realize(object_t *obj) {
 	tree_t *node;
 	symbol_t sym;
 	const char *alloc_type;
-    parameter_attr_t* attr;
+	parameter_attr_t* attr;
 	const char *type;
-    paramspec_t* spec; 
+	paramspec_t* spec;
 	attribute_t *attr_obj = (attribute_t *)obj;
 
 	/* parse the arraydef about attribute */
@@ -813,11 +833,27 @@ static void attribute_realize(object_t *obj) {
 	/* parse the elements that in the attribute table*/
 	parse_attribute(obj->node, obj->symtab->sibling);
 
-	sym  = symbol_find(obj->symtab, "allocate_type", PARAMETER_TYPE);
-	attr = (parameter_attr_t *)sym->attr;
-	spec = attr->param_spec;
-	alloc_type = get_attribute_type(spec->value->u.string);
-	attr_obj->alloc_type = alloc_type;
+	sym = symbol_find(obj->symtab, "allocate_type", PARAMETER_TYPE);
+	if (sym) {
+		attr = (parameter_attr_t *)sym->attr;
+		spec = attr->param_spec;
+		alloc_type = get_attribute_type(spec->value->u.string);
+		attr_obj->alloc_type = alloc_type;
+	}
+	sym = symbol_find(obj->symtab, "configuration", PARAMETER_TYPE);
+	if (sym) {
+		attr = (parameter_attr_t *)sym->attr;
+		spec = attr->param_spec;
+		attr_obj->configuration = get_configuration(spec->value->u.string);
+	}
+	sym = symbol_find(obj->symtab, "persistent", PARAMETER_TYPE);
+	sym = symbol_find(obj->symtab, "internal", PARAMETER_TYPE);
+	sym = symbol_find(obj->symtab, "attr_type", PARAMETER_TYPE);
+	sym = symbol_find(obj->symtab, "type", PARAMETER_TYPE);
+	if (sym) {
+		fprintf(stderr, "Pay attetion: not implement the attribute parameter: %s\n", sym->name);
+		exit(-1);
+	}
 }
 
 void device_realize(device_t *dev) {
@@ -1325,11 +1361,6 @@ static void add_object_templates(object_t *obj, tree_t *t){
 	struct tree_ident *ident;
 	struct template_name *temp;
 	
-	/*while(it){
-		ident = (struct tree_ident *)it;
-		create_template_name(obj, ident->str);
-		it = it->common.sibling;
-	}*/
 	add_default_template(obj);
 	process_object_templates(obj);
 }

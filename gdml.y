@@ -1590,7 +1590,6 @@ bitrange
 		/* should calulate the expression value */
 		bitrange_attr_t* attr = (bitrange_attr_t*)gdml_zmalloc(sizeof(bitrange_attr_t));
 		attr->is_fix = 1;
-		//attr->expr = parse_expression(&($2), current_table);
 		tree_t* node = (tree_t*)create_node("array", ARRAY_TYPE, sizeof(struct tree_array), &@$);
 		node->array.is_fix = 1;
 		node->array.expr = $2;
@@ -1604,8 +1603,6 @@ bitrange
 		/* should calulate the expression value */
 		bitrange_attr_t* attr = (bitrange_attr_t*)gdml_zmalloc(sizeof(bitrange_attr_t));
 		attr->is_fix = 0;
-		//attr->expr = parse_expression(&($2), current_table);
-		//attr->expr_end = parse_expression(&($4), current_table);
 		tree_t* node = (tree_t*)create_node("array", ARRAY_TYPE, sizeof(struct tree_array), &@$);
 		node->array.is_fix = 0;
 		node->array.expr = $2;
@@ -1818,10 +1815,7 @@ struct
 	struct_decls '}' {
 		tree_t* node = $<tree_type>3;
 		node->struct_tree.block = $4;
-
-		//parse_struct_decls($4, current_table);
 		current_table = pop(table_stack);
-
 		$$ = node;
 	}
 	;
@@ -1843,29 +1837,16 @@ struct_decls
 
 layout
 	:LAYOUT STRING_LITERAL '{' {
-	#if 0
-		layout_attr_t* attr = (layout_attr_t*)gdml_zmalloc(sizeof(layout_attr_t));
-		attr->str = $2;
-		symbol_insert(current_table, $2, LAYOUT_TYPE, attr);
-		attr->table  = current_table;
-		attr->common.node = node;
-	#endif
-
 		current_table = change_table(current_table, table_stack, &current_table_num, LAYOUT_TYPE);
-
 		tree_t* node = (tree_t*)create_node("layout", LAYOUT_TYPE, sizeof(struct tree_layout), &@$);
 		node->layout.desc = $2;
 		node->layout.table = current_table;
 		node->common.print_node = print_layout;
-		//node->common.attr = attr;
-
 		$<tree_type>$ = node;
 	}
 	layout_decls '}' {
 		tree_t* node = $<tree_type>4;
 		node->layout.block = $5;
-
-		//parse_layout_decls($5, current_table);
 		current_table = pop(table_stack);
 		$$ = node;
 	}
@@ -1883,29 +1864,17 @@ layout_decls
 
 bitfields
 	: BITFIELDS INTEGER_LITERAL '{' {
-	#if 0
-		bitfield_attr_t* attr = (bitfield_attr_t*)gdml_zmalloc(sizeof(bitfield_attr_t));
-		attr->name = $2;
-		symbol_insert(current_table, $2, BITFIELDS_TYPE, attr);
-		attr->table = current_table;
-		attr->common.node = node;
-	#endif
-
 		current_table = change_table(current_table, table_stack, &current_table_num, BITFIELDS_TYPE);
-
 		tree_t* node = (tree_t*)create_node("bitfields", BITFIELDS_TYPE, sizeof(struct tree_bitfields), &@$);
 		node->bitfields.size_str = $2;
 		node->bitfields.size = strtoi($2);
 		node->bitfields.table = current_table;
 		node->common.print_node = print_bitfields;
-		//node->common.attr = attr;
-
 		$<tree_type>$ = node;
 	}
 	bitfields_decls '}' {
 		tree_t* node = $<tree_type>4;
 		node->bitfields.block = $5;
-		//parse_bitfields_decls($5, current_table);
 		current_table = pop(table_stack);
 		$$ = node;
 	}
@@ -2673,8 +2642,6 @@ if_statement
 	: IF '(' expression ')' {
 		tree_t* node = (tree_t*)create_node("if_else", IF_ELSE_TYPE, sizeof(struct tree_if_else), &@$);
 		node->if_else.cond = $3;
-		//parse_expression(&($3), current_table);
-
 		current_table = change_table(current_table, table_stack, &current_table_num, IF_ELSE_TYPE);
 		$<tree_type>$ = node;
 	}
@@ -2713,7 +2680,6 @@ statement
 	| if_statement ELSE {
 		tree_t* node = $1;
 		current_table = change_table(current_table, table_stack, &current_table_num, IF_ELSE_TYPE);
-
 		$<tree_type>$ = node;
 	}
 	statement {
@@ -2731,9 +2697,7 @@ statement
 	| WHILE '(' expression ')' {
 		tree_t* node = (tree_t*)create_node("do_while", DO_WHILE_TYPE, sizeof(struct tree_do_while), &@$);
 		node->do_while.cond = $3;
-
 		current_table = change_table(current_table, table_stack, &current_table_num, DO_WHILE_TYPE);
-
 		$<tree_type>$ = node;
 	}
 	statement {
