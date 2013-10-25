@@ -289,9 +289,9 @@ symbol_t symbol_find_from_templates_notype(struct template_table* templates, con
 		if (table) {
 			rt = symbol_find_notype(table, name);
 		}
-        if(rt) {
-            return rt;
-        }
+		if(rt) {
+		    return rt;
+		}
 
 		templates = templates->next;
 		i++;
@@ -318,14 +318,14 @@ symbol_t default_symbol_find_notype(symtab_t symtab, const char *name)
         if(rt) {
             return rt;
         }
-		rt = symbol_find_from_templates_notype(tmp->template_table, name);
-		if (rt) {
-			return rt;
-		}
+	rt = symbol_find_from_templates_notype(tmp->template_table, name);
+	if (rt) {
+		return rt;
+	}
         tmp = tmp->parent;
-		if(tmp) {
-			return symbol_find_notype(tmp, name);
-		}
+	if(tmp) {
+		return symbol_find_notype(tmp, name);
+	}
     }
     return NULL;
 }

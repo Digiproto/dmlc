@@ -175,11 +175,13 @@ typedef struct iface {
 
 typedef struct attribute {
 	object_t obj;
-	const char *alloc_type;
-	const char *type;
+	const char* alloc_type;
+	const char* type;
 	const char* configuration;
 	const char* persistent;
 	const char* internal;
+	int alloc;
+	int ty;
 } attribute_t;
 
 typedef struct data {

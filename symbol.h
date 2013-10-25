@@ -102,6 +102,7 @@ typedef struct paramspec {
 
 typedef struct parameter_attr
 {
+	int is_original;
 	struct symbol_common common;
 	const char *name;
 	paramspec_t* param_spec;
@@ -163,15 +164,15 @@ typedef struct label_attr {
 }label_attr_t;
 
 struct object_common {
-   tree_t* node;
-   symtab_t table;
-   int table_num;
-   const char *name;
-   const char* desc;
-   char** templates;
-   int templates_num;
-   int obj_type;
-   int is_defined;
+	tree_t* node;
+	symtab_t table;
+	int table_num;
+	const char *name;
+	const char* desc;
+	char** templates;
+	int templates_num;
+	int obj_type;
+	int is_defined;
 };
 
 struct bank_attr;
@@ -264,6 +265,7 @@ typedef struct attribute_attr
 	struct object_common common;
 	int is_array;
 	arraydef_attr_t* arraydef;
+	void* attr_obj;
 } attribute_attr_t;
 typedef struct attribute_array_attr
 {

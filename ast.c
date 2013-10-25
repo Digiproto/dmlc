@@ -1139,6 +1139,7 @@ void parse_parameter(tree_t* node, symtab_t table) {
 	   error( "duplicate assignment to parameter '%s'\n", node->ident.str);
 
 	parameter_attr_t* attr = (parameter_attr_t*)gdml_zmalloc(sizeof(parameter_attr_t));
+	attr->is_original = 1;
 	attr->name = node->ident.str;
 	attr->common.node = node;
 	attr->param_spec = get_param_spec(node->param.paramspec, table);
@@ -1221,7 +1222,7 @@ void parse_method_block(tree_t* node) {
 	method_attr_t* attr = node->common.attr;
 	symtab_t table = attr->table;
 	tree_t* block = node->method.block;
-	printf("parse method '%s' block\n", attr->name);
+	printf("parse method '%s' block----------------------------------------\n", attr->name);
 
 	if (block->block.statement == NULL)
 		return;
@@ -1610,7 +1611,7 @@ static void check_log_group(tree_t* node, symtab_t table) {
 
 extern int scanfstr(const char *str, char ***typelist);
 static void parse_log_format(const char* format, tree_t* args) {
-	assert(format != NULL); assert(args != NULL);
+	if ((format == NULL) || (args == NULL)) return;
 	char** typelist = NULL;
 	int arg_num = 0;
 	int argc = 0;
@@ -1650,7 +1651,7 @@ void parse_log(tree_t* node, symtab_t table) {
 	/* check the log format and the log args, that
 	 * like the printf's format, and args*/
 	tree_t* log_args = node->log.args;
-	parse_log_args(&log_args, table);
+	parse_log_args(log_args, table);
 	parse_log_format(node->log.format, log_args);
 
 	return;
@@ -4478,3 +4479,28 @@ void print_ast (tree_t* root)
 
 	return;
 }
+
+symbol_t get_symbol_from_root_table(const char* name, type_t type);
+void check_reg_table(void) {
+	symbol_t symbol = get_symbol_from_root_table("regs", 0);
+	object_attr_t* attr = symbol->attr;
+	symtab_t table = attr->common.table;
+	printf("regs table: %d, type: %d, BANK_TYPE: %d\n", table->table_num, symbol->type, BANK_TYPE);
+#if 0
+	symbol_t reg = symbol_find(table, "UartDR", REGISTER_TYPE);
+	object_attr_t* reg_attr = reg->attr;
+	symtab_t reg_table = reg_attr->common.table;
+	printf("reg_table: %d, parent: 0x%x\n",
+		reg_table->table_num, reg_table->parent);
+	printf("reg_table parent: %d\n", reg_table->parent->table_num);
+#endif
+
+	return;
+}
+
+
+
+
+
+
+

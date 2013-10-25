@@ -146,6 +146,7 @@ static object_type_t get_object_encoding(const char *name) {
 	return Obj_Type_None;
 }
 
+extern void check_reg_table(void);
 static void process_object_relationship(object_t *obj);
 static void init_object(object_t *obj, const char *name, const char *type, tree_t *node, symtab_t table) {	
 	int i;
@@ -769,29 +770,39 @@ static void connect_realize(object_t *obj) {
 	}
 }
 
-static const char *get_attribute_type(const char *alloc_type) {
-	const char *type;
+static const char* get_allocate_type(const char *alloc_type, attribute_t* attr) {
+	const char* type = NULL;
 
 	if(!strcmp(alloc_type, "\"double\"")) {
-		type = "double";	
+		type = "double";
+		attr->alloc = DOUBLE_T;
 	} else if(!strcmp(alloc_type, "\"string\"")) {
 		type = "string";
+		attr->alloc = STRING_T;
 	} else if(!strcmp(alloc_type, "\"uint8\"")) {
 		type = "uint8";
+		attr->alloc = INT_T;
 	} else if(!strcmp(alloc_type, "\"uint16\"")) {
 		type = "uint16";
+		attr->alloc = INT_T;
 	} else if(!strcmp(alloc_type, "\"uint32\"")) {
 		type = "uint32";
+		attr->alloc = INT_T;
 	} else if(!strcmp(alloc_type, "\"uint64\"")) {
 		type = "uint64";
+		attr->alloc = LONG_T;
 	} else if(!strcmp(alloc_type, "\"int8\"")) {
 		type = "int8";
+		attr->alloc = INT_T;
 	} else if(!strcmp(alloc_type, "\"int16\"")) {
 		type = "int16";
+		attr->alloc = INT_T;
 	} else if(!strcmp(alloc_type, "\"int32\"")) {
 		type = "int32";
+		attr->alloc = INT_T;
 	} else if(!strcmp(alloc_type, "\"int64\"")) {
 		type = "int64";
+		attr->alloc = LONG_T;
 	}else {
 		fprintf(stderr, "The attribute alloc type not wright '%s'\n", alloc_type);
 		exit(-1);
@@ -819,41 +830,78 @@ static const char* get_configuration(const char* str) {
 	return config;
 }
 
+static const char* get_type(const char* str, attribute_t* attr) {
+	assert(str != NULL);
+	const char* type = NULL;
+	if (!strcmp(str, "\"i\"")) {
+		type = "i";
+		attr->ty = INT_T;
+	} else if (!strcmp(str, "\"f\"")) {
+		type = "f";
+		attr->ty = FLOAT_T;
+	} else if (!strcmp(str, "\"s\"")) {
+		type = "s";
+		attr->ty = STRING_T;
+	} else if (!strcmp(str, "\"b\"")) {
+		type = "b";
+		attr->ty = BOOL_T;
+	} else if (!strcmp(str, "\"o\"")) {
+		type = "o";
+		attr->ty = INT_T;
+	} else if (!strcmp(str, "\"a\"")) {
+		type = "a";
+		attr->ty = FLOAT_T;
+	} else {
+		fprintf(stderr, "other attribute type: %s\n", str);
+		exit(-1);
+	}
+	return type;
+}
+
+#define get_param_spec(attr, spec) \
+	attr = (parameter_attr_t *)sym->attr; \
+	spec = attr->param_spec;
 static void attribute_realize(object_t *obj) {
 	tree_t *node;
 	symbol_t sym;
-	const char *alloc_type;
+	const char* alloc_type;
 	parameter_attr_t* attr;
-	const char *type;
 	paramspec_t* spec;
 	attribute_t *attr_obj = (attribute_t *)obj;
 
 	/* parse the arraydef about attribute */
 	parse_attribute_attr(obj->node, obj->symtab->parent);
+	attribute_attr_t* attribute_attr = obj->node->common.attr;
+	attribute_attr->attr_obj = attr_obj;
 	/* parse the elements that in the attribute table*/
 	parse_attribute(obj->node, obj->symtab->sibling);
 
 	sym = symbol_find(obj->symtab, "allocate_type", PARAMETER_TYPE);
 	if (sym) {
-		attr = (parameter_attr_t *)sym->attr;
-		spec = attr->param_spec;
-		alloc_type = get_attribute_type(spec->value->u.string);
+		get_param_spec(attr, spec);
+		alloc_type = get_allocate_type(spec->value->u.string, attr_obj);
 		attr_obj->alloc_type = alloc_type;
 	}
 	sym = symbol_find(obj->symtab, "configuration", PARAMETER_TYPE);
 	if (sym) {
-		attr = (parameter_attr_t *)sym->attr;
-		spec = attr->param_spec;
+		get_param_spec(attr, spec);
 		attr_obj->configuration = get_configuration(spec->value->u.string);
 	}
 	sym = symbol_find(obj->symtab, "persistent", PARAMETER_TYPE);
 	sym = symbol_find(obj->symtab, "internal", PARAMETER_TYPE);
 	sym = symbol_find(obj->symtab, "attr_type", PARAMETER_TYPE);
-	sym = symbol_find(obj->symtab, "type", PARAMETER_TYPE);
 	if (sym) {
+		get_param_spec(attr, spec);
 		fprintf(stderr, "Pay attetion: not implement the attribute parameter: %s\n", sym->name);
 		exit(-1);
 	}
+	sym = symbol_find(obj->symtab, "type", PARAMETER_TYPE);
+	if (sym) {
+		get_param_spec(attr, spec);
+		attr_obj->type = get_type(spec->value->u.string, attr_obj);
+	}
+
+	return;
 }
 
 void device_realize(device_t *dev) {

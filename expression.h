@@ -118,6 +118,28 @@ typedef struct expr {
 #define is_same_type(type1, type2) (type1->common.categ == type2->common.categ)
 #define is_no_type(type1) (type1->common.categ == NO_TYPE)
 
+#define is_parameter_type(type) (type->common.categ == PARAMETER_TYPE)
+
+#define new_int_type(expr) \
+	expr->type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t)); \
+	expr->type->common.categ = INT_T;	\
+	expr->type->common.size = sizeof(int) * 8;
+
+#define new_long_type(expr) \
+	expr->type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t)); \
+	expr->type->common.categ = LONG_T;	\
+	expr->type->common.size = sizeof(long) * 8;
+
+#define new_char_type(expr) \
+	expr->type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t)); \
+	expr->type->common.categ = CHAR_T;	\
+	expr->type->common.size = sizeof(char) * 8;
+
+#define new_doule_type(expr) \
+	expr->type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t)); \
+	expr->type->common.categ = DOUBLE_T;	\
+	expr->type->common.size = sizeof(double) * 8;
+
 typedef struct reference {
 	const char* name;
 	int is_array;
@@ -130,7 +152,7 @@ void check_comma_expr(tree_t* node, symtab_t table);
 cdecl_t* get_typeof_type(tree_t* node, symtab_t table);
 
 expression_t* parse_expression(tree_t** node, symtab_t table);
-void parse_log_args(tree_t** node, symtab_t table);
+void parse_log_args(tree_t* node, symtab_t table);
 expression_t* get_ident_value(tree_t** node, symtab_t table,  expression_t* expr);
 expression_t* cal_binary_expr(tree_t** node, symtab_t table, expression_t* expr);
 extern expression_t* cal_expression(tree_t** node, symtab_t table, expression_t* expr);

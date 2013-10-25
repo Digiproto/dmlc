@@ -44,6 +44,7 @@ typedef enum parameter_flag {
 } param_flag_t;
 
 typedef struct param_value {
+	int is_original;
 	param_type_t type;
 	param_flag_t flag;
 	int is_const;

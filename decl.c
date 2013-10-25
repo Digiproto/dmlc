@@ -1410,6 +1410,7 @@ void parse_local_decl(tree_t* node, symtab_t table) {
 	if (node->local_tree.is_static) {
 		decl->common.is_static = 1;
 	}
+	printf("local name: %s\n", decl->var_name);
 
 	if (node->local_tree.local_keyword) {
 		tree_t* keyword = node->local_tree.local_keyword;
@@ -1433,7 +1434,7 @@ void parse_local_decl(tree_t* node, symtab_t table) {
 		if (!both_scalar_type(decl, expr->type) &&
 				!(both_array_type(decl, expr->type)) &&
 				!(is_same_type(decl, expr->type)) &&
-				!(is_no_type(decl))) {
+				!(is_no_type(decl)) && !is_parameter_type(decl)) {
 			error("incompatible types when initializing\n");
 		}
 	}

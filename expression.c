@@ -84,6 +84,9 @@ static int dml_struct_type(symbol_t symbol) {
         case PARAMETER_TYPE:
             refer_type = type;
             break;
+	case OBJECT_TYPE:
+		fprintf(stderr, "In %s, line = %d, object type\n", __FUNCTION__, __LINE__);
+		exit(-1);
         default:
             refer_type = 0;
             break;
@@ -2003,7 +2006,8 @@ reference_t*  get_bit_slic_ref(tree_t* node, reference_t* ref, expr_t* expr, sym
 			ident_node = expr_node->quote.ident;
 			ref->name = ident_node->ident.str;
 			if (check_dml_obj_refer(ident_node, table) == 0) {
-				fprintf(stderr, "reference to unknown object '%s', table_num: %d\n", ident_node->ident.str, table->table_num);
+				fprintf(stderr, "reference to unknown object '%s', table_num: %d, line: %d\n",
+						ident_node->ident.str, table->table_num, __LINE__);
 				/* TODO: handle the error */
 				exit(-1);
 			}
@@ -2048,7 +2052,8 @@ reference_t* get_reference(tree_t* node, reference_t* ref, expr_t* expr, symtab_
 			ident_node = node->quote.ident;
 			new->name = ident_node->ident.str;
 			if (check_dml_obj_refer(ident_node, table) == 0) {
-				fprintf(stderr, "reference to unknown object '%s', table_num: %d\n", ident_node->ident.str, table->table_num);
+				fprintf(stderr, "reference to unknown object '%s', table_num: %d, line: %d\n",
+						ident_node->ident.str, table->table_num, __LINE__);
 				/* TODO: handle the error */
 				exit(-1);
 			}
@@ -2102,6 +2107,16 @@ symtab_t get_default_symbol_tale(symbol_t symbol) {
 	return table;
 }
 
+symtab_t get_object_table(symbol_t symbol) {
+	assert(symbol != NULL);
+	object_t* obj = symbol->attr;
+	printf("obj name: %s\n", obj->name);
+	tree_t* node = obj->node;
+	object_attr_t* attr = node->common.attr;
+	//return attr->common.table;
+	return obj->symtab;
+}
+
 symtab_t get_symbol_table(symbol_t symbol) {
 	assert(symbol != NULL);
 
@@ -2135,6 +2150,9 @@ symtab_t get_symbol_table(symbol_t symbol) {
 			break;
 		case PARAMETER_TYPE:
 			table = get_default_symbol_tale(symbol);
+			break;
+		case OBJECT_TYPE:
+			table = get_object_table(symbol);
 			break;
 		default:
 			error("Othe symbol %s(%d)\n", symbol->name, symbol->type);
@@ -2594,19 +2612,19 @@ expression_t* parse_expression(tree_t** node, symtab_t table) {
 	return expr;
 }
 
-void parse_log_args(tree_t** node, symtab_t table) {
-	if (*node == NULL) {
+void parse_log_args(tree_t* node, symtab_t table) {
+	if (node == NULL) {
 		return;
 	}
 	assert(table != NULL);
 
-	tree_t** arg_node = node;
+	tree_t* arg_node = node;
 
-	parse_expression(node, table);
+	check_expr(node, table);
 
-	while (((*arg_node)->common.sibling) != NULL) {
-		*arg_node = (*arg_node)->common.sibling;
-		parse_expression(arg_node, table);
+	while ((arg_node->common.sibling) != NULL) {
+		arg_node = arg_node->common.sibling;
+		check_expr(arg_node, table);
 	}
 
 	return;
@@ -2704,7 +2722,8 @@ static int can_modify(expr_t* expr) {
 
 expr_t* cal_const_value(expr_t* expr) {
 	assert(expr != NULL);
-	printf("In %s, line = %d\n", __func__, __LINE__);
+	printf("In %s, line = %d, is_undefined: %d, is_const : %d\n",
+		__func__, __LINE__, expr->is_undefined, expr->is_const);
 	/* binary operation */
 	if (((expr->op >= ADD_TYPE) && (expr->op <= AND_TYPE)) &&
 		(!((expr->kids[0]->is_const) && (expr->kids[1]->is_const)))) {
@@ -2736,6 +2755,7 @@ expr_t* cal_const_value(expr_t* expr) {
 	if (((expr->op >= PRE_INC_OP_TYPE) && (expr->op <= AFT_DEC_OP_TYPE))
 			&& (expr->kids[0]->is_const == 0)) {
 		expr->type = expr->kids[0]->type;
+		return expr;
 	}
 
 	/*--------------- calculate the constant value about expression-------------*/
@@ -2920,12 +2940,6 @@ cdecl_t* get_arith_type(cdecl_t* type1, cdecl_t* type2, cdecl_t* type) {
 		expr->type->common.categ = INT_T; \
 		expr->type->common.size = sizeof(int) * 8;
 
-#define new_int_type(expr) \
-	expr->type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t)); \
-	expr->type->common.categ = INT_T;	\
-	expr->type->common.size = sizeof(int) * 8;
-
-
 expr_t* check_logical_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL);
 	printf("IN %s, line = %d, node type: %s\n", __func__, __LINE__, node->common.name);
@@ -2963,6 +2977,10 @@ expr_t* check_bitwise_expr(tree_t* node, symtab_t table, expr_t* expr) {
 		expr->kids[0]->type = type1;
 		expr->kids[1]->type = type2;
 		expr = cal_const_value(expr);
+		return expr;
+	}
+	else if (is_parameter_type(type1) || is_parameter_type(type2)) {
+		expr->type = type1->common.categ > type2->common.categ ? type1 : type2;
 		return expr;
 	}
 	error("Line: %d, Invalid operands, type1: %d, type2: %d, arr_t: %d\n",
@@ -3143,15 +3161,16 @@ static int can_assign(expr_t* l_expr, expr_t* r_expr) {
 	cdecl_t* l_type = unqual(l_expr->type);
 	cdecl_t* r_type = unqual(r_expr->type);
 
+	printf("In %s, line = %d, l_type: %d, r_type: %d : arr_t: %d\n",
+			__func__, __LINE__, l_type->common.categ, r_type->common.categ, ARRAY_T);
 	if (is_ptr_type(l_type) && is_null_ptr(r_expr)) {
 		return 1;
-	}
-	else {
+	} else if (is_parameter_type(l_type) || is_parameter_type(r_type)){
+		return 1;
+	} else {
 		return two_type_compatible(l_type, r_type);
 	}
 
-	printf("In %s, line = %d, l_type: %d, r_type: %d : arr_t: %d\n",
-			__func__, __LINE__, l_type->common.categ, r_type->common.categ, ARRAY_T);
 
 	return 0;
 }
@@ -3261,6 +3280,8 @@ expr_t* check_ternary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 
 	printf("IN %s, line = %d, node type: %s\n", __func__, __LINE__, node->common.name);
 	expr_t* cond_expr = check_expr(node->ternary.cond, table);
+	printf("cond expr type: 0x%x\n", cond_expr->type);
+	printf("type : %d\n", cond_expr->type->common.categ);
 	//expr->type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
 	if (!is_scalar_type(cond_expr->type)) {
 		error("used struct type value where scalar is required\n");
@@ -3361,8 +3382,10 @@ expr_t* check_unary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 			break;
 		case DEFINED_TYPE:
 			expr->kids[0] = check_expr(node->unary.expr, table);
-			expr = expr->kids[0];
-			expr->kids[0] = NULL;
+			//expr->type = expr->kids[0]->type;
+			expr->type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
+			expr->type->common.categ = BOOL_T;
+			expr->type->common.size = sizeof(int) * 8;
 			break;
 		case EXPR_TO_STR_TYPE:
 			expr->kids[0] = check_expr(node->unary.expr, table);
@@ -3404,6 +3427,9 @@ expr_t* check_unary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 				error("lvalue required as increment/decrement operand\n");
 			}
 			break;
+		default:
+			fprintf(stderr, "other unary type: %s(%d)\n", node->common.name, node->unary.type);
+			exit(-1);
 	}
 
 	expr->node = node;
@@ -3448,9 +3474,9 @@ expr_t* check_const_expr(tree_t* node, expr_t* expr) {
 			value->p = strdup(node->string.pointer);
 			break;
 		case UNDEFINED_TYPE:
-			expr->is_const = 1;
+			expr->is_const = 0;
 			expr->is_undefined = 1;
-			expr->type->common.categ = NO_TYPE;
+			expr->type->common.categ = INT_T;
 			free(value); value = NULL;
 			break;
 		default:
@@ -3485,6 +3511,7 @@ static int dml_obj_type(symbol_t symbol) {
         case DATA_TYPE:
         case METHOD_TYPE:
         case PARAMETER_TYPE:
+	case OBJECT_TYPE:
             refer_type = type;
             break;
         default:
@@ -3496,24 +3523,14 @@ static int dml_obj_type(symbol_t symbol) {
 
 static int find_dml_obj(symtab_t table, const char* name) {
 	assert(table != NULL); assert(name != NULL);
-    symbol_t symbol =  symbol_find_curr_notype(table, name);
-    int obj_type = 0;
-    if (symbol) {
-        obj_type = dml_obj_type(symbol);
-        if (obj_type) {
-            return obj_type;
-        }
-    }
-
-    if (table->parent) {
-        obj_type = find_dml_obj(table->parent, name);
-    }
-    else {
-        symtab_t root_table = get_root_table();
-        if (table != root_table) {
-            obj_type = find_dml_obj(root_table, name);
-        }
-    }
+	symbol_t symbol = symbol_find_notype(table, name);
+	int obj_type = 0;
+	if (symbol) {
+		obj_type = dml_obj_type(symbol);
+		if (obj_type) {
+		    return obj_type;
+		}
+	}
 
 	return obj_type;
 }
@@ -3542,13 +3559,16 @@ expr_t* check_quote_expr(tree_t* node, symtab_t table, expr_t* expr) {
      * the reference must be prefixed by '$' character*/
 	int is_obj = check_dml_obj_refer(ident, table);
 	if (is_obj == 0) {
-		fprintf(stderr, "reference to unknown object '%s', table_num: %d\n", ident->ident.str, table->table_num);
+		fprintf(stderr, "reference to unknown object '%s', table_num: %d, line: %d\n",
+			ident->ident.str, table->table_num, __LINE__);
 		/* TODO: handle the error */
 		exit(-1);
 	}
 
 	expr->node = node;
 	expr = check_expression(node->quote.ident, table, expr);
+	printf("expr type: 0x%x\n", expr->type);
+	printf("expr type: %d\n", expr->type->common.categ);
 
 	return expr;
 }
@@ -3559,35 +3579,61 @@ static cdecl_t* check_parameter_type(symbol_t symbol, expr_t* expr) {
 	expr->val = (value_t*)gdml_zmalloc(sizeof(value_t));
 	parameter_attr_t* parameter = (parameter_attr_t*)(symbol->attr);
 	paramspec_t* spec = parameter->param_spec;
-	if (spec == NULL) {
-		type->common.categ = NO_TYPE;
-		return type;
-	}
 	param_type_t param_type = spec->value->type;
-	if (param_type == PARAM_TYPE_NONE) {
-		type->common.categ = NO_TYPE;
+	if (parameter->is_original) {
+		if (spec == NULL) {
+			type->common.categ = NO_TYPE;
+			return type;
+		}
+		param_type = spec->value->type;
+	} else {
+		param_type = ((param_value_t*)parameter)->type;
+	}
+
+	if (param_type == PARAM_TYPE_NONE || param_type == PARAM_TYPE_LIST ||
+		param_type == PARAM_TYPE_REF) {
+		type->common.categ = PARAMETER_TYPE;
+	}
+	else if (param_type == PARAM_TYPE_BOOL) {
+		type->common.categ = BOOL_T;
+		expr->is_const = 1;
+		expr->val->int_v.value = ((param_value_t*)parameter)->u.boolean;
 	}
 	else if (param_type == PARAM_TYPE_STRING) {
 		type->common.categ = STRING_T;
-		if (spec->value->is_const) {
-			expr->is_const = 1;
-			expr->val->p = strdup(spec->value->u.string);
+		if (parameter->is_original) {
+			if (spec->value->is_const) {
+				expr->is_const = 1;
+				expr->val->p = strdup(spec->value->u.string);
+			}
+		} else {
+			if (((param_value_t*)parameter)->u.string) {
+				expr->val->p = ((param_value_t*)parameter)->u.string;
+			}
 		}
 	}
 	else if (param_type == PARAM_TYPE_UNDEF) {
-		type->common.categ = NO_TYPE;
+		type->common.categ = PARAMETER_TYPE;
 		expr->is_const = 1;
 		expr->is_undefined = 1;
 	}
 	else if (param_type == PARAM_TYPE_INT) {
 		type->common.categ = INT_T;
-		expr->is_const = spec->value->is_const;
-		expr->val->int_v.value = spec->value->u.integer;
+		if (parameter->is_original) {
+			expr->is_const = spec->value->is_const;
+			expr->val->int_v.value = spec->value->u.integer;
+		} else {
+			expr->val->int_v.value = ((param_value_t*)parameter)->u.integer;
+		}
 	}
 	else if (param_type == PARAM_TYPE_FLOAT) {
 		type->common.categ = FLOAT_T;
-		expr->is_const = spec->value->is_const;
-		expr->val->d = spec->value->u.floating;
+		if (parameter->is_original) {
+			expr->is_const = spec->value->is_const;
+			expr->val->d = spec->value->u.floating;
+		} else {
+			expr->val->d = ((param_value_t*)parameter)->u.floating;
+		}
 	}
 	else {
 		type->common.categ = NO_TYPE;
@@ -3620,7 +3666,11 @@ static cdecl_t* check_method_param_type(symtab_t table, symbol_t symbol) {
 
 static cdecl_t* check_foreach_type(symbol_t symbol, expr_t* expr) {
 	assert(symbol != NULL); assert(expr != NULL);
+	printf("foreach symbol: %s\n", symbol->name);
 	foreach_attr_t* attr = (foreach_attr_t*)(symbol->attr);
+	printf("expr: 0x%x\n", attr->expr);
+	printf("expr type: 0x%x\n", attr->expr->type);
+	printf("expr: 0x%x, type: %d\n", attr->expr, attr->expr->type->common.categ);
 
 	return attr->expr->type;
 }
@@ -3638,6 +3688,63 @@ static cdecl_t* check_register_type(symbol_t symbol, expr_t* expr) {
 		type = array_of(type, 0);
 	}
 
+	return type;
+}
+
+static cdecl_t* check_attribute_type(symbol_t symbol, expr_t* expr) {
+	assert(symbol != NULL); assert(expr != NULL);
+	printf("symbol: %s\n", symbol->name);
+	attribute_attr_t* attr = (attribute_attr_t*)(symbol->attr);
+	attribute_t* attr_obj = (attribute_t*)(attr->attr_obj);
+	if (attr_obj->alloc_type) {
+		printf("alloc type: %s\n", attr_obj->alloc_type);
+		if (attr_obj->alloc == INT_T) {
+			new_int_type(expr);
+		} else if (attr_obj->alloc == LONG_T) {
+			new_long_type(expr);
+		} else if (attr_obj->alloc == DOUBLE_T) {
+			new_doule_type(expr);
+		} else {
+			new_char_type(expr);
+			expr->type = pointer_to(expr->type);
+		}
+	}
+	else if (attr_obj->type) {
+		if (attr_obj->ty == INT_T) {
+			new_int_type(expr);
+		} else if (attr_obj->ty == FLOAT_T) {
+			new_doule_type(expr);
+		} else if (attr_obj->ty == STRING_T) {
+			new_char_type(expr);
+			expr->type = pointer_to(expr->type);
+		} else if (attr_obj->ty == BOOL_T) {
+			new_int_type(expr);
+			expr->type->common.categ == BOOL_T;
+		}
+		else {
+			fprintf(stderr, "other attribute type: %s\n", attr_obj->type);
+			exit(-1);
+		}
+	}
+	else {
+		new_int_type(expr);
+	}
+	return expr->type;
+}
+
+static cdecl_t* get_common_type(symtab_t table, symbol_t symbol, expr_t* expr);
+static cdecl_t* get_obj_type(symbol_t symbol, symtab_t table, expr_t* expr) {
+	assert(symbol != NULL); assert(table != NULL); assert(expr != NULL);
+	object_t* obj = symbol->attr;
+	tree_t* node = obj->node;
+	object_attr_t* attr = node->common.attr;
+	symbol_t new_symbol = (symbol_t)gdml_zmalloc(sizeof(struct symbol));
+	cdecl_t* type = NULL;
+	new_symbol->name = symbol->name;
+	new_symbol->type = attr->common.obj_type;
+	new_symbol->attr = attr;
+	type = get_common_type(table, new_symbol, expr);
+	free(new_symbol);
 	return type;
 }
 
@@ -3683,7 +3790,8 @@ static cdecl_t* get_common_type(symtab_t table, symbol_t symbol, expr_t* expr) {
 		case ATTRIBUTE_TYPE:
 			printf("\nIN %s, line = %d, attribute type: %d\n",
 					__func__, __LINE__, symbol->type);
-			exit(-1);
+			type = check_attribute_type(symbol, expr);
+			printf("attribute type: %d, float: %d\n", type->common.categ, DOUBLE_T);
 			break;
 		case REGISTER_TYPE:
 			printf("\nIN %s, line = %d, register type: %d\n",
@@ -3706,6 +3814,9 @@ static cdecl_t* get_common_type(symtab_t table, symbol_t symbol, expr_t* expr) {
 		case NO_TYPE:
 			type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
 			type->common.categ = NO_TYPE;
+			break;
+		case OBJECT_TYPE:
+			type = get_obj_type(symbol, table, expr);
 			break;
 		default:
 			error("In %s, line = %d, other dml %s(%s)\n",
@@ -3809,6 +3920,7 @@ static int check_array_symbol(symtab_t table, symbol_t symbol) {
 	return 0;
 }
 
+extern void check_reg_table(void);
 expr_t* check_refer(symtab_t table, reference_t* ref, expr_t* expr) {
 	assert(table != NULL); assert(ref != NULL); assert(expr != NULL);
 	printf("In %s, line = %d\n", __func__, __LINE__);
@@ -3824,11 +3936,13 @@ expr_t* check_refer(symtab_t table, reference_t* ref, expr_t* expr) {
 	}
 
 	symbol = symbol_find_notype(table, tmp->name);
-	symbol = (symbol == NULL) ? get_symbol_from_root_table(tmp->name, 0) : symbol;
+	//symbol = (symbol == NULL) ? get_symbol_from_root_table(tmp->name, 0) : symbol;
 	while (tmp->next) {
-		if (symbol->type == INTERFACE_TYPE) {
+		if ((symbol->type == INTERFACE_TYPE) ||
+			(symbol->type == OBJECT_TYPE && !strcmp(((object_t*)(symbol->attr))->obj_type, "interface"))) {
 			tmp->name = get_interface_name(symbol->name);
-			symbol = get_symbol_from_root_table(tmp->name, 0);
+			//symbol = get_symbol_from_root_table(tmp->name, 0);
+			symbol = symbol_find_notype(table, tmp->name);
 		}
 		if (symbol != NULL) {
 			if (symbol->type == TYPEDEF_T) {
@@ -3869,9 +3983,26 @@ expr_t* check_refer(symtab_t table, reference_t* ref, expr_t* expr) {
 			break;
 		}
 
+		const char* obj_type = NULL;
+		if (symbol->type == OBJECT_TYPE) {
+			obj_type = ((object_t*)(symbol->attr))->obj_type;
+		}
 		ref_symbol = symbol_find_notype(ref_table, tmp->next->name);
-		if (ref_symbol == NULL) {
-			fprintf(stderr, "Undefined reference '%s'\n", tmp->next->name);
+		if ((symbol->type == CONNECT_TYPE && !strcmp(tmp->next->name, "obj")) ||
+			((symbol->type == OBJECT_TYPE) && !(strcmp(obj_type, "connect")) && (!strcmp(tmp->next->name, "obj")))) {
+			cdecl_t* type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
+			type->common.categ = INT_T;
+			type->common.size = sizeof(int) * 8;
+			expr->type = type;
+			tmp = tmp->next;
+			if (tmp->next) {
+				fprintf(stderr, "Undefined reference '%s' Line: %d\n", tmp->next->name, __LINE__);
+				exit(-1);
+			}
+			return expr;
+		}
+		else if (ref_symbol == NULL) {
+			fprintf(stderr, "Undefined reference '%s' Line : %d\n", tmp->next->name, __LINE__);
 			exit(-1);
 			break;
 		}
@@ -3957,7 +4088,8 @@ void check_func_param(tree_t* node, symtab_t table, signature_t* sig, int param_
 		expr = check_expr(node, table);
 		if (both_scalar_type(param->ty, expr->type) ||
 				(both_array_type(param->ty, expr->type)) ||
-				(is_same_type(param->ty, expr->type))) {
+				(is_same_type(param->ty, expr->type)) ||
+				(is_parameter_type(expr->type) && is_scalar_type(param->ty))) {
 			node = node->common.sibling;
 			i++;
 		}
@@ -4083,7 +4215,7 @@ expr_t* check_bit_slic_expr(tree_t* node, symtab_t table, expr_t* expr) {
 		}
 	}
 
-	printf("check bit slic, expr type: %d, type bty: 0x%x\n",
+	printf("check bit slic, expr type: %d, type bty: 0x%p\n",
 		expr->type->common.categ, expr->type->common.bty);
 	expr->node = node;
 	return expr;
@@ -4161,6 +4293,8 @@ expr_t* check_expr(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 	expr_t* expr = (expr_t*)gdml_zmalloc(sizeof(expr_t));
 	check_expression(node, table, expr);
+	printf("check expr type: 0x%x\n", expr->type);
+	printf("check expr type: %d\n", expr->type->common.categ);
 
 	return expr;
 }

@@ -1841,8 +1841,8 @@ void gen_dml_method(object_t *obj, struct method_name *m) {
 	/* we should pase the elements and calcualate the
 	 * expressions that in the method block, as we did
 	 * not do them before */
-	parse_method_block(method);
 	pre_gen_method(obj, method);
+	parse_method_block(method);
 	gen_dml_method_header(obj, method);
 	do_method_params_alias(obj, method);
 	D("\n");
