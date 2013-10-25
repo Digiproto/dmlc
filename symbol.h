@@ -130,6 +130,7 @@ typedef struct method_attr
 	int is_static;
 	int is_inline;
 	int is_template;
+	int is_parsed;
 	method_params_t* method_params;
 	symtab_t table;
 } method_attr_t;
@@ -147,7 +148,7 @@ typedef struct select_attr {
 	struct symbol_common common;
 	const char* ident;
 	int type;
-	expression_t* in_expr;
+	expr_t* in_expr;
 }select_attr_t;
 
 typedef struct foreach_attr {

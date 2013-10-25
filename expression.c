@@ -3011,6 +3011,10 @@ expr_t* check_equality_expr(tree_t* node, symtab_t table, expr_t* expr) {
 		new_int_type(expr);
 		return expr;
 	}
+	if (is_parameter_type(type1) || is_parameter_type(type2)) {
+		expr->type = (type1->common.categ > type2->common.categ) ? type1 : type2;
+		return expr;
+	}
 
 	error("Invalid operands to: type1: %d, type2: %d, STRING_T: %d, node: %s\n",
 			type1->common.categ, type2->common.categ, STRING_T, node->common.name);
@@ -3666,12 +3670,7 @@ static cdecl_t* check_method_param_type(symtab_t table, symbol_t symbol) {
 
 static cdecl_t* check_foreach_type(symbol_t symbol, expr_t* expr) {
 	assert(symbol != NULL); assert(expr != NULL);
-	printf("foreach symbol: %s\n", symbol->name);
 	foreach_attr_t* attr = (foreach_attr_t*)(symbol->attr);
-	printf("expr: 0x%x\n", attr->expr);
-	printf("expr type: 0x%x\n", attr->expr->type);
-	printf("expr: 0x%x, type: %d\n", attr->expr, attr->expr->type->common.categ);
-
 	return attr->expr->type;
 }
 
@@ -3803,7 +3802,6 @@ static cdecl_t* get_common_type(symtab_t table, symbol_t symbol, expr_t* expr) {
 					__func__, __LINE__, symbol->type);
 			type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
 			type->common.categ = INT_T;
-			exit(-1);
 			break;
 		case INTERFACE_TYPE:
 			printf("\nIN %s, line = %d, interface type type: %d\n",

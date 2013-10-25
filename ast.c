@@ -1222,6 +1222,12 @@ void parse_method_block(tree_t* node) {
 	method_attr_t* attr = node->common.attr;
 	symtab_t table = attr->table;
 	tree_t* block = node->method.block;
+	if (attr->is_parsed) {
+		return;
+	}
+	/* as one method can be called many times, but we should parse their
+	element only once, so we should have on status bit to mark it*/
+	attr->is_parsed = 1;
 	printf("parse method '%s' block----------------------------------------\n", attr->name);
 
 	if (block->block.statement == NULL)
@@ -1442,7 +1448,7 @@ void parse_do_while(tree_t* node, symtab_t table) {
 	 **/
 	/* check the condition expression */
 	tree_t* cond = node->do_while.cond;
-	parse_expression(&cond, table);
+	check_expr(cond, table);
 
 	/* goto the block table to parsing elements
 	 * and calculate expressions*/
@@ -1479,7 +1485,7 @@ void parse_switch(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
 	tree_t* cond = node->switch_tree.cond;
-	parse_expression(&(cond), table);
+	check_expr(cond, table);
 
 	tree_t* block = node->switch_tree.block;
 	if (block->common.type != BLOCK_TYPE) {
@@ -1498,8 +1504,8 @@ void parse_delete(tree_t* node, symtab_t table) {
 	/* the function of delete is to deallocate the
 	 * memory pointed by the result of evaluating expr */
 	tree_t* expr_node = node->delete_tree.expr;
-	expression_t* expr = parse_expression(&expr_node, table);
-	if(expr->final_type != POINTER_TYPE)
+	expr_t* expr = check_expr(expr_node, table);
+	if(expr->type->common.categ != POINTER_T)
 		error("delete expression not pointer\n");
 
 	return;
@@ -1539,7 +1545,7 @@ void parse_after_call(tree_t* node, symtab_t table) {
 
 	/* parse after expression */
 	tree_t* cond = node->after_call.cond;
-	parse_expression(&(cond), table);
+	check_expr(cond, table);
 
 	/* parse call expression */
 	tree_t* call_expr = node->after_call.call_expr;
@@ -1556,7 +1562,7 @@ void parse_assert(tree_t* node, symtab_t table) {
 	/* In assert, we should only check the symbol is defined or not
 	 * and check the type is ok*/
 	tree_t* expr_node = node->assert_tree.expr;
-	parse_expression(&expr_node, table);
+	check_expr(expr_node, table);
 
 	return;
 }
@@ -1582,10 +1588,10 @@ static void check_log_level(tree_t* node, symtab_t table) {
 		return;
 
 	tree_t* level = node;
-	expression_t* expr = parse_expression(&level, table);
-	if ((expr->final_type == INTEGER_TYPE) || (expr->final_type == INT_TYPE)) {
+	expr_t* expr = check_expr(level, table);
+	if (expr->type->common.categ == INT_T) {
 		if (expr->is_const) {
-			int value = expr->const_expr->int_value;
+			int value = expr->val->int_v.value;
 			if ((value > 0) && (value < 5))
 				return;
 			else
@@ -1593,7 +1599,7 @@ static void check_log_level(tree_t* node, symtab_t table) {
 		}
 	}
 	else
-		error("invalid log level: %s\n", TYPENAME(expr->final_type));
+		error("invalid log level\n");
 
 	return;
 }
@@ -1604,7 +1610,7 @@ static void check_log_group(tree_t* node, symtab_t table) {
 		return;
 
 	tree_t* group = node;
-	expression_t* expr = parse_expression(&group, table);
+	expr_t* expr = check_expr(group, table);
 
 	return;
 }
@@ -1669,14 +1675,14 @@ void parse_select(tree_t* node, symtab_t table) {
 	symbol_insert(node->select.where_table, ident->ident.str, SELECT_TYPE, attr);
 
 	tree_t* in_expr = node->select.in_expr;
-	attr->in_expr = parse_expression(&in_expr, table);
-	attr->type = attr->in_expr->final_type;
+	attr->in_expr = check_expr(in_expr, table);
+	attr->type = attr->in_expr->type->common.categ;
 
 	tree_t* cond = node->select.cond;
 	/* as we insert the ident into where block, so
 	 * check the conditional expression and find
 	 * the symbol from where table*/
-	parse_expression(&cond, node->select.where_table);
+	check_expr(cond, node->select.where_table);
 
 	/* goto the statement to parse elements
 	 * and calculate expressions */
