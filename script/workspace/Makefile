@@ -9,4 +9,4 @@ all: modules
 $(MAKECMDGOALS): modules
 	@cd $^ && make $(MAKECMDGOALS)
 
-.PHONY: distclean clean $(MODULES)
+.PHONY: distclean clean test $(MODULES)

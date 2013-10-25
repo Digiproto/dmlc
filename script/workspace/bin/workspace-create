@@ -25,10 +25,13 @@ newmakefile() {
 #		>> $1/Makefile
 #	done < "$MAKEFILE_DEF" 
 	sed -e "s?@QEMU_DIR@?$QEMU_DIR?g" \
+		-e "s?@QEMU_INSTALL_DIR@?$QEMU_INSTALL_DIR?g" \
 		-e "s?@SKYEYE_DIR@?$SKYEYE_DIR?g" \
+		-e "s?@SKYEYE_INSTALL_DIR@?$SKYEYE_INSTALL_DIR?g" \
 		-e "s?@QEMU_CONF_FLAGS@?$QEMU_CONF_FLAGS?g" \
 		-e "s?@SKYEYE_CONF_FLAGS@?$SKYEYE_CONF_FLAGS?g" \
 		-e "s?@DMLC@?$DMLC?g" \
+		-e "s?@PYTHON@?$PYTHON?g" \
 		"$EXEC_DIR/def/Makefile.def" \
 		>> "$1/Makefile.tmp"
 
@@ -76,6 +79,13 @@ do
 		newmakefile "$NEW_DIR"
 		echo "[normal]" create $var sample
 		sed "s/@HELLOWORLD@/$var/g" $EXEC_DIR/def/sample.dml.def > $NEW_DIR/$var.dml
+		echo "[normal]" create $var test
+		sed -e "s?@SKYEYE_INSTALL_DIR@?$SKYEYE_INSTALL_DIR/lib/skyeye?g" \
+		    -e "s?@QEMU_INSTALL_DIR@?$QEMU_INSTALL_DIR/arm-softmmu?g" \
+		    $EXEC_DIR/def/test.py.def \
+		    > $NEW_DIR/test.py
+		cp $EXEC_DIR/def/skyeye.conf.def $NEW_DIR/skyeye.conf
+		cp $EXEC_DIR/def/qemu.conf.def $NEW_DIR/qemu.conf
 	fi
 
 	# create a device in {qemu}/hw/simics directory

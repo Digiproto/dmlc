@@ -5,11 +5,14 @@ EXTRA_LIBRARY=
 
 # set environment variable
 QEMU_DIR=@QEMU_DIR@
+QEMU_INSTALL_DIR=@QEMU_INSTALL_DIR@
 SKYEYE_DIR=@SKYEYE_DIR@
+SKYEYE_INSTALL_DIR=@SKYEYE_INSTALL_DIR@
 QEMU_CONF_FLAGS=@QEMU_CONF_FLAGS@
 SKYEYE_CONF_FLAGS=@SKYEYE_CONF_FLAGS@
 DMLC=@DMLC@
 MAKE+= -j2
+PYTHON=@PYTHON@
 
 # get current device name
 CURR_DIR=$(shell pwd)
@@ -72,6 +75,9 @@ endif
 @FOR_SKYEYE@endif
 @FOR_SKYEYE@	@cp output/* $(SKYEYE_DIR_IN)
 @FOR_SKYEYE@	@rm -rf output
+
+test: test.py
+	@$(PYTHON) test.py
 
 clean:
 @FOR_QEMU@	-rm -rf $(QEMU_DIR_IN)/$(OBJ_NAME).c \

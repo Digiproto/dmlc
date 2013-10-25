@@ -1,0 +1,1 @@
+qemu -M versatilepb -kernel /home/lyj/qemu/zImage

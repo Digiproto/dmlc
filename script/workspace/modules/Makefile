@@ -14,10 +14,12 @@ MODULES := $(basename $(patsubst ./%,%,$(MODULES)))
 # create clean rule
 MODULES_CLEAN := $(patsubst %,%_dev_clean,$(MODULES))
 MODULES_DISTCLEAN := $(patsubst %,%_dev_distclean,$(MODULES))
+# create test rule
+MODULES_TEST := $(patsubst %,%_test,$(MODULES))
 
 # modify target list
 # remove reserve keywords
-SPECIAL_WORDS := clean distclean all
+SPECIAL_WORDS := clean distclean all test
 TARGETS := $(filter-out $(SPECIAL_WORDS),$(MAKECMDGOALS))
 
 # skyeye or qemu target goals
@@ -92,6 +94,8 @@ $(1)_qemu_dev:
 	@cd $(1) && make qemu
 endif # QEMU_BUILD
 
+$(1)_test:
+	@cd $(1) && make test
 $(1)_dev_clean:
 	@cd $(1) && make clean
 $(1)_dev_distclean:
@@ -101,8 +105,11 @@ endef
 # create rule for all module
 $(foreach var,$(MODULES),$(eval $(call PROGRAM_TEMPLATE,$(var))))
 
+# make test
+test: $(MODULES_TEST)
+
 clean: $(MODULES_CLEAN)
 
 distclean: $(MODULES_DISTCLEAN)
 
-.PHONY: all clean distclean $(MODULES)
+.PHONY: all clean distclean test $(MODULES)

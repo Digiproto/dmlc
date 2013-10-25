@@ -1,0 +1,57 @@
+# -*- coding: utf-8 -*-
+# The file is created by eJim Lee (lyjforjob@gmail.com)
+
+import platform, sys, os
+import ctypes
+sys.path.append("../../bin/library")
+from libtest_framework import *
+os_info = platform.system()
+
+lib_path_skyeye = "@SKYEYE_INSTALL_DIR@"
+lib_path_qemu   = "@QEMU_INSTALL_DIR@"
+if os_info == "Linux":
+	lib_suffix = ".so"
+else:
+	lib_suffix = ".dll"
+
+def skyeye_demo():
+	tmp = skyeye(lib_path_skyeye, lib_suffix)
+	tmp.test_init()
+	"""
+	# this is only a sample and can't try to your mach
+	retval = tmp.test_mem_write(32, 0x5a005000, 0x0fedcba0)
+	if not retval:
+		print "memory write failed"
+		exit()
+	print "memory put data: 0x%x" % 0x0fedcba0
+	retval, data = tmp.test_mem_read(32, 0x5a005000)
+	if not retval:
+		print "memory read failed"
+		exit()
+	print "memory get data: 0x%x" % data
+	"""
+
+def qemu_demo():
+	tmp = qemu(lib_path_qemu, lib_suffix)
+	tmp.test_init()
+	"""
+	# this is only a sample and can't try to your mach
+	retval = tmp.test_mem_write(32, 0x101f1020, 0x0fedcba0)
+	if not retval:
+		print "memory write failed"
+		exit()
+	print "memory put data: 0x%x" % 0x0fedcba0
+	retval, data = tmp.test_mem_read(32, 0x101f1020)
+	if not retval:
+		print "memory read failed"
+		exit()
+	print "memory get data: 0x%x" % data
+	"""
+
+# only for test
+if __name__ == '__main__':
+	"""
+	if you don't have skyeye or qemu, please comment it
+	"""
+	skyeye_demo()
+	qemu_demo()

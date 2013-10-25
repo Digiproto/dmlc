@@ -3,10 +3,13 @@
 # The file is important very much, don't remove this.
 
 QEMU_DIR=$HOME/qemu/qemu
+QEMU_INSTALL_DIR=$HOME/qemu/qemu
 SKYEYE_DIR=$HOME/skyeye_src/code
+SKYEYE_INSTALL_DIR=/opt/skyeye
 QEMU_CONF_FLAGS="--target-list=arm-softmmu --enable-dml"
 SKYEYE_CONF_FLAGS=""
 DMLC=dmlc
+PYTHON=python
 
 QEMU_BUILD=yes
 SKYEYE_BUILD=yes
