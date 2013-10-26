@@ -904,6 +904,12 @@ static void attribute_realize(object_t *obj) {
 	return;
 }
 
+static void implement_realize(object_t* obj) {
+	parse_implement(obj->node, obj->symtab->sibling);
+
+	return;
+}
+
 void device_realize(device_t *dev) {
 	struct list_head *p;
 	object_t *tmp;
@@ -938,6 +944,10 @@ void device_realize(device_t *dev) {
 	list_for_each(p, &dev->attributes) {
 		tmp = list_entry(p, object_t, entry);
 		attribute_realize(tmp);
+	}
+	list_for_each(p, &dev->implements) {
+		tmp = list_entry(p, object_t, entry);
+		implement_realize(tmp);
 	}
 }
 

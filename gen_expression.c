@@ -35,6 +35,7 @@ void translate_assign(tree_t *t) {
 	node = t->expr_assign.right;
 	translate(node);
 }
+
 /*
 static void translate_cond_expr(tree_t *t) {
 	tree_t *node;

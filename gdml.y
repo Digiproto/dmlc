@@ -2132,6 +2132,7 @@ expression
 		node->expr_assign.left = $1;
 		node->expr_assign.right = $3;
 		node->common.print_node = print_binary;
+		node->common.translate = translate_assign;
 		$$ = node;
 	}
 	| expression RIGHT_ASSIGN expression {
@@ -2215,6 +2216,7 @@ expression
 		node->binary.left = $1;
 		node->binary.right = $3;
 		node->common.print_node = print_binary;
+		node->common.translate = translate_binop_expr;
 		$$ = node;
 	}
 	| expression EQ_OP expression {

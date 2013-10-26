@@ -78,7 +78,7 @@ static void gen_bank_read_access(bank_t *b, reg_array_t *list, FILE *f){
 			break;
 		}
 		len = register_size * e->size;
-		fprintf(f,"\t\t\t\t\tswitch(v%d_offset / %d )\n",param, len);
+		//fprintf(f,"\t\t\t\t\tswitch(v%d_offset / %d )\n",param, len);
 		fprintf(f, "\t\t\t\t\t{\n");
 		list_for_each(p, &e->list) {
 			item = list_entry(p, reg_item_t, entry);
@@ -86,11 +86,12 @@ static void gen_bank_read_access(bank_t *b, reg_array_t *list, FILE *f){
 			ret_index = get_local_index();
 			add_object_method(item->obj, "read_access");
 			tmp = reg->offset/len;
-			if(tmp < MAGIC_NUM) {
-				fprintf(f, "\t\t\t\t\t\tcase %d:\n", tmp);
-			} else {
-				fprintf(f, "\t\t\t\t\t\tcase 0x%x:\n", tmp);
-			}
+			//if(tmp < MAGIC_NUM) {
+			//	fprintf(f, "\t\t\t\t\t\tcase %d:\n", tmp);
+			//} else {
+			//	fprintf(f, "\t\t\t\t\t\tcase 0x%x:\n", tmp);
+			//}
+			fprintf(f,"\t\t\t\t\t\t\tif(v%d_offset >= 0x%x && v%d_offset < 0x%x)\n", param, reg->offset, param, reg->offset + reg->array_size * reg->interval); // temp
 			fprintf(f,"\t\t\t\t\t\t\t{\n");
 			fprintf(f,"\t\t\t\t\t\t\t\tint _idx0;\n");
 			fprintf(f,"\t\t\t\t\t\t\t\t_idx0 = (v%d_offset - 0x%x) / %d;\n", param, reg->offset, register_size);
@@ -105,7 +106,7 @@ static void gen_bank_read_access(bank_t *b, reg_array_t *list, FILE *f){
 			fprintf(f,"\t\t\t\t\t\t\t\t\t*readvalue = v%d_ret_value;\n", ret_index);
 			fprintf(f,"\t\t\t\t\t\t\t\t\tgoto found;\n", exec_index);
 			fprintf(f,"\t\t\t\t\t\t\t\t}\n");
-			fprintf(f,"\t\t\t\t\t\t\t\tbreak;\n");
+			//fprintf(f,"\t\t\t\t\t\t\t\tbreak;\n");
 			fprintf(f,"\t\t\t\t\t\t\t}\n");
 
 		}
@@ -206,7 +207,7 @@ static void gen_bank_write_access(bank_t *b, reg_array_t *list, FILE *f){
 			break;
 		}
 		len = register_size * e->size;
-		fprintf(f,"\t\t\t\t\tswitch(v%d_offset / %d )\n",param, len);
+		//fprintf(f,"\t\t\t\t\tswitch(v%d_offset / %d )\n",param, len);
 		fprintf(f, "\t\t\t\t\t{\n");
 		list_for_each(p, &e->list) {
 			item = list_entry(p, reg_item_t, entry);
@@ -214,11 +215,12 @@ static void gen_bank_write_access(bank_t *b, reg_array_t *list, FILE *f){
 			ret_index = get_local_index();
 			add_object_method(item->obj, "write_access");
 			tmp = reg->offset/len;
-			if(tmp < MAGIC_NUM) {
-				fprintf(f, "\t\t\t\t\t\tcase %d:\n", tmp);
-			} else {
-				fprintf(f, "\t\t\t\t\t\tcase 0x%x:\n", tmp);
-			}
+			//if(tmp < MAGIC_NUM) {
+			//	fprintf(f, "\t\t\t\t\t\tcase %d:\n", tmp);
+			//} else {
+			//	fprintf(f, "\t\t\t\t\t\tcase 0x%x:\n", tmp);
+			//}
+			fprintf(f,"\t\t\t\t\t\t\tif(v%d_offset >= 0x%x && v%d_offset < 0x%x)\n", param, reg->offset, param, reg->offset + reg->array_size * reg->interval); // temp
 			fprintf(f,"\t\t\t\t\t\t\t{\n");
 			fprintf(f,"\t\t\t\t\t\t\t\tint _idx0;\n");
 			fprintf(f,"\t\t\t\t\t\t\t\t_idx0 = (v%d_offset - 0x%x) / %d;\n", param, reg->offset, register_size);
@@ -231,7 +233,7 @@ static void gen_bank_write_access(bank_t *b, reg_array_t *list, FILE *f){
 			fprintf(f,"\t\t\t\t\t\t\t\t\t}\n");
 			fprintf(f,"\t\t\t\t\t\t\t\t\tgoto found;\n");
 			fprintf(f,"\t\t\t\t\t\t\t\t}\n");
-			fprintf(f,"\t\t\t\t\t\t\t\tbreak;\n");
+			//fprintf(f,"\t\t\t\t\t\t\t\tbreak;\n");
 			fprintf(f,"\t\t\t\t\t\t\t}\n");
 
 		}
