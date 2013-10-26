@@ -37,7 +37,7 @@ void translate_assign(tree_t *t) {
 }
 
 /*
-static void translate_cond_expr(tree_t *t) {
+void translate_cond_expr(tree_t *t) {
 	tree_t *node;
 
 	node = t->ternay.cond;
@@ -50,6 +50,18 @@ static void translate_cond_expr(tree_t *t) {
 	translate(node);
 }
 */
+
+void translate_cast_expr(tree_t *t) {
+        tree_t *node;
+                
+        D("((");
+        node = t->cast.ctype;
+        translate(node);
+        D(")"); 
+        node = t->cast.expr;
+        translate(node);
+        D(")");
+}
 void translate_binop_expr(tree_t *t) {
 	tree_t *node;
 

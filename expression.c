@@ -3315,7 +3315,7 @@ expr_t* check_cast_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	printf("IN %s, line = %d, node type: %s\n", __func__, __LINE__, node->common.name);
 	expr = check_expression(node->cast.expr, table, expr);
 
-	cdecl_t* type = parse_ctype_decl(node, table);
+	cdecl_t* type = parse_ctype_decl(node->cast.ctype, table);
 	expr->type = type;
 	expr->node = node;
 

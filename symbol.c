@@ -310,6 +310,7 @@ symbol_t symbol_find_from_templates_notype(struct template_table* templates, con
  */
 symbol_t default_symbol_find_notype(symtab_t symtab, const char *name)
 {
+	printf("symtab: 0x%x, name: 0x%x\n", symtab, name);
     assert(symtab != NULL && name != NULL);
     symtab_t tmp = symtab;
     symbol_t rt;

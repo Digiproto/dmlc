@@ -201,4 +201,5 @@ void print_object_tree(device_t *dev);
 void device_realize(device_t *dev);
 const char *get_obj_ref(object_t *obj);
 const char *get_obj_qname(object_t *obj);
+void process_object_templates(object_t* obj);
 #endif

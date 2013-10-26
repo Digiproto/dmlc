@@ -1907,6 +1907,7 @@ ctypedecl
 		node->ctypedecl.basetype = $2;
 		node->ctypedecl.ctypedecl_ptr = $3;
 		node->common.print_node = print_ctypedecl;
+		node->common.translate = translate_ctypedecl;
 		$$ = node;
 	}
 	;
@@ -1917,6 +1918,7 @@ ctypedecl_ptr
 		node->ctypedecl_ptr.stars = $1;
 		node->ctypedecl_ptr.array = $2;
 		node->common.print_node = print_ctypedecl_ptr;
+		node->common.translate = translate_ctypedecl_ptr;
 		$$ = node;
 	}
 	;
@@ -1930,6 +1932,7 @@ stars
 		node->stars.is_const = 1;
 		node->stars.stars = $3;
 		node->common.print_node = print_stars;
+		node->common.translate = translate_stars;
 		$$ = node;
 	}
 	| '*' stars {
@@ -1937,6 +1940,7 @@ stars
 		node->stars.is_const = 0;
 		node->stars.stars = $2;
 		node->common.print_node = print_stars;
+		node->common.translate = translate_stars;
 		$$ = node;
 	}
 	;
@@ -1983,6 +1987,7 @@ typeident
 	| CHAR {
 		tree_t* node = (tree_t*)c_keyword_node("char", &@$);
 		node->ident.type = CHAR_TYPE;
+		//node->common.translate = translate_char;
 		$$ = node;
 	}
 	| DOUBLE {
@@ -2123,6 +2128,7 @@ expression
 		node->expr_assign.left = $1;
 		node->expr_assign.right = $3;
 		node->common.print_node = print_binary;
+		node->common.translate = translate_assign;
 		$$ = node;
 	}
 	| expression LEFT_ASSIGN expression {
@@ -2142,6 +2148,7 @@ expression
 		node->expr_assign.left = $1;
 		node->expr_assign.right = $3;
 		node->common.print_node = print_binary;
+		node->common.translate = translate_assign;
 		$$ = node;
 	}
 	| expression '?' expression ':' expression {
@@ -2150,6 +2157,7 @@ expression
 		node->ternary.expr_true = $3;
 		node->ternary.expr_false = $5;
 		node->common.print_node = print_ternary;
+		//node->common.translate = translate_cond_expr;
 		$$ = node;
 	}
 	| expression '+' expression {
@@ -2179,6 +2187,7 @@ expression
 		node->binary.left = $1;
 		node->binary.right = $3;
 		node->common.print_node = print_binary;
+		node->common.translate = translate_binop_expr;
 		$$ = node;
 	}
 	| expression '/' expression {
@@ -2197,6 +2206,7 @@ expression
 		node->binary.left = $1;
 		node->binary.right = $3;
 		node->common.print_node = print_binary;
+		node->common.translate = translate_binop_expr;
 		$$ = node;
 	}
 	| expression LEFT_OP expression {
@@ -2333,6 +2343,7 @@ expression
 		node->cast.expr = $3;
 		node->cast.ctype = $5;
 		node->common.print_node = print_cast;
+		node->common.translate = translate_cast_expr;
 		$$ = node;
 	}
 	| SIZEOF expression {
@@ -2735,6 +2746,7 @@ statement
 		node->for_tree.update = $7;
 		node->common.print_node = print_for;
 		node->common.parse = parse_for;
+		node->common.translate = translate_for;
 		current_table = change_table(current_table, table_stack, &current_table_num, FOR_TYPE);
 		$<tree_type>$ = node;
 	}

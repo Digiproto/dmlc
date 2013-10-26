@@ -613,7 +613,7 @@ template register {
 			call field.read_access() -> (val);
 			fieldval = val;
 		    } else if ($bitsize == 8 || lsb <= field.msb && msb1 > field.lsb) {
-	    	local typeof(field) tmp;
+		local typeof(field) tmp;
 			call field.read_access() -> (tmp);
 			fieldval[field.msb:field.lsb] = tmp;
 		    }
@@ -703,11 +703,11 @@ template register {
 				// Only one field
 					call field.write_access(value);
 			    } else {
-					local typeof(field) tmp = 0;
+					local uint32 tmp = 0;
 					tmp = value << lsb;
 					tmp = tmp[field.msb:field.lsb];
 					//call field.write_access((value << lsb)[field.msb:field.lsb]);
-					call field.write_access(tmp);
+					call field.write_access(cast(tmp, typeof(field)));
 				}
 			}
 		    }

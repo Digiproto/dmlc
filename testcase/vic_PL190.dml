@@ -161,7 +161,7 @@ bank regs {
 					break;
 				}
 			}
-			if (i == PL190_NUM_PRIO) {
+			if (i == 17) {
 				value = $regs.def_vect_addr;
 			}
 			if (i < $regs.priority) {
@@ -174,7 +174,7 @@ bank regs {
 		}
 		/* Restore the previous priority level, the value written is ignored*/
 		method write(typeof($this) value) {
-			if ($regs.priority < PL190_NUM_PRIO) {
+			if ($regs.priority < 17) {
 				$regs.priority = $regs.prev_prio[$regs.priority];
 			}
 		}
@@ -237,13 +237,13 @@ bank regs {
 	}
 	register level @ undefined;
 	register priority @ undefined;
-	register prio_mask [i in 0 .. (PL190_NUM_PRIO+1)] @ undefined;
-	register prev_prio [i in 0 .. PL190_NUM_PRIO] @ undefined;
+	register prio_mask [i in 0 .. 18] @ undefined;
+	register prev_prio [i in 0 .. 17] @ undefined;
 }
 
 method init() {
 	$regs.prio_mask[17] = 0xFFFFFFFF;
-	$regs.priority = PL190_NUM_PRIO;
+	$regs.priority = 17;
 }
 
 // USER-TODO: Add init() and post_init() methods here, if needed.

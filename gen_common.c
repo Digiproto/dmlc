@@ -466,8 +466,9 @@ static int check_param_type(tree_t* node, params_t** list, int args, int in_line
 		}
 		type = list[i]->decl;
 		expr = check_expr(tmp, current_table);
-		if ((!both_scalar_type(type, expr->type)) &&
-				(!(is_same_type(type, expr->type)))) {
+		if ((!both_scalar_type(type, expr->type)) && !(is_same_type(type, expr->type)) &&
+			(!both_array_type(type, expr->type)) && !((is_no_type(type) || is_no_type(expr->type))) &&
+			!(is_parameter_type(type) || is_parameter_type(expr->type))) {
 			return 1;
 		}
 		tmp = tmp->common.sibling;
@@ -536,6 +537,7 @@ static int check_method_param(symbol_t sym, tree_t* call_expr, tree_t* ret_expr,
 	tree_t* expr = call_expr;
 	tree_t* ret = ret_expr;
 	int ret_value = 0;
+	my_DBG("bangbang symbol name: %s\n", sym->name);
 
 	ret_value = check_method_in_param(sym, expr, in_line);
 	if (!ret)
@@ -571,8 +573,9 @@ static void translate_call_common(tree_t *expr, tree_t *ret){
 		my_DBG("method not found in call \n");
 	}
 
-	if (check_method_param(method_sym, expr, ret, 0))
+	if (check_method_param(method_sym, expr, ret, 0)) {
 		return;
+	}
 
 	sym = symbol_find(current_table,"exec",TMP_TYPE);
 	name = get_symbol_alias(sym);
@@ -582,7 +585,6 @@ static void translate_call_common(tree_t *expr, tree_t *ret){
 		if(!obj) {
 			my_DBG("method object cannot empty\n");
 		} else {
-			my_DBG("obj name %s, method name %s\n", obj->name, method_sym->name);
 			if (!block_empty(block))
 				add_object_method(obj, method_sym->name);
 		}
@@ -1256,6 +1258,42 @@ void translate_cdecl(tree_t *t) {
 	no_alias = old_no_alias;
 	my_DBG("here decl2\n");
 	translate(t->cdecl.decl);
+}
+
+void translate_ctypedecl(tree_t *t) {
+        if (t->ctypedecl.const_opt) {
+                D("const ");
+        }
+        int old_no_star = no_star;
+        int old_no_alias = no_alias;
+        base_type = 1;
+        translate(t->ctypedecl.basetype);
+        D(" ");
+        base_type = 0;
+        no_star = old_no_star;
+        no_alias = old_no_alias;
+        my_DBG("here decl2\n");
+        translate(t->ctypedecl.ctypedecl_ptr);
+}
+
+void translate_ctypedecl_ptr(tree_t *t) {
+        if(t->ctypedecl_ptr.stars) {
+                translate(t->ctypedecl_ptr.stars);
+        }
+        D(" ");
+        if(t->ctypedecl_ptr.array) {
+                translate(t->ctypedecl_ptr.array);
+        }
+}
+
+void translate_stars(tree_t *t) {
+        D("*");
+        if(t->stars.is_const) {
+                D(" const ");
+        }
+        if(t->stars.stars) {
+                translate(t->stars.stars);
+        }
 }
 
 static void print_basetype(tree_t *node) {

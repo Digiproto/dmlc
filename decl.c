@@ -2437,7 +2437,7 @@ cdecl_t* parse_ctype_decl(tree_t* node, symtab_t table) {
 		type->common.qual |= CONST_QUAL;
 
 	if (node->ctypedecl.ctypedecl_ptr) {
-		parse_ctype_decl_prt(node, table, type);
+		parse_ctype_decl_prt(node->ctypedecl.ctypedecl_ptr, table, type);
 	}
 
 	type = derive_type(type);

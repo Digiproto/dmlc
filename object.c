@@ -128,7 +128,7 @@ static symbol_t object_symbol_find_notype(symtab_t table, const char *name) {
 	if(table->parent) {
 		sym = symbol_find_notype(table->parent, name);
 	}
-	BE_DBG(OBJ_SYM, "symbol %s found in parent symtable\n", sym->name);
+	//BE_DBG(OBJ_SYM, "symbol %s found in parent symtable\n", sym->name);
 	return sym;
 
 }
@@ -495,12 +495,14 @@ static void field_realize(object_t *obj) {
 
 	add_object_templates(obj, templates);
 	if(fld->is_dummy) {
+		process_object_templates(obj);	
 		return;
 	} 
+
 	/* calculate the expression about parameters
 	 * that defined in the field block */
 	//parse_parameter(obj->symtab->sibling);
-
+	//process_object_templates(obj);
 	/* parse default parameters about registers
 	 * such as: size, offset, array*/
 	parse_field_attr(obj->node, obj->symtab->parent);
@@ -519,6 +521,7 @@ static void field_realize(object_t *obj) {
 		fld->low = expr->int_cst.value;
 		fld->len = fld->high - fld->low + 1;
 	}
+	process_object_templates(obj);
 	return;
 }
 
@@ -548,7 +551,7 @@ static int get_reg_offset(paramspec_t *t, int *interval) {
 	tree_t *tmp;
 	int ret;
 
-	if(t->value->type == PARAM_TYPE_INT) {
+	if((t->value->type == PARAM_TYPE_INT) && t->value->is_const) {
 		offset = t->value->u.integer;
 		*interval = 0;
 		return offset;
@@ -648,6 +651,7 @@ static void register_realize(object_t *obj) {
 		tmp = list_entry(p, object_t, entry);
 		field_realize(tmp);
 	}
+	process_object_templates(obj);
 }
 
 static void bank_calculate_register_offset(object_t *obj) {
@@ -742,9 +746,10 @@ static void bank_realize(object_t *obj) {
 		tmp = list_entry(p, object_t, entry);
 		register_realize(tmp);
 	}
+	printf("------------------register realize ok-------------------------\n");
 	/*sort the register in user specifid order*/
 	bank_calculate_register_offset(obj);
-	process_default_template(obj);
+	process_object_templates(obj);
 }
 
 static void connect_realize(object_t *obj) {
@@ -949,6 +954,7 @@ void device_realize(device_t *dev) {
 		tmp = list_entry(p, object_t, entry);
 		implement_realize(tmp);
 	}
+	process_object_templates(&dev->obj);
 }
 
 void print_object(object_t *obj, int tab_count) {
@@ -1212,6 +1218,7 @@ static void process_bank_template(object_t *obj){
 
 	for(i = 0; i < bank->reg_count; i++) {
 		reg = (dml_register_t *)bank->regs[i];
+		printf("reg : %s, is_undefined: %d\n", reg->obj.name, reg->is_undefined);
 		if(!reg->is_undefined) {
 			defined++;
 		} else {
@@ -1402,7 +1409,7 @@ static void process_default_template(object_t *obj) {
 	BE_DBG(TEMPLATE, "end .......");
 }
 
-static void process_object_templates(object_t *obj){
+void process_object_templates(object_t *obj){
 	struct template_name *name;
 	struct list_head *p;
 
@@ -1420,7 +1427,7 @@ static void add_object_templates(object_t *obj, tree_t *t){
 	struct template_name *temp;
 	
 	add_default_template(obj);
-	process_object_templates(obj);
+	//process_object_templates(obj);
 }
 
 
