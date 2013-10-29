@@ -261,7 +261,7 @@ static int check_object_place(symtab_t table, int obj_type) {
 		case ATTRIBUTE_TYPE:
 		case CONNECT_TYPE:
 		case IMPLEMENT_TYPE:
-			ret = (type == DEVICE_TYPE) ? 0 : 1;
+			ret = ((type == DEVICE_TYPE) || (type == TEMPLATE_TYPE)) ? 0 : 1;
 			break;
 		case REGISTER_TYPE:
 			if ((type != BANK_TYPE) && (type != GROUP_TYPE))
@@ -484,14 +484,18 @@ tree_t* create_template_list(tree_t* head, tree_t* templates) {
 tree_t* get_obj_default_param(tree_t* head, tree_t* new, const char* name) {
     /* In simics, although a register can defined many times
      * but the size can defined only once */
-    if (head == NULL && new != NULL) {
-        return new;
-    }
-    else if ((head != NULL) && (new != NULL)) {
-        fprintf(stderr, "error: duplicate assignment to parameter '%s'\n", name);
-        /* TODO: handle the error */
-        exit(-1);
-    }
+	if (head == NULL && new != NULL) {
+		return new;
+	}
+	else if (!strcmp(name, "array")) {
+		/* TODO: should check the value of array is the same ? */
+		return head;
+	}
+	else if ((head != NULL) && (new != NULL)) {
+		fprintf(stderr, "error: duplicate assignment to parameter '%s'\n", name);
+		/* TODO: handle the error */
+		exit(-1);
+	}
 
     return head;
 }
@@ -614,7 +618,8 @@ arraydef_attr_t* get_arraydef(tree_t* node, symtab_t table) {
 	}
 	arraydef_attr_t* arraydef = (arraydef_attr_t*)gdml_zmalloc(sizeof(arraydef_attr_t));
 	if ((node->array.is_fix) == 1) {
-		arraydef->fix_array = get_int_value(node->array.expr, table);
+		arraydef->fix_array = 1;
+		arraydef->high = get_int_value(node->array.expr, table);
 	}
 	else {
 		arraydef = get_range_arraydef(node, table, arraydef);
@@ -815,6 +820,9 @@ int get_size(tree_t* node, symtab_t table) {
 }
 
 int get_offset(tree_t* node, symtab_t table) {
+	/* we do not need to check the offset as it will be
+	checked when the code generated*/
+	return  0;
 	if (node == NULL) {
 		return -1;
 	}
@@ -1016,18 +1024,49 @@ void parse_bank(tree_t* node, symtab_t table) {
 	return;
 }
 
+static cdecl_t* new_int() {
+	cdecl_t* type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
+	type->common.categ = INT_T;
+	type->common.size = sizeof(int) * 8;
+
+	return type;
+}
+
+static void  insert_i_into_obj(symtab_t table) {
+	assert(table != NULL);
+	cdecl_t* type = new_int();
+	symbol_insert(table, "i", PARAMETER_TYPE, type);
+
+	return ;
+}
+
+static void insert_index_into_obj(symtab_t table) {
+	assert(table != NULL);
+	cdecl_t* type = new_int();
+	symbol_insert(table, "index", PARAMETER_TYPE, type);
+
+	return;
+}
+
+static void insert_array_index_into_obj(arraydef_attr_t* array, symtab_t table) {
+	assert(array != NULL); assert(table != NULL);
+	if ((array->fix_array == 0) && (table->table_num != 0)) {
+		cdecl_t* type = new_int(); 
+		symbol_insert(table, array->ident, PARAMETER_TYPE, type);
+		insert_index_into_obj(table);	
+	} else if ((array->fix_array == 1) && (table->table_num != 0)){
+		insert_i_into_obj(table);
+		insert_index_into_obj(table);
+	}
+
+	return;
+}
+
 void parse_register(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 	object_attr_t* attr = node->common.attr;
-	if ((attr->reg.is_array) && (attr->reg.arraydef->ident)) {
-		cdecl_t* type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
-		type->common.categ = INT_T;
-		type->common.size = sizeof(int) * 8;
-		if (table->table_num != 0) {
-			symbol_insert(table, attr->reg.arraydef->ident, PARAMETER_TYPE, type);
-		} else {
-			free(type);
-		}
+	if (attr->reg.is_array) {
+		insert_array_index_into_obj(attr->reg.arraydef, table);
 	}
 
 	obj_spec_t* spec = node->reg.spec;
@@ -1047,6 +1086,10 @@ void parse_field(tree_t* node, symtab_t table) {
 
 void parse_connect(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
+	object_attr_t* attr = node->common.attr;
+	if (attr->connect.is_array) {
+		insert_array_index_into_obj(attr->reg.arraydef, table);
+	}
 
 	obj_spec_t* spec = node->connect.spec;
 	parse_obj_spec(spec, table);
@@ -1065,6 +1108,10 @@ void parse_interface(tree_t* node, symtab_t table) {
 
 void parse_attribute(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
+	object_attr_t* attr = node->common.attr;
+	if (attr->attribute.is_array) {
+		insert_array_index_into_obj(attr->attribute.arraydef, table);
+	}
 
 	obj_spec_t* spec = node->attribute.spec;
 	parse_obj_spec(spec, table);
@@ -1083,6 +1130,10 @@ void parse_event(tree_t* node, symtab_t table) {
 
 void parse_group(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
+	object_attr_t* attr = node->common.attr;
+	if (attr->group.is_array) {
+		insert_array_index_into_obj(attr->reg.arraydef, table);
+	}
 
 	obj_spec_t* spec = node->group.spec;
 	parse_obj_spec(spec, table);
@@ -1839,7 +1890,8 @@ void add_template_to_table(symtab_t table, const char* template) {
 		DEBUG_AST("In %s, line = %d, trave templates: %s\n", __func__, __LINE__, template_name);
 		if (strcmp(template, template_name) == 0) {
 			/*FIXME: should handle the error */
-			error("re-load the template \"%s\"", template);
+			warning("re-load the template \"%s\"", template);
+			return;
 //			exit(-1);
 		}
 		pre_temp_table = temp_table;
@@ -4335,7 +4387,7 @@ void print_obj_block(tree_t* node, int pos) {
 	 */
 	if (node->block.statement != NULL) {
 		tree_t* statement = node->block.statement;
-		statement->common.print_node(statement, ++pos);
+		statement->common.print_node(statement, --pos);
 	}
 
 	print_sibling(node, pos);
@@ -4435,7 +4487,7 @@ void print_struct(tree_t* node, int pos) {
 
 	if (node->struct_tree.block) {
 		tree_t* block = node->struct_tree.block;
-		block->common.print_node(block, ++pos);
+		block->common.print_node(block, --pos);
 	}
 
 	print_sibling(node, pos);
@@ -4476,7 +4528,7 @@ void print_dml(tree_t* node, int pos) {
  */
 void print_ast (tree_t* root)
 {
-	int init_pos = 0;
+	int init_pos = 29;
 	tree_t* it = root;
 	tree_t* child = NULL;
 	printf ("begin print the ast(total node num is %d):\n", node_num);

@@ -109,7 +109,7 @@ typedef struct expr {
 
 #define is_common_type(categ) (categ >= BOOL_T && (categ <= TYPEDEF_T))
 
-#define no_common_type(type) (type->common.categ >= STRING_T && type->common.categ <= FUNCTION_T)
+#define no_common_type(type) (type->common.categ >= STRUCT_T && type->common.categ <= FUNCTION_T)
 #define both_no_common_type(type1, type2) (no_common_type(type1) && no_common_type(type2))
 
 #define is_array_type(type) (type->common.categ == ARRAY_T || type->common.categ == POINTER_T)

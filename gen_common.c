@@ -1334,12 +1334,14 @@ static void  print_cdecl1(tree_t *t, int ret) {
 	if(ret) {
 		D("*");
 	}
-	print_cdecl2(t->cdecl.decl);
+	if (t->cdecl.decl)
+		print_cdecl2(t->cdecl.decl);
 }
 
 static const char *get_cdecl2_name(tree_t *t);
 const char *get_cdecl_name(tree_t *node) {
-	return get_cdecl2_name(node->cdecl.decl);
+		return get_cdecl2_name(node->cdecl.decl);
+	return NULL;
 }
 
 const char *get_type_info(tree_t *node) {

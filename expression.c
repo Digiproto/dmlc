@@ -3035,6 +3035,8 @@ expr_t* check_relation_expr(tree_t* node, symtab_t table, expr_t* expr) {
 		return expr;
 	}
 	else if (no_common_type(expr->kids[0]->type) || no_common_type(expr->kids[0]->type)){
+		printf("kids[0]->type: %d, kids[1]->type: %d: LAYOUT_T: %d\n",
+			expr->kids[0]->type->common.categ, expr->kids[1]->type->common.categ, LAYOUT_T);
 		error("Invalid operands to </>\n");
 	}
 	else {
@@ -3529,6 +3531,9 @@ static int find_dml_obj(symtab_t table, const char* name) {
 	assert(table != NULL); assert(name != NULL);
 	symbol_t symbol = symbol_find_notype(table, name);
 	int obj_type = 0;
+	printf("shenoubang obj name: %s, symbol: 0x%p\n", name, symbol);
+	if (symbol)
+		printf("shenoubang symbol: %s, type: %d, ATTRIBUTE_TYPE: %d\n", symbol->name, symbol->type, ATTRIBUTE_TYPE);
 	if (symbol) {
 		obj_type = dml_obj_type(symbol);
 		if (obj_type) {
@@ -3565,6 +3570,8 @@ expr_t* check_quote_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	if (is_obj == 0) {
 		fprintf(stderr, "reference to unknown object '%s', table_num: %d, line: %d\n",
 			ident->ident.str, table->table_num, __LINE__);
+		int *a = NULL;
+		*a = 100;
 		/* TODO: handle the error */
 		exit(-1);
 	}

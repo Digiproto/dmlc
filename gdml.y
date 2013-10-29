@@ -862,7 +862,7 @@ object
         }
         else {
             tree_t* node = attr->common.node;
-            if (attr->common.is_defined) {
+            if (attr->common.is_defined == 0) {
                 node->attribute.name = $2->ident.str;
 
                 attr->common.name = $2->ident.str;
@@ -1245,16 +1245,20 @@ import
 		 * In other hand linking directory and file name is different on windows or Linux. */
 		tree_t* ast = parse_file(filename);
 
-		import_attr_t* attr = (import_attr_t*)gdml_zmalloc(sizeof(import_attr_t));
-		attr->file = $2;
-		attr->table = current_table;
-		attr->common.node = ast->common.child;
-		attr->common.table_num = current_table->table_num;
-		//printf("file: %s, table_num: %d\n", attr->file, attr->common.table_num);
-		/* FIXME, should check if the same filename is imported already. */
-		symbol_insert(current_table, $2, IMPORT_TYPE, attr);
+		if (ast != NULL) {
+			import_attr_t* attr = (import_attr_t*)gdml_zmalloc(sizeof(import_attr_t));
+			attr->file = $2;
+			attr->table = current_table;
+			attr->common.node = ast->common.child;
+			attr->common.table_num = current_table->table_num;
+			//printf("file: %s, table_num: %d\n", attr->file, attr->common.table_num);
+			/* FIXME, should check if the same filename is imported already. */
+			symbol_insert(current_table, $2, IMPORT_TYPE, attr);
 
-		$$ = ast->common.child;
+			$$ = ast->common.child;
+		} else {
+			$$ = NULL;
+		}
 	}
 	;
 
