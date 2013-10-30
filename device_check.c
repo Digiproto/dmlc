@@ -1,6 +1,6 @@
 #include "device_check.h"
 
-static add_register_check_method(object_t *obj) {
+static void add_register_check_method(object_t *obj) {
 	struct list_head *p;
 	object_t *tmp;
 	
@@ -37,7 +37,7 @@ static void init_list_head(object_t *obj) {
 }
 
 
-static init_register_obj(object_t *obj) {
+static void init_register_obj(object_t *obj) {
 	struct list_head *p;
 	object_t *tmp;
 	
@@ -69,6 +69,6 @@ static void after_check(device_t *dev) {
 
 void device_check(device_t *dev) {
 	add_pre_method(dev);
-	check_dml_code(dev);
+	chk_dml_code(dev);
 	after_check(dev);
 }
