@@ -3035,8 +3035,6 @@ expr_t* check_relation_expr(tree_t* node, symtab_t table, expr_t* expr) {
 		return expr;
 	}
 	else if (no_common_type(expr->kids[0]->type) || no_common_type(expr->kids[0]->type)){
-		printf("kids[0]->type: %d, kids[1]->type: %d: LAYOUT_T: %d\n",
-			expr->kids[0]->type->common.categ, expr->kids[1]->type->common.categ, LAYOUT_T);
 		error("Invalid operands to </>\n");
 	}
 	else {
@@ -3058,6 +3056,8 @@ expr_t* check_shift_expr(tree_t* node, symtab_t table, expr_t* expr) {
 		return expr;
 	}
 	else {
+                printf("kids[0] type: %d, kids[1] type: %d, POINTER_T: %d\n",
+                        expr->kids[0]->type->common.categ, expr->kids[1]->type->common.categ, POINTER_T);
 		error("Line: %d, Invalid operands\n", __LINE__);
 	}
 
@@ -3687,12 +3687,14 @@ static cdecl_t* check_register_type(symbol_t symbol, expr_t* expr) {
 	cdecl_t* type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
 	type->common.categ = INT_T;
 	type->common.size = sizeof(int) * 8;
+#if 0
 	if (attr->is_array) {
 		type_deriv_list_t* drv = (type_deriv_list_t*)gdml_zmalloc(sizeof(type_deriv_list_t));
 		drv->ctor = ARRAY_OF;
 		type->common.drv = drv;
 		type = array_of(type, 0);
 	}
+#endif
 
 	return type;
 }
@@ -3893,11 +3895,29 @@ expr_t* check_ident_expr(tree_t* node, symtab_t table, expr_t* expr) {
 		exit(-1); \
 	}
 
+static int object_array(symbol_t symbol) {
+        assert(symbol != NULL);
+        object_t* obj = symbol->attr;
+        void* attr = obj->node->common.attr;
+        if (!strcmp(obj->obj_type, "register")) {
+                object_is_array(attr, register_attr_t);
+        } else if (!strcmp(obj->obj_type, "field")) {
+                object_is_array(attr, field_attr_t);
+        } else if (!strcmp(obj->obj_type, "attribute")) {
+                object_is_array(attr, attribute_attr_t);
+        } else if (!strcmp(obj->obj_type, "group_attr_t")) {
+                object_is_array(attr, group_attr_t);
+        } else if (!strcmp(obj->obj_type, "connect")) {
+                object_is_array(attr, connect_attr_t);
+        }
+
+        return 0;
+}
+
 static int check_array_symbol(symtab_t table, symbol_t symbol) {
 	assert(table != NULL); assert(symbol != NULL);
 	printf("In %s, line = %d, symbol name: %s\n", __FUNCTION__, __LINE__, symbol->name);
-	exit(-1);
-	void* attr = NULL;
+	void* attr = symbol->attr;
 	switch (symbol->type) {
 		case REGISTER_TYPE:
 			object_is_array(attr, register_attr_t);
@@ -3917,6 +3937,8 @@ static int check_array_symbol(symtab_t table, symbol_t symbol) {
 		case  ARRAY_T:
 			return 1;
 		break;
+	        case OBJECT_TYPE:
+                        return object_array(symbol);
 		default:
 			fprintf(stderr, "symbol'%s' not array\n", symbol->name);
 			exit(-1);

@@ -261,7 +261,7 @@ static int check_object_place(symtab_t table, int obj_type) {
 		case ATTRIBUTE_TYPE:
 		case CONNECT_TYPE:
 		case IMPLEMENT_TYPE:
-			ret = ((type == DEVICE_TYPE) || (type == TEMPLATE_TYPE)) ? 0 : 1;
+			ret = ((type == DEVICE_TYPE) || (type == TEMPLATE_TYPE) || (type == PORT_TYPE)) ? 0 : 1;
 			break;
 		case REGISTER_TYPE:
 			if ((type != BANK_TYPE) && (type != GROUP_TYPE))
@@ -777,8 +777,10 @@ paramspec_t* get_param_spec(tree_t* node, symtab_t table) {
 				value->flag = PARAM_FLAG_NONE;
 			}
 			else {
+				value->type = PARAM_TYPE_NONE;
+				value->flag = PARAM_FLAG_NONE;
 				fprintf(stderr, "other parameter type\n");
-				exit(-1);
+				//exit(-1);
 			}
 		}
 	}
@@ -1088,7 +1090,7 @@ void parse_connect(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 	object_attr_t* attr = node->common.attr;
 	if (attr->connect.is_array) {
-		insert_array_index_into_obj(attr->reg.arraydef, table);
+		insert_array_index_into_obj(attr->connect.arraydef, table);
 	}
 
 	obj_spec_t* spec = node->connect.spec;
@@ -1132,7 +1134,7 @@ void parse_group(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 	object_attr_t* attr = node->common.attr;
 	if (attr->group.is_array) {
-		insert_array_index_into_obj(attr->reg.arraydef, table);
+		insert_array_index_into_obj(attr->group.arraydef, table);
 	}
 
 	obj_spec_t* spec = node->group.spec;
