@@ -27,6 +27,8 @@
 #include "list.h"
 #include "tree.h"
 #include "ast.h"
+#include "object.h"
+#include "gen_utility.h"
 
 typedef struct ref_info {
 	struct list_head list;
@@ -38,10 +40,19 @@ typedef struct node_info {
 	tree_t *node;
 }node_info_t;
 
+typedef struct ref_ret {
+        int is_obj;
+        object_t *con;
+        object_t *iface;
+        const char *method;
+} ref_ret_t;
+
+
 void ref_info_init(ref_info_t *info);
 node_info_t *new_node_info(tree_t *node);
 void add_node_info(ref_info_t *ref, node_info_t *node);
 void ref_info_destroy(ref_info_t *ref);
 void ref_info_print(ref_info_t *fi);
-
+symbol_t get_ref_sym(tree_t *t, ref_ret_t *ret);
+void collect_ref_info(tree_t *expr, ref_info_t *fi);
 #endif /* __REF_H__ */
