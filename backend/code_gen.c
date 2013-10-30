@@ -33,6 +33,7 @@
 #include "object_headfile.h"
 #include "platform_code_gen.h"
 #include "gen_debug.h"
+#include "device_check.h"
 
 extern symtab_t root_table;
 int debugflags = 0x1f;
@@ -57,6 +58,7 @@ void gen_code (tree_t * root, const char *name)
 	print_device_tree(dev_obj);
 	device_realize(dev_obj);
 	print_device_tree(dev_obj);
+	device_check(dev_obj);
 	gen_headerfiles(dev_obj, name);
 	gen_cfile(dev_obj, name);
 }
