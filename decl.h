@@ -266,7 +266,8 @@ struct array_decl {
 };
 
 void parse_extern_cdecl_or_ident(tree_t* node, symtab_t table);
-void add_template_to_table(symtab_t table, const char* template_name);
+void check_undef_template(symtab_t table);
+void add_template_to_table(symtab_t table, const char* template_name, int second_check);
 void print_templates(symtab_t table);
 void parse_local_decl(tree_t* node, symtab_t table);
 void parse_data_cdecl(tree_t* node, symtab_t table);

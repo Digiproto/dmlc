@@ -1175,7 +1175,8 @@ static void add_default_template(object_t *obj){
 	table = obj->symtab->sibling;
 	if(table) {
 		BE_DBG(OBJ, "%s\n", obj->obj_type);
-		add_template_to_table(table, obj->obj_type);
+		check_undef_template(table);
+		add_template_to_table(table, obj->obj_type, 0);
 	}
 }
 

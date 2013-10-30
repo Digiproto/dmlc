@@ -2263,6 +2263,7 @@ expression_t* get_component_expr(tree_t** node, symtab_t table,  expression_t* e
 		exit(-1);
 	}
 
+#if 0
 	reference = get_reference((*node)->component.expr, reference, expr, table);
 	print_reference(reference);
 	expr->final_type = check_reference(table, reference, expr);
@@ -2271,6 +2272,7 @@ expression_t* get_component_expr(tree_t** node, symtab_t table,  expression_t* e
 		//printf("\ninogore check about component!\n");
 		return expr;
 	}
+#endif
 	return expr;
 }
 
@@ -3286,7 +3288,7 @@ expr_t* check_ternary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 
 	printf("IN %s, line = %d, node type: %s\n", __func__, __LINE__, node->common.name);
 	expr_t* cond_expr = check_expr(node->ternary.cond, table);
-	printf("cond expr type: 0x%x\n", cond_expr->type);
+	printf("cond expr type: 0x%p\n", cond_expr->type);
 	printf("type : %d\n", cond_expr->type->common.categ);
 	//expr->type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
 	if (!is_scalar_type(cond_expr->type)) {
@@ -3399,7 +3401,7 @@ expr_t* check_unary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 				expr->type->common.categ = STRING_T;
 				if (expr->type->common.categ == INT_T) {
 					expr->val->p = gdml_zmalloc(sizeof(long)*8);
-					sprintf(expr->val->p, "%ld", (expr->val->int_v.value));
+					sprintf(expr->val->p, "%lld", (expr->val->int_v.value));
 				}
 				else if (expr->type->common.categ == DOUBLE_T) {
 					expr->val->p = gdml_zmalloc(sizeof(double)*8);
@@ -3461,8 +3463,6 @@ expr_t* check_const_expr(tree_t* node, expr_t* expr) {
 			}
 			else {
 				value->int_v.value = node->int_cst.value;
-				printf("iN %s, line = %d, interget value: %d\n",
-						__func__, __LINE__, node->int_cst.value);
 			}
 			break;
 		case FLOAT_TYPE:
@@ -3578,8 +3578,6 @@ expr_t* check_quote_expr(tree_t* node, symtab_t table, expr_t* expr) {
 
 	expr->node = node;
 	expr = check_expression(node->quote.ident, table, expr);
-	printf("expr type: 0x%x\n", expr->type);
-	printf("expr type: %d\n", expr->type->common.categ);
 
 	return expr;
 }
@@ -4320,8 +4318,6 @@ expr_t* check_expr(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 	expr_t* expr = (expr_t*)gdml_zmalloc(sizeof(expr_t));
 	check_expression(node, table, expr);
-	printf("check expr type: 0x%x\n", expr->type);
-	printf("check expr type: %d\n", expr->type->common.categ);
 
 	return expr;
 }

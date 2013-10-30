@@ -58,6 +58,11 @@ typedef struct undef_var {
 	struct undef_var* next;
 }undef_var_t;
 
+typedef struct undef_template {
+        const char* name;
+        struct undef_template* next;
+} undef_template_t;
+
 typedef int (*match_func_t) (symbol_t sym, void *arg);
 typedef symbol_t (*symbol_find_fn_t)(symtab_t tab, const char *name, type_t type);
 typedef symbol_t (*symbol_find_notype_fn_t)(symtab_t tab, const char *name);
@@ -68,6 +73,7 @@ struct symtab {
     struct symtab *sibling;
     struct symtab *child;
 	struct template_table* template_table;
+	undef_template_t* undef_temp;
 	symbol_t list;
     symbol_t table[MAX_SYMBOLS];
 	undef_var_t* undef_list;

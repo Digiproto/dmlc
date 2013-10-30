@@ -1875,8 +1875,26 @@ void print_templates(symtab_t table) {
 
 	return;
 }
+
+static void insert_undef_template(symtab_t table, const char* name) {
+	assert(table != NULL); assert(name != NULL);
+	undef_template_t* new_undef = (undef_template_t*)gdml_zmalloc(sizeof(undef_template_t));
+	new_undef->name = strdup(name);
+	undef_template_t* tmp = table->undef_temp;
+	if (table->undef_temp == NULL) {
+		table->undef_temp = new_undef;
+	} else {
+		while (tmp->next) {
+			tmp = tmp->next;
+		}
+		tmp->next = new_undef;
+	}
+
+	return;
+}
+
 extern symtab_t root_table;
-void add_template_to_table(symtab_t table, const char* template) {
+void add_template_to_table(symtab_t table, const char* template, int second_check) {
 	assert(table != NULL);
 	assert(template != NULL);
 
@@ -1904,9 +1922,13 @@ void add_template_to_table(symtab_t table, const char* template) {
 
 	symbol_t symbol = symbol_find(root_table, template, TEMPLATE_TYPE);
 	if (symbol == NULL) {
-		/* FIXME: should handle the error */
-//		exit(-1);
-		error("can't find the template \"%s\"", template);
+		if (second_check == 0) {
+			insert_undef_template(table, template);
+			free(new_table);
+			return;
+		} else {
+			error("can't find the template \"%s\"", template);
+		}
 	}
 	template_attr_t* attr = symbol->attr;
 	new_table->table = attr->table;
@@ -1930,6 +1952,20 @@ void add_template_to_table(symtab_t table, const char* template) {
 	return;
 }
 
+void check_undef_template(symtab_t table) {
+	assert(table != NULL);
+	if (table->undef_temp == NULL) {
+		return;
+	}
+	undef_template_t* temp = table->undef_temp;
+	while (temp) {
+		add_template_to_table(table, temp->name, 1);
+		temp = temp->next;
+	}
+
+	return;
+}
+
 void add_templates_to_table(symtab_t table, char** templates, int num) {
 	assert(table);
 
@@ -1943,7 +1979,7 @@ void add_templates_to_table(symtab_t table, char** templates, int num) {
 		DEBUG_AST("\nIn %s, line = %d, num: %d, templates: %s, table_num: %d\n",
 				__FUNCTION__, __LINE__, i, templates[i], table->table_num);
 
-		add_template_to_table(table, templates[i]);
+		add_template_to_table(table, templates[i], 0);
 	}
 
 	return;
