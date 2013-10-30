@@ -31,15 +31,6 @@
 
 
 void gen_dml_method(object_t *obj, struct method_name *m);
-
-typedef struct ref_ret {
-	int is_obj;
-	object_t *con;
-	object_t *iface;
-	const char *method;
-} ref_ret_t;
-
-symbol_t get_ref_sym(tree_t *t, ref_ret_t *ret);
 const char *get_cdecl_name(tree_t *node);
 const char *get_type_info(tree_t *node);
 void gen_dml_method_header(object_t *obj, tree_t *m);
