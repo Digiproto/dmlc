@@ -291,7 +291,7 @@ void translate_expr_list(tree_t *expr,const char *prefix){
 	}
 }
 
-static symbol_t  get_call_expr_info(tree_t *node) {
+static symbol_t  get_call_expr_info(tree_t *node, symtab_t table) {
 	symbol_t tmp;
 	tree_t *t;
 	ref_ret_t ref_ret;
@@ -301,7 +301,7 @@ static symbol_t  get_call_expr_info(tree_t *node) {
 	} else {
 		t = node;
 	}
-	tmp = get_ref_sym(t, &ref_ret, NULL);
+	tmp = get_ref_sym(t, &ref_ret, table);
 	return tmp;
 }
 
@@ -412,7 +412,7 @@ static void translate_call_common(tree_t *expr, tree_t *ret){
 	tree_t *node;
 	method_attr_t *method_attr;
 
-	method_sym = get_call_expr_info(expr);
+	method_sym = get_call_expr_info(expr, current_table);
 	if(method_sym) {
 		method_attr = method_sym->attr;
 		node = method_attr->common.node;	
@@ -1020,7 +1020,7 @@ void translate_inline(tree_t *t) {
 	object_t *saved_obj;
 	symtab_t saved_table;
 
-	sym = get_call_expr_info(expr->expr_brack.expr);
+	sym = get_call_expr_info(expr->expr_brack.expr, current_table);
 	if(sym) {
 		my_DBG("sym %s found\n", sym->name);
 	} else {
