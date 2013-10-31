@@ -69,4 +69,8 @@ void translate_continue(tree_t *t);
 void translate_switch(tree_t *t);
 void translate_case(tree_t *t);
 void translate_default(tree_t *t);
+int block_empty(tree_t *t);
+symbol_t  get_call_expr_info(tree_t *node, symtab_t table);
+symbol_t  get_expression_sym(tree_t *node);
+int check_method_param(symbol_t sym, tree_t* call_expr, tree_t* ret_expr, int in_line);
 #endif /* __GEN_COMMON_H__ */

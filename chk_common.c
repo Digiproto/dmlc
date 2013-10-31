@@ -1,3 +1,4 @@
+#include <assert.h>
 #include "chk_common.h"
 extern object_t *OBJ;
 static symtab_t saved_table;
@@ -31,9 +32,21 @@ void chk_dml_method(object_t *obj, struct method_name *m) {
         /* we should pase the elements and calcualate the
          * expressions that in the method block, as we did
          * not do them before */
-        pre_gen_method(obj, method);
+        pre_chk_method(obj, method);
         parse_method_block(method);
         post_chk_method(obj, method);
+}
+
+void change_current_table(symtab_t table) {
+	assert(table != NULL);
+	saved_table = current_table;
+	current_table = table;
+	return;
+}
+
+void restore_current_table() {
+	current_table = saved_table;
+	return;
 }
 
 

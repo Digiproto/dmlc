@@ -450,9 +450,12 @@ int symbol_insert(symtab_t symtab, const char* name, type_t type, void* attr)
     return 0;
 }
 
+#include "object.h"
 void symbol_set_value(symbol_t sym, void *attr) {
 	if(sym) {
 		sym->attr = attr;
+		printf("node name: %s, node: 0X%x, name: %s, type: %s**********************\n",
+			sym->name, ((object_t*)attr)->node, ((object_t*)attr)->name, ((object_t*)attr)->obj_type);
 	}
 }
 

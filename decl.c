@@ -815,7 +815,7 @@ params_t* get_param_decl(tree_t* node, symtab_t table) {
 	table->pass_num = 1;
 	if (decl->common.no_decalare) {
 		param->var_name = decl->var_name;
-		param->is_notype = 1;
+		//param->is_notype = 1;
 		decl->common.categ = NO_TYPE;
 		param->decl = decl;
 	}

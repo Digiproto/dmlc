@@ -37,6 +37,11 @@
 #include "symbol.h"
 #include "decl_func.h"
 #include "info_output.h"
+#include "object.h"
+#include "gen_common.h"
+#include "chk_common.h"
+
+extern symtab_t current_table;
 
 #ifdef AST_DEBUG
 #define DBG(fmt, ...) do { fprintf(stderr, fmt, ## __VA_ARGS__); } while (0)
@@ -1281,7 +1286,7 @@ void parse_method_block(tree_t* node) {
 	/* as one method can be called many times, but we should parse their
 	element only once, so we should have on status bit to mark it*/
 	attr->is_parsed = 1;
-	printf("parse method '%s' block----------------------------------------\n", attr->name);
+	printf("parse method '%s' block, table num: %d----------------------------------------\n", attr->name, table->table_num);
 
 	if (block->block.statement == NULL)
 		return;
@@ -1390,6 +1395,7 @@ void parse_data(tree_t* node, symtab_t table) {
 void parse_local(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
+	printf("IN %s, line %d, parse local table: %d\n", __FUNCTION__, __LINE__, table->table_num);
 	parse_local_decl(node, table);
 
 	return;
@@ -1590,6 +1596,51 @@ void parse_try_catch(tree_t* node, symtab_t table) {
 	return;
 }
 
+static void parse_call_inline_method(symtab_t table, tree_t* call_expr, tree_t* ret_expr, int inline_method) {
+	assert(call_expr != NULL);
+	object_t *obj = NULL; tree_t* block = NULL;
+	tree_t *node = NULL; method_attr_t *method_attr = NULL;
+	symbol_t method_sym = get_call_expr_info(call_expr, table);
+	if (method_sym) {
+		method_attr = method_sym->attr;
+		node = method_attr->common.node;
+		block = node->method.block;
+		change_current_table(table);
+		check_method_param(method_sym, call_expr, ret_expr, inline_method);
+		restore_current_table();
+		if(method_sym && (method_sym->type == METHOD_TYPE)) {
+			obj = (object_t *)method_sym->owner;
+			if(!obj) {
+				error("method object cannot empty\n");
+			} else {
+				if (!block_empty(block))
+					add_object_method(obj, method_sym->name);
+			}
+		} else {
+			error("method not right %p, %d\n", method_sym, method_sym->type);
+		}
+	} else {
+		error("method not defined\n");
+	}
+
+	return;
+}
+
+void parse_call(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+	printf("IN %s, line = %d, call table: %d\n", __FUNCTION__, __LINE__, table->table_num);
+	parse_call_inline_method(table, node->call_inline.expr, node->call_inline.ret_args, 0);
+
+	return;
+}
+
+void parse_inline(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+	parse_call_inline_method(table, node->call_inline.expr, node->call_inline.ret_args, 1);
+
+	return;
+}
+
 void parse_after_call(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -1602,6 +1653,7 @@ void parse_after_call(tree_t* node, symtab_t table) {
 
 	/* parse call expression */
 	tree_t* call_expr = node->after_call.call_expr;
+	parse_call_inline_method(table, call_expr, NULL, 0);
 	/* the call method expression will be implemented at
 	 * the function of translate_call*/
 
@@ -1772,20 +1824,52 @@ void parse_foreach(tree_t* node, symtab_t table) {
 	attr->table = node->foreach.table;
 	node->common.attr = attr;
 	symbol_insert(node->foreach.table, ident->ident.str, FOREACH_TYPE, attr);
+	printf("IN %s, line = %d, current table: %d, foreach table: %d\n",
+		__FUNCTION__, __LINE__, table->table_num, node->foreach.table->table_num);
 
 	tree_t* in_expr = node->foreach.in_expr;
 	attr->expr = check_expr(in_expr, table);
 	attr->table = node->foreach.table;
 
+	symbol_t list = get_expression_sym(in_expr);
+	param_value_t *val = NULL;
+	symtab_t saved = NULL;
+	int len, i;
+	len = i = 0;
+	if(list->type != ARRAY_TYPE){
+		if(list->type == PARAMETER_TYPE ) {
+			val = list->attr;
+			if(val->type == PARAM_TYPE_LIST) {
+				len = val->u.list.size;
+			} else {
+				my_DBG("error type in foreach\n");
+			}
+		} else {
+			my_DBG("error type in foreach\n");
+		}
+	}
+	symbol_t tmp = symbol_find(attr->table, ident->ident.str, FOREACH_TYPE);
+	if(val->u.list.vector[0].type == PARAM_TYPE_REF) {
+		symbol_set_type(tmp, OBJECT_TYPE);
+	}
+	tree_t* block = node->foreach.block;
+	for(i = 0; i < len; i++) {
+		printf("val->u.list.vector[i].u.ref: 0x%x\n", val->u.list.vector[i].u.ref);
+		symbol_set_value(tmp, val->u.list.vector[i].u.ref);
+		if (block->common.type != BLOCK_TYPE) {
+			if (block->common.parse) {
+				block->common.parse(block, node->foreach.table);
+			}
+		} else {
+			parse_compound_statement(block);
+		}
+	}
+
+	printf("foreach symbol : %s. tyep: %d-------------------\n", tmp->name, tmp->type);
 	/* goto the statement to parse elements
 	 * and calculate expressions */
-	tree_t* block = node->foreach.block;
-	if (block->common.type != BLOCK_TYPE) {
-		if (block->common.parse)
-			block->common.parse(block, node->foreach.table);
-	} else {
-		parse_compound_statement(block);
-	}
+
+	symbol_set_type(tmp, FOREACH_TYPE);
 
 	return;
 }

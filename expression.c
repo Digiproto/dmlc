@@ -3741,16 +3741,25 @@ static cdecl_t* check_attribute_type(symbol_t symbol, expr_t* expr) {
 static cdecl_t* get_common_type(symtab_t table, symbol_t symbol, expr_t* expr);
 static cdecl_t* get_obj_type(symbol_t symbol, symtab_t table, expr_t* expr) {
 	assert(symbol != NULL); assert(table != NULL); assert(expr != NULL);
+	printf("object symbol: %s\n", symbol->name);
+
 	object_t* obj = symbol->attr;
 	tree_t* node = obj->node;
+	cdecl_t* type = NULL;
+	if ((node == NULL) && (!strcmp(obj->obj_type, "field"))) {
+		type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
+		type->common.categ = INT_T;
+		return type;
+	}
+
 	object_attr_t* attr = node->common.attr;
 	symbol_t new_symbol = (symbol_t)gdml_zmalloc(sizeof(struct symbol));
-	cdecl_t* type = NULL;
 	new_symbol->name = symbol->name;
 	new_symbol->type = attr->common.obj_type;
 	new_symbol->attr = attr;
 	type = get_common_type(table, new_symbol, expr);
 	free(new_symbol);
+
 	return type;
 }
 
@@ -3876,6 +3885,8 @@ expr_t* check_ident_expr(tree_t* node, symtab_t table, expr_t* expr) {
 			expr->type = type;
 		}
 		else {
+			int *a = NULL;
+			*a = 100;
 			error("%s no undeclared in template\n", str);
 			exit(-1);
 		}

@@ -383,13 +383,12 @@ static int check_method_out_param(symbol_t sym, tree_t* ret_expr, int in_line) {
 	return ret;
 }
 
-static int check_method_param(symbol_t sym, tree_t* call_expr, tree_t* ret_expr, int in_line) {
+int check_method_param(symbol_t sym, tree_t* call_expr, tree_t* ret_expr, int in_line) {
 	assert(sym != NULL);
 	method_attr_t* attr = sym->attr;
 	tree_t* expr = call_expr;
 	tree_t* ret = ret_expr;
 	int ret_value = 0;
-	my_DBG("bangbang symbol name: %s\n", sym->name);
 
 	ret_value = check_method_in_param(sym, expr, in_line);
 	if (!ret)
@@ -398,7 +397,6 @@ static int check_method_param(symbol_t sym, tree_t* call_expr, tree_t* ret_expr,
 	return ret_value;
 }
 
-static int block_empty(tree_t *t);
 static void translate_call_common(tree_t *expr, tree_t *ret){
 	//tree_t *expr = t->call_inline.expr;
 	//tree_t *ret = t->call_inline.ret_args;
@@ -891,7 +889,7 @@ void translate_default(tree_t *t) {
 	D("default :");
 }
 
-static symbol_t  get_expression_sym(tree_t *node) {
+symbol_t get_expression_sym(tree_t *node) {
 	symbol_t sym;
 	tree_t *tmp;
 	const char *name;
@@ -1320,7 +1318,7 @@ static int block_has_return(tree_t *t) {
 	return ret;
 }
 
-static int block_empty(tree_t *t) {
+int block_empty(tree_t *t) {
 	tree_t *node;
 	tree_t *it;
 	int ret = 0;

@@ -2826,6 +2826,7 @@ statement
 		node->call_inline.expr = $2;
 		node->call_inline.ret_args = $3;
 		node->common.print_node = print_call_inline;
+		node->common.parse = parse_call;
 		node->common.translate = translate_call;
 		//parse_expression(&($2), current_table);
 		DBG("CALL statement\n");
@@ -2836,6 +2837,7 @@ statement
 		node->call_inline.expr = $2;
 		node->call_inline.ret_args = $3;
 		node->common.print_node = print_call_inline;
+		node->common.parse = parse_inline;
 		node->common.translate  = translate_inline;
 		DBG("inline statement\n");
 		$$ = node;
