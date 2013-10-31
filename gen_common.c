@@ -291,7 +291,7 @@ void translate_expr_list(tree_t *expr,const char *prefix){
 	}
 }
 
-static symbol_t  get_call_expr_info(tree_t *node, symtab_t table) {
+symbol_t  get_call_expr_info(tree_t *node, symtab_t table) {
 	symbol_t tmp;
 	tree_t *t;
 	ref_ret_t ref_ret;
