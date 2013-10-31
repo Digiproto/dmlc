@@ -104,7 +104,7 @@ void collect_ref_info(tree_t *expr, ref_info_t *fi){
         }
 }
 
-symbol_t get_ref_sym(tree_t *t, ref_ret_t *ret){
+symbol_t get_ref_sym(tree_t *t, ref_ret_t *ret, symtab_t table){
         ref_info_t fi;
         tree_t *node;
         tree_t *tmp;
@@ -116,11 +116,16 @@ symbol_t get_ref_sym(tree_t *t, ref_ret_t *ret){
         symbol_t sym = NULL;
         const char *name = NULL;
         const char *name2 = NULL;
-        struct symtab *symtab = current_table;
+        struct symtab *symtab;
         int ref_obj = 0;
         object_t *obj = NULL;
         object_t *obj2 = NULL;
-
+	
+	if(!table) {
+		symtab = current_table;
+	} else {
+		symtab = table;
+	}
         /*collect ref info*/
         ref_info_init(&fi);
         collect_ref_info(t, &fi);
@@ -187,7 +192,7 @@ symbol_t get_ref_sym(tree_t *t, ref_ret_t *ret){
                                 if(!name2 || !name){
                                         my_DBG("error name null\n");
                                 }
-                                sym = symbol_find(symtab, name,OBJECT_TYPE);
+                                sym = symbol_find(symtab, name, OBJECT_TYPE);
                                 my_DBG("object found %s, sym %p\n", name, sym);
                                 if(!sym){
                                         my_DBG("no object %s symbol found\n",name);

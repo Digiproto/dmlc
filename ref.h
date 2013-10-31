@@ -53,6 +53,6 @@ node_info_t *new_node_info(tree_t *node);
 void add_node_info(ref_info_t *ref, node_info_t *node);
 void ref_info_destroy(ref_info_t *ref);
 void ref_info_print(ref_info_t *fi);
-symbol_t get_ref_sym(tree_t *t, ref_ret_t *ret);
+symbol_t get_ref_sym(tree_t *t, ref_ret_t *ret, symtab_t table);
 void collect_ref_info(tree_t *expr, ref_info_t *fi);
 #endif /* __REF_H__ */
