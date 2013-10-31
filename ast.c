@@ -767,7 +767,6 @@ paramspec_t* get_param_spec(tree_t* node, symtab_t table) {
 			value->type = PARAM_TYPE_INT;
 			if (expr->val) {
 				value->u.integer = expr->val->int_v.value;
-				printf("expr->val: %d\n", value->u.integer);
 			}
 		}
 		else if (expr->type->common.categ == DOUBLE_T) {
@@ -784,8 +783,6 @@ paramspec_t* get_param_spec(tree_t* node, symtab_t table) {
 			else {
 				value->type = PARAM_TYPE_NONE;
 				value->flag = PARAM_FLAG_NONE;
-				fprintf(stderr, "other parameter type\n");
-				//exit(-1);
 			}
 		}
 	}
@@ -1259,7 +1256,6 @@ void parse_method(tree_t* node, symtab_t table) {
 	if (symbol_defined(table, node->method.name))
 		error("duplicate definition of method '%s'\n", node->method.name);
 
-	printf("method name: %s\n", node->ident.str);
 	method_attr_t* attr = (method_attr_t*)gdml_zmalloc(sizeof(method_attr_t));
 	attr->name = node->ident.str;
 	attr->is_extern = node->method.is_extern;
@@ -1286,7 +1282,7 @@ void parse_method_block(tree_t* node) {
 	/* as one method can be called many times, but we should parse their
 	element only once, so we should have on status bit to mark it*/
 	attr->is_parsed = 1;
-	printf("parse method '%s' block, table num: %d----------------------------------------\n", attr->name, table->table_num);
+	DEBUG_AST("parse method '%s' block, table num: %d----------------------------------------\n", attr->name, table->table_num);
 
 	if (block->block.statement == NULL)
 		return;
@@ -1395,7 +1391,6 @@ void parse_data(tree_t* node, symtab_t table) {
 void parse_local(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
-	printf("IN %s, line %d, parse local table: %d\n", __FUNCTION__, __LINE__, table->table_num);
 	parse_local_decl(node, table);
 
 	return;
@@ -1628,7 +1623,6 @@ static void parse_call_inline_method(symtab_t table, tree_t* call_expr, tree_t* 
 
 void parse_call(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
-	printf("IN %s, line = %d, call table: %d\n", __FUNCTION__, __LINE__, table->table_num);
 	parse_call_inline_method(table, node->call_inline.expr, node->call_inline.ret_args, 0);
 
 	return;
@@ -1824,8 +1818,6 @@ void parse_foreach(tree_t* node, symtab_t table) {
 	attr->table = node->foreach.table;
 	node->common.attr = attr;
 	symbol_insert(node->foreach.table, ident->ident.str, FOREACH_TYPE, attr);
-	printf("IN %s, line = %d, current table: %d, foreach table: %d\n",
-		__FUNCTION__, __LINE__, table->table_num, node->foreach.table->table_num);
 
 	tree_t* in_expr = node->foreach.in_expr;
 	attr->expr = check_expr(in_expr, table);
@@ -1854,7 +1846,6 @@ void parse_foreach(tree_t* node, symtab_t table) {
 	}
 	tree_t* block = node->foreach.block;
 	for(i = 0; i < len; i++) {
-		printf("val->u.list.vector[i].u.ref: 0x%x\n", val->u.list.vector[i].u.ref);
 		symbol_set_value(tmp, val->u.list.vector[i].u.ref);
 		if (block->common.type != BLOCK_TYPE) {
 			if (block->common.parse) {
@@ -1865,11 +1856,11 @@ void parse_foreach(tree_t* node, symtab_t table) {
 		}
 	}
 
-	printf("foreach symbol : %s. tyep: %d-------------------\n", tmp->name, tmp->type);
 	/* goto the statement to parse elements
 	 * and calculate expressions */
 
 	symbol_set_type(tmp, FOREACH_TYPE);
+	symbol_set_value(tmp, attr);
 
 	return;
 }

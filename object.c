@@ -746,7 +746,6 @@ static void bank_realize(object_t *obj) {
 		tmp = list_entry(p, object_t, entry);
 		register_realize(tmp);
 	}
-	printf("------------------register realize ok-------------------------\n");
 	/*sort the register in user specifid order*/
 	bank_calculate_register_offset(obj);
 	process_object_templates(obj);
@@ -1219,7 +1218,6 @@ static void process_bank_template(object_t *obj){
 
 	for(i = 0; i < bank->reg_count; i++) {
 		reg = (dml_register_t *)bank->regs[i];
-		printf("reg : %s, is_undefined: %d\n", reg->obj.name, reg->is_undefined);
 		if(!reg->is_undefined) {
 			defined++;
 		} else {

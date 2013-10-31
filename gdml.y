@@ -283,15 +283,9 @@ dml
 	}
 	syntax_modifiers device_statements {
 		if($5 != NULL)	{
-#ifndef RELEASE
-			printf("\ndevice list: name: %s\n\n", $5->common.name);
-#endif
 			create_node_list($<tree_type>4, $5);
 		}
 		if($6 != NULL) {
-#ifndef RELEASE
-			printf("\ndevice list: name: %s\n\n", $6->common.name);
-#endif
 			create_node_list($<tree_type>4, $6);
 		}
 

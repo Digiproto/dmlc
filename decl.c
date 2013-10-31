@@ -806,8 +806,7 @@ static cdecl_t* parse_cdecl(tree_t* node, symtab_t table);
 params_t* get_param_decl(tree_t* node, symtab_t table) {
 	assert(node != NULL);
 	if (node->common.type != CDECL_TYPE) {
-		DEBUG_DECL("params type is : %s\n", node->common.name);
-		exit(-1);
+		error("params type is : %s\n", node->common.name);
 	}
 	params_t* param = (params_t*)gdml_zmalloc(sizeof(params_t));
 	table->pass_num = 0;
@@ -824,7 +823,7 @@ params_t* get_param_decl(tree_t* node, symtab_t table) {
 		param->decl = decl;
 	}
 
-	printf("IN %s, line = %d, va_name: %s, type: %d, INT_T: %d, TYPEDEF_T: %d\n",
+	DEBUG_DECL("IN %s, line = %d, va_name: %s, type: %d, INT_T: %d, TYPEDEF_T: %d\n",
 			__func__, __LINE__,  param->var_name, decl->common.categ, INT_T, TYPEDEF_T);
 
 	return param;
@@ -1410,7 +1409,6 @@ void parse_local_decl(tree_t* node, symtab_t table) {
 	if (node->local_tree.is_static) {
 		decl->common.is_static = 1;
 	}
-	printf("local name: %s\n", decl->var_name);
 
 	if (node->local_tree.local_keyword) {
 		tree_t* keyword = node->local_tree.local_keyword;
@@ -2136,12 +2134,12 @@ cdecl_t* pointer_to(cdecl_t* type) {
 	return ty;
 }
 
-cdecl_t* array_of(cdecl_t* type, int len) {
+cdecl_t* array_of(cdecl_t* type) {
 	assert(type != NULL);
 	cdecl_t* ty = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
 	ty->common.categ = ARRAY_T;
 	ty->common.qual = 0;
-	ty->common.size = len * (ty->common.size);
+	//ty->common.size = len * (ty->common.size);
 	ty->common.bty = type;
 	ty->var_name = type->var_name;
 
@@ -2190,7 +2188,7 @@ static cdecl_t* derive_type(cdecl_t* type) {
 		else if (drv->ctor == ARRAY_OF) {
 			if (type->common.categ == FUNCTION_T)
 				return NULL;
-			ty = array_of(ty, drv->len);
+			ty = array_of(ty);
 		}
 		else {
 			if (ty->common.categ == ARRAY_T || ty->common.categ == FUNCTION_T)

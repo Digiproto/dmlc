@@ -310,7 +310,6 @@ symbol_t symbol_find_from_templates_notype(struct template_table* templates, con
  */
 symbol_t default_symbol_find_notype(symtab_t symtab, const char *name)
 {
-	printf("symtab: 0x%x, name: 0x%x\n", symtab, name);
     assert(symtab != NULL && name != NULL);
     symtab_t tmp = symtab;
     symbol_t rt;
@@ -454,8 +453,6 @@ int symbol_insert(symtab_t symtab, const char* name, type_t type, void* attr)
 void symbol_set_value(symbol_t sym, void *attr) {
 	if(sym) {
 		sym->attr = attr;
-		printf("node name: %s, node: 0X%x, name: %s, type: %s**********************\n",
-			sym->name, ((object_t*)attr)->node, ((object_t*)attr)->name, ((object_t*)attr)->obj_type);
 	}
 }
 

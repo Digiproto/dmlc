@@ -2082,7 +2082,7 @@ void print_reference(reference_t* ref) {
 	reference_t* tmp = ref;
 
 	while (tmp) {
-		printf("In %s, line = %d, reference name: %s---------------\n",
+		DEBUG_EXPR("In %s, line = %d, reference name: %s---------------\n",
 				__func__, __LINE__, tmp->name);
 
 		tmp = tmp->next;
@@ -2110,7 +2110,6 @@ symtab_t get_default_symbol_tale(symbol_t symbol) {
 symtab_t get_object_table(symbol_t symbol) {
 	assert(symbol != NULL);
 	object_t* obj = symbol->attr;
-	printf("obj name: %s\n", obj->name);
 	tree_t* node = obj->node;
 	object_attr_t* attr = node->common.attr;
 	//return attr->common.table;
@@ -2724,8 +2723,6 @@ static int can_modify(expr_t* expr) {
 
 expr_t* cal_const_value(expr_t* expr) {
 	assert(expr != NULL);
-	printf("In %s, line = %d, is_undefined: %d, is_const : %d\n",
-		__func__, __LINE__, expr->is_undefined, expr->is_const);
 	/* binary operation */
 	if (((expr->op >= ADD_TYPE) && (expr->op <= AND_TYPE)) &&
 		(!((expr->kids[0]->is_const) && (expr->kids[1]->is_const)))) {
@@ -2859,8 +2856,6 @@ expr_t* cal_const_value(expr_t* expr) {
 			exit(-1);
 	}
 
-	printf("In %s, line = %d\n", __func__, __LINE__);
-
 	return expr;
 }
 
@@ -2944,9 +2939,7 @@ cdecl_t* get_arith_type(cdecl_t* type1, cdecl_t* type2, cdecl_t* type) {
 
 expr_t* check_logical_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL);
-	printf("IN %s, line = %d, node type: %s\n", __func__, __LINE__, node->common.name);
 	expr = check_binary_kids(node, table, expr);
-	//expr->type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
 	if (both_scalar_type(expr->kids[0]->type, expr->kids[1]->type)) {
 		expr = cal_const_value(expr);
 		if (expr->is_const) {
@@ -2967,7 +2960,6 @@ expr_t* check_logical_expr(tree_t* node, symtab_t table, expr_t* expr) {
 
 expr_t* check_bitwise_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
-	printf("IN %s, line = %d, node type: %s\n", __func__, __LINE__, node->common.name);
 	expr = check_binary_kids(node, table, expr);
 	expr->type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
 	cdecl_t* type1 = expr->kids[0]->type;
@@ -2975,7 +2967,6 @@ expr_t* check_bitwise_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	type1 = (type1->common.categ == ARRAY_T) ? type1->common.bty : type1;
 	type2 = (type2->common.categ == ARRAY_T) ? type2->common.bty : type2;
 	if (both_int_type(type1, type2)) {
-		//expr->type = get_arith_type(type1, type2, expr->type);
 		expr->kids[0]->type = type1;
 		expr->kids[1]->type = type2;
 		expr = cal_const_value(expr);
@@ -2985,14 +2976,13 @@ expr_t* check_bitwise_expr(tree_t* node, symtab_t table, expr_t* expr) {
 		expr->type = type1->common.categ > type2->common.categ ? type1 : type2;
 		return expr;
 	}
-	error("Line: %d, Invalid operands, type1: %d, type2: %d, arr_t: %d\n",
-		__LINE__, expr->kids[0]->type->common.categ, expr->kids[1]->type->common.categ, ARRAY_T);
+	error("Line: %d, Invalid operands, type1: %d, type2: %d\n",
+		__LINE__, expr->kids[0]->type->common.categ, expr->kids[1]->type->common.categ);
 	return expr;
 }
 
 expr_t* check_equality_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
-	printf("IN %s, line = %d, node type: %s\n", __func__, __LINE__, node->common.name);
 	cdecl_t* type1 = NULL;
 	cdecl_t* type2 = NULL;
 
@@ -3018,15 +3008,13 @@ expr_t* check_equality_expr(tree_t* node, symtab_t table, expr_t* expr) {
 		return expr;
 	}
 
-	error("Invalid operands to: type1: %d, type2: %d, STRING_T: %d, node: %s\n",
-			type1->common.categ, type2->common.categ, STRING_T, node->common.name);
+	error("Invalid operands to: type1: %d, type2: %d\n", type1->common.categ, type2->common.categ);
 
 	return expr;
 }
 
 expr_t* check_relation_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
-	printf("IN %s, line = %d, node type: %s\n", __func__, __LINE__, node->common.name);
 	expr = check_binary_kids(node, table, expr);
 	expr->type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
 	expr->type->common.categ = INT_T;
@@ -3049,18 +3037,14 @@ expr_t* check_relation_expr(tree_t* node, symtab_t table, expr_t* expr) {
 
 expr_t* check_shift_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
-	printf("IN %s, line = %d, node type: %s\n", __func__, __LINE__, node->common.name);
 	expr = check_binary_kids(node, table, expr);
-	//expr->type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
 	if (both_int_type(expr->kids[0]->type, expr->kids[1]->type)) {
 		expr = cal_const_value(expr);
 		expr_to_int(expr);
 		return expr;
 	}
 	else {
-                printf("kids[0] type: %d, kids[1] type: %d, POINTER_T: %d\n",
-                        expr->kids[0]->type->common.categ, expr->kids[1]->type->common.categ, POINTER_T);
-		error("Line: %d, Invalid operands\n", __LINE__);
+		error("Invalid operands\n");
 	}
 
 	return expr;
@@ -3068,14 +3052,12 @@ expr_t* check_shift_expr(tree_t* node, symtab_t table, expr_t* expr) {
 
 expr_t* check_add_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
-	printf("IN %s, line = %d, node type: %s\n", __func__, __LINE__, node->common.name);
 	expr = check_binary_kids(node, table, expr);
-	//expr->type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
 	if (both_arith_type(expr->kids[0]->type, expr->kids[1]->type)) {
 		return cal_const_value(expr);
 	}
 	else if (both_no_common_type(expr->kids[0]->type, expr->kids[1]->type)) {
-		error("Line : %d, Invalid operands\n", __LINE__);
+		error("Invalid operands\n");
 	}
 	else {
 		int categ1 = expr->kids[0]->type->common.categ;
@@ -3088,14 +3070,12 @@ expr_t* check_add_expr(tree_t* node, symtab_t table, expr_t* expr) {
 
 expr_t* check_sub_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
-	printf("IN %s, line = %d, node type: %s\n", __func__, __LINE__, node->common.name);
 	expr = check_binary_kids(node, table, expr);
-	//expr->type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
 	if (both_arith_type(expr->kids[0]->type, expr->kids[1]->type)) {
 		return cal_const_value(expr);
 	}
 	else if (both_no_common_type(expr->kids[0]->type, expr->kids[1]->type)) {
-		error("Line : %d, Invalid operands\n", __LINE__);
+		error("Invalid operands\n");
 	}
 	else {
 		int categ1 = expr->kids[0]->type->common.categ;
@@ -3108,9 +3088,7 @@ expr_t* check_sub_expr(tree_t* node, symtab_t table, expr_t* expr) {
 
 expr_t* check_multiplicative_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
-	printf("IN %s, line = %d, node type: %s\n", __func__, __LINE__, node->common.name);
 	expr = check_binary_kids(node, table, expr);
-	//expr->type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
 	if (both_arith_type(expr->kids[0]->type, expr->kids[1]->type)) {
 		return cal_const_value(expr);
 	}
@@ -3169,8 +3147,6 @@ static int can_assign(expr_t* l_expr, expr_t* r_expr) {
 	cdecl_t* l_type = unqual(l_expr->type);
 	cdecl_t* r_type = unqual(r_expr->type);
 
-	printf("In %s, line = %d, l_type: %d, r_type: %d : arr_t: %d\n",
-			__func__, __LINE__, l_type->common.categ, r_type->common.categ, ARRAY_T);
 	if (is_ptr_type(l_type) && is_null_ptr(r_expr)) {
 		return 1;
 	} else if (is_parameter_type(l_type) || is_parameter_type(r_type)){
@@ -3191,7 +3167,6 @@ void free_expr(expr_t* expr) {
 expr_t* check_assign_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 
-	printf("IN %s, line = %d, node type: %s\n", __func__, __LINE__, node->common.name);
 	expr->op = node->expr_assign.type;
 	if (node->expr_assign.type != EXPR_ASSIGN_TYPE) {
 		switch(node->expr_assign.type) {
@@ -3237,7 +3212,6 @@ expr_t* check_assign_expr(tree_t* node, symtab_t table, expr_t* expr) {
 
 expr_t* check_binary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL);
-	printf("IN %s, line = %d, node type: %s\n", __func__, __LINE__, node->common.name);
 	expr->op = node->binary.type;
 	switch(node->binary.type) {
 		case OR_OP_TYPE:
@@ -3286,10 +3260,7 @@ expr_t* check_binary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 expr_t* check_ternary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 
-	printf("IN %s, line = %d, node type: %s\n", __func__, __LINE__, node->common.name);
 	expr_t* cond_expr = check_expr(node->ternary.cond, table);
-	printf("cond expr type: 0x%p\n", cond_expr->type);
-	printf("type : %d\n", cond_expr->type->common.categ);
 	//expr->type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
 	if (!is_scalar_type(cond_expr->type)) {
 		error("used struct type value where scalar is required\n");
@@ -3316,7 +3287,6 @@ expr_t* check_ternary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 static expr_t* check_expression(tree_t* node, symtab_t table, expr_t* expr);
 expr_t* check_cast_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
-	printf("IN %s, line = %d, node type: %s\n", __func__, __LINE__, node->common.name);
 	expr = check_expression(node->cast.expr, table, expr);
 
 	cdecl_t* type = parse_ctype_decl(node->cast.ctype, table);
@@ -3328,7 +3298,6 @@ expr_t* check_cast_expr(tree_t* node, symtab_t table, expr_t* expr) {
 
 expr_t* check_sizeof_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
-	printf("IN %s, line = %d, node type: %s\n", __func__, __LINE__, node->common.name);
 	expr->type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
 	expr = check_expression(node->sizeof_tree.expr, table, expr);
 	expr->type->common.categ = INT_T;
@@ -3340,7 +3309,6 @@ expr_t* check_sizeof_expr(tree_t* node, symtab_t table, expr_t* expr) {
 
 expr_t* check_unary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
-	printf("IN %s, line = %d, node type: %s\n", __func__, __LINE__, node->common.name);
 	expr->op = node->unary.type;
 	//expr->type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
 	switch(node->unary.type) {
@@ -3446,7 +3414,6 @@ expr_t* check_unary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 
 expr_t* check_const_expr(tree_t* node, expr_t* expr) {
 	assert(node != NULL); assert(expr != NULL);
-	printf("IN %s, line = %d, node type: %s\n", __func__, __LINE__, node->common.name);
 	value_t* value = (value_t*)gdml_zmalloc(sizeof(value_t));
 	cdecl_t* type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
 	expr->is_const = 1;
@@ -3531,9 +3498,7 @@ static int find_dml_obj(symtab_t table, const char* name) {
 	assert(table != NULL); assert(name != NULL);
 	symbol_t symbol = symbol_find_notype(table, name);
 	int obj_type = 0;
-	printf("shenoubang obj name: %s, symbol: 0x%p\n", name, symbol);
 	if (symbol)
-		printf("shenoubang symbol: %s, type: %d, ATTRIBUTE_TYPE: %d\n", symbol->name, symbol->type, ATTRIBUTE_TYPE);
 	if (symbol) {
 		obj_type = dml_obj_type(symbol);
 		if (obj_type) {
@@ -3561,7 +3526,6 @@ static int check_dml_obj_refer(tree_t* node, symtab_t table) {
 
 expr_t* check_quote_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
-	printf("IN %s, line = %d, node type: %s\n", __func__, __LINE__, node->common.name);
 	tree_t* ident = node->quote.ident;
 
     /*to reference something in the DML object structure
@@ -3617,7 +3581,7 @@ static cdecl_t* check_parameter_type(symbol_t symbol, expr_t* expr) {
 			}
 		} else {
 			if (((param_value_t*)parameter)->u.string) {
-				expr->val->p = ((param_value_t*)parameter)->u.string;
+				expr->val->p = (void*)(((param_value_t*)parameter)->u.string);
 			}
 		}
 	}
@@ -3685,25 +3649,15 @@ static cdecl_t* check_register_type(symbol_t symbol, expr_t* expr) {
 	cdecl_t* type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
 	type->common.categ = INT_T;
 	type->common.size = sizeof(int) * 8;
-#if 0
-	if (attr->is_array) {
-		type_deriv_list_t* drv = (type_deriv_list_t*)gdml_zmalloc(sizeof(type_deriv_list_t));
-		drv->ctor = ARRAY_OF;
-		type->common.drv = drv;
-		type = array_of(type, 0);
-	}
-#endif
 
 	return type;
 }
 
 static cdecl_t* check_attribute_type(symbol_t symbol, expr_t* expr) {
 	assert(symbol != NULL); assert(expr != NULL);
-	printf("symbol: %s\n", symbol->name);
 	attribute_attr_t* attr = (attribute_attr_t*)(symbol->attr);
 	attribute_t* attr_obj = (attribute_t*)(attr->attr_obj);
 	if (attr_obj->alloc_type) {
-		printf("alloc type: %s\n", attr_obj->alloc_type);
 		if (attr_obj->alloc == INT_T) {
 			new_int_type(expr);
 		} else if (attr_obj->alloc == LONG_T) {
@@ -3741,7 +3695,6 @@ static cdecl_t* check_attribute_type(symbol_t symbol, expr_t* expr) {
 static cdecl_t* get_common_type(symtab_t table, symbol_t symbol, expr_t* expr);
 static cdecl_t* get_obj_type(symbol_t symbol, symtab_t table, expr_t* expr) {
 	assert(symbol != NULL); assert(table != NULL); assert(expr != NULL);
-	printf("object symbol: %s\n", symbol->name);
 
 	object_t* obj = symbol->attr;
 	tree_t* node = obj->node;
@@ -3765,63 +3718,42 @@ static cdecl_t* get_obj_type(symbol_t symbol, symtab_t table, expr_t* expr) {
 
 static cdecl_t* get_common_type(symtab_t table, symbol_t symbol, expr_t* expr) {
 	assert(table != NULL); assert(symbol != NULL);
-	printf("In %s, line = %d, symbol name: %s, type: %d\n",
-			__FUNCTION__, __LINE__, symbol->name, symbol->type);
 
 	cdecl_t* type = NULL;
 	switch(symbol->type) {
 		case PARAM_TYPE:
 			type = ((params_t*)(symbol->attr))->decl;
-			printf("IN %s, line = %d, param type: %d\n",
-					__func__, __LINE__, symbol->type);
 			break;
 		case PARAMETER_TYPE:
 			type = check_parameter_type(symbol, expr);
-			printf("IN %s, line = %d, parameter type: %d\n",
-					__func__, __LINE__, type->common.categ);
 			break;
 		case CONSTANT_TYPE:
 			type = check_constant_type(symbol, expr);
-			printf("\nIN %s, line = %d, constant type: %d\n",
-					__func__, __LINE__, symbol->type);
 			break;
 		case FOREACH_TYPE:
-			printf("\nIN %s, line = %d, foreach type: %d\n",
-					__func__, __LINE__, symbol->type);
 			type = check_foreach_type(symbol, expr);
 			break;
 		case FUNCTION_T:
 			type = (cdecl_t*)(symbol->attr);
-			printf("\nIN %s, line = %d, function type: %d, categ: %d\n",
-					__func__, __LINE__, symbol->type, type->common.categ);
 			break;
 		case METHOD_TYPE:
 		case LOGGROUP_TYPE:
 		case TEMPLATE_TYPE:
-			printf("\nIN %s, line = %d, method type: %d\n",
+			printf("IN %s, line = %d, method type: %d, not implement(exit)\n",
 					__func__, __LINE__, symbol->type);
 			exit(-1);
 			break;
 		case ATTRIBUTE_TYPE:
-			printf("\nIN %s, line = %d, attribute type: %d\n",
-					__func__, __LINE__, symbol->type);
 			type = check_attribute_type(symbol, expr);
-			printf("attribute type: %d, float: %d\n", type->common.categ, DOUBLE_T);
 			break;
 		case REGISTER_TYPE:
-			printf("\nIN %s, line = %d, register type: %d\n",
-					__func__, __LINE__, symbol->type);
 			type = check_register_type(symbol, expr);
 			break;
 		case FIELD_TYPE:
-			printf("\nIN %s, line = %d, field type: %d\n",
-					__func__, __LINE__, symbol->type);
 			type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
 			type->common.categ = INT_T;
 			break;
 		case INTERFACE_TYPE:
-			printf("\nIN %s, line = %d, interface type type: %d\n",
-					__func__, __LINE__, symbol->type);
 			type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
 			type->common.categ = INTERFACE_T;
 			break;
@@ -3844,15 +3776,13 @@ static cdecl_t* get_common_type(symtab_t table, symbol_t symbol, expr_t* expr) {
 
 expr_t* check_ident_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
-	printf("In %s, line = %d, node type: %s, table type: %d, ident: %s\n",
-			__func__, __LINE__, node->common.name, table->type, node->ident.str);
 	symbol_t symbol = symbol_find_notype(table, node->ident.str);
 	if (symbol == NULL) {
 		symtab_t root_table = get_root_table();
 		symbol = symbol_find_notype(root_table, node->ident.str);
 	}
 	if (symbol != NULL) {
-		printf("symbol name: %s, type: %d\n", symbol->name, symbol->type);
+		DEBUG_EXPR("symbol name: %s, type: %d\n", symbol->name, symbol->type);
 		if (is_common_type(symbol->type)) {
 			expr->type = symbol->attr;
 		}
@@ -3885,10 +3815,7 @@ expr_t* check_ident_expr(tree_t* node, symtab_t table, expr_t* expr) {
 			expr->type = type;
 		}
 		else {
-			int *a = NULL;
-			*a = 100;
 			error("%s no undeclared in template\n", str);
-			exit(-1);
 		}
 	}
 
@@ -3925,7 +3852,6 @@ static int object_array(symbol_t symbol) {
 
 static int check_array_symbol(symtab_t table, symbol_t symbol) {
 	assert(table != NULL); assert(symbol != NULL);
-	printf("In %s, line = %d, symbol name: %s\n", __FUNCTION__, __LINE__, symbol->name);
 	void* attr = symbol->attr;
 	switch (symbol->type) {
 		case REGISTER_TYPE:
@@ -3959,7 +3885,6 @@ static int check_array_symbol(symtab_t table, symbol_t symbol) {
 extern void check_reg_table(void);
 expr_t* check_refer(symtab_t table, reference_t* ref, expr_t* expr) {
 	assert(table != NULL); assert(ref != NULL); assert(expr != NULL);
-	printf("In %s, line = %d\n", __func__, __LINE__);
 
 	symbol_t symbol = NULL;
 	symbol_t ref_symbol = NULL;
@@ -4055,8 +3980,7 @@ expr_t* check_refer(symtab_t table, reference_t* ref, expr_t* expr) {
 		tmp = tmp->next;
 	}
 	if (expr->type->common.categ == INTERFACE_TYPE) {
-		fprintf(stderr, "the last elment about compent can not be interface\n");
-		exit(-1);
+		error("the last elment about compent can not be interface\n");
 	}
 	if (tmp->is_array) {
 		check_array_symbol(table, ref_symbol);
@@ -4066,7 +3990,6 @@ expr_t* check_refer(symtab_t table, reference_t* ref, expr_t* expr) {
 
 expr_t* check_component_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
-	printf("IN %s, line = %d, node type: %s\n", __func__, __LINE__, node->common.name);
 	expr->type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
 	reference_t* reference = (reference_t*)gdml_zmalloc(sizeof(reference_t));
 	if (node->component.type == COMPONENT_POINTER_TYPE) {
@@ -4084,7 +4007,6 @@ expr_t* check_component_expr(tree_t* node, symtab_t table, expr_t* expr) {
 
 expr_t* check_sizeoftype_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
-	printf("IN %s, line = %d, node type: %s\n", __func__, __LINE__, node->common.name);
 	cdecl_t* type = parse_typeoparg(node, table);
 
 	if (record_type(type) == 0) {
@@ -4156,7 +4078,6 @@ static int first_param_is_obj(signature_t* sig) {
 expr_t* check_function_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 	expr_t* func = check_expr(node->expr_brack.expr, table);
-	printf("IN %s, line = %d, expr->is_obj: %d, func type: %d : %d, point: %d\n\n", __FUNCTION__, __LINE__, func->is_obj, func->type->common.categ, FUNCTION_T, POINTER_T);
 	if (func->is_const) {
 		error("The expression is wrong\n");
 	}
@@ -4179,7 +4100,7 @@ expr_t* check_function_expr(tree_t* node, symtab_t table, expr_t* expr) {
 		}
 	}
 	int arg_num = get_param_num(node->expr_brack.expr_in_brack);
-	printf("argc: %d, argnum: %d\n", arg_num, argc);
+	DEBUG_EXPR("argc: %d, argnum: %d\n", arg_num, argc);
 	if (arg_num != argc) {
 		fprintf(stderr, "error: too %s arguments to function\n",
 				(arg_num < argc) ? "few": "many");
@@ -4196,7 +4117,6 @@ expr_t* check_function_expr(tree_t* node, symtab_t table, expr_t* expr) {
 
 expr_t* check_brack_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
-	printf("IN %s, line = %d, node type: %s\n", __func__, __LINE__, node->common.name);
 
 	/* in simics, it support cast like this (void**)(a)
 	 * if one expreesion like expression (expression_list),
@@ -4223,7 +4143,6 @@ expr_t* check_array_expr(tree_t* node, symtab_t table, expr_t* expr) {
 
 expr_t* check_bit_slic_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
-	printf("IN %s, line = %d, node type: %s\n", __func__, __LINE__, node->common.name);
 
 	/* Bit Slicing Expressions : expr[e1:e2, bitorder]
 	 *							 expr[e1, bitorder]
@@ -4251,7 +4170,7 @@ expr_t* check_bit_slic_expr(tree_t* node, symtab_t table, expr_t* expr) {
 		}
 	}
 
-	printf("check bit slic, expr type: %d, type bty: 0x%p\n",
+	DEBUG_EXPR("check bit slic, expr type: %d, type bty: 0x%p\n",
 		expr->type->common.categ, expr->type->common.bty);
 	expr->node = node;
 	return expr;
@@ -4259,7 +4178,6 @@ expr_t* check_bit_slic_expr(tree_t* node, symtab_t table, expr_t* expr) {
 
 expr_t* check_expression(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
-	printf("IN %s, line = %d, node type: %s\n", __func__, __LINE__, node->common.name);
 	switch (node->common.type) {
 		case EXPR_ASSIGN_TYPE:
 			expr = check_assign_expr(node, table, expr);
