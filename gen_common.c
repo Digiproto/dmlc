@@ -151,7 +151,7 @@ void translate_quote(tree_t *t) {
 			}
 			return;
 		}
-		sym = get_ref_sym(t, &ref_ret);	
+		sym = get_ref_sym(t, &ref_ret, NULL);	
 		if(sym && (sym->type == PARAMETER_TYPE)) {
 			translate_parameter(sym);
 		} else if(sym && (sym->type == OBJECT_TYPE)){
@@ -215,7 +215,7 @@ void translate_ref_expr(tree_t *t){
 	ref_ret_t ref_ret;
 
 
-	sym = get_ref_sym(t, &ref_ret);
+	sym = get_ref_sym(t, &ref_ret, NULL);
 	if(sym && !ref_ret.is_obj){
 		translate_c_ref(t);
 		return;
@@ -301,7 +301,7 @@ static symbol_t  get_call_expr_info(tree_t *node) {
 	} else {
 		t = node;
 	}
-	tmp = get_ref_sym(t, &ref_ret);
+	tmp = get_ref_sym(t, &ref_ret, NULL);
 	return tmp;
 }
 
@@ -1079,7 +1079,7 @@ void translate_typeof(tree_t *t) {
 		} else {
 			printf("todo:other quote type\n");
 		}*/
-		sym = get_ref_sym(expr, &ref_ret);
+		sym = get_ref_sym(expr, &ref_ret, NULL);
 		if(sym) {
 			name = sym->name;
 		} else {
@@ -1248,7 +1248,7 @@ static int block_has_call(tree_t *t) {
 				} else if (it->common.type == INLINE_TYPE) {
 					/*a little trick for inline*/
 					tmp = it->call_inline.expr;
-					sym = get_ref_sym(tmp->expr_brack.expr,&ref_ret);		
+					sym = get_ref_sym(tmp->expr_brack.expr,&ref_ret, NULL);		
 					if(!sym) {
 						my_DBG("err,no inline function\n");
 					}

@@ -216,7 +216,7 @@ void translate_expr_brack_direct(tree_t *t) {
 	ref_ret_t ref_ret;
 
 	node = t->expr_brack.expr;
-	sym = get_ref_sym(node, &ref_ret);
+	sym = get_ref_sym(node, &ref_ret, NULL);
 	if(sym && sym->type == OBJECT_TYPE) {
 		obj = (object_t *)sym->attr;
 		if(!strcmp(obj->obj_type, "interface")) {
