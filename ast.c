@@ -1355,8 +1355,6 @@ void parse_typedef(tree_t* node, symtab_t table) {
 
 void parse_struct_top(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
-	printf("In %s, line = %d ,exit\n", __func__, __LINE__);
-	exit(-1);
 
 	if (symbol_defined(table, node->ident.str))
 		error("name collision on '%s'\n", node->ident.str);
@@ -1368,21 +1366,14 @@ void parse_struct_top(tree_t* node, symtab_t table) {
 	node->common.attr = attr;
 	symbol_insert(table, node->ident.str, STRUCT_TYPE, attr);
 
-	printf("start parse the top struct\n");
-	sleep(5);
 	/* parse the struct elements, and insert them into table*/
 	parse_top_struct_cdecl(node, table);
-	printf("parse the top struct finished\n");
-	sleep(2);
 
 	return;
 }
 
 void parse_data(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
-	printf("In %s, line = %d\n", __func__, __LINE__);
-	exit(-1);
-
 	parse_data_cdecl(node, table);
 
 	return;

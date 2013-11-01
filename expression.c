@@ -2853,6 +2853,8 @@ expr_t* cal_const_value(expr_t* expr) {
 			break;
 		default:
 			fprintf(stderr, "other constant operator: %d\n", expr->op);
+			int *a = NULL;
+			*a = 1000;
 			exit(-1);
 	}
 
@@ -2972,7 +2974,8 @@ expr_t* check_bitwise_expr(tree_t* node, symtab_t table, expr_t* expr) {
 		expr = cal_const_value(expr);
 		return expr;
 	}
-	else if (is_parameter_type(type1) || is_parameter_type(type2)) {
+	else if (is_parameter_type(type1) || is_parameter_type(type2) ||
+		(is_no_type(type1) || is_no_type(type2))) {
 		expr->type = type1->common.categ > type2->common.categ ? type1 : type2;
 		return expr;
 	}
@@ -3003,7 +3006,8 @@ expr_t* check_equality_expr(tree_t* node, symtab_t table, expr_t* expr) {
 		new_int_type(expr);
 		return expr;
 	}
-	if (is_parameter_type(type1) || is_parameter_type(type2)) {
+	if (is_parameter_type(type1) || is_parameter_type(type2) ||
+		is_no_type(type1) || is_no_type(type2)) {
 		expr->type = (type1->common.categ > type2->common.categ) ? type1 : type2;
 		return expr;
 	}
@@ -3271,15 +3275,8 @@ expr_t* check_ternary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	cdecl_t* type1 = true_expr->type;
 	cdecl_t* type2 = false_expr->type;
 
-	if (both_arith_type(type1, type2)) {
-		//expr->type = get_arith_type(type1, type2, expr->type);
-		expr->node = node;
-		return cal_const_value(expr);
-	}
-	else {
-		expr->type = type1->common.categ > type2->common.categ ? type1 : type2;
-		expr->node = node;
-	}
+	expr->type = type1->common.categ > type2->common.categ ? type1 : type2;
+	expr->node = node;
 
 	return expr;
 }
@@ -3721,6 +3718,9 @@ static cdecl_t* get_common_type(symtab_t table, symbol_t symbol, expr_t* expr) {
 
 	cdecl_t* type = NULL;
 	switch(symbol->type) {
+		case DATA_TYPE:
+			type = (cdecl_t*)(symbol->attr);
+			break;
 		case PARAM_TYPE:
 			type = ((params_t*)(symbol->attr))->decl;
 			break;

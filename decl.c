@@ -1385,18 +1385,13 @@ void insert_ident_decl(symtab_t table, decl_t* decl) {
 }
 
 void parse_data_cdecl(tree_t* node, symtab_t table) {
-	assert(node != NULL);
-	assert(table != NULL);
+	assert(node != NULL); assert(table != NULL);
 
-	decl_t* decl = (decl_t*)gdml_zmalloc(sizeof(decl_t));
-	decl_type_t* type = (decl_type_t*)gdml_zmalloc(sizeof(decl_type_t));
-	decl->type = type;
+	cdecl_t* decl = parse_cdecl(node->cdecl.decl, table);
 
-	//parse_cdecl(node, table, decl);
-	var_name_t* var = decl->var;
-	if (symbol_defined(table, var->var_name))
-		error("name collision on '%s'\n", var->var_name);
-	symbol_insert(table, var->var_name, DATA_TYPE, decl);
+	if (symbol_defined(table, decl->var_name))
+		error("name collision on '%s'\n", decl->var_name);
+	symbol_insert(table, decl->var_name, DATA_TYPE, decl);
 
 	return;
 }
