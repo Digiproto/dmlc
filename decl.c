@@ -33,6 +33,7 @@
 #include "decl.h"
 #include "expression.h"
 #include "info_output.h"
+#include "object.h"
 
 void* gdml_realloc(void* addr, int size) {
 	if (addr == NULL) {
@@ -1877,9 +1878,11 @@ static cdecl_t* parse_type_ident(tree_t* node, symtab_t table) {
 			if ((symbol->type == TYPEDEF_T) || (symbol->type == STRUCT_T)) {
 				memcpy(type, symbol->attr, sizeof(cdecl_t));
 				type->var_name = NULL;
-			}
-			else {
-				error("unknown type : %s\n", symbol->name);
+			} else if (symbol) {
+				type->var_name = node->ident.str;
+				type->common.categ = NO_TYPE;
+			} else {
+				error("unknown type : %s, type: %d, ATTRIBUTE: %d\n", symbol->name, symbol->type, ATTRIBUTE_TYPE);
 			}
 		}
 		else {

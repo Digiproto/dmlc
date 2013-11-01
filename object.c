@@ -732,8 +732,9 @@ static void bank_realize(object_t *obj) {
 		spec = param->param_spec;
 		value = spec->value;
 		if(!value->is_const) {
-			PERROR("the register_size require a constant value",
-					spec->expr_node->common.location);
+			reg_size = 4;
+			//PERROR("the register_size require a constant value",
+			//		spec->expr_node->common.location);
 		} else {
 			reg_size = value->u.integer;
 		}
@@ -856,8 +857,8 @@ static const char* get_type(const char* str, attribute_t* attr) {
 		type = "a";
 		attr->ty = FLOAT_T;
 	} else {
-		fprintf(stderr, "other attribute type: %s\n", str);
-		exit(-1);
+		type = "i";
+		attr->ty = INT_T;
 	}
 	return type;
 }

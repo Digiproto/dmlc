@@ -2949,6 +2949,7 @@ statement
 		tree_t* node = $<tree_type>4;
 		node->case_tree.block = $5;
 		node->case_tree.table = current_table;
+		node->common.print_node = print_case;
 		node->common.parse = parse_case;
 		current_table = pop(table_stack);
 		$$ = node;

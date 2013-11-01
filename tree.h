@@ -62,6 +62,7 @@ struct tree_common
 	print_node_t print_node;
 	translate_t translate;
 	parse_t parse;
+	int parsed;
 	void* attr;
 	int type;
 	const char* name;

@@ -970,7 +970,8 @@ static void parse_object(tree_t* node, symtab_t table) {
 	 * in the current table are the sibling about the object node*/
 	tree_t* tmp = node;
 	while (tmp) {
-		if (tmp->common.parse) {
+		if ((tmp->common.parse) && (tmp->common.parsed == 0)) {
+			tmp->common.parsed = 1;
 			tmp->common.parse(tmp, table);
 		}
 		tmp = tmp->common.sibling;
@@ -1253,8 +1254,9 @@ void parse_obj_if_else(tree_t* node, symtab_t table) {
 void parse_method(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
-	if (symbol_defined(table, node->method.name))
+	if (symbol_defined(table, node->method.name)) {
 		error("duplicate definition of method '%s'\n", node->method.name);
+	}
 
 	method_attr_t* attr = (method_attr_t*)gdml_zmalloc(sizeof(method_attr_t));
 	attr->name = node->ident.str;
