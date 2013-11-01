@@ -2116,6 +2116,14 @@ symtab_t get_object_table(symbol_t symbol) {
 	return obj->symtab;
 }
 
+symtab_t get_data_table(symbol_t symbol) {
+	assert(symbol != NULL);
+	printf("In %s, line = %d, Pay attention: not implemented\n", __FUNCTION__, __LINE__);
+	exit(-1);
+
+	return NULL;
+}
+
 symtab_t get_symbol_table(symbol_t symbol) {
 	assert(symbol != NULL);
 
@@ -2152,6 +2160,9 @@ symtab_t get_symbol_table(symbol_t symbol) {
 			break;
 		case OBJECT_TYPE:
 			table = get_object_table(symbol);
+			break;
+		case DATA_TYPE:
+			table = get_data_table(symbol);
 			break;
 		default:
 			error("Othe symbol %s(%d)\n", symbol->name, symbol->type);
@@ -3007,7 +3018,8 @@ expr_t* check_equality_expr(tree_t* node, symtab_t table, expr_t* expr) {
 		return expr;
 	}
 	if (is_parameter_type(type1) || is_parameter_type(type2) ||
-		is_no_type(type1) || is_no_type(type2)) {
+		is_no_type(type1) || is_no_type(type2) ||
+		is_ptr_type(type1) || is_ptr_type(type2)) {
 		expr->type = (type1->common.categ > type2->common.categ) ? type1 : type2;
 		return expr;
 	}
@@ -3501,6 +3513,14 @@ static int find_dml_obj(symtab_t table, const char* name) {
 		if (obj_type) {
 		    return obj_type;
 		}
+		else {
+			symtab_t root_table = get_root_table();
+			symbol = symbol_find_notype(root_table, name);
+			obj_type = dml_obj_type(symbol);
+			if (obj_type) {
+			    return obj_type;
+			}
+		}
 	}
 
 	return obj_type;
@@ -3531,8 +3551,6 @@ expr_t* check_quote_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	if (is_obj == 0) {
 		fprintf(stderr, "reference to unknown object '%s', table_num: %d, line: %d\n",
 			ident->ident.str, table->table_num, __LINE__);
-		int *a = NULL;
-		*a = 100;
 		/* TODO: handle the error */
 		exit(-1);
 	}

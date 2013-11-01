@@ -38,8 +38,8 @@ static void chk_object_method(object_t *obj){
 	list_for_each(p,&obj->methods){
 		m = list_entry(p,struct method_name, entry);
 		chk_dml_method(obj, m);
-	}	
-	add_object_generated_method(obj);	
+	}
+	add_object_generated_method(obj);
 } 
 
 static void chk_obj_generic_code(object_t *obj){
@@ -71,6 +71,10 @@ static void chk_device_code(device_t *obj){
 		chk_obj_generic_code(t);
 	} 
 	/*connect,port ect*/
+	list_for_each(p,&dev->attributes){
+		t = list_entry(p,object_t,entry);
+		chk_obj_generic_code(t);
+	} 
 }
 
 void chk_dml_code(device_t *dev) {
