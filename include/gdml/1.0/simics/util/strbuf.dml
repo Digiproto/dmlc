@@ -13,7 +13,7 @@ header %{
 import "simics/host-info.dml";
 import "simics/base-types.dml";
 
-extern int sb_readline(strbuf_t *sb, FILE *f);
+//extern int sb_readline(strbuf_t *sb, FILE *f);
 extern int sb_write(const strbuf_t *sb, FILE *f);
 extern char *sb_detach(strbuf_t *sb);
 extern strbuf_t sb_newf(const char *format, ...);

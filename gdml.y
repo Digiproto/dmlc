@@ -1316,8 +1316,6 @@ object_spec
 		current_table = block->block.table;
 		if ((object_comm_attr) && (object_comm_attr->common.table == NULL)) {
 			object_comm_attr->common.table = current_table;;
-			//insert_array_index(object_comm_attr, current_table);
-			//insert_auto_defaut_param(current_table);
 		}
 
 		node->spec.block = block;
@@ -1332,12 +1330,14 @@ object_spec
 		tree_t* block = node->spec.block;
 		block->block.statement = $4;
 		block->common.print_node = print_obj_block;
+#if 0
 		if ($4 == NULL) {
 			stack_node_t* node = get_top(table_stack);
 			symtab_free(node->data, current_table_num);
 			block->block.table = NULL;
 			current_table_num--;
 		}
+#endif
 		current_table = pop(table_stack);
 		$$ = node;
 	}
@@ -2843,14 +2843,14 @@ statement
 		node->common.parse = parse_assert;
 		$$ = node;
 	}
-	| LOG STRING_LITERAL ',' expression ',' expression ':' STRING_LITERAL ',' log_args ';' {
+	| LOG STRING_LITERAL ',' expression ',' expression ':' STRING_LITERAL log_args ';' {
 		DBG("In LOG statement: %s\n", $8);
 		tree_t* node = (tree_t*)create_node("log", LOG_TYPE, sizeof(struct tree_log), &@$);
 		node->log.log_type = $2;
 		node->log.level = $4;
 		node->log.group = $6;
 		node->log.format = $8;
-		node->log.args = $10;
+		node->log.args = $9;
 		node->common.print_node = print_log;
 		node->common.parse = parse_log;
 		node->common.translate = translate_log;
@@ -3388,7 +3388,7 @@ void insert_array_index(object_attr_t* attr, symtab_t table) {
 	if ((array_attr != NULL) && (array_attr->ident != NULL)) {
 		if ((strcmp("index", array_attr->ident) == 0) ||
 				strcmp("indexvar", array_attr->ident) == 0) {
-			fprintf(stderr, "error: duplicate assignment to parameter '%s'\n", array_attr->ident);
+			fprintf(stderr, "error: duplicate assignment to parameter '%s', line = %d\n", array_attr->ident, __LINE__);
 			/* TODO: handle the error*/
 			return;
 		}

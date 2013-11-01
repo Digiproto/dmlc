@@ -1364,7 +1364,7 @@ void parse_struct_top(tree_t* node, symtab_t table) {
 	attr->table = node->struct_tree.table;
 	attr->common.node = node;
 	node->common.attr = attr;
-	symbol_insert(table, node->ident.str, STRUCT_TYPE, attr);
+	symbol_insert(table, node->ident.str, STRUCT_T, attr);
 
 	/* parse the struct elements, and insert them into table*/
 	parse_top_struct_cdecl(node, table);

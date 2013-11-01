@@ -2249,8 +2249,10 @@ void parse_extern_cdecl_or_ident(tree_t* node, symtab_t table) {
 			/* in simics there can like "extern VNULL "*/
 			if ((decl->var_name) &&
 					((tmp->cdecl.basetype) && (tmp->cdecl.decl == NULL))) {
-				if (symbol_insert(table, decl->var_name, decl->common.categ, decl))
-					error("duplicate '%s'\n", decl->var_name);
+				if (symbol_insert(table, decl->var_name, decl->common.categ, decl)) {
+					//wa("duplicate '%s'\n", decl->var_name);
+					return;
+				}
 			}
 			else {
 				free(decl);
@@ -2269,8 +2271,10 @@ void parse_extern_cdecl_or_ident(tree_t* node, symtab_t table) {
 	else {
 		if ((decl->var_name) && (decl->common.no_decalare == 0)) {
 				int rt = symbol_insert(table, decl->var_name, decl->common.categ, decl);
-				if (rt)
-					error("duplicate '%s'\n", decl->var_name);
+				if (rt) {
+					//error("duplicate '%s'\n", decl->var_name);
+					return;
+				}
 		}
 	}
 
