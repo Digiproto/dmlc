@@ -3493,7 +3493,7 @@ static int dml_obj_type(symbol_t symbol) {
         case DATA_TYPE:
         case METHOD_TYPE:
         case PARAMETER_TYPE:
-	case OBJECT_TYPE:
+		case OBJECT_TYPE:
             refer_type = type;
             break;
         default:
@@ -3507,7 +3507,6 @@ static int find_dml_obj(symtab_t table, const char* name) {
 	assert(table != NULL); assert(name != NULL);
 	symbol_t symbol = symbol_find_notype(table, name);
 	int obj_type = 0;
-	if (symbol)
 	if (symbol) {
 		obj_type = dml_obj_type(symbol);
 		if (obj_type) {

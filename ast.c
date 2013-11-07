@@ -2143,8 +2143,8 @@ void print_pos (int i)
 void print_sibling(tree_t* node, int pos) {
 	if (node->common.sibling) {
 		tree_t* sibling = node->common.sibling;
-		DEBUG_BLACK("Line: %d, name: %s\n", __LINE__, sibling->common.name);
-		sibling->common.print_node(sibling, pos);
+		if (sibling->common.print_node)
+			sibling->common.print_node(sibling, pos);
 	}
 
 	return;
@@ -2625,8 +2625,8 @@ void print_expr_brack(tree_t* node, int pos) {
 	}
 	if (node->expr_brack.expr_in_brack) {
 		expr = node->expr_brack.expr_in_brack;
-		DEBUG_BLACK("Line = %d, name: %s\n", __LINE__, expr->common.name);
-		expr->common.print_node(expr, pos);
+		if (expr->common.print_node)
+			expr->common.print_node(expr, pos);
 	}
 
 	print_sibling(node, pos);
@@ -2773,10 +2773,12 @@ void print_select(tree_t* node, int pos) {
 		tree_t* block = node->select.where_block;
 		if ((block->common.type) == BLOCK_TYPE) {
 			tree_t* statement = block->block.statement;
-			statement->common.print_node(statement, (pos - 1));
+			if (statement && statement->common.print_node)
+				statement->common.print_node(statement, (pos - 1));
 		}
 		else {
-			block->common.print_node(block, (pos - 1));
+			if (block->common.print_node)
+				block->common.print_node(block, (pos - 1));
 		}
 	}
 
@@ -2788,10 +2790,12 @@ void print_select(tree_t* node, int pos) {
 		tree_t* block = node->select.else_block;
 		if ((block->common.type) == BLOCK_TYPE) {
 			tree_t* statement = block->block.statement;
-			statement->common.print_node(statement, (pos - 1));
+			if (statement && statement->common.print_node)
+				statement->common.print_node(statement, (pos - 1));
 		}
 		else {
-			block->common.print_node(block, (pos - 1));
+			if (block->common.print_node)
+				block->common.print_node(block, (pos - 1));
 		}
 	}
 
@@ -3298,10 +3302,12 @@ void print_try_catch(tree_t* node, int pos) {
 		tree_t* try = node->try_catch.try_block;
 		if (try->common.type == BLOCK_TYPE) {
 			tree_t* statement = try->block.statement;
-			statement->common.print_node(statement, (pos -1));
+			if (statement && statement->common.print_node)
+				statement->common.print_node(statement, (pos -1));
 		}
 		else {
-			try->common.print_node(try, (pos - 1));
+			if (try->common.print_node)
+				try->common.print_node(try, (pos - 1));
 		}
 	}
 
@@ -3313,10 +3319,12 @@ void print_try_catch(tree_t* node, int pos) {
 		tree_t* catch = node->try_catch.catch_block;
 		if (catch->common.type == BLOCK_TYPE) {
 			tree_t* statement = catch->block.statement;
-			statement->common.print_node(statement, (pos - 1));
+			if (statement && statement->common.print_node)
+				statement->common.print_node(statement, (pos - 1));
 		}
 		else {
-			catch->common.print_node(catch, (pos -1));
+			if (catch->common.print_node)
+				catch->common.print_node(catch, (pos -1));
 		}
 	}
 
@@ -3574,10 +3582,12 @@ void print_while(tree_t* node, int pos) {
 		tree_t* block = node->do_while.block;
 		if ((block->common.type) == BLOCK_TYPE) {
 			tree_t* statement = block->block.statement;
-			statement->common.print_node(statement, pos);
+			if (statement && statement->common.print_node)
+				statement->common.print_node(statement, pos);
 		}
 		else {
-			block->common.print_node(block, pos);
+			if (block->common.print_node)
+				block->common.print_node(block, pos);
 		}
 	}
 
@@ -3645,10 +3655,12 @@ void print_default(tree_t* node, int pos) {
 		tree_t* block = node->default_tree.block;
 		if ((block->common.type) == BLOCK_TYPE) {
 			tree_t* statement = block->block.statement;
-			statement->common.print_node(statement, pos);
+			if (statement && statement->common.print_node)
+				statement->common.print_node(statement, pos);
 		}
 		else{
-			block->common.print_node(block, pos);
+			if (block->common.print_node)
+				block->common.print_node(block, pos);
 		}
 	}
 
@@ -3678,10 +3690,12 @@ void print_switch(tree_t* node, int pos) {
 		tree_t* block = node->switch_tree.block;
 		if ((block->common.type) == BLOCK_TYPE) {
 			tree_t* statement = block->block.statement;
-			statement->common.print_node(statement, pos);
+			if (statement && statement->common.print_node)
+				statement->common.print_node(statement, pos);
 		}
 		else {
-			block->common.print_node(block, pos);
+			if (block->common.print_node)
+				block->common.print_node(block, pos);
 		}
 	}
 
@@ -3706,10 +3720,12 @@ void print_case(tree_t* node, int pos) {
        tree_t* block = node->case_tree.block;
        if ((block->common.type) == BLOCK_TYPE) {
            tree_t* statement = block->block.statement;
-           statement->common.print_node(statement, pos);
+		   if (statement && statement->common.print_node)
+			   statement->common.print_node(statement, pos);
        }
        else {
-           block->common.print_node(block, pos);
+		   if (block->common.print_node)
+			   block->common.print_node(block, pos);
        }
    }
 
@@ -3753,10 +3769,12 @@ void print_for(tree_t* node, int pos) {
 		tree_t* block = node->for_tree.block;
 		if ((block->common.type) == BLOCK_TYPE) {
 			tree_t* statement = block->block.statement;
-			statement->common.print_node(statement, pos);
+			if (statement && statement->common.print_node)
+				statement->common.print_node(statement, pos);
 		}
 		else {
-			block->common.print_node(block, pos);
+			if (block->common.print_node)
+				block->common.print_node(block, pos);
 		}
 	}
 
@@ -3783,10 +3801,12 @@ void print_do_while(tree_t* node, int pos) {
 		tree_t* block = node->do_while.block;
 		if ((block->common.type) == BLOCK_TYPE) {
 			tree_t* statement = block->block.statement;
-			statement->common.print_node(statement, pos);
+			if (statement && statement->common.print_node)
+				statement->common.print_node(statement, pos);
 		}
 		else {
-			block->common.print_node(block, pos);
+			if (block->common.print_node)
+				block->common.print_node(block, pos);
 		}
 	}
 
@@ -3822,10 +3842,12 @@ void print_layout(tree_t* node, int pos) {
 		tree_t* block = node->layout.block;
 		if ((block->common.type) == BLOCK_TYPE) {
 			tree_t* layout_decl = block->block.statement;
-			layout_decl->common.print_node(layout_decl, (pos - 1));
+			if (layout_decl && layout_decl->common.print_node)
+				layout_decl->common.print_node(layout_decl, (pos - 1));
 		}
 		else {
-			block->common.print_node(block, (pos - 1));
+			if (block->common.print_node)
+				block->common.print_node(block, (pos - 1));
 		}
 	}
 
@@ -4086,10 +4108,12 @@ void print_if_else(tree_t* node, int pos) {
 		tree_t* if_block = node->if_else.if_block;
 		if (if_block->common.type == BLOCK_TYPE) {
 			tree_t* statement = if_block->block.statement;
-			statement->common.print_node(statement, (pos - 1));
+			if (statement && statement->common.print_node)
+				statement->common.print_node(statement, (pos - 1));
 		}
 		else {
-			if_block->common.print_node(if_block, (pos - 1));
+			if (if_block->common.print_node)
+				if_block->common.print_node(if_block, (pos - 1));
 		}
 	}
 
@@ -4104,10 +4128,12 @@ void print_if_else(tree_t* node, int pos) {
 		tree_t* block = node->if_else.else_block;
 		if (block->common.type == BLOCK_TYPE) {
 			tree_t* statement = block->block.statement;
-			statement->common.print_node(statement, (pos - 1));
+			if (statement && statement->common.print_node)
+				statement->common.print_node(statement, (pos - 1));
 		}
 		else {
-			block->common.print_node(block, (pos - 1));
+			if (block->common.print_node)
+				block->common.print_node(block, (pos - 1));
 		}
 	}
 
@@ -4143,7 +4169,7 @@ void print_method (tree_t* node, int pos) {
 	if (node->method.block) {
 		tree_t* block = node->method.block;
 		tree_t* statement = block->block.statement;
-		if (statement)
+		if (statement && (statement->common.print_node))
 			statement->common.print_node(statement, --pos);
 	}
 
@@ -4385,10 +4411,12 @@ void print_foreach(tree_t* node, int pos) {
 		tree_t* block = node->foreach.block;
 		if (block->common.type == BLOCK_TYPE) {
 			tree_t* statement = block->block.statement;
-			statement->common.print_node(statement, (pos -1));
+			if (statement && statement->common.print_node)
+				statement->common.print_node(statement, (pos -1));
 		}
 		else {
-			block->common.print_node(block, (pos - 1));
+			if (block->common.print_node)
+				block->common.print_node(block, (pos - 1));
 		}
 	}
 
@@ -4413,10 +4441,12 @@ void print_label(tree_t* node, int pos) {
 		tree_t* block = node->label.block;
 		if (block->common.type == BLOCK_TYPE) {
 			tree_t* statement = block->block.statement;
-			statement->common.print_node(statement, (pos - 1));
+			if (statement && statement->common.print_node)
+				statement->common.print_node(statement, (pos - 1));
 		}
 		else {
-			block->common.print_node(block, (pos -1));
+			if (block->common.print_node)
+				block->common.print_node(block, (pos -1));
 		}
 	}
 
@@ -4593,7 +4623,8 @@ void print_struct(tree_t* node, int pos) {
 
 	if (node->struct_tree.block) {
 		tree_t* block = node->struct_tree.block;
-		block->common.print_node(block, --pos);
+		if (block->common.print_node)
+			block->common.print_node(block, --pos);
 	}
 
 	print_sibling(node, pos);
@@ -4617,9 +4648,8 @@ void print_dml(tree_t* node, int pos) {
 			node->common.name, node->dml.version, pos);
 	if (node->common.child) {
 		tree_t* child = node->common.child;
-		DEBUG_BLACK("In %s, line = %d, dml child name: %s\n",
-				__FUNCTION__, __LINE__, child->common.name);
-		child->common.print_node(child, pos);
+		if (child->common.print_node)
+			child->common.print_node(child, pos);
 	}
 
 	print_sibling(node, pos);
