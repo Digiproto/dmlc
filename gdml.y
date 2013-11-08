@@ -376,7 +376,8 @@ device_statement
 
 object
 	: BANK maybe_objident istemplate {
-        object_attr_t* attr = create_object(current_table, "bank", $2->ident.str, BANK_TYPE,
+		const char* name = ($2 == NULL) ? strdup("no_name_bank") : $2->ident.str;
+        object_attr_t* attr = create_object(current_table, "bank", name, BANK_TYPE,
                                             sizeof(struct tree_bank), sizeof(bank_attr_t), &@$);
 
         if (attr == NULL) {
@@ -384,10 +385,10 @@ object
         } else {
             tree_t* node = attr->common.node;
             if (attr->common.is_defined == 0) {
-                node->bank.name = $2->ident.str;
+                node->bank.name = name;
 
-                attr->common.name = $2->ident.str;
-                symbol_insert(current_table, $2->ident.str, BANK_TYPE, attr);
+                attr->common.name = name;
+                symbol_insert(current_table, name, BANK_TYPE, attr);
             }
             node->bank.templates = create_template_list(node->bank.templates, $3);
             current_object_node = node;
