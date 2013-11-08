@@ -7,6 +7,7 @@ INCLUDE = -I. -I./backend/
 BUILD_DIR = build
 BUILD_DIRS_SKYEYE = $(patsubst %,$(BUILD_DIR)/skyeye/%,$(shell find backend -type d))
 BUILD_DIRS_QEMU = $(patsubst %,$(BUILD_DIR)/qemu/%,$(shell find backend -type d))
+BUILD_DIRS_SYSTEMC = $(patsubst %,$(BUILD_DIR)/systemc/%,$(shell find backend -type d))
 TARGET_NAME = dmlc
 
 # remove DEBUG information
@@ -25,6 +26,7 @@ BACKEND_NUM = 1
 TARGETS = $(TARGET_NAME)_qemu
 else
 ifeq ($(PLATFORM), systemc)
+BACKEND_NUM = 3
 TARGETS = $(TARGET_NAME)_systemc
 else
 ifeq ($(PLATFORM),all)
@@ -78,7 +80,7 @@ skyeye: Makefile.build $(BUILD_DIRS_SKYEYE) $(TARGET_NAME)_skyeye
 qemu: Makefile.build $(BUILD_DIRS_QEMU) $(TARGET_NAME)_qemu
 	@echo [qemu] build finished.
 
-qemu: Makefile.build $(BUILD_DIRS_SYSTEMC) $(TARGET_NAME)_systemc
+systemc: Makefile.build $(BUILD_DIRS_SYSTEMC) $(TARGET_NAME)_systemc
 	@echo [systemc] build finished.
 
 ifneq ($(MAKECMDGOALS),clean)
