@@ -3,6 +3,8 @@ CC = gcc
 #CFLAGS = -g
 CFLAGS = -g -O2 -Werror-implicit-function-declaration -Werror=return-type \
 		-Wmissing-field-initializers -Wuninitialized
+#CFLAGS = -g -O0 -Werror-implicit-function-declaration -Werror=return-type \
+#		-Wmissing-field-initializers -Wuninitialized
 INCLUDE = -I. -I./backend/
 BUILD_DIR = build
 BUILD_DIRS_SKYEYE = $(patsubst %,$(BUILD_DIR)/skyeye/%,$(shell find backend -type d))

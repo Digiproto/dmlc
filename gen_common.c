@@ -488,7 +488,7 @@ void translate_after_call(tree_t *t) {
 }
 
 static void process_method_parameters(method_attr_t *m, int alias) {
-	int index;
+	int index = 0;
 	symbol_t sym;
 	symtab_t table;
 	int i;

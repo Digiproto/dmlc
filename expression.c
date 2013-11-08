@@ -3120,13 +3120,6 @@ expr_t* check_multiplicative_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	return expr;
 }
 
-static cdecl_t* get_array_type(cdecl_t* arr_type) {
-	assert(arr_type!= NULL);
-	cdecl_t* type = arr_type->common.bty;
-	if (is_arith_type(type))
-		return type;
-}
-
 static int array_type_compatible(cdecl_t* type1, cdecl_t* type2);
 static int two_type_compatible(cdecl_t* type1, cdecl_t* type2) {
 	assert(type1 != NULL); assert(type2 != NULL);
@@ -3566,7 +3559,7 @@ static cdecl_t* check_parameter_type(symbol_t symbol, expr_t* expr) {
 	expr->val = (value_t*)gdml_zmalloc(sizeof(value_t));
 	parameter_attr_t* parameter = (parameter_attr_t*)(symbol->attr);
 	paramspec_t* spec = parameter->param_spec;
-	param_type_t param_type = spec->value->type;
+	param_type_t param_type = 0;
 	if (parameter->is_original) {
 		if (spec == NULL) {
 			type->common.categ = NO_TYPE;
