@@ -1166,13 +1166,25 @@ void parse_implement(tree_t* node, symtab_t table) {
 
 void parse_bitorder(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
+	static int bitorder_num = 0;
 
-	if (symbol_defined(table, "bitorder"))
+	/* user can defined birorder only once, but if usr not defined it
+	 * it will be le. actually, in simics, it define a bitorder with le value
+	 * and usr can define other value.
+	 * */
+	if (bitorder_num > 2) {
 		error("name collision on 'bitorder'\n");
-
-	bitorder_attr_t* attr = (bitorder_attr_t*)gdml_zmalloc(sizeof(bitorder_attr_t));
-	attr->name = strdup("bitorder");
+	}
+	bitorder_attr_t* attr = NULL;
+	if (symbol_defined(table, "bitorder")) {
+		symbol_t symbol = symbol_find(table, "bitorder", BITORDER_TYPE);
+		attr = symbol->attr;
+	} else {
+		attr = (bitorder_attr_t*)gdml_zmalloc(sizeof(bitorder_attr_t));
+		attr->name = strdup("bitorder");
+	}
 	attr->endian = node->bitorder.endian;
+	bitorder_num++;
 
 	if ((strcmp(attr->endian, "le") == 0) || (strcmp(attr->endian, "be") == 0)) {
 		attr->endian = node->ident.str;
