@@ -1,0 +1,50 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+// 
+// Copyright 2010-2011 Intel Corporation
+dml 1.2;
+
+device i2c_simple;
+
+parameter desc = "a simple i2c device";
+
+parameter documentation = "only a simple i2c client";
+
+import "utility.dml";
+import "i2c.dml";
+
+connect i2c_bus {
+	interface i2c_bus;
+}
+
+attribute read_value {
+    parameter documentation = "Value to return on reads.";
+    parameter allocate_type = "uint8";
+}
+
+attribute written_value {
+    parameter documentation = "Last byte written to this device.";
+    parameter allocate_type = "uint8";
+}
+
+implement i2c_device {
+    method set_state(i2c_device_state_t state, uint8 address) -> (int ret) {
+        ret = 0;
+    }
+    method read_data() -> (uint8 value) {
+        value = $read_value;
+    }
+    method write_data(uint8 value) {
+        $written_value = value;
+    }
+}
+
+method post_init() {
+//    local int res;
+    if ($i2c_bus.obj) {
+//        res = $i2c_bus.i2c_bus.register_device($dev.obj, 0x50, 0xff, 1);
+        $i2c_bus.i2c_bus.register_device($dev.obj, 0x50, 0xff, 1);
+    } 
+}
+

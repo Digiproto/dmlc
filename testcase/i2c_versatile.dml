@@ -1,0 +1,164 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+// 
+// Copyright 2010-2011 Intel Corporation
+dml 1.2;
+
+device i2c_versatile;
+
+parameter desc = "name of device";
+
+parameter documentation = "Longer description that will appear in the help";
+
+import "utility.dml";
+import "i2c.dml";
+
+connect i2c_bus {
+	interface i2c_bus;
+}
+
+attribute address {
+	parameter documentation = "address on the i2c bus.";
+	parameter configuration = "required";
+	parameter allocate_type = "uint8";
+}
+
+attribute out_value {
+	parameter documentation = "value to return on reads";
+	parameter allocate_type = "uint8";
+}
+
+attribute in_value {
+	parameter documentation = "last byte written to this device";
+	parameter allocate_type = "uint8";
+}
+
+attribute last_clock {
+	parameter documentation = "store the last value of las scl";
+	parameter allocate_type = "uint8";
+}
+
+attribute last_data {
+	parameter documentation = "store the data";
+	parameter allocate_type = "uint8";
+}
+
+attribute state {
+	parameter documentation = "store the i2c state";
+	parameter allocate_type = "uint8";
+}
+
+attribute buffer {
+	parameter documentation = "store the data that get from sda";
+	parameter allocate_type = "uint8";
+}
+
+method i2c_scl_set() {
+	/* if the scl do not change or have no cycle, we do nothing, only
+	   store the clock */
+	if ($last_clock == ($out_value & 1) || (($out_value & 1) == 0)) {
+		$last_clock = $out_value & 1;
+	}
+	else {
+		$last_clock = $out_value & 1;
+		if (($state > 0) && ($state < 9)) {
+			/* get the adress about the i2c_device */
+			$buffer = ($buffer << 1) | $last_data;
+			$state++;
+		}
+		else if ($state == 9) {
+			/* when get the adress start the i2c_device
+			   when get the data, sent them to i2c_device */
+			if ($address <= 0) {
+				$address = $buffer;
+				$i2c_bus.i2c_bus.start($address);
+			} else {
+				$i2c_bus.i2c_bus.write_data($buffer);
+			}
+			if (($address &1) != 0) {
+				/* when the address is odd, i2c_bus recive data from i2c_device */
+				$state = 10;
+			}
+			else {
+				/* when address is not odd, i2c_bus write data to i2c_device */
+				$state = 1;
+			}
+		}
+		else if ($state == 10) {
+			$buffer = $i2c_bus.i2c_bus.read_data();
+			$state++;
+		}
+		else if ($state > 10 && $state < 18) {
+			$in_value = $buffer >> 7;
+			$state++;
+			$buffer <<= 1;
+		}
+		else if ($state == 18) {
+			$state = 10;
+			if ($in_value != 0) {
+				$state = 19;
+			}
+		}
+	}
+}
+
+method i2c_sda_set() {
+	local int8 value = $out_value >> 1 ;
+	if ((value == $last_data) || ($last_clock == 0)) {
+		$last_data = value;	
+	}
+	else if (value == 0) {
+		$state = 1;
+		$address = 0;
+	}
+	else if (value != 0){
+		$i2c_bus.i2c_bus.stop();
+	}
+}
+
+// Basic bank declaration
+bank regs {
+	parameter register_size = 4;
+	// USER-TODO: Add more register declarations here.  Usually use just one
+	// line per register, containing size (optional), offset, any templates
+	// implemented, and a short description. Use the read_write template for
+	// normal registers where a read usually returns the last written value,
+	// and the unimplemented template for registers that you haven't yet
+	// implemented.
+	register sb_control @ 0x00  "read/set serial control bits: bit[0] is SCL Bit[1] is SDA" {
+		method read()->(typeof($this) value) {
+			value = ($out_value & 1) | ($in_value << 1);
+		}
+		method write(typeof($this) value) {
+			$out_value |= value & 3;
+		}
+		method after_write(generic_transaction_t* memop) {
+			call $i2c_scl_set();
+			call $i2c_sda_set();
+		}
+}
+
+	register sb_constrlc @ 0x04 "clear serial control bits: bit[0] is SCL, Bit[1] is SDA" {
+		method write(typeof($this) value) {
+			$out_value &= ~value;
+		}
+		method after_write(generic_transaction_t* memop) {
+			call $i2c_scl_set();
+			call $i2c_sda_set();
+		}
+	}
+}
+
+method init() {
+	$last_clock = 1;
+	$last_data = 1;
+	$address = 0;
+}
+
+// USER-TODO: Add init() and post_init() methods here, if needed.
+// init() will be run to set the empty state of the model, before any
+// configuration or checkpointed attributes are set.  post_init() is run after
+// all configuration attributes have been set.  This happens both when the
+// initial configuration is set and when the configuration is loaded from a
+// checkpoint.

@@ -1,0 +1,307 @@
+// This Software is part of Wind River Simics. The rights to copy, distribute,
+// modify, or otherwise make use of this Software may be licensed only
+// pursuant to the terms of an applicable Wind River license agreement.
+// 
+// Copyright 2010-2011 Intel Corporation
+dml 1.2;
+
+device pl011_uart;
+
+parameter desc = "pl011 uart device";
+
+parameter documentation = "In versatilepb, uart is pl011";
+
+import "utility.dml";
+import "simics/devs/signal.dml";
+
+constant PL011_FLAG_TXFE = 0x80;
+constant PL011_FLAG_TXFF = 0x20;
+
+connect intr_cpu {
+	parameter documentation = "Interrupt target port";
+	parameter configuration = "required";
+	interface signal;
+}
+
+connect sdevice {
+	parameter documentation = "serial device";
+	parameter configuration = "required";
+	interface serial_device;
+}
+
+method pl011_update() {
+	local uint32 flags;
+	flags = $regs.ICR & $regs.IMSC;
+	if (flags == 0) {
+		$intr_cpu.signal.signal_lower();
+	}
+	else {
+		$intr_cpu.signal.signal_raise();
+	}
+}
+
+method pl011_set_read_trigger() {
+	$regs.read_trigger = 1;
+}
+
+method pl011_can_receive()->(int value) {
+	if (($regs.LCR & 0x10) != 0) {
+		value = ($regs.read_count < 16);
+	}
+	else {
+		value = ($regs.read_count < 1);
+	}
+}
+
+method pl011_put_fifo(uint32 value) {
+	local int slot = 0;
+	slot = $regs.read_pos + $regs.read_count;
+	if (slot >= 16) {
+		slot -= 16;
+	}
+	$regs.read_fifo[slot] = value;
+	$regs.read_count++;
+	$regs.FR &= ~0x10;
+
+	if (($regs.CR & 0x10) || ($regs.read_count == 16)) {
+		$regs.FR |= 0x40;
+	}
+	if (($regs.read_count) == $regs.read_trigger) {
+		$regs.ICR |= 0x10;
+		call $pl011_update();
+	}
+}
+
+implement serial_device {
+	method write(int value) ->(int ret) {
+		call $pl011_can_receive()->(ret);
+		if(ret) {
+			call $pl011_put_fifo(value);
+		}
+	}
+	method receive_ready() {
+	}
+}
+
+bank regs {
+    parameter register_size = 4;
+    register UartDR @ 0x00  "Data Register" {
+		method read()->(typeof($this) value) {
+			$regs.FR &= ~0x40;
+			value = $read_fifo[$regs.read_pos];
+			if ($regs.read_count > 0) {
+				$regs.read_count--;	
+				if (++($regs.read_pos) == 16) {
+					$regs.read_pos = 0;
+				}
+			}
+			if ($regs.read_count == 0) {
+				$regs.FR |= 0x10;
+			}
+			if ($regs.read_count == $regs.read_trigger - 1) {
+				$regs.ICR &= ~0x10;
+			}
+			call $pl011_update();
+
+		}
+		method write(typeof($this) value) {
+			$sdevice.serial_device.write(value);
+			$regs.ICR |= 0x20;
+			call $pl011_update();
+		}
+	}
+	register RSR_CR @ 0x04 "Receive status/error clear register" {
+		method read()->(typeof($this) value) {
+			value = 0;
+		}
+		method write(typeof($this) value) {
+			$this = value;
+		}
+	}
+	register FR @ 0x18  "Flag register" {
+		method read()->(typeof($this) value) {
+			//value = 0x90;
+			value = $this;
+		}
+		method write(typeof($this) value) {
+		}
+	}
+	register ILPR @ 0x20 "IrDA low-power counter register" {
+		method read()->(typeof($this) value) {
+			value = $this;
+		}
+		method write(typeof($this) value) {
+			$this = value;
+		}
+	}
+	register IBRD @ 0x24  "Integer baud rate register" {
+		method read()->(typeof($this) value) {
+			value = $this;
+		}
+		method write(typeof($this) value) {
+			$this = value;
+		}
+	}
+	register FBRD @ 0x28  "Fracitional baud rate register" {
+		method read()->(typeof($this) value) {
+			value = $this;
+		}
+		method write(typeof($this) value) {
+			$this = value;
+		}
+	}
+	register LCR @ 0x2C  "Line control register" {
+		method read()->(typeof($this) value) {
+			value = $this;
+		}
+		method write(typeof($this) value) {
+			$this = value;
+		}
+		method after_write(generic_transaction_t *memop) {
+			call $pl011_set_read_trigger();
+		}
+	}
+	register CR @ 0x30 "Control register" {
+		parameter hard_reset_value = 0x300;
+		method read()->(typeof($this) value) {
+			value = $this;
+		}
+		method write(typeof($this) value) {
+			$this = value;
+		}
+	}
+	register IFLS @ 0x34  "Interrupt FIFO level select register" {
+		parameter hard_reset_value = 0x12;
+		method read()->(typeof($this) value) {
+			value = $this;
+		}
+		method write(typeof($this) value) {
+			$this = value;
+		}
+		method after_write(generic_transaction_t *memop) {
+			call $pl011_set_read_trigger();
+		}
+	}
+	register IMSC @ 0x38 "Interrupt mask set/clear register" {
+		method read()->(typeof($this) value) {
+			value = $this;
+		}
+		method write(typeof($this) value) {
+			$this = value;
+		}
+		method after_write(generic_transaction_t *memop) {
+			call $pl011_update();
+		}
+	}
+	register RIS @ 0x3C  "Raw interrupt status register" {
+		method read()->(typeof($this) value) {
+			value = $regs.ICR;
+		}
+		method write(typeof($this) value) {
+			/*ignore*/
+		}
+	}
+	register MIS @ 0x40  "Masked interrupt status register" {
+		method read()->(typeof($this) value) {
+			value = $regs.ICR & $regs.IMSC;
+		}
+		method write(typeof($this) value) {
+		}
+	}
+	register ICR @ 0x44  "Interrupt clear register" {
+		method write(typeof($this) value) {
+			$this &= ~value;
+		}
+		method read() ->(typeof($this) value) {
+			
+		}
+		method after_write(generic_transaction_t *memop) {
+			call $pl011_update();
+		}
+	}
+	register DMACR @ 0x48 "DMA control register" {
+		method read()->(typeof($this) value) {
+			value = $this;
+		}
+		method write(typeof($this) value) {
+			$this = value;
+			if ((value & 3) != 0) {
+				log "info": "pl011: DMA not implement";
+			}
+		}
+	}
+	register PID0 @ 0xFE0  "UARTPeriphID0 register" {
+		method read()->(typeof($this) value) {
+			value = 0x11;
+		}
+		method write(typeof($this) value) {
+		}
+	}
+	register PID1 @ 0xFE4  "UARTPeriphID1 register" {
+		method read()->(typeof($this) value) {
+			value = 0x10;
+		}
+		method write(typeof($this) value) {
+		}
+	}
+	register PID2 @ 0xFE8  "UARTPeriphID2 register" {
+		method read()->(typeof($this) value) {
+			value = 0x14;
+		}
+		method write(typeof($this) value) {
+		}
+	}
+	register PID3 @ 0xFEC  "UARTPeriphID3 register" {
+		method read()->(typeof($this) value) {
+			value = 0x0;
+		}
+		method write(typeof($this) value) {
+		}
+	}
+	register PCID0 @ 0xFF0  "UARTPCellID0 register" {
+		method read()->(typeof($this) value) {
+			value = 0x0D;
+		}
+		method write(typeof($this) value) {
+		}
+	}
+	register PCID1 @ 0xFF4  "UARTPCellID1 register" {
+		method read()->(typeof($this) value) {
+			value = 0xF0;
+		}
+		method write(typeof($this) value) {
+		}
+	}
+	register PCID3 @ 0xFF8  "UARTPCellID2 register" {
+		method read()->(typeof($this) value) {
+			value = 0x05;
+		}
+		method write(typeof($this) value) {
+		}
+	}
+	register PCID4 @ 0xFFC "UARTPCellID3 register" {
+		method read()->(typeof($this) value) {
+			value = 0xB1;
+		}
+		method write(typeof($this) value) {
+		}
+	}
+	register read_trigger @ undefined;
+	register read_count @ undefined;
+	register read_pos @ undefined;
+	register read_fifo[16] @undefined;
+}
+
+method init() {
+	$regs.read_trigger = 1;
+	$regs.IFLS = 0x12;
+	$regs.FR = 0x90;
+	$regs.CR = 0x300;
+}
+
+// USER-TODO: Add init() and post_init() methods here, if needed.
+// init() will be run to set the empty state of the model, before any
+// configuration or checkpointed attributes are set.  post_init() is run after
+// all configuration attributes have been set.  This happens both when the
+// initial configuration is set and when the configuration is loaded from a
+// checkpoint.
