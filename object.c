@@ -808,6 +808,9 @@ static const char* get_allocate_type(const char *alloc_type, attribute_t* attr) 
 	} else if(!strcmp(alloc_type, "\"int64\"")) {
 		type = "int64";
 		attr->alloc = LONG_T;
+	} else if (!strcmp(alloc_type, "\"bool\"")) {
+		type = "bool";
+		attr->alloc = INT_T;
 	}else {
 		fprintf(stderr, "The attribute alloc type not wright '%s'\n", alloc_type);
 		exit(-1);
