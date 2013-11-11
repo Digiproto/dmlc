@@ -11,6 +11,26 @@ constant OU = "ou";
 constant BANG = "bang";
 
 import "utility.dml";
+//import "pci-bridge.dml";
+
+template channel {
+	//parameter configuration = "required";
+	interface mii;
+}
+template chn_regs {
+	parameter chn_no default undefined;
+	//parameter function = 0;
+	parameter register_size = 1;
+	register rhr_thr_ldl	@ 0x0 "recieve holding register, transmit holding register or div latch low byte" {
+	method write(val) {
+		local uint8 tm_idx;
+		log "info", 2 : "console not conncet,send to console fail";
+	}
+	method read() -> (val) {
+		log "info", 2 : "cpu read 0x%x from rhr success",val;
+		}
+	}//end register rhr_thr_ldl
+}
 
 bank regs {
     parameter register_size = 4;
