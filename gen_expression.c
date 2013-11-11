@@ -214,17 +214,36 @@ void translate_expr_brack_direct(tree_t *t) {
 	object_t *obj;
 	symbol_t sym;
 	ref_ret_t ref_ret;
+	object_t *tmp;
 
 	node = t->expr_brack.expr;
 	sym = get_ref_sym(node, &ref_ret, NULL);
 	if(sym && sym->type == OBJECT_TYPE) {
 		obj = (object_t *)sym->attr;
 		if(!strcmp(obj->obj_type, "interface")) {
-			ref_name = get_obj_ref(ref_ret.iface); 
-			D("%s->%s", ref_name, ref_ret.method);
-			D("(");
-			ref_name = get_obj_ref(ref_ret.con);
-			D("%s.obj", ref_name);
+			if(!ref_ret.con) {
+				tmp = obj->parent;
+				ref_name = get_obj_ref(tmp);
+				D("%s", ref_name);
+				if(tmp->is_array) {
+						D("[_idx0]");
+				}
+				D(".%s", ref_ret.iface->name);
+				D("->%s", ref_ret.method);
+				D("(");
+				D("%s", ref_name);
+				if(tmp->is_array) {
+						D("[_idx0]");
+				}
+				D(".%s.obj", ref_ret.iface->name);
+			} else {
+				printf_ref(&ref_ret);
+				D(".%s->%s",ref_ret.iface->name, ref_ret.method);
+				D("(");
+				//ref_name = get_obj_ref(tmp);
+				printf_ref(&ref_ret);
+				D(".%s.obj",ref_ret.iface->name);
+			}
 			node = t->expr_brack.expr_in_brack;
 			if(node) {
 				D(", ");
