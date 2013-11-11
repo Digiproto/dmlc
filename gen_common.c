@@ -29,6 +29,7 @@
 
 symtab_t current_table;
 	
+static flow_ctrl_t flow;
 static int no_alias;
 static int no_star = 1;
 static symbol_t SYM;
@@ -89,37 +90,7 @@ static tree_t *reduce(tree_t *t) {
 }
 */
 
-static void printf_ref(ref_info_t *fi){
-	tree_t *node;
-	struct list_head *p;
-	node_info_t *ni;
-	const char *name;
-	symbol_t sym;
-	int i = 0;
-	list_for_each(p,&fi->list){
-		ni = list_entry(p,node_info_t,entry);
-		node = ni->node;
-		if(node->common.type == IDENT_TYPE){
-			name = node->ident.str;	
-		} else if (node->common.type == DML_KEYWORD_TYPE){
-			name = node->common.name;
-		}else {
-			my_DBG("node name %s type %d\n",node->common.name,node->common.type);
-		}
-		if(i == 0){
-			i++;
-			sym = symbol_find(current_table,name,0);
-			if(!sym){
-				my_DBG("no sym %s found in current symtab \n",name);
-			}
-			name = get_symbol_alias(sym);
-			D("%s",name);
-		}else {
-			D("%s",name);
-		}	
-	}
-}
-
+/*
 static void translate_c_ref(tree_t *t) {
 	ref_info_t fi;
 	
@@ -128,7 +99,7 @@ static void translate_c_ref(tree_t *t) {
 	printf_ref(&fi);
 	ref_info_destroy(&fi);
 }
-
+*/
 
 static void translate_parameter(symbol_t sym);
 void translate_quote(tree_t *t) {
@@ -138,6 +109,7 @@ void translate_quote(tree_t *t) {
 	symbol_t sym;
 	object_t *obj;
 	ref_ret_t ref_ret;
+	init_ref_ret(&ref_ret);
 
 	if(node->common.type == IDENT_TYPE) {
 		name = node->ident.str;
@@ -213,11 +185,13 @@ void translate_ref_expr(tree_t *t){
 	const char *name;
 	object_t *obj;
 	ref_ret_t ref_ret;
+	init_ref_ret(&ref_ret);
 
 
 	sym = get_ref_sym(t, &ref_ret, NULL);
 	if(sym && !ref_ret.is_obj){
-		translate_c_ref(t);
+		//translate_c_ref(t);
+		printf_ref(&ref_ret);
 		return;
 	}
 
@@ -228,9 +202,12 @@ void translate_ref_expr(tree_t *t){
 	}
 		
 	if(sym && sym->type == OBJECT_TYPE) {
+		/*
 		obj = (object_t *)sym->attr;
 		name = get_obj_ref(obj);
 		D("%s", name);
+		*/
+		printf_ref(&ref_ret);
 		return;
 	} 
 
@@ -295,6 +272,7 @@ symbol_t  get_call_expr_info(tree_t *node, symtab_t table) {
 	symbol_t tmp;
 	tree_t *t;
 	ref_ret_t ref_ret;
+	init_ref_ret(&ref_ret);
 	
 	if(node->common.type == EXPR_BRACK_TYPE) {
 		t = node->expr_brack.expr;
@@ -303,6 +281,20 @@ symbol_t  get_call_expr_info(tree_t *node, symtab_t table) {
 	}
 	tmp = get_ref_sym(t, &ref_ret, table);
 	return tmp;
+}
+
+static symbol_t  get_call_expr_ref(tree_t *node, ref_ret_t *ref_ret) {
+   symbol_t tmp;
+   tree_t *t;
+   init_ref_ret(ref_ret);
+
+   if(node->common.type == EXPR_BRACK_TYPE) {
+       t = node->expr_brack.expr;
+   } else {
+       t = node;
+   }
+   tmp = get_ref_sym(t, ref_ret, NULL);
+   return tmp;
 }
 
 static int check_param_type(tree_t* node, params_t** list, int args, int in_line) {
@@ -314,7 +306,7 @@ static int check_param_type(tree_t* node, params_t** list, int args, int in_line
 	while (tmp != NULL) {
 		if ((list[i]->is_notype) && (in_line == 0)) {
 			error(" no type for input/output parameter\n");
-			return 1;
+			return 0;
 		}
 		type = list[i]->decl;
 		expr = check_expr(tmp, current_table);
@@ -409,8 +401,9 @@ static void translate_call_common(tree_t *expr, tree_t *ret){
 	tree_t *block = NULL;
 	tree_t *node;
 	method_attr_t *method_attr;
+	ref_ret_t ref_ret;
 
-	method_sym = get_call_expr_info(expr, current_table);
+	method_sym = get_call_expr_ref(expr, &ref_ret);
 	if(method_sym) {
 		method_attr = method_sym->attr;
 		node = method_attr->common.node;	
@@ -423,11 +416,14 @@ static void translate_call_common(tree_t *expr, tree_t *ret){
 		my_DBG("method not found in call \n");
 	}
 
+	/*
 	if (check_method_param(method_sym, expr, ret, 0)) {
 		return;
 	}
 
 	sym = symbol_find(current_table,"exec",TMP_TYPE);
+	*/
+	sym = flow.exec;
 	name = get_symbol_alias(sym);
 	//POS;
 	if(method_sym && (method_sym->type == METHOD_TYPE)) {
@@ -450,7 +446,13 @@ static void translate_call_common(tree_t *expr, tree_t *ret){
 	}
 	D("(_dev");
 	if(obj->is_array) {
-		D(", _idx0");
+       if(!ref_ret.index) {
+           D(", _idx0");
+       } else {
+           D(", ");
+           translate(ref_ret.index);
+       }
+
 	}
     if(expr->common.type == EXPR_BRACK_TYPE) {
 		expr_list = expr->expr_brack.expr_in_brack;
@@ -486,6 +488,10 @@ void translate_after_call(tree_t *t) {
 	/*TODO just ignore timing info */
 	translate_call_common(call, NULL);
 }
+
+static void bind_tmp_type(tree_t *node, tree_t *node2) {
+}
+
 
 static void process_method_parameters(method_attr_t *m, int alias) {
 	int index = 0;
@@ -537,25 +543,58 @@ static void process_method_parameters(method_attr_t *m, int alias) {
 	}
 }
 
-static void process_inline_start(method_attr_t *m, tree_t *input) {
+static void get_expr_type(tree_t *t) {
+        if(t->common.type == CAST_TYPE) {
+                translate(t->cast.ctype);
+        } else {
+                D("typeof( ");
+                translate(t);
+                D(" )");
+        }
+}
+
+static int node_has_type(tree_t *node);
+static void process_inline_start(method_attr_t *m, tree_t *input, tree_t *output, context_t *context) {
 	tree_t *mt = m->common.node;
 	tree_t *params = mt->method.params;
 	tree_t *node;
 	tree_t *node2;
 	const char *name;
 	int i = 0;
+	symbol_t sym;
 
 	node = params->params.in_params;
 	node2 = input;
 	/*dirty start here*/
 	if(node){
 		while(node && node2) {
-			POS;
-			translate(node);
+			/*FIXME: need more general assignment translate*/
+			if(node_has_type(node)) {
+				  translate(node);
+				  POS;
+			} else {
+				  /*just get type info*/
+				  //print_cdecl1(node2, 0, 1);
+				  current_table = context->saved;
+				  get_expr_type(node2);
+				  current_table = context->current;
+				  bind_tmp_type(node, node2);
+				  name = get_cdecl_name(node);
+				  sym = symbol_find_notype(context->current, name);
+				  name = get_symbol_alias(sym);
+				  D(" ");
+				  D("%s", name);
+			}
+
 			D(" = ");
-			D("%s",node2->ident.str);
-			D(";");	
+			/*translate node2*/
+			//D("%s",node2->ident.str);
+			current_table = context->saved;
+			translate(node2);
+			current_table = context->current;
+			D(";");
 			new_line();
+			POS;
 			node = node->common.sibling;
 			node2 = node2->common.sibling;
 		}
@@ -563,14 +602,25 @@ static void process_inline_start(method_attr_t *m, tree_t *input) {
 
 	node = params->params.ret_params;
 	
-	if(node) {
-		while(node) {
-			POS;
-			translate(node);
-			D(";");
-			new_line();
-			node = node->common.sibling;
-		}
+	node2 = output;
+	while(node && node2) {
+				if(node_has_type(node)) {
+						translate(node);
+				} else {
+						current_table = context->saved;
+						get_expr_type(node2);
+						current_table = context->current;
+						bind_tmp_type(node, node2);
+						name = get_cdecl_name(node);
+						sym = symbol_find_notype(current_table, name);
+						name = get_symbol_alias(sym);
+						D(" ");
+						D("%s", name);
+				}
+				D(";");
+				new_line();
+				node = node->common.sibling;
+				node2 = node2->common.sibling;
 	}
 }
 
@@ -988,24 +1038,29 @@ static void process_inline_block(method_attr_t *m) {
 	return;
 }
 
-static void process_inline_end(method_attr_t *m, tree_t *output) {
+static void process_inline_end(method_attr_t *m, tree_t *output, context_t *context) {
 	tree_t *mt = m->common.node;
 	tree_t *params = mt->method.params;
 	tree_t *node;
 	tree_t *node2;
+	const char *name;
+	symbol_t sym;
+
 
 	node = params->params.ret_params;
 	node2 = output;
-	if(node) {
-		while(node && node2) {
-			POS;
-			translate(node2);
-			D(" = ");
-			translate(node);
-			new_line();
-			node = node->common.sibling;
-			node2 = node2->common.sibling;
-		}
+	while(node && node2) {
+		 current_table = context->saved;
+		 translate(node2);
+		 current_table = context->current;
+		 D(" = ");
+		 name = get_cdecl_name(node);
+		 sym = symbol_find_notype(context->current, name);
+		 name = get_symbol_alias(sym);
+		 D("%s;", name);
+		 new_line();
+		 node = node->common.sibling;
+		 node2 = node2->common.sibling;
 	}
 	return;
 }
@@ -1017,42 +1072,52 @@ void translate_inline(tree_t *t) {
 	symtab_t table;
 	object_t *saved_obj;
 	symtab_t saved_table;
+	ref_ret_t dummy;
+	context_t context;
 
-	sym = get_call_expr_info(expr->expr_brack.expr, current_table);
+	sym = get_call_expr_ref(expr->expr_brack.expr, &dummy);
 	if(sym) {
 		my_DBG("sym %s found\n", sym->name);
 	} else {
 		my_DBG("sym not found\n");
 	}
+	/*
 	if(sym->owner != OBJ) {
 		saved_obj = OBJ;				
 	}
 	saved_table = current_table;
+	*/
 	/*get sym info*/
 	//translate(expr);
 	tree_t *expr_list = expr->expr_brack.expr_in_brack;
 	method_attr_t *method = sym->attr;
 	//object_t *obj = SYM->attr;
-	//process_method_parameters(method, 1);	
+	process_method_parameters(method, 1);
+	/*
 	table = method->table;
 	table->parent = current_table;
 	current_table = table;
+	*/
 	/* In inline, the method can be a marco, it will be to expand the
 	 * method code of the calles method at the place of inline call,
 	 * so we should change the method table's parent to the current_table,
 	 * and then check the number and type about method parameters,
 	 * at last, goto the method block to parsing elements and so on*/
+	/*
 	if (check_method_param(sym, expr, ret, 1))
 		return;
+	*/
 	parse_method_block(method->common.node);
 
+	pre_gen_method(sym->owner, method->common.node, &context);
 	enter_scope();
-	process_inline_start(method, expr_list);
+	process_inline_start(method, expr_list, ret, &context);
 	process_inline_block(method);
 	D("\n");
-	process_inline_end(method,ret);
+	process_inline_end(method, ret, &context);
 	D("\n");
 	exit_scope();
+	process_inline_end(method, ret, &context);
 	return;
 }
 
@@ -1188,10 +1253,20 @@ static void  print_cdecl1(tree_t *t, int ret) {
 		print_cdecl2(t->cdecl.decl);
 }
 
+static int node_has_type(tree_t *node) {
+	if(node->cdecl.basetype && node->cdecl.decl) {
+			return 1;
+	} else {
+			return 0;
+	}
+}
+
 static const char *get_cdecl2_name(tree_t *t);
 const char *get_cdecl_name(tree_t *node) {
-		return get_cdecl2_name(node->cdecl.decl);
-	return NULL;
+	if(!node->cdecl.decl && node->cdecl.basetype) {
+			return  get_basetype_type(node->cdecl.basetype);
+	}
+	return get_cdecl2_name(node->cdecl.decl);
 }
 
 const char *get_type_info(tree_t *node) {
@@ -1393,7 +1468,7 @@ void translate_log(tree_t *t) {
 	log_type = node->log.log_type;
 	my_DBG("log type %s\n", log_type);
 	my_DBG("log format %s\n", node->log.format);
-	my_DBG("log args %s\n", node->log.args);
+	//my_DBG("log args %s\n", node->log.args);
 	if(!strcmp(log_type, "\"error\"")) {
 		//D("SIM_log_err(&_dev->obj.qdev, 0, %s, %s);", node->log.format, node->log.args);		
 	}
@@ -1625,6 +1700,7 @@ void do_block_logic(tree_t *block) {
 	D("{\n");
 	symbol_insert(current_table, "exec", TMP_TYPE, NULL); 
 	sym = symbol_find(current_table, "exec", TMP_TYPE);
+	flow.exec = sym;
 	name = get_symbol_alias(sym);
 	tabcount_add(1);
 	POS;
@@ -1701,43 +1777,62 @@ void gen_dml_method_header(object_t *obj, tree_t *m) {
 	gen_method_params(obj, m);
 }
 
-static symtab_t saved_table;
-void pre_gen_method(object_t *obj, tree_t *method) {	
+static inline void context_switch_to(context_t *context, object_t *obj, symtab_t to, symtab_t method_parent) {
+	context->current = to;
+	context->saved = current_table;
+	context->method_parent = method_parent;
+	context->obj = OBJ;
+	current_table = to;
+	OBJ = obj;
+}
+
+
+static inline void context_restore(context_t *context, symtab_t *old) {
+	current_table = context->saved;
+	OBJ = context->obj;
+	*old = context->method_parent;
+}
+
+void pre_gen_method(object_t *obj, tree_t *method, context_t *context) {
 	method_attr_t *attr;
 	symtab_t table;
+	symtab_t old_table;
 
 	attr = method->common.attr;
 	table = attr->table;
-	saved_table = table->parent;
+	old_table = table->parent;
 	table->parent = obj->symtab;
-	current_table = table;
+	context_switch_to(context, obj, table, old_table);
 	my_DBG("method name %s, obj %s, table num %d\n", method->method.name, obj->name, table->table_num);
 	OBJ = obj;
 }
 
-void post_gen_method(object_t *obj, tree_t *method) {
+void post_gen_method(object_t *obj, tree_t *method, context_t *context) {
 	method_attr_t *attr;
 	symtab_t table;
 
 	attr = method->common.attr;
 	table = attr->table;
-	table->parent = saved_table;
-	OBJ = NULL;
+	context_restore(context, &table->parent);
 }
 
 void gen_dml_method(object_t *obj, struct method_name *m) {
 	tree_t *method = m->method;
+	context_t context;
+	/*set up entry condition*/
+	OBJ = obj;
+	current_table = obj->symtab;
 
 	/* we should pase the elements and calcualate the
 	 * expressions that in the method block, as we did
 	 * not do them before */
-	pre_gen_method(obj, method);
+	pre_gen_method(obj, method, &context);
 	parse_method_block(method);
 	gen_dml_method_header(obj, method);
 	do_method_params_alias(obj, method);
 	D("\n");
 	tabcount_set(0);
 	gen_method_block(obj, method);	
-	post_gen_method(obj, method);
+	post_gen_method(obj, method, &context);
 }
 
