@@ -38,6 +38,7 @@ struct tree_t;
 typedef struct node_info {
 	struct list_head entry;
 	tree_t *node;
+	tree_t *index;
 }node_info_t;
 
 typedef struct ref_ret {
@@ -45,14 +46,26 @@ typedef struct ref_ret {
         object_t *con;
         object_t *iface;
         const char *method;
+		ref_info_t *ref;
+		tree_t *index;
+		symbol_t sym;
 } ref_ret_t;
 
+static inline void init_ref_ret(ref_ret_t *fr) {
+		fr->is_obj = 0;
+		fr->con = NULL;
+		fr->iface = NULL;
+		fr->method = NULL;
+		fr->ref = NULL;
+}
 
 void ref_info_init(ref_info_t *info);
-node_info_t *new_node_info(tree_t *node);
+ref_info_t *new_ref_info(void);
+node_info_t *new_node_info(tree_t *node, tree_t *index);
 void add_node_info(ref_info_t *ref, node_info_t *node);
 void ref_info_destroy(ref_info_t *ref);
 void ref_info_print(ref_info_t *fi);
 symbol_t get_ref_sym(tree_t *t, ref_ret_t *ret, symtab_t table);
 void collect_ref_info(tree_t *expr, ref_info_t *fi);
+void printf_ref(ref_ret_t *ref_ret);
 #endif /* __REF_H__ */
