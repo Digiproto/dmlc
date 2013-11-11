@@ -28,13 +28,14 @@ void gen_obj_method_protos(object_t *obj) {
 	struct method_name *mn;
 	tree_t *method;
 	object_t *tmp;
+	context_t context;
 
 	list_for_each(p, &obj->method_generated) {
 		mn = list_entry(p, struct method_name, entry);
 		method = mn->method;
-		pre_gen_method(obj, method);
+		pre_gen_method(obj, method, &context);
 		gen_dml_method_header(obj, method);
-		post_gen_method(obj, method);
+		post_gen_method(obj, method, &context);
 		D(";\n");
 	}
 	list_for_each(p, &obj->childs) {
