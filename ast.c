@@ -258,9 +258,9 @@ static int check_object_place(symtab_t table, int obj_type) {
 
    /* In simics, there are some rules about object:
 	* 1. attribute, bank, implement, connect may only appear in device
-	* 2. register only appear in bank or group
-	* 3. field may only appear in register
-	* 4. interface may only appear in connect */
+	* 2. register only appear in bank group and template
+	* 3. field may only appear in register and template
+	* 4. interface may only appear in connect and template */
 	switch(obj_type) {
 		case BANK_TYPE:
 		case ATTRIBUTE_TYPE:
@@ -269,14 +269,13 @@ static int check_object_place(symtab_t table, int obj_type) {
 			ret = ((type == DEVICE_TYPE) || (type == TEMPLATE_TYPE) || (type == PORT_TYPE)) ? 0 : 1;
 			break;
 		case REGISTER_TYPE:
-			if ((type != BANK_TYPE) && (type != GROUP_TYPE))
-				ret = 1;
+			ret = (type == BANK_TYPE || type == GROUP_TYPE || type == TEMPLATE_TYPE) ? 0 : 1;
 			break;
 		case FIELD_TYPE:
-			ret = (type == REGISTER_TYPE) ? 0 : 1;
+			ret = (type == REGISTER_TYPE || type == TEMPLATE_TYPE) ? 0 : 1;
 			break;
 		case INTERFACE_TYPE:
-			ret = (type == CONNECT_TYPE) ? 0 : 1;
+			ret = (type == CONNECT_TYPE || type == TEMPLATE_TYPE) ? 0 : 1;
 			break;
 		default:
 			ret = 0;
