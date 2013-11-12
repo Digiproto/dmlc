@@ -27,10 +27,11 @@ void count(yyscan_t scanner);
 %option outfile="Lexer.c" header-file="Lexer.h"
 
 %option bison-bridge bison-locations
-%option case-insensitive never-interactive
+%option never-interactive
 %option nounistd noyywrap
 %option reentrant
 %option yylineno
+%option case-sensitive
 
 %x COMMENT
 %x BODYMODE
@@ -98,9 +99,10 @@ void count(yyscan_t scanner);
 "typeof"		{ count(yyscanner); return(TYPEOF);}
 "assert"		{ count(yyscanner); return(ASSERT);}
 "cast"			{ count(yyscanner); return(CAST);}
-(int|uint)[1-9]* {
+("int"[1-9]*)|("uint"[1-9]*) {
 					count(yyscanner);
 					yylval_param->sval = (char *) strdup(yyget_text(yyscanner));
+					//printf("int: %s\n", yylval_param->sval);
 					return(INT);
 				}
 "%{"					{ BEGIN(BODYMODE);}
@@ -149,7 +151,6 @@ L?\"([^"\\]|\\['"?\\abfnrtv]|\\[0-7]{1,3}|\\[Xx][0-9a-fA-F]+|({L}|{D}))*\"	{
 					yylval_param->sval = (char *) strdup(yyget_text(yyscanner));
 					return(IDENTIFIER);
 				}
-
 0[xX]{H}+{INTS}?			{
 								count(yyscanner);
 								yylval_param->sval = (char *) strdup(yyget_text(yyscanner));

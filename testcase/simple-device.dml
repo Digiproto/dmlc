@@ -37,7 +37,7 @@ bank regs {
     parameter register_size = 4;
     register counter @ 0x00 {
         parameter documentation = "A simple counter.";
-		//field INT [9:9] "Interleaver table load for shared processing.";
+		field INT [9:9] "Interleaver table load for shared processing.";
     }
 }
 
