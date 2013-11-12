@@ -6,12 +6,13 @@ device simple_device;
 parameter desc = "DML device template";
 parameter bangang = "bangbang";
 parameter oubang = "oubang";
+parameter description = "description" + #$desc;
 
 constant OU = "ou";
 constant BANG = "bang";
 
 import "utility.dml";
-import "pci-bridge.dml";
+//import "pci-bridge.dml";
 
 template channel {
 	//parameter configuration = "required";
@@ -36,6 +37,7 @@ bank regs {
     parameter register_size = 4;
     register counter @ 0x00 {
         parameter documentation = "A simple counter.";
+		//field INT [9:9] "Interleaver table load for shared processing.";
     }
 }
 

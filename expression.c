@@ -3368,7 +3368,7 @@ expr_t* check_unary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 		case EXPR_TO_STR_TYPE:
 			expr->kids[0] = check_expr(node->unary.expr, table);
 			if (expr->kids[0]->is_const) {
-				expr->type->common.categ = STRING_T;
+				expr->type = expr->kids[0]->type;
 				if (expr->type->common.categ == INT_T) {
 					expr->val->p = gdml_zmalloc(sizeof(long)*8);
 					sprintf(expr->val->p, "%lld", (expr->val->int_v.value));
@@ -3377,6 +3377,7 @@ expr_t* check_unary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 					expr->val->p = gdml_zmalloc(sizeof(double)*8);
 					sprintf(expr->val->p, "%lf", expr->val->d);
 				}
+				expr->type->common.categ = STRING_T;
 			}
 			else {
 				error("The '#' operator must be constant value\n");
