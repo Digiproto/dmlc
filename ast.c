@@ -1265,11 +1265,18 @@ void parse_obj_if_else(tree_t* node, symtab_t table) {
 void parse_method(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
+	method_attr_t* attr = NULL;
 	if (symbol_defined(table, node->method.name)) {
-		error("duplicate definition of method '%s'\n", node->method.name);
+		symbol_t symbol = symbol_find(table, node->method.name, METHOD_TYPE);
+		attr = symbol->attr;
+		//symtab_t method_table = attr->table;
+		attr->table = node->method.block->block.table;
+		//attr->table->sibling = method_table;
+		//error("duplicate definition of method '%s'\n", node->method.name);
+		return;
 	}
 
-	method_attr_t* attr = (method_attr_t*)gdml_zmalloc(sizeof(method_attr_t));
+	attr = (method_attr_t*)gdml_zmalloc(sizeof(method_attr_t));
 	attr->name = node->ident.str;
 	attr->is_extern = node->method.is_extern;
 	attr->is_default = node->method.is_default;

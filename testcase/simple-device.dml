@@ -11,7 +11,7 @@ constant OU = "ou";
 constant BANG = "bang";
 
 import "utility.dml";
-//import "pci-bridge.dml";
+import "pci-bridge.dml";
 
 template channel {
 	//parameter configuration = "required";

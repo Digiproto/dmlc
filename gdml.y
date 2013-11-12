@@ -2577,7 +2577,6 @@ expression
 
 	}
 	| '[' expression_list ']' {
-		debug_proc("Line : %d\n", __LINE__);
         tree_t* node = (tree_t*)create_node("expr_array", ARRAY_TYPE, sizeof(struct tree_array), &@$);
         node->array.expr = $2;
         node->common.print_node = print_array;

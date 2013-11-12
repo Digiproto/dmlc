@@ -509,17 +509,18 @@ static void field_realize(object_t *obj) {
 	/* parse the elements that in filed table*/
 	//parse_field(obj->node, obj->symtab->sibling);
 	parse_field(obj->node, obj->symtab);
-
 	bitrange = obj->node->field.bitrange;	
-	expr = bitrange->array.expr;
-	fld->is_fixed = bitrange->array.is_fix;
-	fld->high = expr->int_cst.value; 
-	if(fld->is_fixed) {
-		fld->len = 1;
-	} else {
-		expr = bitrange->array.expr_end;
-		fld->low = expr->int_cst.value;
-		fld->len = fld->high - fld->low + 1;
+	if (bitrange) {
+		expr = bitrange->array.expr;
+		fld->is_fixed = bitrange->array.is_fix;
+		fld->high = expr->int_cst.value;
+		if(fld->is_fixed) {
+			fld->len = 1;
+		} else {
+			expr = bitrange->array.expr_end;
+			fld->low = expr->int_cst.value;
+			fld->len = fld->high - fld->low + 1;
+		}
 	}
 	process_object_templates(obj);
 	return;
