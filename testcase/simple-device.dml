@@ -31,6 +31,17 @@ template chn_regs {
 		log "info", 2 : "cpu read 0x%x from rhr success",val;
 		}
 	}//end register rhr_thr_ldl
+	method mymethod1 {
+	local bitfields 32 {
+		uint3 x @ [31:29];
+		uint2 k @ [26:25];
+		uint1 j @ [24:24];
+		uint16 y @ [23:8];
+		uint8 z @ [7:0];
+	} bf;
+	bf = 0x00ff00ff;
+	bf.x = buf.y - 1;
+	}
 }
 
 bank regs {

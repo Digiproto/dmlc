@@ -1880,7 +1880,7 @@ bitfields
 	;
 
 bitfields_decls
-	: bitfields_decls cdecl '@' '[' expression ':' expression ']' ';' {
+	: bitfields_decls cdecl REG_OFFSET '[' expression ':' expression ']' ';' {
 		tree_t* node = (tree_t*)create_node("bitfields_decls", BITFIELDS_DECL_TYPE, sizeof(struct tree_bitfields_dec), &@$);
 		node->bitfields_dec.decl = $2;
 		node->bitfields_dec.start = $7;
