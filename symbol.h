@@ -91,7 +91,7 @@ typedef struct struct_attr
 {
     struct symbol_common common;
     const char* name;
-	decl_t* decl;
+	cdecl_t* decl;
     symtab_t table;
 } struct_attr_t;
 

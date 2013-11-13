@@ -1872,11 +1872,13 @@ static cdecl_t* parse_type_ident(tree_t* node, symtab_t table) {
 			symtab_t root_table = get_root_table();
 			symbol = symbol_find_notype(root_table, node->ident.str);
 		}
-		//fprintf(stderr, "In %s, line = %d, base type: %s, symbol: 0x%x\n", __func__, __LINE__, node->ident.str, symbol);
 		/* In simics, some method parameter can not have type*/
 		if (symbol) {
 			if ((symbol->type == TYPEDEF_T) || (symbol->type == STRUCT_T)) {
 				memcpy(type, symbol->attr, sizeof(cdecl_t));
+				type->var_name = NULL;
+			} else if (symbol->type == STRUCT_TYPE) {
+				memcpy(type, ((struct_attr_t*)(symbol->attr))->decl, sizeof(cdecl_t));
 				type->var_name = NULL;
 			} else if (symbol) {
 				type->var_name = node->ident.str;
@@ -2382,11 +2384,12 @@ void parse_typedef_cdecl(tree_t* node, symtab_t table) {
 	return;
 }
 
-void parse_top_struct_cdecl(tree_t* node, symtab_t table) {
-	assert(node != NULL); assert(table != NULL);
+void parse_top_struct_cdecl(tree_t* node, symtab_t table, void* attr) {
+	assert(node != NULL); assert(table != NULL); assert(attr != NULL);
 
 	cdecl_t* decl = parse_struct(node, table);
 	insert_record_elems(decl);
+	((struct_attr_t*)attr)->decl = decl;
 
 	return;
 }

@@ -24,6 +24,7 @@
 #ifndef __DECL_H__
 #define __DECL_H__
 #include "types.h"
+#include "symbol.h"
 
 enum { CONST_QUAL = 0x1, VECT_QUAL = 0x2 };
 enum { POINTER_TO = 1, ARRAY_OF, FUNCTION_RETURN };
@@ -276,7 +277,7 @@ type_t get_decl_type(decl_t* decl);
 decl_t* parse_ctypedecl(tree_t* node, symtab_t table);
 decl_t* parse_ctypedecl(tree_t* node, symtab_t table);
 void parse_typedef_cdecl(tree_t* node, symtab_t table);
-void parse_top_struct_cdecl(tree_t* node, symtab_t table);
+void parse_top_struct_cdecl(tree_t* node, symtab_t table, void* attr);
 
 int record_type(cdecl_t* type);
 cdecl_t* pointer_to(cdecl_t* type);

@@ -2118,8 +2118,20 @@ symtab_t get_object_table(symbol_t symbol) {
 
 symtab_t get_data_table(symbol_t symbol) {
 	assert(symbol != NULL);
-	printf("In %s, line = %d, Pay attention: not implemented\n", __FUNCTION__, __LINE__);
-	exit(-1);
+	cdecl_t* type = symbol->attr;
+	if (type->common.categ == STRUCT_T) {
+		return type->struc.table;
+	}
+	else if (type->common.categ == LAYOUT_T) {
+		return type->layout.table;
+	}
+	else if (type->common.categ == BITFIELDS_T) {
+		return type->bitfields.table;
+	}
+	else {
+		fprintf(stderr, "other data type: %d\n", type->common.categ);
+		exit(-1);
+	}
 
 	return NULL;
 }
@@ -3507,13 +3519,15 @@ static int find_dml_obj(symtab_t table, const char* name) {
 		    return obj_type;
 		}
 		else {
-			symtab_t root_table = get_root_table();
-			symbol = symbol_find_notype(root_table, name);
+			symbol = get_symbol_from_root_table(name, 0);
 			obj_type = dml_obj_type(symbol);
-			if (obj_type) {
-			    return obj_type;
-			}
+			return obj_type;
 		}
+	}
+	else {
+		symbol = get_symbol_from_root_table(name, 0);
+		obj_type = dml_obj_type(symbol);
+		return obj_type;
 	}
 
 	return obj_type;
@@ -3727,6 +3741,7 @@ static cdecl_t* get_obj_type(symbol_t symbol, symtab_t table, expr_t* expr) {
 static cdecl_t* get_common_type(symtab_t table, symbol_t symbol, expr_t* expr) {
 	assert(table != NULL); assert(symbol != NULL);
 
+	int *a = NULL;
 	cdecl_t* type = NULL;
 	switch(symbol->type) {
 		case DATA_TYPE:
@@ -3757,6 +3772,11 @@ static cdecl_t* get_common_type(symtab_t table, symbol_t symbol, expr_t* expr) {
 		case ATTRIBUTE_TYPE:
 			type = check_attribute_type(symbol, expr);
 			break;
+		case BANK_TYPE:
+		case CONNECT_TYPE:
+			type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
+			type->common.categ = INT_T;
+			break;
 		case REGISTER_TYPE:
 			type = check_register_type(symbol, expr);
 			break;
@@ -3776,6 +3796,7 @@ static cdecl_t* get_common_type(symtab_t table, symbol_t symbol, expr_t* expr) {
 			type = get_obj_type(symbol, table, expr);
 			break;
 		default:
+			*a = 100;
 			error("In %s, line = %d, other dml %s(%s)\n",
 					__FUNCTION__, __LINE__, symbol->name, TYPENAME(symbol->type));
 			/* FIXME: only for debugging */
