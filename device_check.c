@@ -36,30 +36,24 @@ static void init_list_head(object_t *obj) {
 	INIT_LIST_HEAD(&obj->method_generated);	
 }
 
-
-static void init_register_obj(object_t *obj) {
+static void init_obj(object_t *obj) {
 	struct list_head *p;
 	object_t *tmp;
 	
+	init_list_head(obj);
 	list_for_each(p, &obj->childs) {
 		tmp = list_entry(p, object_t, entry);
 		init_list_head(tmp);
+		init_obj(tmp);
 	}	
-	
 }
 
 static void back_to_zero(device_t *dev) {
 	struct list_head *p;
 	object_t *tmp;
 	
-	init_list_head(&dev->obj);
-	/*add banks, registers*/
-	list_for_each(p, &dev->obj.childs) {
-		tmp = list_entry(p, object_t, entry);
-		init_list_head(tmp);
-		init_register_obj(tmp);
-	}	
-	/*add more object to check*/
+	init_obj(&dev->obj);
+	/*init more checked object, connect, attribute etc*/
 
 }
 
