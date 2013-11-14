@@ -119,7 +119,7 @@ void collect_ref_info(tree_t *expr, ref_info_t *fi){
 
 void printf_ref(ref_ret_t *ref_ret){
 	tree_t *node;
-	struct list_head *p;
+	struct list_head *p = NULL;
 	node_info_t *ni;
 	const char *name = NULL;
 	ref_info_t *fi;
@@ -218,7 +218,6 @@ symbol_t get_ref_sym(tree_t *t, ref_ret_t *ret, symtab_t table){
 		}
         /*collect ref info*/
 		fi = new_ref_info();
-		ref_info_init(fi);
 		collect_ref_info(t, fi);
 		ret->ref = fi;
 		ref_info_print(fi);
@@ -345,7 +344,6 @@ normal_case:
 	}
 end:
         my_DBG("out of 2\n");
-		ref_info_destroy(fi);
         return sym;
 }
 
