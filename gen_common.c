@@ -1128,7 +1128,8 @@ void translate_typeof(tree_t *t) {
 	symbol_t sym;
 	const char *name = NULL;
 	object_t *obj;
-
+	
+	init_ref_ret(&ref_ret);
 	if(expr->common.type == EXPR_BRACK_TYPE) {
 		expr = expr->expr_brack.expr_in_brack;	
 		/*
