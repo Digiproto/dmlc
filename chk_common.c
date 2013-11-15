@@ -46,6 +46,10 @@ void chk_dml_method(object_t *obj, struct method_name *m) {
 		post_gen_method(&obj_ref, method, &context);
 }
 
+symtab_t get_current_table() {
+	return current_table;
+}
+
 void change_current_table(symtab_t table) {
 	assert(table != NULL);
 	saved_table = current_table;

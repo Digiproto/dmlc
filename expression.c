@@ -34,6 +34,7 @@
 #include "debug_color.h"
 #include "gen_common.h"
 #include "info_output.h"
+#include "chk_common.h"
 
 void free_sibling(tree_t** node) {
 	assert(*node != NULL);
@@ -2098,6 +2099,9 @@ symtab_t get_default_symbol_tale(symbol_t symbol) {
 	if (strcmp(symbol->name, "dev") == 0) {
 		table = get_root_table();
 	} // device
+	else if (strcmp(symbol->name, "this") == 0) {
+		table = get_current_table();
+	}
 	else {
 		error("other default symbol: %s\n", symbol->name);
 		/* TODO: handle the error */
@@ -3392,7 +3396,8 @@ expr_t* check_unary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 				expr->type->common.categ = STRING_T;
 			}
 			else {
-				error("The '#' operator must be constant value\n");
+				expr->type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
+				expr->type->common.categ = STRING_T;
 			}
 			break;
 		case PRE_INC_OP_TYPE:
