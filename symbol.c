@@ -946,6 +946,13 @@ int symbol_defined(symtab_t table, const char* name) {
         return 0;
 }
 
+symbol_t defined_symbol(symtab_t table, const char* name) {
+       assert(table != NULL); assert(name != NULL);
+       symbol_t symbol = _symbol_find_notype(table->table, name);
+
+       return symbol;
+}
+
 #ifdef SYMBOL_DEBUG
 /* only for debug.  */
 static void tree_travel(symtab_t node)

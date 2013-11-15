@@ -1212,17 +1212,33 @@ void parse_bitorder(tree_t* node, symtab_t table) {
 
 void parse_parameter(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
+	symbol_t symbol = defined_symbol(table, node->ident.str);
 
-	if (symbol_defined(table, node->ident.str))
-	   error( "duplicate assignment to parameter '%s'\n", node->ident.str);
-
-	parameter_attr_t* attr = (parameter_attr_t*)gdml_zmalloc(sizeof(parameter_attr_t));
-	attr->is_original = 1;
-	attr->name = node->ident.str;
-	attr->common.node = node;
-	attr->param_spec = get_param_spec(node->param.paramspec, table);
-	node->common.attr = attr;
-	symbol_insert(table, node->ident.str, PARAMETER_TYPE, attr);
+        if (!symbol) {
+                parameter_attr_t* attr = (parameter_attr_t*)gdml_zmalloc(sizeof(parameter_attr_t));
+                attr->is_original = 1;
+                attr->name = node->ident.str;
+                attr->common.node = node;
+                attr->param_spec = get_param_spec(node->param.paramspec, table);
+                node->common.attr = attr;
+                if (!(attr->param_spec) && (table->no_check == 0)) {
+                        error("parameter should assign value!\n");
+                }
+                symbol_insert(table, node->ident.str, PARAMETER_TYPE, attr);
+        } else if (symbol->type == PARAMETER_TYPE) {
+                parameter_attr_t* attr = symbol->attr;
+                paramspec_t* spec = attr->param_spec;
+                param_value_t* value = spec->value;
+                if (value->flag == PARAM_FLAG_DEFAULT) {
+                        attr->param_spec = get_param_spec(node->param.paramspec, table);
+                        value = attr->param_spec->value;
+                        value->flag = PARAM_FLAG_DEFAULT;
+                } else {
+                        error( "duplicate assignment to parameter '%s'\n", node->ident.str);
+                }
+        } else {
+           error( "duplicate assignment to parameter '%s'\n", node->ident.str);
+        }
 
 	return;
 }

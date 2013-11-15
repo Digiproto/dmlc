@@ -134,6 +134,7 @@ void symtab_free(symtab_t symtab, int table_num);
 int pre_symbol_insert(pre_dml_t pre_dml);
 pre_parse_symbol_t* pre_symbol_find(const char* name);
 int symbol_defined(symtab_t table, const char* name);
+symbol_t defined_symbol(symtab_t table, const char* name);
 
 #ifdef SYMBOL_DEBUG
 typedef void (*symbol_callback)(symbol_t symbol);
