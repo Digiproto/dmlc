@@ -262,6 +262,10 @@ template noalloc {
     parameter allocate = false;
 }
 
+template unmapped {
+    parameter offset = undefined;
+}
+
 // Ignore soft reset and keep the current value
 template sticky {
     method soft_reset() {
