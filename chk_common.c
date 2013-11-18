@@ -28,6 +28,8 @@ static void post_chk_method(object_t *obj, tree_t *method) {
 
 void chk_dml_method(object_t *obj, struct method_name *m) {
         tree_t *method = m->method;
+	if (method == NULL)
+		return;
 
         /* we should pase the elements and calcualate the
          * expressions that in the method block, as we did

@@ -23,5 +23,7 @@
 
 #ifndef __CODE_GEN_H__ 
 #define __CODE_GEN_H__  
+#include "object.h"
 void gen_code (tree_t * root, const char *name);
+device_t* get_device();
 #endif /* __CODE_GEN_H__ */

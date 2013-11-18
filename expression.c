@@ -168,6 +168,23 @@ symbol_t get_symbol_from_root_table(const char* name, type_t type) {
 	return symbol;
 }
 
+extern device_t* get_device();
+symbol_t get_symbol_from_banks(const char* name) {
+	assert(name != NULL);
+	struct list_head *p;
+	object_t *tmp;
+	bank_attr_t* attr = NULL;
+	symbol_t symbol = NULL;
+	device_t* dev = get_device();
+	list_for_each(p, &dev->obj.childs) {
+		tmp = list_entry(p, object_t, entry);
+		symbol = defined_symbol(tmp->symtab->sibling, name);
+		if (symbol)
+			return symbol;
+	}
+	return symbol;
+}
+
 tree_t* copy_data_from_constant(tree_t* node) {
 	assert(node != NULL);
 	tree_t* new_node = NULL;
@@ -3531,7 +3548,10 @@ static int find_dml_obj(symtab_t table, const char* name) {
 	}
 	else {
 		symbol = get_symbol_from_root_table(name, 0);
-		obj_type = dml_obj_type(symbol);
+		if (!symbol)
+			symbol = get_symbol_from_banks(name);
+		if (symbol)
+			obj_type = dml_obj_type(symbol);
 		return obj_type;
 	}
 
@@ -3817,6 +3837,8 @@ expr_t* check_ident_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	if (symbol == NULL) {
 		symtab_t root_table = get_root_table();
 		symbol = symbol_find_notype(root_table, node->ident.str);
+		if (!symbol)
+			symbol = get_symbol_from_banks(node->ident.str);
 	}
 	if (symbol != NULL) {
 		DEBUG_EXPR("symbol name: %s, type: %d\n", symbol->name, symbol->type);

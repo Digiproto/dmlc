@@ -37,6 +37,7 @@
 
 extern symtab_t root_table;
 int debugflags = 0x1f;
+device_t* device = NULL;
 
 void gen_code (tree_t * root, const char *name)
 {
@@ -54,7 +55,7 @@ void gen_code (tree_t * root, const char *name)
 	sym = list->sym;	
 	symbol_list_free(list);
 	dev = (device_attr_t *)sym->attr;
-	dev_obj = create_device_tree(root);
+	device = dev_obj = create_device_tree(root);
 	print_device_tree(dev_obj);
 	device_realize(dev_obj);
 	print_device_tree(dev_obj);
@@ -63,4 +64,8 @@ void gen_code (tree_t * root, const char *name)
 	//exit(-1);
 	gen_headerfiles(dev_obj, name);
 	gen_cfile(dev_obj, name);
+}
+
+device_t* get_device() {
+	return device;
 }
