@@ -1492,7 +1492,6 @@ static void free_rely_temp_list(struct template_list* list) {
 	return;
 }
 
-
 /*process parameters including auto parameters */
 static void process_object_template(object_t *obj, struct template_name *name){
 	/*process parameters including auto parameters */
@@ -1567,11 +1566,19 @@ void process_object_templates(object_t *obj){
 	struct list_head *p;
 
 	process_default_template(obj);
+}
+
+static void parse_rely_templates(object_t* obj) {
+	assert(obj != NULL);
+	struct template_name *name;
+	struct list_head *p;
 	list_for_each(p, &obj->templates) {
 		name = list_entry(p,struct template_name,entry);
 		if(name)
 			process_object_template(obj, name);
 	}
+
+	return;
 }
 
 static void add_object_templates(object_t *obj, tree_t *t){
@@ -1580,9 +1587,9 @@ static void add_object_templates(object_t *obj, tree_t *t){
 	struct template_name *temp;
 	
 	add_default_template(obj);
+	parse_rely_templates(obj);
 	//process_object_templates(obj);
 }
-
 
 int method_to_generate = 0;
 void add_object_method(object_t *obj,const char *name){
