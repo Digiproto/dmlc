@@ -189,13 +189,20 @@ static void process_object_relationship(object_t *obj) {
 		if(!strcmp(obj->obj_type, "connect")) {
 			list = &dev->connects; 	
 		} else if(!strcmp(obj->obj_type, "implement")) {
-			list = &dev->implements;
+			if(!strcmp(OBJ->obj_type, "device")) {
+				list = &dev->implements;
+			} else {
+				list = &OBJ->childs;
+			}
 		} else if(!strcmp(obj->obj_type, "attribute")) {
 			list = &dev->attributes;
+		} else if(!strcmp(obj->obj_type, "port")) {
+			list = &dev->ports; 
+		} else if(!strcmp(obj->obj_type, "event")) {
+			list = &dev->events;
 		} else {
 			list = &OBJ->childs;
 		}
-
 		list_add_tail(&obj->entry, list);	
 		symbol_insert(OBJ->symtab, obj->name, OBJECT_TYPE, obj);
 	} 
@@ -206,6 +213,9 @@ static void create_connect_objs(symtab_t table);
 static void create_attribute_objs(symtab_t table);
 static void process_default_template(object_t *obj);
 static void create_implement_objs(symtab_t table);
+static void create_port_objs(symtab_t table);
+static void create_event_objs(symtab_t table);
+
 object_t *create_device_object(symbol_t sym){
 	int i = 0;
 	struct list_head *p;
@@ -217,7 +227,7 @@ object_t *create_device_object(symbol_t sym){
 	BE_DBG(OBJ, "device %s found\n",sym->name);
 	init_object(&dev->obj, sym->name, "device", dev_attr->common.node, root_table);
 	p = &dev->constants;
-	for(i = 0; i < 6; i++, p++) {
+	for(i = 0; i < 7; i++, p++) {
 		INIT_LIST_HEAD(p);
 	}
 	OBJ = &dev->obj;
@@ -226,6 +236,8 @@ object_t *create_device_object(symbol_t sym){
 	create_connect_objs(root_table);
 	create_attribute_objs(root_table);
 	create_implement_objs(root_table);
+	create_port_objs(root_table);
+	create_event_objs(root_table);
 	return &dev->obj;
 }
 
@@ -366,6 +378,29 @@ static void create_data_object(symbol_t sym) {
 	init_object(&data->obj, NULL, "data", NULL, NULL );
 }
 
+static void create_port_object(symbol_t sym) {
+	if(!OBJ || strcmp(OBJ->obj_type, "device")) {
+		BE_DBG(OBJ, "port should in top level\n");
+	}
+	dml_port_t *port = (dml_port_t *)gdml_zmalloc(sizeof(*port));
+	port_attr_t *attr = (port_attr_t *)sym->attr;
+	symtab_t table = attr->common.table;
+	init_object(&port->obj, sym->name, "port", attr->common.node, table);
+	OBJ = &port->obj;
+	create_implement_objs(table);
+}
+
+static void create_event_object(symbol_t sym) {
+	if(!OBJ || strcmp(OBJ->obj_type, "device")) {
+		BE_DBG(OBJ, "event should in top level\n");
+	}
+	event_t *event = (event_t *)gdml_zmalloc(sizeof(*event));
+	event_attr_t *attr = (event_attr_t *)sym->attr; 
+	symtab_t table = attr->common.table;
+	init_object(&event->obj, sym->name, "event", attr->common.node, table);
+}
+
+
 static void create_connect_objs(symtab_t table) {
 	symbol_list_t *list = symbol_list_find_type(table, CONNECT_TYPE);
 	symbol_list_t *head = list;
@@ -405,6 +440,36 @@ static void create_data_objs(symtab_t table) {
 	while(list) {
 		sym = list->sym;
 		create_data_object(sym);
+		OBJ = obj;
+		list = list->next;
+	}
+	symbol_list_free(head);
+}
+
+static void create_port_objs(symtab_t table) {
+	symbol_list_t *list = symbol_list_find_type(table, PORT_TYPE);
+	symbol_list_t *head = list;
+	symbol_t sym;
+	object_t *obj = OBJ;
+
+	while(list) {
+		sym = list->sym;
+		create_port_object(sym);
+		OBJ = obj;
+		list = list->next;
+	}
+	symbol_list_free(head);
+}
+
+static void create_event_objs(symtab_t table) {
+	symbol_list_t *list = symbol_list_find_type(table, EVENT_TYPE);
+	symbol_list_t *head = list;
+	symbol_t sym;
+	object_t *obj = OBJ;
+
+	while(list) {
+		sym = list->sym;
+		create_event_object(sym);
 		OBJ = obj;
 		list = list->next;
 	}
@@ -915,8 +980,33 @@ static void attribute_realize(object_t *obj) {
 
 static void implement_realize(object_t* obj) {
 	parse_implement(obj->node, obj->symtab->sibling);
-
 	return;
+}
+
+static void port_realize(object_t *obj) {
+	struct list_head *p;
+	object_t *tmp;
+	int i;
+	dml_port_t *port;
+
+	list_for_each(p, &obj->childs) {
+		i++;
+	}
+	port = (dml_port_t *)obj;
+	port->num = i;
+	port->impls = (object_t **)gdml_zmalloc(sizeof(*port->impls) * i);
+
+	i = 0;
+	list_for_each(p, &obj->childs) {
+		tmp = list_entry(p, object_t, entry);
+		implement_realize(tmp);
+		port->impls[i] = tmp;
+		i++;
+	}
+}
+
+static void event_realize(object_t *obj) {
+	add_object_templates(obj, NULL);	
 }
 
 void device_realize(device_t *dev) {
@@ -924,7 +1014,12 @@ void device_realize(device_t *dev) {
 	object_t *tmp;
 	int i = 0;
 
+	
+	list_for_each(p, &dev->obj.childs) {
+		i++;
+	}
 	dev->banks = (object_t **)gdml_zmalloc(sizeof(tmp) * i);
+	i = 0;
 	list_for_each(p, &dev->obj.childs) {
 		tmp = list_entry(p, object_t, entry);
 		dev->banks[i] = tmp;
@@ -957,6 +1052,15 @@ void device_realize(device_t *dev) {
 	list_for_each(p, &dev->implements) {
 		tmp = list_entry(p, object_t, entry);
 		implement_realize(tmp);
+	}
+	list_for_each(p, &dev->ports) {
+		tmp = list_entry(p, object_t, entry);
+		port_realize(tmp);
+	}
+
+	list_for_each(p, &dev->events) {
+		tmp = list_entry(p, object_t, entry);
+		event_realize(tmp);
 	}
 	process_object_templates(&dev->obj);
 }

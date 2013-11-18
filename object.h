@@ -42,6 +42,7 @@
 
 #define default_attr_type "container"
 
+#define DEV_OBJS_LIST 7
 typedef enum object_type {
 	Obj_Type_None,
 	Obj_Type_Device,
@@ -79,6 +80,7 @@ typedef struct device {
     struct list_head implements;
     struct list_head events;
     struct list_head data;
+	struct list_head ports;
 	int bank_count;
 	object_t **banks;
 }device_t;
@@ -191,6 +193,17 @@ typedef struct data {
 typedef struct implement {
 	object_t obj;
 } implement_t;
+
+
+typedef struct event {
+	object_t obj;
+} event_t;
+
+typedef struct port {
+	object_t obj;
+	int num;
+	object_t **impls;	
+} dml_port_t;
 
 device_t *create_device_tree(tree_t *root);
 void add_object_method(object_t *obj, const char *name);
