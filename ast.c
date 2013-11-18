@@ -1297,7 +1297,7 @@ void parse_method_block(tree_t* node) {
 	symtab_t table = attr->table;
 	tree_t* block = node->method.block;
 	if (attr->is_parsed) {
-		return;
+		//return;
 	}
 	/* as one method can be called many times, but we should parse their
 	element only once, so we should have on status bit to mark it*/
@@ -1607,19 +1607,24 @@ static void parse_call_inline_method(symtab_t table, tree_t* call_expr, tree_t* 
 	object_t *obj = NULL; tree_t* block = NULL;
 	tree_t *node = NULL; method_attr_t *method_attr = NULL;
 	symbol_t method_sym = get_call_expr_info(call_expr, table);
+	symtab_t saved_table;
 	if (method_sym) {
 		method_attr = method_sym->attr;
 		node = method_attr->common.node;
 		block = node->method.block;
-		change_current_table(table);
+		//change_current_table(table);
+		saved_table = current_table;
+		current_table = table;	
 		check_method_param(method_sym, call_expr, ret_expr, inline_method);
-		restore_current_table();
+		//restore_current_table();
+		current_table = saved_table;
 		if(method_sym && (method_sym->type == METHOD_TYPE)) {
 			obj = (object_t *)method_sym->owner;
 			if(!obj) {
 				error("method object cannot empty\n");
 			} else {
 				if (!block_empty(block))
+					printf("ADD: obj name %s, method name %s\n", obj->name, method_sym->name);
 					add_object_method(obj, method_sym->name);
 			}
 		} else {
@@ -1836,7 +1841,7 @@ void parse_foreach(tree_t* node, symtab_t table) {
 
 	symbol_t list = get_expression_sym(in_expr);
 	param_value_t *val = NULL;
-	symtab_t saved = NULL;
+	symtab_t saved = current_table;
 	int len, i;
 	len = i = 0;
 	if(list->type != ARRAY_TYPE){
@@ -1872,6 +1877,7 @@ void parse_foreach(tree_t* node, symtab_t table) {
 
 	symbol_set_type(tmp, FOREACH_TYPE);
 	symbol_set_value(tmp, attr);
+	current_table = saved;
 
 	return;
 }
