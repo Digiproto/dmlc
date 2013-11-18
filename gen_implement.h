@@ -27,4 +27,9 @@
 void gen_device_implement_code(device_t *dev, FILE *f);
 void gen_device_implement_desc(device_t *dev, FILE *f);
 void gen_device_implement_header(device_t *dev, FILE *f);
+
+void gen_implement_header(object_t *obj, FILE *f);
+void gen_iface(object_t *obj, FILE *f);
+void gen_implement_code(object_t *obj, FILE *f);
+void add_implement_method(object_t *obj);
 #endif /* __GEN_IMPLEMENT_H__ */

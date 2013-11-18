@@ -128,7 +128,7 @@ static void gen_implement_method(object_t *obj, symbol_t sym, FILE *f) {
 	add_object_method(obj, method->method.name);
 }
 
-static void gen_implement_code(object_t *obj, FILE *f) {
+void gen_implement_code(object_t *obj, FILE *f) {
 	implement_t *imp = (implement_t *)obj;
 	symtab_t table = obj->symtab->sibling;
     symbol_list_t *list = symbol_list_find_type(table, METHOD_TYPE);
@@ -138,6 +138,23 @@ static void gen_implement_code(object_t *obj, FILE *f) {
     while(list) {
         sym = list->sym;
         gen_implement_method(obj, sym, f);
+        list = list->next;
+    }
+    symbol_list_free(head);
+}
+
+void add_implement_method(object_t *obj) {
+	implement_t *imp = (implement_t *)obj;
+	symtab_t table = obj->symtab->sibling;
+    symbol_list_t *list = symbol_list_find_type(table, METHOD_TYPE);
+    symbol_list_t *head = list;
+    symbol_t sym;
+
+    while(list) {
+        sym = list->sym;
+		method_attr_t *attr = (method_attr_t *)sym->attr;
+		tree_t *method = attr->common.node;
+		add_object_method(obj, method->method.name);
         list = list->next;
     }
     symbol_list_free(head);
@@ -153,7 +170,7 @@ static void gen_implement_method_header(object_t *obj, symbol_t sym, FILE *f) {
 	fprintf(f, ";\n");
 }
 
-static void gen_implement_header(object_t *obj, FILE *f) {
+void gen_implement_header(object_t *obj, FILE *f) {
 	implement_t *imp = (implement_t *)obj;
 	symtab_t table = obj->symtab->sibling;
     symbol_list_t *list = symbol_list_find_type(table, METHOD_TYPE);
@@ -168,7 +185,7 @@ static void gen_implement_header(object_t *obj, FILE *f) {
     symbol_list_free(head);
 }
 
-static void gen_iface(object_t *obj, FILE *f) {
+void gen_iface(object_t *obj, FILE *f) {
 	const char *name;
 	const char *qname;
 	implement_t *imp = (implement_t *)obj;
