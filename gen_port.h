@@ -5,5 +5,6 @@
 void gen_device_port_description(device_t *dev, FILE *f);
 void gen_device_port_code(device_t *dev, FILE *f);
 void gen_device_port_header(device_t *dev, FILE *f);
+void add_port_method(object_t *obj);
 #endif
 
