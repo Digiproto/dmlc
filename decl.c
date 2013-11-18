@@ -1878,8 +1878,21 @@ static cdecl_t* parse_type_ident(tree_t* node, symtab_t table) {
 				memcpy(type, symbol->attr, sizeof(cdecl_t));
 				type->var_name = NULL;
 			} else if (symbol->type == STRUCT_TYPE) {
-				memcpy(type, ((struct_attr_t*)(symbol->attr))->decl, sizeof(cdecl_t));
-				type->var_name = NULL;
+				/* some struct defined like this:
+					 struct abc {
+						struct abc ab;
+					}
+				but in the "struct abc ab", the "struct abc" do not have
+				type block, so should mark 'struct abc ab" undefined, and
+				for the second time to parse it*/
+				struct_attr_t* attr = symbol->attr;
+				if (attr->decl) {
+					memcpy(type, ((struct_attr_t*)(symbol->attr))->decl, sizeof(cdecl_t));
+					type->var_name = NULL;
+				} else {
+					type->var_name = node->ident.str;
+					type->common.no_decalare = 1;
+				}
 			} else if (symbol) {
 				type->var_name = node->ident.str;
 				type->common.categ = NO_TYPE;

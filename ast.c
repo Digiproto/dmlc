@@ -1221,9 +1221,6 @@ void parse_parameter(tree_t* node, symtab_t table) {
                 attr->common.node = node;
                 attr->param_spec = get_param_spec(node->param.paramspec, table);
                 node->common.attr = attr;
-                if (!(attr->param_spec) && (table->no_check == 0)) {
-                        warning("parameter %s should assign value!\n", node->ident.str);
-                }
                 symbol_insert(table, node->ident.str, PARAMETER_TYPE, attr);
         } else if (symbol->type == PARAMETER_TYPE) {
                 parameter_attr_t* attr = symbol->attr;

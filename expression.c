@@ -2140,21 +2140,30 @@ symtab_t get_object_table(symbol_t symbol) {
 symtab_t get_data_table(symbol_t symbol) {
 	assert(symbol != NULL);
 	cdecl_t* type = symbol->attr;
+	symtab_t table = NULL;
 	if (type->common.categ == STRUCT_T) {
-		return type->struc.table;
+		table = type->struc.table;
 	}
 	else if (type->common.categ == LAYOUT_T) {
-		return type->layout.table;
+		table = type->layout.table;
 	}
 	else if (type->common.categ == BITFIELDS_T) {
-		return type->bitfields.table;
+		table = type->bitfields.table;
+	}
+	else if (type->common.categ == POINTER_T) {
+		symbol_t new_sym = (symbol_t)gdml_zmalloc(sizeof(symbol_t));
+		new_sym->name = symbol->name;
+		new_sym->attr = type->common.bty;
+		table = get_data_table(new_sym);
+		new_sym->name = NULL; new_sym->attr = NULL;
+		free(new_sym);
 	}
 	else {
 		fprintf(stderr, "other data type: %d\n", type->common.categ);
 		exit(-1);
 	}
 
-	return NULL;
+	return table ;
 }
 
 symtab_t get_symbol_table(symbol_t symbol) {
@@ -4159,7 +4168,7 @@ expr_t* check_function_expr(tree_t* node, symtab_t table, expr_t* expr) {
 		}
 	}
 	int arg_num = get_param_num(node->expr_brack.expr_in_brack);
-	DEBUG_EXPR("argc: %d, argnum: %d\n", arg_num, argc);
+	DEBUG_EXPR("func name: %s, argc: %d, argnum: %d\n", func->type->var_name, arg_num, argc);
 	if (arg_num != argc) {
 		fprintf(stderr, "error: too %s arguments to function\n",
 				(arg_num < argc) ? "few": "many");
