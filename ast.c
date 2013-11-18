@@ -1222,20 +1222,24 @@ void parse_parameter(tree_t* node, symtab_t table) {
                 attr->param_spec = get_param_spec(node->param.paramspec, table);
                 node->common.attr = attr;
                 if (!(attr->param_spec) && (table->no_check == 0)) {
-                        error("parameter should assign value!\n");
+                        warning("parameter %s should assign value!\n", node->ident.str);
                 }
                 symbol_insert(table, node->ident.str, PARAMETER_TYPE, attr);
         } else if (symbol->type == PARAMETER_TYPE) {
                 parameter_attr_t* attr = symbol->attr;
                 paramspec_t* spec = attr->param_spec;
-                param_value_t* value = spec->value;
-                if (value->flag == PARAM_FLAG_DEFAULT) {
-                        attr->param_spec = get_param_spec(node->param.paramspec, table);
-                        value = attr->param_spec->value;
-                        value->flag = PARAM_FLAG_DEFAULT;
-                } else {
-                        error( "duplicate assignment to parameter '%s'\n", node->ident.str);
-                }
+		if (!spec) {
+			attr->param_spec = get_param_spec(node->param.paramspec, table);
+		} else {
+			param_value_t* value = spec->value;
+			if (value->flag == PARAM_FLAG_DEFAULT) {
+				attr->param_spec = get_param_spec(node->param.paramspec, table);
+				value = attr->param_spec->value;
+				value->flag = PARAM_FLAG_DEFAULT;
+			} else {
+				error( "duplicate assignment to parameter '%s'\n", node->ident.str);
+			}
+		}
         } else {
            error( "duplicate assignment to parameter '%s'\n", node->ident.str);
         }
