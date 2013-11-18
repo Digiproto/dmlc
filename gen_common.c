@@ -1107,8 +1107,6 @@ void translate_inline(tree_t *t) {
 	if (check_method_param(sym, expr, ret, 1))
 		return;
 	*/
-	parse_method_block(method->common.node);
-
 	pre_gen_method(sym->owner, method->common.node, &context);
 	enter_scope();
 	process_inline_start(method, expr_list, ret, &context);
@@ -1117,7 +1115,6 @@ void translate_inline(tree_t *t) {
 	process_inline_end(method, ret, &context);
 	D("\n");
 	exit_scope();
-	process_inline_end(method, ret, &context);
 	return;
 }
 
@@ -1828,7 +1825,7 @@ void gen_dml_method(object_t *obj, struct method_name *m) {
 	 * expressions that in the method block, as we did
 	 * not do them before */
 	pre_gen_method(obj, method, &context);
-	parse_method_block(method);
+	//parse_method_block(method);
 	gen_dml_method_header(obj, method);
 	do_method_params_alias(obj, method);
 	D("\n");
