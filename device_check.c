@@ -1,4 +1,7 @@
 #include "device_check.h"
+#include "gen_implement.h"
+#include "gen_port.h"
+#include "gen_event.h"
 
 static void add_register_check_method(object_t *obj) {
 	struct list_head *p;
@@ -28,7 +31,18 @@ static void add_pre_method(device_t *dev) {
 		add_register_check_method(tmp);
 	}	
 	/*add more object to check*/
-
+	list_for_each(p, &dev->implements) {
+		tmp = list_entry(p, object_t, entry);
+		add_implement_method(tmp);
+	}
+	list_for_each(p, &dev->ports) {
+		tmp = list_entry(p, object_t, entry);
+		add_port_method(tmp);
+	}
+	list_for_each(p, &dev->events) {
+		tmp = list_entry(p, object_t, entry);
+		add_event_method(tmp);
+	}
 }
 
 static void init_list_head(object_t *obj) {
