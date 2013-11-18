@@ -24,6 +24,8 @@
 /*hardcoded for bank read/write accesses*/
 #include "gen_once_noplatform.h"
 #include "gen_implement.h"
+#include "gen_port.h"
+#include "gen_event.h"
 
 extern object_t *DEV;
 static int list_count = LIST_SZ;
@@ -433,6 +435,8 @@ void gen_code_once_noplatform(device_t *dev, FILE *f){
 
 	gen_device_reset(dev,f);
 	gen_device_implement_code(dev, f);
+	gen_device_port_code(dev, f);
+	gen_device_event_code(dev, f);
 	list_for_each(p,&dev->obj.childs){
 		b = list_entry(p, bank_t, obj.entry);
 		list = sort_register_array(b);
