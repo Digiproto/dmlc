@@ -278,7 +278,9 @@ normal_case:
                                 node3 = ((node_info_t *)ni_next->entry.next)->node;
                                 if(node3->common.type == IDENT_TYPE){
                                         name2 = node3->ident.str;
-                                } else {
+                                } else if (node3->common.type == DML_KEYWORD_TYPE){
+                                        name2 = node3->ident.str;
+				} else {
                                         my_DBG("only ident valid\n");
                                 }
                                 if(!name2 || !name){

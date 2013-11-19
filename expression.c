@@ -2033,8 +2033,14 @@ reference_t*  get_bit_slic_ref(tree_t* node, reference_t* ref, expr_t* expr, sym
 				expr->is_obj = 1;
 			}
 			break;
+		case COMPONENT_TYPE:
+			ident_node = expr_node->component.ident;
+			ref->name = ident_node->ident.str;
+			if (node->component.type == COMPONENT_POINTER_TYPE) {
+				ref->is_pointer = 1;
+			}
+			break;
 		default:
-			error("line: %d, other node type: %s\n", __LINE__, expr_node->common.name);
 			/* FIXME handle the error */
 //			exit(-1);
 			break;
@@ -2048,6 +2054,7 @@ reference_t* get_reference(tree_t* node, reference_t* ref, expr_t* expr, symtab_
 	assert(expr != NULL); assert(table != NULL);
 
 	tree_t* ident_node = NULL;
+	tree_t* expr_node = NULL;
 	reference_t* new = (reference_t*)gdml_zmalloc(sizeof(reference_t));
 
 	switch (node->common.type) {
@@ -2065,6 +2072,10 @@ reference_t* get_reference(tree_t* node, reference_t* ref, expr_t* expr, symtab_
 			new->next = ref;
 			new = get_bit_slic_ref(node, new, expr, table);
 			new->is_array = 1;
+			expr_node = node->bit_slic.expr;
+			if (expr_node->common.type == COMPONENT_TYPE) {
+				new = get_reference(expr_node->component.expr, new, expr, table);
+			}
 			break;
 		case QUOTE_TYPE:
 			ident_node = node->quote.ident;
