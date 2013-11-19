@@ -3965,7 +3965,7 @@ expr_t* check_refer(symtab_t table, reference_t* ref, expr_t* expr) {
 	}
 
 	symbol = symbol_find_notype(table, tmp->name);
-	//symbol = (symbol == NULL) ? get_symbol_from_root_table(tmp->name, 0) : symbol;
+	symbol = (symbol == NULL) ? get_symbol_from_banks(tmp->name) : symbol;
 	while (tmp->next) {
 		if ((symbol->type == INTERFACE_TYPE) ||
 			(symbol->type == OBJECT_TYPE && !strcmp(((object_t*)(symbol->attr))->obj_type, "interface"))) {

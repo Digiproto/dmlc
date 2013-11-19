@@ -157,7 +157,7 @@ L?\"([^"\\]|\\['"?\\abfnrtv]|\\[0-7]{1,3}|\\[Xx][0-9a-fA-F]+|({L}|{D}))*\"	{
 								return(INTEGER_LITERAL);
 							}
 
-0[0-7]*{INTS}?				{
+0[0-9]*{INTS}?				{
 								count(yyscanner);
 								yylval_param->sval = (char *) strdup(yyget_text(yyscanner));
 								return(INTEGER_LITERAL);

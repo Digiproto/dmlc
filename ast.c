@@ -139,16 +139,13 @@ long long strtoi (char *str)
 		value = get_digits (&(str[2]), 2);
 	}//binary
 	else if (str[0] == '0') {
-		int i = 1;
-		for(i = 0; i < strlen(str); i++) {
-			if ((str[i] < '0') || (str[i] > '7')) {
-//				fprintf(stderr, "Wrong Octal : %s\n", str);
-				error("Wrong Octal \"%s\"", str);
-				/* TODO: handle the error */
-//				exit(-1);
-			}
+		/* in simice do not have octal*/
+		int len = strlen(str);
+		if (len > 1) {
+			value = get_digits(&(str[1]), 10);
+		} else {
+			value = get_digits(str, 10);
 		}
-		value = get_digits(str, 8);
 	}//octal
 	else {
 		value = get_digits (str, 10);
