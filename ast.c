@@ -1155,6 +1155,10 @@ void parse_group(tree_t* node, symtab_t table) {
 
 void parse_port(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
+	object_attr_t* attr = node->common.attr;
+	if (attr->port.is_array) {
+		insert_array_index_into_obj(attr->port.arraydef, table);
+	}
 
 	obj_spec_t* spec = node->port.spec;
 	parse_obj_spec(spec, table);

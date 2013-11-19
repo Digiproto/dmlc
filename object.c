@@ -1043,7 +1043,7 @@ static void port_realize(object_t *obj) {
 }
 
 static void event_realize(object_t *obj) {
-	add_object_templates(obj, NULL);	
+	add_object_templates(obj, NULL);
 	process_object_names(obj);
 }
 
@@ -1052,7 +1052,6 @@ void device_realize(device_t *dev) {
 	object_t *tmp;
 	int i = 0;
 
-	
 	list_for_each(p, &dev->obj.childs) {
 		i++;
 	}
@@ -1097,7 +1096,6 @@ void device_realize(device_t *dev) {
 		tmp = list_entry(p, object_t, entry);
 		port_realize(tmp);
 	}
-
 	list_for_each(p, &dev->events) {
 		tmp = list_entry(p, object_t, entry);
 		event_realize(tmp);

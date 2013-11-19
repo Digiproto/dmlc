@@ -60,6 +60,7 @@ static void chk_device_code(device_t *obj){
 	device_t *dev = (device_t *)obj;
 
 	chk_obj_generic_code(&dev->obj);
+
 	/*gen connect object */
 	list_for_each(p,&dev->connects){
 		t = list_entry(p,object_t,entry);
@@ -75,6 +76,18 @@ static void chk_device_code(device_t *obj){
 		t = list_entry(p,object_t,entry);
 		chk_obj_generic_code(t);
 	} 
+
+	/* gen port object */
+	list_for_each(p,&dev->ports){
+		t = list_entry(p,object_t,entry);
+		chk_obj_generic_code(t);
+	}
+
+	/* gen event object */
+	list_for_each(p,&dev->events){
+		t = list_entry(p,object_t,entry);
+		chk_obj_generic_code(t);
+	}
 }
 
 void chk_dml_code(device_t *dev) {

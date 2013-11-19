@@ -4115,12 +4115,13 @@ void check_func_param(tree_t* node, symtab_t table, signature_t* sig, int param_
 		if (both_scalar_type(param->ty, expr->type) ||
 				(both_array_type(param->ty, expr->type)) ||
 				(is_same_type(param->ty, expr->type)) ||
-				(is_parameter_type(expr->type) && is_scalar_type(param->ty))) {
+				(is_parameter_type(expr->type) && is_scalar_type(param->ty)) ||
+				(is_no_type(param->ty) || is_no_type(expr->type))) {
 			node = node->common.sibling;
 			i++;
 		}
 		else {
-			error("incompatible type for argument\n");
+			error("incompatible type for argument \n");
 			break;
 		}
 	}

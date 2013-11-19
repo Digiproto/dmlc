@@ -215,7 +215,7 @@ typedef struct event {
 typedef struct port {
 	object_t obj;
 	int num;
-	object_t **impls;	
+	object_t **impls;
 } dml_port_t;
 
 typedef struct group {

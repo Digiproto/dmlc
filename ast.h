@@ -73,6 +73,7 @@ void parse_event(tree_t* node, symtab_t table);
 void parse_group(tree_t* node, symtab_t table);
 void parse_group_attr(tree_t* node, symtab_t table);
 void parse_port(tree_t* node, symtab_t table);
+void parse_port_attr(tree_t* node, symtab_t table);
 void parse_implement(tree_t* node, symtab_t table);
 void parse_expr(tree_t* node, symtab_t table);
 void parse_if_else(tree_t* node, symtab_t table);
