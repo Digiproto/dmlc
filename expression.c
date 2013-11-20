@@ -36,6 +36,14 @@
 #include "info_output.h"
 #include "chk_common.h"
 
+/* it's a temporary proposal.
+ * use the function so frequently that I add this marco.
+ * by eJim Lee 2013-11-30 */
+extern obj_ref_t *OBJ;
+inline static object_t* get_current_obj() {
+	return OBJ->obj;
+}
+
 void free_sibling(tree_t** node) {
 	assert(*node != NULL);
 	if ((*node)->common.sibling) {
@@ -4140,6 +4148,7 @@ void check_func_param(tree_t* node, symtab_t table, signature_t* sig, int param_
 	return;
 }
 
+extern object_t* get_current_obj();
 static int first_param_is_obj(signature_t* sig) {
 	if (sig == NULL)
 		return 0;
@@ -4148,8 +4157,13 @@ static int first_param_is_obj(signature_t* sig) {
 	cdecl_t* type = param->ty;
 	if (type->common.categ == POINTER_T) {
 		cdecl_t* new_type = type->common.bty;
+		object_t* obj = get_current_obj();
 		if ((new_type->typedef_name) && !strcmp(new_type->typedef_name, "conf_object_t")) {
-			return 1;
+			if (strcmp(obj->obj_type, "attribute") == 0) {
+				return 0;
+			} else {
+				return 1;
+			}
 		}
 	}
 	return 0;
@@ -4180,7 +4194,7 @@ expr_t* check_function_expr(tree_t* node, symtab_t table, expr_t* expr) {
 		}
 	}
 	int arg_num = get_param_num(node->expr_brack.expr_in_brack);
-	DEBUG_EXPR("func name: %s, argc: %d, argnum: %d\n", func->type->var_name, arg_num, argc);
+	DEBUG_EXPR("func name: %s, argc: %d, argnum: %d\n", func->type->var_name, argc, arg_num);
 	if (arg_num != argc) {
 		fprintf(stderr, "error: too %s arguments to function\n",
 				(arg_num < argc) ? "few": "many");
