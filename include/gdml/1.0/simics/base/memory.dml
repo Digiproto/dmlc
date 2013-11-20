@@ -13,13 +13,3 @@ header %{
 import "simics/base/types.dml";
 
 extern const char *VT_describe_pseudo_exception(pseudo_exceptions_t ex);
-typedef int read_or_write_t;
-typedef struct { } page_t;
-typedef int endianness_t;
-typedef int addr_space_t;
-typedef int exception_type_t;
-typedef int map_type_t;
-typedef struct { physical_address_t base; physical_address_t start; physical_address_t length; int function; int16 priority; int align_size; swap_mode_t reverse_endian; } map_info_t;
-typedef struct { map_type_t map_type; conf_object_t *object; const char *port; const void *interface_ptr; const void *target_interface; const void *breakpoint_interface; const void *breakpoint_query_interface; const void *bridge_interface; conf_object_t *target_object; const char *target_port; conf_object_t *bridge; map_info_t map_info; physical_address_t map_size; int deleted; } map_list_t;
-typedef int swap_mode_t;
-typedef int pseudo_exceptions_t;

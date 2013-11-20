@@ -14,5 +14,5 @@ import "simics/host-info.dml";
 
 extern sclass_t *sobject_class(const sobject_t *sobj);
 extern struct { } *sobject_props(const sobject_t *sobj);
-typedef struct { } sclass_t;
-typedef struct { sclass_t *isa; struct { } *props; } sobject_t;
+//typedef struct { } sclass_t;
+//typedef struct { sclass_t *isa; struct { } *props; } sobject_t;

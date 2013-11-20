@@ -1265,3 +1265,7 @@ typedef void (*interrupt_changed_state_callback_t)(conf_object_t *interrupt_cont
 typedef struct { retrieve_packet_t retrieve_packet; store_packet_t store_packet; } ppc4xx_mal_interface_t;
 typedef struct { void (*register_user_handlers)(conf_object_t *cpu, integer_t spr_number, gen_spr_user_getter_func_t getter, void *user_getter_data, gen_spr_user_setter_func_t setter, void *user_setter_data, int privilege_checks); void (*unregister_user_handlers)(conf_object_t *cpu, integer_t spr_number); void (*set_target_value)(conf_object_t *cpu, uinteger_t value); void (*stash_value)(conf_object_t *cpu, integer_t spr_number, uinteger_t value); uinteger_t (*fetch_value)(conf_object_t *cpu, integer_t spr_number); gen_spr_ret_t (*default_getter)(conf_object_t *cpu, integer_t spr_number, gen_spr_access_type_t type); gen_spr_ret_t (*default_setter)(conf_object_t *cpu, integer_t spr_number, uinteger_t value, gen_spr_access_type_t type); const char *(*get_name)(conf_object_t *cpu, integer_t spr_number); integer_t (*get_number)(conf_object_t *cpu, const char *spr_name); } spr_interface_t;
 typedef void (*interrupt_by_id_t)(conf_object_t *obj, conf_object_t *src, int src_id, int dst_id, interrupt_ack_t interrupt_ack, uint64 *data, void *usr, int dummy0, int dummy1);
+typedef struct { } dmacache_t;
+typedef struct { } sclass_t;
+typedef struct { sclass_t *isa; struct { } *props; } sobject_t;
+typedef struct { int size; int used; const interface_t **elements; } interface_array_t;
