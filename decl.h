@@ -72,8 +72,8 @@ struct type_layout {
 };
 
 typedef struct bit_elem {
-    struct cdecl* decl;
-    struct bit_elem* next;
+	struct cdecl* decl;
+	struct bit_elem* next;
 	int start;
 	int end;
 	int size;

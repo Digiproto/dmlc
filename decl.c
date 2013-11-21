@@ -1693,13 +1693,24 @@ static void parse_bit_expr(tree_t* node, symtab_t table, bit_element_t* elem) {
 	cdecl_t* decl = elem->decl;
 	/* TODO: calculate the expression */
 	/* In simic the bit style: a @ [end : start]*/
-	//elem->start = ;
-	//elem->end = ;
-	elem->size = elem->end - elem->start;
-	if (decl->common.size != elem->size) {
-		error("illegal bitfields definition: field '%s' has wrong size\n", decl->var_name);
-		free(decl); free(elem);
-		decl = NULL; elem = NULL;
+	expr_t* start = check_expr(node->bitfields_dec.start, table);
+	expr_t* end = check_expr(node->bitfields_dec.end, table);
+	if (start->type->common.categ != INT_T || end->type->common.categ != INT_T) {
+		error("the bit filelds's start/end bit should be int\n");
+	}
+	if (start->is_const && end->is_const) {
+		elem->start = start->val->int_v.value;
+		elem->end =  end->val->int_v.value;
+		elem->size = elem->end - elem->start;
+#if 0
+		if (decl->common.size != elem->size) {
+			error("illegal bitfields definition: field '%s' has wrong size\n", decl->var_name);
+			free(decl); free(elem);
+			decl = NULL; elem = NULL;
+		}
+#endif
+	} else {
+		error("the bitfiled '%s' should be constant\n", decl->var_name);
 	}
 
 	return;
@@ -1786,8 +1797,6 @@ static cdecl_t* parse_bitfields(tree_t* node, symtab_t table) {
 			type->bitfields.elem = add_bit_element(type->bitfields.elem, elem);
 		}
 		elem_node = elem_node->common.sibling;
-		printf("IN %s, line = %d, parse the bitfields elements\n", __func__, __LINE__);
-		exit(-1);
 	}
 
 	return type;
@@ -1806,8 +1815,9 @@ static int get_int_size(const char* int_str) {
 	if (strcmp(int_str, "int") == 0) {
 		size = sizeof(int) * 8;
 	}
-	else if (strcmp(int_str, "uint") == 0) {
-		error("unknown type: 'uint'\n");
+	else if ((!strcmp(int_str, "uint") || !strcmp(int_str, "int0") ||
+		!strcmp(int_str, "uint0"))) {
+		error("unknown type: '%s'\n", int_str);
 	}
 	else {
 		const char* data = NULL;

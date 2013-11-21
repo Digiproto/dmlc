@@ -99,7 +99,7 @@ void count(yyscan_t scanner);
 "typeof"		{ count(yyscanner); return(TYPEOF);}
 "assert"		{ count(yyscanner); return(ASSERT);}
 "cast"			{ count(yyscanner); return(CAST);}
-("int"[1-9]*)|("uint"[1-9]*) {
+("int"[0-9]*)|("uint"[0-9]*) {
 					count(yyscanner);
 					yylval_param->sval = (char *) strdup(yyget_text(yyscanner));
 					//printf("int: %s\n", yylval_param->sval);
