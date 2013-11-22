@@ -171,6 +171,14 @@ static tree_t* find_tail (tree_t* head)
 	return it;
 }
 
+static tree_t* find_head(tree_t* list) {
+	tree_t* node = list;
+	while (node->common.fore_sibling != NULL) {
+		node = node->common.fore_sibling;
+	}
+	return node;
+}
+
 /**
  * @brief find_node: find the node with node type
  *
@@ -447,6 +455,8 @@ tree_t* create_node_list (tree_t* root, tree_t* new_node)
 	}
 	assert (new_node != NULL);
 	assert (root != NULL);
+	tree_t* head = find_head(root);
+	root = head;
 
 	if (node_in_list(root, new_node) != NULL) {
 		return root;
@@ -454,6 +464,7 @@ tree_t* create_node_list (tree_t* root, tree_t* new_node)
 	tree_t* tail = find_tail (root);
 	assert (tail->common.sibling == NULL);
 	tail->common.sibling = new_node;
+	new_node->common.fore_sibling = tail;
 	return root;
 }
 
@@ -2029,9 +2040,11 @@ void add_template_to_table(symtab_t table, const char* template, int second_chec
 	while ((temp_table) != NULL) {
 		template_name = temp_table->template_name;
 		DEBUG_AST("In %s, line = %d, trave templates: %s\n", __func__, __LINE__, template_name);
+		DEBUG_AST("In %s, line = %d, trave templates: %s\n", __func__, __LINE__, template_name);
 		if (strcmp(template, template_name) == 0) {
 			/*FIXME: should handle the error */
 			warning("re-load the template \"%s\"", template);
+			printf("re-load the template \"%s\"", template);
 			return;
 //			exit(-1);
 		}

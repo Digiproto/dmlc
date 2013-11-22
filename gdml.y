@@ -1218,7 +1218,7 @@ istemplate_stmt
 	: IS objident ';' {
 		DBG("In IS statement\n");
 		add_template_to_table(current_table, $2->ident.str, 0);
-		print_templates(current_table);
+		//print_templates(current_table);
 		$$ = $2;
 	}
 	;

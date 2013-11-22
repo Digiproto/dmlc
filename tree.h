@@ -58,6 +58,7 @@ struct tree_common
 {
 	tree_t* child;
 	tree_t* sibling;
+	tree_t* fore_sibling;
 	tree_t* chain;
 	print_node_t print_node;
 	translate_t translate;

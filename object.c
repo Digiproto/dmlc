@@ -566,6 +566,7 @@ void create_template_name(object_t *obj, const char *name) {
 		INIT_LIST_HEAD(&tmp->entry);
 		tem_attr = sym->attr;	
 		tmp->node = tem_attr->common.node;
+		//list_add_tail(&tmp->entry, &obj->templates);
 		list_add_tail(&obj->templates, &tmp->entry);
 	} else {
 		BE_DBG(OBJ, "template %s not found \n", name);
@@ -858,6 +859,7 @@ static void connect_realize(object_t *obj) {
 	tree_t *node;
 	connect_attr_t *attr;
 
+	add_object_templates(obj, obj->node->connect.templates);
 	/* parse the connect arraydef expression */
 	parse_connect_attr(obj->node, obj->symtab->parent);
 	/* parse elements and calculate expressions that
@@ -1316,14 +1318,15 @@ static void obj_templates_list(object_t* obj, const char* name) {
 static void add_default_template(object_t *obj){
 	symtab_t table;	
 
-	obj_templates_list(obj, obj->obj_type);
 	create_template_name(obj, obj->obj_type);
 	table = obj->symtab->sibling;
 	if(table) {
 		BE_DBG(OBJ, "add default template %s\n", obj->obj_type);
 		check_undef_template(table);
 		add_template_to_table(table, obj->obj_type, 0);
+		print_templates(table);
 	}
+	obj_templates_list(obj, obj->obj_type);
 }
 
 static void process_device_template(object_t *obj){
@@ -1572,8 +1575,9 @@ static void parse_rely_templates(object_t* obj) {
 	struct list_head *p;
 	list_for_each(p, &obj->templates) {
 		name = list_entry(p,struct template_name,entry);
-		if(name)
+		if(name) {
 			process_object_template(obj, name);
+		}
 	}
 
 	return;

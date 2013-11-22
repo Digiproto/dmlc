@@ -3115,13 +3115,18 @@ expr_t* check_relation_expr(tree_t* node, symtab_t table, expr_t* expr) {
 expr_t* check_shift_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 	expr = check_binary_kids(node, table, expr);
-	if (both_int_type(expr->kids[0]->type, expr->kids[1]->type)) {
+	cdecl_t* type1 = expr->kids[0]->type;
+	cdecl_t* type2 = expr->kids[1]->type;
+	if (both_int_type(type1, type2)) {
 		expr = cal_const_value(expr);
 		expr_to_int(expr);
 		return expr;
-	}
-	else {
-		error("Invalid operands\n");
+	} else if ((is_parameter_type(type1) || is_parameter_type(type2)) ||
+		(is_no_type(type1) || is_no_type(type2))) {
+		expr->type = type1->common.categ > type2->common.categ ? type1 : type2;
+		return expr;
+	} else {
+		error("Invalid operands line : %d\n", __LINE__);
 	}
 
 	return expr;
@@ -3134,7 +3139,7 @@ expr_t* check_add_expr(tree_t* node, symtab_t table, expr_t* expr) {
 		return cal_const_value(expr);
 	}
 	else if (both_no_common_type(expr->kids[0]->type, expr->kids[1]->type)) {
-		error("Invalid operands\n");
+		error("Invalid operands line : %d\n", __LINE__);
 	}
 	else {
 		int categ1 = expr->kids[0]->type->common.categ;
@@ -3152,7 +3157,7 @@ expr_t* check_sub_expr(tree_t* node, symtab_t table, expr_t* expr) {
 		return cal_const_value(expr);
 	}
 	else if (both_no_common_type(expr->kids[0]->type, expr->kids[1]->type)) {
-		error("Invalid operands\n");
+		error("Invalid operands, line = %d\n", __LINE__);
 	}
 	else {
 		int categ1 = expr->kids[0]->type->common.categ;
@@ -3608,7 +3613,7 @@ expr_t* check_quote_expr(tree_t* node, symtab_t table, expr_t* expr) {
     /*to reference something in the DML object structure
      * the reference must be prefixed by '$' character*/
 	int is_obj = check_dml_obj_refer(ident, table);
-	if (is_obj == 0) {
+	if (is_obj == 0 && table->no_check == 0) {
 		fprintf(stderr, "reference to unknown object '%s', table_num: %d, line: %d\n",
 			ident->ident.str, table->table_num, __LINE__);
 		/* TODO: handle the error */
@@ -3616,7 +3621,13 @@ expr_t* check_quote_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	}
 
 	expr->node = node;
-	expr = check_expression(node->quote.ident, table, expr);
+	if (table->no_check && is_obj == 0) {
+		cdecl_t* type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
+		type->common.categ = NO_TYPE;
+		expr->type = type;
+	} else {
+		expr = check_expression(node->quote.ident, table, expr);
+	}
 
 	return expr;
 }
@@ -4181,16 +4192,19 @@ expr_t* check_function_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	if (func->type->common.categ == FUNCTION_T) {
 		sig = func->type->function.sig;
 		expr->type = func->type->common.bty;
-		argc = sig->params->len;
+		if (sig)
+			argc = sig->params->len;
 	}
 	else if (func->type->common.categ == POINTER_T) {
 		sig = func->type->common.bty->function.sig;
 		cdecl_t* bty = func->type->common.bty;
 		expr->type = bty->common.bty;
-		argc = sig->params->len;
-		if (func->is_obj && first_param_is_obj(sig)) {
-			argc -= 1;
-			param_start = 1;
+		if (sig) {
+			argc = sig->params->len;
+				if (func->is_obj && first_param_is_obj(sig)) {
+				argc -= 1;
+				param_start = 1;
+		}
 		}
 	}
 	int arg_num = get_param_num(node->expr_brack.expr_in_brack);
@@ -4228,8 +4242,10 @@ expr_t* check_brack_expr(tree_t* node, symtab_t table, expr_t* expr) {
 
 expr_t* check_array_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
-	fprintf(stderr, "Pay attention: not implement the check array expression\n");
-	exit(-1);
+	cdecl_t* type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
+	type->common.categ = NO_TYPE;
+	type = array_of(type);
+	expr->type = type;
 
 	expr->node = node;
 	return expr;

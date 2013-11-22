@@ -85,36 +85,36 @@ void collect_ref_info(tree_t *expr, ref_info_t *fi){
         node_info_t *ni;
         type_t type = expr->common.type;
         if(type == IDENT_TYPE){
-				ni = new_node_info(expr, NULL);
+		ni = new_node_info(expr, NULL);
                 add_node_info(fi, ni);
                 return;
         }else if(type == QUOTE_TYPE){
                 my_DBG("quote type\n");
-				ni = new_node_info(expr, NULL);
+		ni = new_node_info(expr, NULL);
                 add_node_info(fi, ni);
                 return;
         }else if(type == COMPONENT_TYPE){
                 node = expr->component.expr;
                 my_DBG("expr %p \n", node);
                 collect_ref_info(node,fi);
-				node = dml_keyword_node(expr->component.comp, &expr->common.location);
-				ni = new_node_info(node, NULL);
+		node = dml_keyword_node(expr->component.comp, &expr->common.location);
+		ni = new_node_info(node, NULL);
                 add_node_info(fi,ni);
                 node = expr->component.ident;
                 my_DBG("ident %s, node %p\n", node->ident.str, node);
-				ni = new_node_info(node, NULL);
+		ni = new_node_info(node, NULL);
                 add_node_info(fi,ni);
         } else if (type == DML_KEYWORD_TYPE) {
                 /*bank field */
-				ni = new_node_info(expr, NULL);
+		ni = new_node_info(expr, NULL);
                 add_node_info(fi, ni);
         }  else if (type == BIT_SLIC_EXPR_TYPE) {
 			collect_ref_info(expr->bit_slic.expr, fi);
 			ni = new_node_info(NULL, expr->bit_slic.bit);
 			add_node_info(fi, ni);
-		} else {
-			my_DBG("TODO: other type %d\n", type);
-		}
+	} else {
+		my_DBG("TODO: other type %d\n", type);
+	}
 }
 
 void printf_ref(ref_ret_t *ref_ret){
@@ -220,7 +220,7 @@ symbol_t get_ref_sym(tree_t *t, ref_ret_t *ret, symtab_t table){
 		fi = new_ref_info();
 		collect_ref_info(t, fi);
 		ret->ref = fi;
-		ref_info_print(fi);
+		//ref_info_print(fi);
 		p = fi->list.next;
         if(p){
                 ni = list_entry(p, node_info_t, entry);
