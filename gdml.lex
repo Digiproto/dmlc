@@ -5,6 +5,7 @@ H           [a-fA-F0-9]
 E           [Ee][+-]?{D}+  
 FS          (f|F|l|L)  
 INTS          ([Uu](L|l|LL|ll)?|(L|l|LL|ll)[Uu]?)
+CM          ([^%]|%[^}])
 
 %{  
 #include <stdio.h>  
@@ -106,7 +107,7 @@ void count(yyscan_t scanner);
 					return(INT);
 				}
 "%{"					{ BEGIN(BODYMODE);}
-<BODYMODE>(.|\n)*"%}"	{
+<BODYMODE>({CM}|\"{CM}"%}"{CM}\")*"%}" {
 							yylval_param->sval = (char *) strdup(yyget_text(yyscanner));
 							/* remove "%}". */
 							yylval_param->sval[yyleng - 2] = '\0';
