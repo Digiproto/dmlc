@@ -774,7 +774,7 @@ paramspec_t* get_param_spec(tree_t* node, symtab_t table) {
 		value->flag = PARAM_FLAG_DEFAULT;
 	}
 
-	if (node->paramspec.expr) {
+	if (node->paramspec.expr && (table->no_check == 0)) {
 		expr_t* expr = check_expr(node->paramspec.expr, table);
 		spec->expr_node = node->paramspec.expr;
 		if (expr->is_undefined) {
@@ -794,14 +794,16 @@ paramspec_t* get_param_spec(tree_t* node, symtab_t table) {
 				value->u.floating = expr->val->d;
 		}
 		else {
-			if (table->no_check) {
-				value->type = PARAM_TYPE_NONE;
-				value->flag = PARAM_FLAG_NONE;
-			}
-			else {
-				value->type = PARAM_TYPE_NONE;
-				value->flag = PARAM_FLAG_NONE;
-			}
+			value->type = PARAM_TYPE_NONE;
+			value->flag = PARAM_FLAG_NONE;
+		}
+	}
+	else if (node->paramspec.expr && table->no_check) {
+		if (node->paramspec.expr->common.type == UNDEFINED_TYPE) {
+			value->type = PARAM_TYPE_UNDEF;
+		} else {
+			value->type = PARAM_TYPE_NONE;
+			value->flag = PARAM_FLAG_NONE;
 		}
 	}
 
@@ -2040,11 +2042,9 @@ void add_template_to_table(symtab_t table, const char* template, int second_chec
 	while ((temp_table) != NULL) {
 		template_name = temp_table->template_name;
 		DEBUG_AST("In %s, line = %d, trave templates: %s\n", __func__, __LINE__, template_name);
-		DEBUG_AST("In %s, line = %d, trave templates: %s\n", __func__, __LINE__, template_name);
 		if (strcmp(template, template_name) == 0) {
 			/*FIXME: should handle the error */
 			warning("re-load the template \"%s\"", template);
-			printf("re-load the template \"%s\"", template);
 			return;
 //			exit(-1);
 		}

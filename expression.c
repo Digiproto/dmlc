@@ -3028,6 +3028,13 @@ expr_t* check_logical_expr(tree_t* node, symtab_t table, expr_t* expr) {
 		expr->type->common.size = sizeof(int) * 8;
 		return (expr);
 	}
+	else if (is_parameter_type(expr->kids[0]->type) || is_parameter_type(expr->kids[1]->type)
+		|| (is_no_type(expr->kids[0]->type) || is_no_type(expr->kids[1]->type))) {
+		expr->type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
+		expr->type->common.categ = INT_T;
+		expr->type->common.size = sizeof(int) * 8;
+		return (expr);
+	}
 	error("Line: %d, Invalid operands\n", __LINE__);
 	return expr;
 }
@@ -3826,12 +3833,14 @@ static cdecl_t* get_common_type(symtab_t table, symbol_t symbol, expr_t* expr) {
 		case FUNCTION_T:
 			type = (cdecl_t*)(symbol->attr);
 			break;
-		case METHOD_TYPE:
 		case LOGGROUP_TYPE:
+			type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
+			type->common.categ = INT_T;
+			break;
+		case METHOD_TYPE:
 		case TEMPLATE_TYPE:
-			printf("IN %s, line = %d, method type: %d, not implement(exit)\n",
+			printf("IN %s, line = %d, symobl type: %d, not implement(exit)\n",
 					__func__, __LINE__, symbol->type);
-			exit(-1);
 			break;
 		case ATTRIBUTE_TYPE:
 			type = check_attribute_type(symbol, expr);

@@ -566,8 +566,8 @@ void create_template_name(object_t *obj, const char *name) {
 		INIT_LIST_HEAD(&tmp->entry);
 		tem_attr = sym->attr;	
 		tmp->node = tem_attr->common.node;
-		//list_add_tail(&tmp->entry, &obj->templates);
-		list_add_tail(&obj->templates, &tmp->entry);
+		list_add_tail(&tmp->entry, &obj->templates);
+		//list_add_tail(&obj->templates, &tmp->entry);
 	} else {
 		BE_DBG(OBJ, "template %s not found \n", name);
 	}
@@ -1254,7 +1254,8 @@ struct template_def *create_template_def(const char* name, struct template_list*
 	if (temp_table->is_parsed == 1)
 		return def;
 
-	/* one template can */
+	/* in template, we can only insert the parameters and method into
+	template talbe, and check them until use it when object use them */
 	obj_spec_t* tmp = node->temp.spec;
 	tree_t* block = NULL;
 	tree_t* statement = NULL;
@@ -1266,8 +1267,10 @@ struct template_def *create_template_def(const char* name, struct template_list*
 			return def;
 		my_DBG("-----------------start parsing template %s-------------\n", name);
 		while (statement) {
-			if (statement->common.parse)
+			if (statement->common.type == PARAMETER_TYPE ||
+				statement->common.type == METHOD_TYPE) {
 				statement->common.parse(statement, attr->table);
+			}
 			statement = statement->common.sibling;
 		}
 		my_DBG("-----------------finish parsing template %s-------------\n", name);
