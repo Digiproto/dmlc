@@ -94,6 +94,7 @@ void parse_label(tree_t* node, symtab_t table);
 void parse_case(tree_t* node, symtab_t table);
 void parse_default(tree_t* node, symtab_t table);
 void parse_goto(tree_t* node, symtab_t table);
+void parse_undef_templates(symtab_t table);
 
 void print_dml(tree_t* node, int pos);
 void print_device(tree_t* node, int pos);
@@ -181,6 +182,7 @@ void print_bitfields_decls(tree_t* node, int pos);
 void print_bitfields(tree_t* node, int pos);
 void print_goto(tree_t* node, int pos);
 void print_case(tree_t* node, int pos);
+void print_undef_templates(symtab_t table);
 
 //#define DEBUG_AST_TREE
 

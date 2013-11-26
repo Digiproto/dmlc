@@ -1344,6 +1344,7 @@ void parse_method_block(tree_t* node) {
 	/* as one method can be called many times, but we should parse their
 	element only once, so we should have on status bit to mark it*/
 	attr->is_parsed = 1;
+	table->no_check = 0;
 	DEBUG_AST("parse method '%s' block, table num: %d----------------------------------------\n", attr->name, table->table_num);
 
 	if (block->block.statement == NULL)
@@ -1997,6 +1998,60 @@ void parse_goto(tree_t* node, symtab_t table) {
 	return;
 }
 
+void print_undef_templates(symtab_t table) {
+	assert(table != NULL);
+	undef_template_t* undef = table->undef_temp;
+	int i = 0;
+	while (undef) {
+		printf("undefined templates[%d]: %s\n", i, undef->name);
+		undef = undef->next;
+	}
+
+	return;
+}
+
+static void parse_undef_temp_block(tree_t* block, symtab_t table) {
+	if (block == NULL || table->is_parsed == 1) {
+		return;
+	}
+	tree_t* statement = block->block.statement;
+	if (statement == NULL) {
+		return;
+	}
+	while (statement) {
+		if (statement->common.type == PARAMETER_TYPE ||
+			statement->common.type == METHOD_TYPE ||
+			statement->common.type == CDECL_TYPE) {
+			statement->common.parse(statement, table);
+		}
+		statement = statement->common.sibling;
+	}
+	table->is_parsed = 1;
+	return;
+}
+
+extern symbol_t get_symbol_from_root_table(const char* name, type_t type);
+void parse_undef_templates(symtab_t table) {
+	assert(table != NULL);
+	undef_template_t* undef = table->undef_temp;
+	symbol_t symbol = NULL;
+	template_attr_t* attr = NULL;
+	tree_t* node = NULL;
+	tree_t* block = NULL;
+	obj_spec_t* spec = NULL;
+	while (undef) {
+		symbol = get_symbol_from_root_table(undef->name, TEMPLATE_TYPE);
+		attr = symbol->attr;
+		node = attr->common.node;
+		spec = node->temp.spec;
+		block = spec->node->spec.block;
+		parse_undef_temp_block(block, attr->table);
+		undef = undef->next;
+	}
+
+	return;
+}
+
 void print_templates(symtab_t table) {
 	assert(table);
 	struct template_table* tmp = table->template_table;
@@ -2086,6 +2141,20 @@ void add_template_to_table(symtab_t table, const char* template, int second_chec
 	return;
 }
 
+static void free_undef_templates(symtab_t table) {
+	assert(table != NULL);
+	undef_template_t* temp = table->undef_temp;
+	undef_template_t* next = temp;
+	while (temp) {
+		next = temp->next;
+		free(temp);
+		temp = next;
+	}
+	table->undef_temp = NULL;
+
+	return;
+}
+
 void check_undef_template(symtab_t table) {
 	assert(table != NULL);
 	if (table->undef_temp == NULL) {
@@ -2096,6 +2165,8 @@ void check_undef_template(symtab_t table) {
 		add_template_to_table(table, temp->name, 1);
 		temp = temp->next;
 	}
+	free_undef_templates(table);
+	table->undef_temp = NULL;
 
 	return;
 }
@@ -4740,7 +4811,6 @@ void print_ast (tree_t* root)
 	return;
 }
 
-symbol_t get_symbol_from_root_table(const char* name, type_t type);
 void check_reg_table(void) {
 	symbol_t symbol = get_symbol_from_root_table("regs", 0);
 	object_attr_t* attr = symbol->attr;

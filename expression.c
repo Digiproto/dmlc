@@ -2128,6 +2128,21 @@ void print_reference(reference_t* ref) {
 	return;
 }
 
+static symtab_t get_tempalte_table(const char* name) {
+	assert(name != NULL);
+	symbol_t symbol = get_symbol_from_root_table(name, TEMPLATE_TYPE);
+	template_attr_t* attr = NULL;
+	symtab_t table = NULL;
+	if (symbol) {
+		attr = symbol->attr;
+		return attr->table;
+	} else {
+		fprintf(stderr, "Can not find temmplate '%s'\n", name);
+		exit(-1);
+	}
+	return NULL;
+}
+
 symtab_t get_default_symbol_tale(symbol_t symbol) {
 	assert(symbol != NULL);
 	symtab_t table = NULL;
@@ -2137,6 +2152,18 @@ symtab_t get_default_symbol_tale(symbol_t symbol) {
 	} // device
 	else if (strcmp(symbol->name, "this") == 0) {
 		table = get_current_table();
+	}
+	else if (strcmp(symbol->name, "fields") == 0) {
+		table = get_tempalte_table("field");
+	}
+	else if (strcmp(symbol->name, "reg") == 0) {
+		table = get_tempalte_table("register");
+	}
+	else if (strcmp(symbol->name, "banks") == 0) {
+		table = get_tempalte_table("bank");
+	}
+	else if (strcmp(symbol->name, "interface") == 0) {
+		table = get_tempalte_table("bank");
 	}
 	else {
 		error("other default symbol: %s\n", symbol->name);
@@ -2151,7 +2178,6 @@ symtab_t get_object_table(symbol_t symbol) {
 	assert(symbol != NULL);
 	object_t* obj = symbol->attr;
 	tree_t* node = obj->node;
-	object_attr_t* attr = node->common.attr;
 	//return attr->common.table;
 	return obj->symtab;
 }
@@ -2215,6 +2241,10 @@ symtab_t get_symbol_table(symbol_t symbol) {
 		case PORT_TYPE:
 		case IMPLEMENT_TYPE:
 			table = ((struct object_common*)attr)->table;
+			if (table->undef_temp) {
+				check_undef_template(table);
+				parse_undef_templates(table);
+			}
 			break;
 		case PARAMETER_TYPE:
 			table = get_default_symbol_tale(symbol);
@@ -3839,8 +3869,9 @@ static cdecl_t* get_common_type(symtab_t table, symbol_t symbol, expr_t* expr) {
 			break;
 		case METHOD_TYPE:
 		case TEMPLATE_TYPE:
-			printf("IN %s, line = %d, symobl type: %d, not implement(exit)\n",
-					__func__, __LINE__, symbol->type);
+			printf("IN %s, line = %d, symbol name: %s, symobl type: %d, not implement(exit)\n",
+					__func__, __LINE__, symbol->name, symbol->type);
+			*a = 100;
 			break;
 		case ATTRIBUTE_TYPE:
 			type = check_attribute_type(symbol, expr);
@@ -3981,6 +4012,15 @@ static int check_array_symbol(symtab_t table, symbol_t symbol) {
 		break;
 	        case OBJECT_TYPE:
                         return object_array(symbol);
+		case PARAMETER_TYPE:
+			attr = symbol->attr;
+			if ((((param_value_t*)attr)->is_original == 0) &&
+				(((param_value_t*)attr)->type == PARAM_TYPE_LIST)) {
+				return 1;
+			}
+			fprintf(stderr, "symbol'%s' not array\n", symbol->name);
+			return 0;
+			break;
 		default:
 			fprintf(stderr, "symbol'%s' not array\n", symbol->name);
 			exit(-1);
@@ -4040,7 +4080,7 @@ expr_t* check_refer(symtab_t table, reference_t* ref, expr_t* expr) {
 			}
 		}
 		else {
-			fprintf(stderr, "Undefined reference------ '%s'\n", tmp->name);
+			fprintf(stderr, "Undefined reference '%s'\n", tmp->name);
 			exit(-1);
 			break;
 		}

@@ -1268,7 +1268,8 @@ struct template_def *create_template_def(const char* name, struct template_list*
 		my_DBG("-----------------start parsing template %s-------------\n", name);
 		while (statement) {
 			if (statement->common.type == PARAMETER_TYPE ||
-				statement->common.type == METHOD_TYPE) {
+				statement->common.type == METHOD_TYPE ||
+				statement->common.type == CDECL_TYPE) {
 				statement->common.parse(statement, attr->table);
 			}
 			statement = statement->common.sibling;
@@ -1327,7 +1328,6 @@ static void add_default_template(object_t *obj){
 		BE_DBG(OBJ, "add default template %s\n", obj->obj_type);
 		check_undef_template(table);
 		add_template_to_table(table, obj->obj_type, 0);
-		print_templates(table);
 	}
 	obj_templates_list(obj, obj->obj_type);
 }
