@@ -902,6 +902,7 @@ object
 
                 attr->common.name = $2->ident.str;
                 attr->group.is_array = 1;
+                symbol_insert(current_table, $2->ident.str, GROUP_TYPE, attr);
             }
             node->group.array = get_obj_default_param(node->group.array, $4, "array");
             node->group.templates = create_template_list(node->group.templates, $6);
@@ -1272,14 +1273,48 @@ object_desc
 
 object_spec
 	: object_desc ';' {
-		if ($1 == NULL) {
-			$$ = NULL;
-		}
-		else {
+		if (object_comm_attr && object_comm_attr->common.templates) {
+			tree_t* block = (tree_t*)create_node("block", BLOCK_TYPE, sizeof(struct tree_block), &@$);
+			symtab_t table = NULL;
+			/* only template and object have the object_spec, and object has it own object_comm_attr
+				the template do not have object_comm_attr */
+			if (object_comm_attr->common.obj_type == IMPLEMENT_TYPE) {
+				table = symtab_create(IMPLEMENT_TYPE);
+				table->no_check = 1;
+				table->table_num = ++current_table_num;
+				block->block.table = symtab_insert_child(current_table, table);
+			}
+			else if (object_comm_attr->common.table){
+				table = object_comm_attr->common.table;
+				block->block.table = table;
+			}
+			else {
+				table = symtab_create(object_comm_attr->common.obj_type);
+				table->table_num = ++current_table_num;
+				block->block.table = symtab_insert_child(current_table, table);
+			}
+			if ((object_comm_attr) && (object_comm_attr->common.table == NULL)) {
+				object_comm_attr->common.table = block->block.table;
+			}
+
 			tree_t* node = (tree_t*)create_node("object_spec", SPEC_TYPE, sizeof(struct tree_object_spec), &@$);
 			node->spec.desc = $1;
-			node->spec.block = NULL;
+			node->spec.block = block;
 			node->common.print_node = print_object_spec;
+
+			/* get the object templates */
+			get_object_template_table(block->block.table, current_object_node);
+			print_templates(((struct object_common*)object_comm_attr)->table);
+			print_templates(object_comm_attr->common.table);
+			block->common.print_node = print_obj_block;
+			$$ = node;
+		} else if ($1 == NULL) {
+			$$ = NULL;
+		} else {
+			tree_t* node = (tree_t*)create_node("object_spec", SPEC_TYPE, sizeof(struct tree_object_spec), &@$);
+			node->spec.desc = $1;
+			node->common.print_node = print_object_spec;
+
 			$$ = node;
 		}
 	}
