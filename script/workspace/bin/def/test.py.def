@@ -7,8 +7,8 @@ sys.path.append("../../bin/library")
 from libtest_framework import *
 os_info = platform.system()
 
-lib_path_skyeye = "@SKYEYE_INSTALL_DIR@"
-lib_path_qemu   = "@QEMU_INSTALL_DIR@"
+lib_path_skyeye = r"@SKYEYE_INSTALL_DIR@"
+lib_path_qemu   = r"@QEMU_INSTALL_DIR@"
 if os_info == "Linux":
 	lib_suffix = ".so"
 else:
