@@ -2031,23 +2031,16 @@ static void parse_undef_temp_block(tree_t* block, symtab_t table) {
 }
 
 extern symbol_t get_symbol_from_root_table(const char* name, type_t type);
-void parse_undef_templates(symtab_t table) {
-	assert(table != NULL);
-	undef_template_t* undef = table->undef_temp;
-	symbol_t symbol = NULL;
-	template_attr_t* attr = NULL;
-	tree_t* node = NULL;
-	tree_t* block = NULL;
-	obj_spec_t* spec = NULL;
-	while (undef) {
-		symbol = get_symbol_from_root_table(undef->name, TEMPLATE_TYPE);
-		attr = symbol->attr;
-		node = attr->common.node;
-		spec = node->temp.spec;
-		block = spec->node->spec.block;
-		parse_undef_temp_block(block, attr->table);
-		undef = undef->next;
-	}
+extern void check_undef_template(symtab_t table);
+void parse_undef_template(const char* name) {
+	assert(name != NULL);
+	symbol_t symbol = get_symbol_from_root_table(name, TEMPLATE_TYPE);
+	template_attr_t* attr = symbol->attr;
+	tree_t* node = attr->common.node;
+	obj_spec_t* spec = node->temp.spec;
+	tree_t* block = spec->node->spec.block;
+	parse_undef_temp_block(block, attr->table);
+	check_undef_template(attr->table);
 
 	return;
 }
@@ -2059,6 +2052,7 @@ void print_templates(symtab_t table) {
 	int i = 0;
 	while ((tmp) != NULL) {
 		DEBUG_TEMPLATES("templates name(%d): %s, table_num: %d\n", i++, tmp->template_name, tmp->table->table_num);
+		printf("templates name(%d): %s, table_num: %d\n", i++, tmp->template_name, tmp->table->table_num);
 		tmp = tmp->next;
 	}
 
@@ -2098,8 +2092,6 @@ void add_template_to_table(symtab_t table, const char* template, int second_chec
 		template_name = temp_table->template_name;
 		DEBUG_AST("In %s, line = %d, trave templates: %s\n", __func__, __LINE__, template_name);
 		if (strcmp(template, template_name) == 0) {
-			/*FIXME: should handle the error */
-			warning("re-load the template \"%s\"", template);
 			return;
 //			exit(-1);
 		}
@@ -2162,6 +2154,7 @@ void check_undef_template(symtab_t table) {
 	}
 	undef_template_t* temp = table->undef_temp;
 	while (temp) {
+		parse_undef_template(temp->name);
 		add_template_to_table(table, temp->name, 1);
 		temp = temp->next;
 	}

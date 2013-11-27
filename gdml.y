@@ -1304,8 +1304,6 @@ object_spec
 
 			/* get the object templates */
 			get_object_template_table(block->block.table, current_object_node);
-			print_templates(((struct object_common*)object_comm_attr)->table);
-			print_templates(object_comm_attr->common.table);
 			block->common.print_node = print_obj_block;
 			$$ = node;
 		} else if ($1 == NULL) {

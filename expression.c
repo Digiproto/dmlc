@@ -2026,7 +2026,7 @@ reference_t*  get_bit_slic_ref(tree_t* node, reference_t* ref, expr_t* expr, sym
 	switch(expr_node->common.type) {
 		case IDENT_TYPE:
 		case DML_KEYWORD_TYPE:
-			ref->name = node->ident.str;
+			ref->name = expr_node->ident.str;
 			break;
 		case QUOTE_TYPE:
 			ident_node = expr_node->quote.ident;
@@ -2182,26 +2182,33 @@ symtab_t get_object_table(symbol_t symbol) {
 	return obj->symtab;
 }
 
+#define get_record_table(type) \
+		switch (type->common.categ) { \
+			case STRUCT_T: \
+				table = type->struc.table; \
+				break; \
+			case LAYOUT_T: \
+				table = type->layout.table; \
+				break; \
+			default: \
+				table = type->bitfields.table; \
+				break; \
+			}
+
 symtab_t get_data_table(symbol_t symbol) {
 	assert(symbol != NULL);
 	cdecl_t* type = symbol->attr;
 	symtab_t table = NULL;
-	if (type->common.categ == STRUCT_T) {
-		table = type->struc.table;
-	}
-	else if (type->common.categ == LAYOUT_T) {
-		table = type->layout.table;
-	}
-	else if (type->common.categ == BITFIELDS_T) {
-		table = type->bitfields.table;
-	}
-	else if (type->common.categ == POINTER_T) {
+	if (type->common.categ == POINTER_T) {
 		symbol_t new_sym = (symbol_t)gdml_zmalloc(sizeof(symbol_t));
 		new_sym->name = symbol->name;
 		new_sym->attr = type->common.bty;
 		table = get_data_table(new_sym);
 		new_sym->name = NULL; new_sym->attr = NULL;
 		free(new_sym);
+	}
+	else if (record_type(type)) {
+		get_record_table(type);
 	}
 	else {
 		fprintf(stderr, "other data type: %d\n", type->common.categ);
@@ -2211,12 +2218,73 @@ symtab_t get_data_table(symbol_t symbol) {
 	return table ;
 }
 
+static symtab_t get_array_table(symbol_t symbol) {
+	assert(symbol != NULL);
+	symtab_t table = NULL;
+	cdecl_t* attr = symbol->attr;
+	cdecl_t* type = attr->common.bty;
+	symbol_t new_sym = NULL;
+	if (type->common.categ == POINTER_T) {
+		new_sym = (symbol_t)gdml_zmalloc(sizeof(symbol_t));
+		new_sym->name = symbol->name;
+		new_sym->attr = type->common.bty;
+		table = get_array_table(new_sym);
+		new_sym->name = NULL; new_sym->attr = NULL;
+		free(new_sym);
+	}
+	else if (record_type(type)) {
+		get_record_table(type);
+	}
+	else {
+		fprintf(stderr, "other array type: %d\n", type->common.categ);
+		exit(-1);
+	}
+	return table;
+}
+
+
+static symtab_t get_typedef_table(symbol_t symbol) {
+	assert(symbol != NULL);
+	symtab_t table = NULL;
+	cdecl_t* type = (cdecl_t*)(symbol->attr);
+	if (record_type(type)) {
+		get_record_table(type);
+	}
+	else  {
+		table = NULL;
+	}
+	return table;
+}
+
+static symtab_t get_param_table(symbol_t symbol) {
+	assert(symbol != NULL);
+	symtab_t table = NULL;
+	params_t* param = symbol->attr;
+	if (param->is_notype) {
+		return NULL;
+	}
+	cdecl_t* type = param->decl;
+	if (type->common.categ = POINTER_T) {
+		type = type->common.bty;
+	}
+	if (record_type(type)) {
+		get_record_table(type);
+	}
+	else {
+		fprintf(stderr, "method param is other type '%d'\n", type->common.categ);
+		exit(-1);
+	}
+
+	return table;
+}
+
 symtab_t get_symbol_table(symbol_t symbol) {
 	assert(symbol != NULL);
 
 	symtab_t table = NULL;
 	void* attr = symbol->attr;
 
+	int *a = NULL;
 	switch(symbol->type) {
 		case TEMPLATE_TYPE:
 			table = ((template_attr_t*)attr)->table;
@@ -2229,6 +2297,12 @@ symtab_t get_symbol_table(symbol_t symbol) {
 			break;
 		case LAYOUT_T:
 			table = ((cdecl_t*)attr)->bitfields.table;
+			break;
+		case TYPEDEF_T:
+			table = get_typedef_table(symbol);
+			break;
+		case ARRAY_T:
+			table = get_array_table(symbol);
 			break;
 		case BANK_TYPE:
 		case REGISTER_TYPE:
@@ -2243,7 +2317,6 @@ symtab_t get_symbol_table(symbol_t symbol) {
 			table = ((struct object_common*)attr)->table;
 			if (table->undef_temp) {
 				check_undef_template(table);
-				parse_undef_templates(table);
 			}
 			break;
 		case PARAMETER_TYPE:
@@ -2254,6 +2327,9 @@ symtab_t get_symbol_table(symbol_t symbol) {
 			break;
 		case DATA_TYPE:
 			table = get_data_table(symbol);
+			break;
+		case PARAM_TYPE:
+			table = get_param_table(symbol);
 			break;
 		default:
 			error("Othe symbol %s(%d)\n", symbol->name, symbol->type);
@@ -3403,8 +3479,8 @@ expr_t* check_cast_expr(tree_t* node, symtab_t table, expr_t* expr) {
 
 expr_t* check_sizeof_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
-	expr->type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
 	expr = check_expression(node->sizeof_tree.expr, table, expr);
+	expr->type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
 	expr->type->common.categ = INT_T;
 	expr->type->common.size = sizeof(int) * 8;
 	expr->node = node;
@@ -4029,6 +4105,68 @@ static int check_array_symbol(symtab_t table, symbol_t symbol) {
 	return 0;
 }
 
+static symtab_t get_symbol_table_from_template(symtab_t table, const char* name) {
+	assert(table != NULL); assert(name != NULL);
+	check_undef_template(table);
+	symtab_t ref_table = NULL;
+	struct template_table* temp = table->template_table;
+	symbol_t sym = NULL;
+	while(temp) {
+		sym = defined_symbol(temp->table, name);
+		if (sym) {
+			ref_table = get_symbol_table(sym);
+			if (ref_table) {
+				return ref_table;
+			}
+		}
+		if (temp->table->template_table || temp->table->undef_temp) {
+			ref_table = get_symbol_table_from_template(temp->table, name);
+			if (ref_table) {
+				return ref_table;
+			}
+		}
+		temp = temp->next;
+	}
+
+	return ref_table;
+}
+
+static symbol_t get_symbol_from_template(symtab_t table, const char* parent_name, const char* name) {
+	assert(table != NULL); assert(parent_name != NULL); assert(name != NULL);
+	if (table->table_num == 0)
+		table = table->sibling;
+	check_undef_template(table);
+	symtab_t ref_table = NULL;
+	struct template_table* temp = table->template_table;
+	symbol_t parent_sym = NULL;
+	symbol_t child_sym = NULL;
+	while (temp) {
+		parent_sym = defined_symbol(temp->table, parent_name);
+		if (parent_sym) {
+			ref_table = get_symbol_table(parent_sym);
+			if (ref_table) {
+				child_sym = defined_symbol(ref_table, name);
+				if (child_sym) {
+					return child_sym;
+				}
+			}
+		}
+		if (temp->table->template_table || temp->table->undef_temp) {
+			ref_table = get_symbol_table_from_template(temp->table, parent_name);
+			if (ref_table) {
+				child_sym = defined_symbol(ref_table, name);
+				if (child_sym) {
+					return child_sym;
+				}
+			}
+		}
+		temp = temp->next;
+	}
+
+
+	return child_sym;
+}
+
 extern void check_reg_table(void);
 expr_t* check_refer(symtab_t table, reference_t* ref, expr_t* expr) {
 	assert(table != NULL); assert(ref != NULL); assert(expr != NULL);
@@ -4053,28 +4191,8 @@ expr_t* check_refer(symtab_t table, reference_t* ref, expr_t* expr) {
 			symbol = symbol_find_notype(table, tmp->name);
 		}
 		if (symbol != NULL) {
-			if (symbol->type == TYPEDEF_T) {
-				cdecl_t* type = (cdecl_t*)(symbol->attr);
-				if (record_type(type)) {
-					switch (type->common.categ) {
-						case STRUCT_T:
-							ref_table = type->struc.table;
-							break;
-						case LAYOUT_T:
-							ref_table = type->layout.table;
-							break;
-						default:
-							ref_table = type->bitfields.table;
-							break;
-					}
-				}
-				else  {
-					ref_table = NULL;
-				}
-			}
-			else {
-				ref_table = get_symbol_table(symbol);
-			}
+			ref_table = get_symbol_table(symbol);
+			ref_table = (ref_table == NULL) ? get_symbol_table_from_template(table, tmp->name) : ref_table;
 			if (tmp->is_array) {
 				check_array_symbol(table, symbol);
 			}
@@ -4096,6 +4214,7 @@ expr_t* check_refer(symtab_t table, reference_t* ref, expr_t* expr) {
 			obj_type = ((object_t*)(symbol->attr))->obj_type;
 		}
 		ref_symbol = symbol_find_notype(ref_table, tmp->next->name);
+		ref_symbol = (ref_symbol == NULL) ? get_symbol_from_template(table, tmp->name, tmp->next->name) : ref_symbol;
 		if ((symbol->type == CONNECT_TYPE && !strcmp(tmp->next->name, "obj")) ||
 			((symbol->type == OBJECT_TYPE) && !(strcmp(obj_type, "connect")) && (!strcmp(tmp->next->name, "obj")))) {
 			cdecl_t* type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
@@ -4132,6 +4251,7 @@ expr_t* check_refer(symtab_t table, reference_t* ref, expr_t* expr) {
 	if (tmp->is_array) {
 		check_array_symbol(table, ref_symbol);
 	}
+
 	return expr;
 }
 
@@ -4219,7 +4339,7 @@ static int first_param_is_obj(signature_t* sig) {
 		cdecl_t* new_type = type->common.bty;
 		object_t* obj = get_current_obj();
 		if ((new_type->typedef_name) && !strcmp(new_type->typedef_name, "conf_object_t")) {
-			if (strcmp(obj->obj_type, "attribute") == 0) {
+			if (!strcmp(obj->obj_type, "attribute")) {
 				return 0;
 			} else {
 				return 1;
@@ -4238,11 +4358,13 @@ expr_t* check_function_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	signature_t* sig = NULL;
 	int argc = 0;
 	int param_start = 0;
+	int arg_num = 0;
 	if (func->type->common.categ == FUNCTION_T) {
 		sig = func->type->function.sig;
 		expr->type = func->type->common.bty;
 		if (sig)
 			argc = sig->params->len;
+		arg_num = get_param_num(node->expr_brack.expr_in_brack);
 	}
 	else if (func->type->common.categ == POINTER_T) {
 		sig = func->type->common.bty->function.sig;
@@ -4250,13 +4372,18 @@ expr_t* check_function_expr(tree_t* node, symtab_t table, expr_t* expr) {
 		expr->type = bty->common.bty;
 		if (sig) {
 			argc = sig->params->len;
-				if (func->is_obj && first_param_is_obj(sig)) {
-				argc -= 1;
-				param_start = 1;
-		}
+			if (func->is_obj && first_param_is_obj(sig)) {
+				arg_num = get_param_num(node->expr_brack.expr_in_brack);
+				if (argc != arg_num) {
+					argc -= 1;
+					param_start = 1;
+				}
+			}
+			else {
+				arg_num = get_param_num(node->expr_brack.expr_in_brack);
+			}
 		}
 	}
-	int arg_num = get_param_num(node->expr_brack.expr_in_brack);
 	DEBUG_EXPR("func name: %s, argc: %d, argnum: %d\n", func->type->var_name, argc, arg_num);
 	if (arg_num != argc) {
 		fprintf(stderr, "error: too %s arguments to function\n",
