@@ -981,6 +981,7 @@ static void attribute_realize(object_t *obj) {
 	paramspec_t* spec;
 	attribute_t *attr_obj = (attribute_t *)obj;
 
+	add_object_templates(obj, obj->node->attribute.templates);
 	/* parse the arraydef about attribute */
 	parse_attribute_attr(obj->node, obj->symtab->parent);
 	attribute_attr_t* attribute_attr = obj->node->common.attr;
@@ -988,29 +989,38 @@ static void attribute_realize(object_t *obj) {
 	/* parse the elements that in the attribute table*/
 	parse_attribute(obj->node, obj->symtab->sibling);
 
-	sym = symbol_find(obj->symtab, "allocate_type", PARAMETER_TYPE);
+	sym = defined_symbol(obj->symtab->sibling, "allocate_type", PARAMETER_TYPE);
 	if (sym) {
 		get_param_spec(attr, spec);
 		alloc_type = get_allocate_type(spec->value->u.string, attr_obj);
 		attr_obj->alloc_type = alloc_type;
 	}
-	sym = symbol_find(obj->symtab, "configuration", PARAMETER_TYPE);
+	sym = defined_symbol(obj->symtab->sibling, "configuration", PARAMETER_TYPE);
 	if (sym) {
 		get_param_spec(attr, spec);
 		attr_obj->configuration = get_configuration(spec->value->u.string);
 	}
-	sym = symbol_find(obj->symtab, "persistent", PARAMETER_TYPE);
-	sym = symbol_find(obj->symtab, "internal", PARAMETER_TYPE);
-	sym = symbol_find(obj->symtab, "attr_type", PARAMETER_TYPE);
+	sym = defined_symbol(obj->symtab->sibling, "persistent", PARAMETER_TYPE);
+	sym = defined_symbol(obj->symtab->sibling, "internal", PARAMETER_TYPE);
+	sym = defined_symbol(obj->symtab->sibling, "attr_type", PARAMETER_TYPE);
 	if (sym) {
 		get_param_spec(attr, spec);
-		fprintf(stderr, "Pay attetion: not implement the attribute parameter: %s\n", sym->name);
-		exit(-1);
+		if (spec->value->u.string != NULL) {
+			attr_obj->type = get_type(spec->value->u.string, attr_obj);
+		} else {
+			attr_obj->type = strdup("i");
+			attr_obj->ty = INT_T;
+		}
 	}
-	sym = symbol_find(obj->symtab, "type", PARAMETER_TYPE);
+	sym = defined_symbol(obj->symtab, "type", PARAMETER_TYPE);
 	if (sym) {
 		get_param_spec(attr, spec);
-		attr_obj->type = get_type(spec->value->u.string, attr_obj);
+		if (spec->value->u.string != NULL) {
+			attr_obj->type = get_type(spec->value->u.string, attr_obj);
+		} else {
+			attr_obj->type = strdup("i");
+			attr_obj->ty = INT_T;
+		}
 	}
 	process_object_names(obj);
 	return;

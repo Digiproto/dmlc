@@ -186,7 +186,7 @@ symbol_t get_symbol_from_banks(const char* name) {
 	device_t* dev = get_device();
 	list_for_each(p, &dev->obj.childs) {
 		tmp = list_entry(p, object_t, entry);
-		symbol = defined_symbol(tmp->symtab->sibling, name);
+		symbol = defined_symbol(tmp->symtab->sibling, name, 0);
 		if (symbol)
 			return symbol;
 	}
@@ -3450,7 +3450,9 @@ expr_t* check_ternary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 
 	expr_t* cond_expr = check_expr(node->ternary.cond, table);
 	//expr->type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
-	if (!is_scalar_type(cond_expr->type)) {
+	if (!is_scalar_type(cond_expr->type) &&
+		!is_no_type(cond_expr->type) &&
+		!is_parameter_type(cond_expr->type)) {
 		error("used struct type value where scalar is required\n");
 	}
 
@@ -4112,7 +4114,7 @@ static symtab_t get_symbol_table_from_template(symtab_t table, const char* name)
 	struct template_table* temp = table->template_table;
 	symbol_t sym = NULL;
 	while(temp) {
-		sym = defined_symbol(temp->table, name);
+		sym = defined_symbol(temp->table, name, 0);
 		if (sym) {
 			ref_table = get_symbol_table(sym);
 			if (ref_table) {
@@ -4141,11 +4143,11 @@ static symbol_t get_symbol_from_template(symtab_t table, const char* parent_name
 	symbol_t parent_sym = NULL;
 	symbol_t child_sym = NULL;
 	while (temp) {
-		parent_sym = defined_symbol(temp->table, parent_name);
+		parent_sym = defined_symbol(temp->table, parent_name, 0);
 		if (parent_sym) {
 			ref_table = get_symbol_table(parent_sym);
 			if (ref_table) {
-				child_sym = defined_symbol(ref_table, name);
+				child_sym = defined_symbol(ref_table, name, 0);
 				if (child_sym) {
 					return child_sym;
 				}
@@ -4154,7 +4156,7 @@ static symbol_t get_symbol_from_template(symtab_t table, const char* parent_name
 		if (temp->table->template_table || temp->table->undef_temp) {
 			ref_table = get_symbol_table_from_template(temp->table, parent_name);
 			if (ref_table) {
-				child_sym = defined_symbol(ref_table, name);
+				child_sym = defined_symbol(ref_table, name, 0);
 				if (child_sym) {
 					return child_sym;
 				}

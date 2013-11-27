@@ -946,9 +946,14 @@ int symbol_defined(symtab_t table, const char* name) {
         return 0;
 }
 
-symbol_t defined_symbol(symtab_t table, const char* name) {
+symbol_t defined_symbol(symtab_t table, const char* name, type_t type) {
        assert(table != NULL); assert(name != NULL);
-       symbol_t symbol = _symbol_find_notype(table->table, name);
+       symbol_t symbol = NULL;
+	if (type) {
+		symbol = _symbol_find(table->table, name, type);
+	} else {
+		symbol = _symbol_find_notype(table->table, name);
+	}
 
        return symbol;
 }

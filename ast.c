@@ -1226,7 +1226,7 @@ void parse_bitorder(tree_t* node, symtab_t table) {
 
 void parse_parameter(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
-	symbol_t symbol = defined_symbol(table, node->ident.str);
+	symbol_t symbol = defined_symbol(table, node->ident.str, 0);
 
         if (!symbol) {
                 parameter_attr_t* attr = (parameter_attr_t*)gdml_zmalloc(sizeof(parameter_attr_t));
