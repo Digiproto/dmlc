@@ -251,6 +251,17 @@ tree_t* create_node (const char *name, int type, int size, YYLTYPE* location)
 	return node;
 }
 
+extern void translate_string(tree_t *node);
+tree_t *create_string_node(const char *ptr) {
+	tree_t *tmp;
+
+	tmp = (tree_t *)create_node("const_string", CONST_STRING_TYPE, sizeof(struct tree_string), NULL);
+	tmp->string.pointer = ptr;
+	tmp->string.length = strlen(ptr);
+	tmp->common.translate = translate_string;
+	return tmp;
+}
+
 static int check_object_place(symtab_t table, int obj_type) {
 	assert(table != NULL);
 	int type = table->type;

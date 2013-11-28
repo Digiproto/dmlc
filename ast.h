@@ -26,6 +26,7 @@ int get_list_num (tree_t* root);
 symtab_t get_obj_block_table(tree_t* spec);
 arraydef_attr_t* get_arraydef(tree_t* node, symtab_t table);
 tree_t* create_node (const char *name, int type, int size, YYLTYPE* location);
+tree_t *create_string_node(const char *ptr);
 void add_child (tree_t* parent, tree_t* child);
 tree_t* create_node_list (tree_t* root, tree_t* new_node);
 obj_spec_t* get_obj_spec(obj_spec_t* obj_spec, tree_t* node);
