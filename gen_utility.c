@@ -52,7 +52,7 @@ static int throw_index = 1;
 void enter_scope(void){
     D("{\n");
     tab_count++;
-	POS;
+	//POS;
 }
 
 void exit_scope(void){
@@ -72,6 +72,11 @@ void tabcount_add(int num) {
 void tabcount_sub(int num) {
 	tab_count -= num;
 }
+
+int get_tab_count(void) {
+	return tab_count;
+}
+
 const char *get_tabstr(void){
 	return tab[tab_count];
 }

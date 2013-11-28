@@ -84,6 +84,12 @@ const char *size2str(int size);
 const char *bits2str(int bits);
 int adjust_size(int size);
 int is_simics_api(const char *name);
-
+static void gen_src_loc(YYLTYPE *l) {
+    if(l) {
+        POS;
+        D("#line %d \"%s\"", l->first_line, l->file->name);
+    }
+    new_line();
+}
 #endif /* __GEN_UTILITY_H__ */
 
