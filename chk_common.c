@@ -34,14 +34,16 @@ void chk_dml_method(object_t *obj, struct method_name *m) {
          * not do them before */
         //pre_chk_method(obj, method);
 		context_t context;
-		OBJ = obj;
-		current_table = obj->symtab; 
+		obj_ref_t obj_ref;
 
-		pre_gen_method(obj, method, &context);
+		obj_ref.obj = obj;
+		obj_ref.ref = NULL;
+		current_table = obj->symtab; 
+		pre_gen_method(&obj_ref, method, &context);
 		//printf("obj %s, method to check %s\n", obj->name, m->name);
         parse_method_block(method);
         //post_chk_method(obj, method);
-		post_gen_method(obj, method, &context);
+		post_gen_method(&obj_ref, method, &context);
 }
 
 void change_current_table(symtab_t table) {
