@@ -26,18 +26,15 @@
 #include "parameter_type.h"
 
 #include <assert.h>
-
+obj_ref_t *OBJ;
 symtab_t current_table;
-	
-static flow_ctrl_t flow;
+static flow_ctrl_t *flow;
 static int no_alias;
 static int no_star = 1;
 static symbol_t SYM;
 static int in_inline;
 static int base_type = 0;
-
 extern object_t *DEV;
-extern object_t *OBJ;
 
 FILE *out;
 
@@ -114,12 +111,19 @@ void translate_quote(tree_t *t) {
 	if(node->common.type == IDENT_TYPE) {
 		name = node->ident.str;
 		if(!strcmp(name, "this")) {
+			/*
 			ref = get_obj_ref(OBJ);
 			if(!OBJ->is_array) { 
 				D("%s", ref);
 			} else {
-				/*handle array index */
+				//handle array index 
 				D("%s[%s]", ref, "_idx0");
+			}*/
+			if(OBJ->ref) {
+				printf_ref(&OBJ->ret);	
+			} else {
+				ref = get_obj_ref(OBJ->obj);
+				D("%s", ref);
 			}
 			return;
 		}
@@ -214,6 +218,11 @@ void translate_ref_expr(tree_t *t){
 	if(sym && sym->type == METHOD_TYPE) {
 		obj = (object_t *)sym->owner;
 		name = get_obj_ref(obj);
+		if(!strcmp(obj->obj_type, "device")) {
+			D("_DML_M_%s", sym->name);
+		} else {
+			D("_DML_M__%s__%s", name, sym->name);
+		}
 	}
 
 }
@@ -409,7 +418,6 @@ static void translate_call_common(tree_t *expr, tree_t *ret){
 		node = method_attr->common.node;	
 		block = node->method.block;
 		if(block_empty(block)) {
-			new_line();
 			return;
 		}
 	} else {
@@ -423,7 +431,7 @@ static void translate_call_common(tree_t *expr, tree_t *ret){
 
 	sym = symbol_find(current_table,"exec",TMP_TYPE);
 	*/
-	sym = flow.exec;
+	sym = flow->exec;
 	name = get_symbol_alias(sym);
 	//POS;
 	if(method_sym && (method_sym->type == METHOD_TYPE)) {
@@ -437,6 +445,7 @@ static void translate_call_common(tree_t *expr, tree_t *ret){
 	} else {
 		my_DBG("method not right %p, %d\n", method_sym, method_sym->type);
 	}
+	POS;
 	D("%s = ",name);
 	obj_name = get_obj_qname(obj);
 	if(!strcmp(obj->obj_type, "device")) {
@@ -470,9 +479,10 @@ static void translate_call_common(tree_t *expr, tree_t *ret){
 	POS;
 	D("if(%s) ",name);
 	enter_scope();
+	gen_src_loc(flow->loc);
+	POS;
 	D("return 1;\n");
 	exit_scope();
-	new_line();
 }
 
 void translate_call(tree_t *t) {
@@ -654,21 +664,27 @@ static int node_is_expression(tree_t *node) {
 
 void translate_block(tree_t *t) {
 	tree_t *node;
-	
+	YYLTYPE *l;
+	int ret;
+
 	enter_scope();
 	if(t->block.statement) {
 		node = t->block.statement;
 		while(node) {
+			l = &node->common.location;
+			ret = node_is_expression(node);
+			/*gen line/file info for gcc*/
+			gen_src_loc(l);
+			if(ret) {
+				POS;	
+			}
 			translate(node);
-			if(node_is_expression(node)) {
+			/*expression ;*/
+			if(ret) {
 				D(";");
 			}
 			new_line();
 			node = node->common.sibling;
-			if(node) {
-				//new_line();
-				POS;
-			}
 		}
 	}
 	exit_scope();
@@ -686,6 +702,7 @@ void translate_local(tree_t *t) {
 		D("static ");
 	}
 	node = t->local_tree.cdecl;
+	POS;
 	translate(node);
 	
 	node = t->local_tree.expr;
@@ -761,12 +778,14 @@ void translate_if_else(tree_t *t) {
 		}
 		saved = current_table;	
 		current_table = table;
+		POS;
 		translate(node);
 		current_table = saved;
 		return;
 	}
 
 	if(1) {
+		POS;
 		D("if ");
 		D("(");
 		translate(node);
@@ -781,7 +800,7 @@ void translate_if_else(tree_t *t) {
 		}
 		node = t->if_else.else_if;
 		if(node) {
-			D("else ");
+			POS;
 			table = node->if_else.if_table;
 			saved = current_table;
 			current_table = table;
@@ -835,6 +854,7 @@ void translate_for(tree_t *t) {
 	tree_t *node;
 	
 	node = t->for_tree.init;
+	POS;
 	D("for ");
 	D("(");
 	if(node) {
@@ -910,14 +930,17 @@ static void translate_throw(tree_t *t) {
 }
 
 void translate_break(tree_t *t) {
+	POS;
 	D("break;");
 }
 
 void translate_continue(tree_t *t) {
+	POS;
 	D("continue;");
 }
 
 void translate_switch(tree_t *t) {
+	POS;
 	D("switch");
 	D(" ( ");
 	translate(t->switch_tree.cond);
@@ -929,6 +952,7 @@ void translate_case(tree_t *t) {
 	tree_t *expr;
 
 	expr = t->case_tree.expr;
+	POS;
 	D("case ");
 	translate(expr);
 	D(" :");
@@ -936,6 +960,7 @@ void translate_case(tree_t *t) {
 }
 
 void translate_default(tree_t *t) {
+	POS;
 	D("default :");
 }
 
@@ -956,10 +981,14 @@ symbol_t get_expression_sym(tree_t *node) {
 	return NULL;
 }
 
+static int is_statement(tree_t *t) {	
+	return 0;	
+}
+
 void translate_foreach(tree_t *t) {
 	tree_t *node;
 	const char *ident;
-	int i;
+	int i, j = 0, k = 0;
 	int len = 0;
 	symbol_t list;
 	symbol_t tmp = NULL;
@@ -968,6 +997,7 @@ void translate_foreach(tree_t *t) {
 	foreach_attr_t *attr;
 	symtab_t table;
 	symtab_t saved;
+	object_t *index_obj;
 
 	node = t->foreach.ident;
 	ident = node->ident.str;
@@ -995,25 +1025,54 @@ void translate_foreach(tree_t *t) {
 	if(val->u.list.vector[0].type == PARAM_TYPE_REF) {
 		symbol_set_type(tmp, OBJECT_TYPE);
 	}
+	POS;
 	enter_scope();
 	for(i = 0; i < len; i++) {
 		symbol_set_value(tmp, val->u.list.vector[i].u.ref);
 		obj = (object_t *)val->u.list.vector[i].u.ref;
 		my_DBG("--------object %s\n", obj->name);
-		enter_scope();
+
+		//enter_scope();
 		node = t->foreach.block;
-		
+		YYLTYPE *loc = &node->common.location;
 		if(obj->is_array) {
-			D("int _idx0;");
-			new_line();
 			POS;
-			D("for(_idx0 = 0; _idx0 < %d; _idx0++)", obj->array_size);
 			enter_scope();
+			k = obj->depth;
+			j = 0;
+			/*gen index var*/
+			while(j < k) {
+				gen_src_loc(loc);
+				POS;
+				D("int _idx%d;\n", j);
+				POS;
+				D("UNUSED(_idx%d)\n", j);
+				j++;
+			}
+			j = 0;
+			while(j < k) {
+				gen_src_loc(loc);
+				POS;
+				index_obj  = find_index_obj(obj, j+1);
+				D("for(_idx%d = 0; _idx%d < %d; _idx%d++)", j, j, index_obj->array_size, j);
+				enter_scope();
+				j++;
+			}
 		}
+		gen_src_loc(loc);
 		translate(node);
+		new_line();
 		if(obj->is_array) {
+			j = 0;
+			while(j < k) {
+				exit_scope();
+				new_line();
+				j++;
+			}
 			exit_scope();
+			new_line();
 		}
+		/*
 		if (node->common.type == BLOCK_TYPE) {
 			new_line();
 			exit_scope();
@@ -1022,12 +1081,11 @@ void translate_foreach(tree_t *t) {
 		} else {
 			exit_scope();
 			new_line();
-		}
+		}*/
 	}
 	symbol_set_type(tmp, FOREACH_TYPE);
 	exit_scope();
 	current_table = saved; 
-	new_line();
 }
 
 static void process_inline_block(method_attr_t *m) {
@@ -1107,12 +1165,17 @@ void translate_inline(tree_t *t) {
 	if (check_method_param(sym, expr, ret, 1))
 		return;
 	*/
-	pre_gen_method(sym->owner, method->common.node, &context);
+	obj_ref_t obj_ref;
+	obj_ref.obj = (object_t *)sym->owner;
+	/*need to get this ref*/
+	obj_ref.ref = NULL; 
+	pre_gen_method(&obj_ref, method->common.node, &context);
 	enter_scope();
 	process_inline_start(method, expr_list, ret, &context);
 	process_inline_block(method);
 	D("\n");
 	process_inline_end(method, ret, &context);
+	post_gen_method(&obj_ref, method->common.node, &context);
 	D("\n");
 	exit_scope();
 	return;
@@ -1147,7 +1210,10 @@ void translate_typeof(tree_t *t) {
 			exit(-1);
 		}
 		if(!strcmp(name, "this")) {
-			D("%s", OBJ->attr_type);
+			if(OBJ->obj->is_abstract) {
+				my_DBG("fatal error, cannot use abstract object %s\n", OBJ->obj->name);				
+			}
+			D("%s", OBJ->obj->attr_type);
 		} else if(sym->type == OBJECT_TYPE){
 			obj = (object_t *)sym->attr;
 			D("%s", obj->attr_type);
@@ -1237,7 +1303,7 @@ static const char *get_basetype_type(tree_t *node) {
 	return name;
 }
 
-static void print_cdecl2(tree_t *t);
+static void print_cdecl2(tree_t *t, int ret);
 static void  print_cdecl1(tree_t *t, int ret) {
 	if(t->cdecl.is_const) {
 		D("const");
@@ -1245,10 +1311,10 @@ static void  print_cdecl1(tree_t *t, int ret) {
 	print_basetype(t->cdecl.basetype);
 	D(" ");
 	if(ret) {
-		D("*");
+		//D("*");
 	}
 	if (t->cdecl.decl)
-		print_cdecl2(t->cdecl.decl);
+		print_cdecl2(t->cdecl.decl, ret);
 }
 
 static int node_has_type(tree_t *node) {
@@ -1455,6 +1521,10 @@ void translate_integer_literal(tree_t *t) {
 	D("%s", t->int_cst.int_str);
 }
 
+void translate_string(tree_t *t) {
+	D("%s", t->string.pointer);
+}
+
 void translate_c_keyword(tree_t *t) {
 	D("%s", t->ident.str);
 }
@@ -1524,23 +1594,23 @@ void translate_cdecl2(tree_t *t) {
 	}
 }
 
-static void print_cdecl3(tree_t *node);
-static void print_cdecl2(tree_t *t) {
+static void print_cdecl3(tree_t *node, int ret);
+static void print_cdecl2(tree_t *t, int ret) {
 	if(t->common.type == CDECL_TYPE) {
 		if(t->cdecl.is_const) {
 			D("const");
-			print_cdecl2(t->cdecl.decl);
+			print_cdecl2(t->cdecl.decl, ret);
 		}else if(t->cdecl.is_point) {
 			D("*");
 			my_DBG("*\n");
-			print_cdecl2(t->cdecl.decl);
+			print_cdecl2(t->cdecl.decl, ret);
 		}else if (t->cdecl.is_vect) {
 			/*vect type */
 			my_DBG("TODO: vect type\n");
 		}
 	} else {
 		my_DBG("cdecl3\n");
-		print_cdecl3(t);
+		print_cdecl3(t, ret);
 	}
 }
 
@@ -1555,8 +1625,11 @@ static const char *get_cdecl2_name(tree_t *t) {
 	return NULL;
 }
 
-static void print_cdecl3(tree_t *t) {
+static void print_cdecl3(tree_t *t, int ret) {
 	if (t->common.type == IDENT_TYPE || t->common.type == DML_KEYWORD_TYPE) {
+		if(ret) {
+			D("*");
+		}
 		D("%s", t->ident.str);
 	} else {
 		my_DBG("TODO: other cdecl3 type\n");
@@ -1695,12 +1768,18 @@ void do_block_logic(tree_t *block) {
 	symbol_t sym;
 	const char *name;
 
-	D("{\n");
+	//D("{\n");
+	POS;	
+	enter_scope();
 	symbol_insert(current_table, "exec", TMP_TYPE, NULL); 
 	sym = symbol_find(current_table, "exec", TMP_TYPE);
-	flow.exec = sym;
+	flow_ctrl_t l_flow;
+	l_flow.exec = sym;
+	l_flow.loc = &block->common.location;
+	flow = &l_flow;
 	name = get_symbol_alias(sym);
-	tabcount_add(1);
+	//tabcount_add(1);
+	gen_src_loc(&block->common.location);
 	POS;
 	D("bool %s = 0;\n",name);
 	POS;
@@ -1708,21 +1787,18 @@ void do_block_logic(tree_t *block) {
 	POS;
 	translate(block);
 	new_line();
-	tabcount_sub(1);
-	POS;
-	D("}\n");
-	POS;
+	exit_scope();
+	new_line();
 }
 
 static void gen_dummy_block(tree_t *block) {
-		D("{\n");
-		tabcount_add(1);
+		enter_scope();
 		POS;
 		D("/*dummy function, need optimized*/\n");
 		POS;
 		D("return 0;\n");
-		tabcount_sub(1);
-		D("}\n");
+		exit_scope();
+		new_line();
 }
 
 static void gen_method_block(object_t *obj, tree_t *m){
@@ -1733,55 +1809,68 @@ static void gen_method_block(object_t *obj, tree_t *m){
 		gen_dummy_block(block);
 		return;
 	}
-
-	D("{\n");
+	enter_scope();
+	/*{\n*/
 	D_HEAD;
-	tabcount_add(1);
 	POS;
-	D("{\n");
-	tabcount_add(1);
+	enter_scope();
+	/*	{\n*/
 	POS;
+	enter_scope();
+	/*		{\n*/
 	do_block_logic(block);
-	/*default return value*/
 	D_END;
+	exit_scope();
+	new_line();
+	/*		}\n*/
+	gen_src_loc(&block->common.location);
+	POS;
 	D("return 0;\n");
-	tabcount_sub(1);
-	POS;
-	D("}\n");
-	tabcount_sub(1);
-	POS;
-	D("}\n");
+	exit_scope();
+	new_line();
+	/*	}\n*/
+	exit_scope();
+	new_line();
+	/*}\n*/
+}
+
+static void gen_object_index(object_t *obj) {
+	int i; 
+	
+	for(i = 0; i < obj->depth; i++) {
+		D(", int _idx%d", i);
+	}
 }
 
 void gen_dml_method_header(object_t *obj, tree_t *m) {
-	/*generate function head*/
-	if(strcmp(obj->obj_type, "device" )) {
-		if(!obj->is_array) {
-			D("\nstatic bool\
-				\n_DML_M_%s__%s(%s_t *_dev",obj->qname, m->method.name, DEV->name);
-		} else {
-			D("\nstatic bool\
-				\n_DML_M_%s__%s(%s_t *_dev, int _idx0",obj->qname, m->method.name, DEV->name);
-		}
+	if(obj->encoding == Obj_Type_Device) {
+		/*for global method no, array involved*/
+		D("static bool\
+			\n_DML_M_%s(%s_t *_dev", m->method.name, DEV->name);
 	} else {
-		if(!obj->is_array) {
-			D("\nstatic bool\
-				\n_DML_M_%s(%s_t *_dev", m->method.name, DEV->name);
-		} else {
-			D("\nstatic bool\
-				\n_DML_M_%s(%s_t *_dev, int _idx0", m->method.name, DEV->name);
-		}
+			D("static bool\
+				\n_DML_M_%s__%s(%s_t *_dev", obj->qname, m->method.name, DEV->name);
+			gen_object_index(obj);
 	}
 	gen_method_params(obj, m);
 }
 
-static inline void context_switch_to(context_t *context, object_t *obj, symtab_t to, symtab_t method_parent) {
+/*need to implemention object ref */
+static void change_object(object_t *obj) {
+}
+
+/*back to old object*/
+static void restore_object(object_t *obj) {
+}
+
+static inline void context_switch_to(context_t *context, obj_ref_t *obj, symtab_t to, symtab_t method_parent) {
 	context->current = to;
 	context->saved = current_table;
 	context->method_parent = method_parent;
 	context->obj = OBJ;
 	current_table = to;
 	OBJ = obj;
+	change_object(obj->obj);
 }
 
 
@@ -1789,9 +1878,10 @@ static inline void context_restore(context_t *context, symtab_t *old) {
 	current_table = context->saved;
 	OBJ = context->obj;
 	*old = context->method_parent;
+	restore_object(OBJ->obj);
 }
 
-void pre_gen_method(object_t *obj, tree_t *method, context_t *context) {
+void pre_gen_method(obj_ref_t *obj, tree_t *method, context_t *context) {
 	method_attr_t *attr;
 	symtab_t table;
 	symtab_t old_table;
@@ -1799,13 +1889,13 @@ void pre_gen_method(object_t *obj, tree_t *method, context_t *context) {
 	attr = method->common.attr;
 	table = attr->table;
 	old_table = table->parent;
-	table->parent = obj->symtab;
+	table->parent = obj->obj->symtab;
 	context_switch_to(context, obj, table, old_table);
-	my_DBG("method name %s, obj %s, table num %d\n", method->method.name, obj->name, table->table_num);
+	my_DBG("method name %s, obj %s, table num %d\n", method->method.name, obj->obj->name, table->table_num);
 	OBJ = obj;
 }
 
-void post_gen_method(object_t *obj, tree_t *method, context_t *context) {
+void post_gen_method(obj_ref_t *obj, tree_t *method, context_t *context) {
 	method_attr_t *attr;
 	symtab_t table;
 
@@ -1814,23 +1904,47 @@ void post_gen_method(object_t *obj, tree_t *method, context_t *context) {
 	context_restore(context, &table->parent);
 }
 
+static void gen_object_info(obj_ref_t *ref, struct method_name *m) {
+	const char *name;
+	char buf[256];
+
+	if(!ref->ref && ref->obj) {
+		if(ref->obj->encoding == Obj_Type_Device) {
+			D("/* %s */\n", m->name);
+			return;
+		} else {
+			name = get_obj_ref(ref->obj);
+			sscanf(name, "_dev->%s", buf);
+			D("/* %s.%s */\n", buf, m->name);
+		}
+	} else {
+		/*gen ref info*/
+	}
+}
+
 void gen_dml_method(object_t *obj, struct method_name *m) {
 	tree_t *method = m->method;
 	context_t context;
+	obj_ref_t obj_ref;
+
 	/*set up entry condition*/
-	OBJ = obj;
+	obj_ref.obj = obj;
+	obj_ref.ref = NULL;
+	OBJ = NULL;
 	current_table = obj->symtab;
 
 	/* we should pase the elements and calcualate the
 	 * expressions that in the method block, as we did
 	 * not do them before */
-	pre_gen_method(obj, method, &context);
+	pre_gen_method(&obj_ref, method, &context);
 	//parse_method_block(method);
+	tabcount_set(0);
+	D("\n");
+	gen_src_loc(&method->common.location);
+	gen_object_info(&obj_ref, m);
 	gen_dml_method_header(obj, method);
 	do_method_params_alias(obj, method);
-	D("\n");
-	tabcount_set(0);
 	gen_method_block(obj, method);	
-	post_gen_method(obj, method, &context);
+	post_gen_method(&obj_ref, method, &context);
 }
 

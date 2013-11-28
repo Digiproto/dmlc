@@ -31,13 +31,21 @@
 
 typedef struct flow_control {
         symbol_t exec;
+		YYLTYPE *loc;
 } flow_ctrl_t;
+
+
+typedef struct obj_context {
+	object_t *obj;
+	tree_t *ref;
+	ref_ret_t ret;
+} obj_ref_t;
 
 typedef struct context_table {
         symtab_t current;
         symtab_t saved;
         symtab_t method_parent;
-        object_t *obj;
+		obj_ref_t *obj;
 } context_t;
 
 void gen_dml_method(object_t *obj, struct method_name *m);
@@ -46,8 +54,8 @@ const char *get_type_info(tree_t *node);
 void gen_dml_method_header(object_t *obj, tree_t *m);
 void cdecl_or_ident_list_params_alias(tree_t *params, int ret);
 void do_block_logic(tree_t *block);
-void pre_gen_method(object_t *obj, tree_t *method, context_t *context);
-void post_gen_method(object_t *obj, tree_t *method, context_t *context);
+void pre_gen_method(obj_ref_t *obj, tree_t *method, context_t *context);
+void post_gen_method(obj_ref_t *obj, tree_t *method, context_t *context);
 void do_block_logic(tree_t *block);
 void translate_block(tree_t *node);
 void translate_foreach(tree_t *node);
@@ -61,6 +69,7 @@ void translate_ident(tree_t *node);
 void translate_if_else(tree_t *node);
 void translate_dml_keyword(tree_t *node);
 void translate_integer_literal(tree_t *node);
+void translate_string(tree_t *t);
 void translate_log(tree_t *node);
 void translate_expr_list(tree_t *expr,const char *prefix);
 void translate_inline(tree_t *t);
