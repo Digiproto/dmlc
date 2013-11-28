@@ -314,7 +314,8 @@ static int check_param_type(tree_t* node, params_t** list, int args, int in_line
 
 	while (tmp != NULL) {
 		if ((list[i]->is_notype) && (in_line == 0)) {
-			error(" no type for input/output parameter\n");
+			//error(" no type for input/output parameter\n");
+			PERRORN("no type for input/output parameter\n", tmp);
 			return 0;
 		}
 		type = list[i]->decl;
@@ -353,8 +354,9 @@ static int check_method_in_param(symbol_t sym, tree_t* call_expr, int in_line) {
 	if ((params == NULL) && (arg_num == 0)) {
 		ret = 0;
 	} else if (params->in_argc != arg_num) {
-		error("wrong number of input arguments\n");
-		ret = 1;
+		//error("wrong number of input arguments\n");
+		PERRORN("wrong number of input arguments\n", param_node);
+		//ret = 1;
 	} else {
 		/* check the type of parameters */
 		ret = check_param_type(param_node, params->in_list, params->in_argc, in_line);
@@ -375,8 +377,9 @@ static int check_method_out_param(symbol_t sym, tree_t* ret_expr, int in_line) {
 		ret = 0;
 	}
 	else if (params->ret_argc != arg_num) {
-		error("wrong number of output arguments\n");
-		ret = 1;
+		//error("wrong number of output arguments\n");
+		PERRORN("wrong number of output arguments\n", ret_expr);
+		//ret = 1;
 	} else {
 		ret = check_param_type(expr, params->ret_list, params->ret_argc, in_line);
 	}
@@ -1878,7 +1881,8 @@ static inline void context_restore(context_t *context, symtab_t *old) {
 	current_table = context->saved;
 	OBJ = context->obj;
 	*old = context->method_parent;
-	restore_object(OBJ->obj);
+	/* temporary comment by eJim Lee */
+	//restore_object(OBJ->obj);
 }
 
 void pre_gen_method(obj_ref_t *obj, tree_t *method, context_t *context) {

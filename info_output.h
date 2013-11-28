@@ -42,4 +42,22 @@
 		exit(-1); \
 	}while(0)
 
+#define PERRORN(FMT, NODE, ...) \
+	do{ \
+		if(NODE) { \
+			PERROR(FMT, (NODE)->common.location, ## __VA_ARGS__); \
+		}else{ \
+			error(FMT, ## __VA_ARGS__); \
+		}\
+	}while(0)
+
+#define PWARNN(FMT, NODE, ...) \
+	do{ \
+		if(NODE) { \
+			PWARN(FMT, (NODE)->common.location, ## __VA_ARGS__); \
+		}else{\
+			warning(FMT, ## __VA_ARGS__); \
+		} \
+	}while(0)
+
 #endif

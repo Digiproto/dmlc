@@ -23,6 +23,7 @@
 
 #include "ref.h"
 #include "gen_debug.h"
+#include "info_output.h"
 
 extern symtab_t current_table;
 void ref_info_init(ref_info_t *fi) {
@@ -289,7 +290,8 @@ normal_case:
                                 sym = symbol_find(symtab, name, OBJECT_TYPE);
                                 my_DBG("object found %s, sym %p\n", name, sym);
                                 if(!sym){
-                                        my_DBG("no object %s symbol found\n",name);
+                                        //my_DBG("no object %s symbol found\n",name);
+                                        error("no object %s symbol found", name);
                                 }
                                 obj = (object_t *)(sym->attr);
                                 symtab = obj->symtab;

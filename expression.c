@@ -93,9 +93,8 @@ static int dml_struct_type(symbol_t symbol) {
         case PARAMETER_TYPE:
             refer_type = type;
             break;
-	case OBJECT_TYPE:
-		fprintf(stderr, "In %s, line = %d, object type\n", __FUNCTION__, __LINE__);
-		exit(-1);
+        case OBJECT_TYPE:
+            error("In %s, line = %d, object type\n", __FUNCTION__, __LINE__);
         default:
             refer_type = 0;
             break;
@@ -225,16 +224,12 @@ tree_t* copy_data_from_constant(tree_t* node) {
 				new_node = copy_data_from_constant(tmp);
 			}
 			else {
-				fprintf(stderr, "The value is no constant : %s(%d)\n",
+				PERRORN("The value is no constant : %s(%d)\n", tmp,
 						tmp->common.name, tmp->common.type);
-				exit(-1);
 			}
 			break;
 		default:
-//			fprintf(stderr, "other constant value type: %s(%d)\n",
-//					node->common.name, node->common.type);
 //				/* TODO: handle the error */
-//				exit(-1);
 			PERROR("other constant value type type: %s(type: %s)\n", node->common.location,
 					node->common.name, TYPENAME(node->common.type));
 			break;
@@ -245,9 +240,7 @@ tree_t* copy_data_from_constant(tree_t* node) {
 constant_attr_t* get_constant_attr(tree_t** node, symtab_t table) {
 	assert(*node != NULL);
 	if (((*node)->common.type != IDENT_TYPE) && ((*node)->common.type != DML_KEYWORD_TYPE)) {
-//		fprintf(stderr, "not constant node %s: %d\n", (*node)->common.name, (*node)->common.type);
 //		/* FIXME: handle  the error */
-//		exit(-1);
 		PERROR("not constant node: %s(type: %s)\n", (*node)->common.location,
 				(*node)->common.name, TYPENAME((*node)->common.type));
 	}
@@ -335,7 +328,6 @@ int charge_type(int type1, int type2) {
 			else {
 				error("(line: %d)incompatible types when assigning to type: %s", __LINE__, TYPENAME(type2));
 				/* FIXME: handle the error */
-//				exit(-1);
 				return -1;
 			}
 			break;
@@ -374,7 +366,6 @@ int charge_type(int type1, int type2) {
 			else {
 				error("(line: %d)incompatible types when assigning to type(%s)", __LINE__, TYPENAME(type2));
 				/* FIXME: handle the error */
-//				exit(-1);
 				return -1;
 			}
 			break;
@@ -392,7 +383,6 @@ int charge_type(int type1, int type2) {
 			else {
 				error("(line: %d)incompatible types when assigning to type(%s)", __LINE__, TYPENAME(type2));
 				/* FIXME: handle the error */
-//				exit(-1);
 				return -1;
 			}
 			break;
@@ -430,7 +420,6 @@ int charge_type(int type1, int type2) {
 			else {
 				error("(line: %d)incompatible types when assigning to type(%s)", __LINE__, TYPENAME(type2));
 				/* FIXME: handle the error */
-//				exit(-1);
 			}
 			break;
 		case SIGNED_TYPE:
@@ -453,7 +442,6 @@ int charge_type(int type1, int type2) {
 			else {
 				error("(line: %d)incompatible types when assigning to type(%s)", __LINE__, TYPENAME(type2));
 				/* FIXME: handle the error */
-//				exit(-1);
 				return -1;
 			}
 			break;
@@ -471,7 +459,6 @@ int charge_type(int type1, int type2) {
 			else {
 				error("(line: %d)incompatible types when assigning to type(%s)", __LINE__, TYPENAME(type2));
 				/* FIXME: handle the error */
-//				exit(-1);
 				return -1;
 			}
 			break;
@@ -487,7 +474,6 @@ int charge_type(int type1, int type2) {
 			else {
 				error("(line: %d)incompatible types when assigning to type(%s)", __LINE__, TYPENAME(type2));
 				/* FIXME: handle the error */
-//				exit(-1);
 				return -1;
 			}
 			break;
@@ -505,7 +491,6 @@ int charge_type(int type1, int type2) {
 			else {
 				error("(line: %d)incompatible types when assigning to type(%s)", __LINE__, TYPENAME(type2));
 				/* FIXME: handle the error */
-//				exit(-1);
 				return -1;
 			}
 			break;
@@ -523,7 +508,6 @@ int charge_type(int type1, int type2) {
 			else {
 				error("(line: %d)incompatible types when assigning to type(%s)", __LINE__, TYPENAME(type2));
 				/* FIXME: handle the error */
-//				exit(-1);
 				return -1;
 			}
 			break;
@@ -531,7 +515,6 @@ int charge_type(int type1, int type2) {
 			/* TODO: the UNDEFINED_TYPE */
 			error("(line: %d)undefined type(%s)", __LINE__, TYPENAME(type1));
 			/*FIXME: handle the error */
-//			exit(-1);
 			break;
 	}
 
@@ -574,9 +557,8 @@ void cal_assign_left(tree_t** node, symtab_t table, expression_t* left_expr, exp
                 left_expr = cal_expression(&((*node)->expr_assign.left), table, left_expr);
             }
             else if (quote_type > 0 ){
-                fprintf(stderr, "error: cannot assign to this expression, type: %d\n", quote_type);
+                PERRORN("cannot assign to this expression, type: %d\n", *node, quote_type);
                 /* TODO: handle the error */
-                exit(-1);
             }
             else {
                 left_expr->is_undeclare = 1;
@@ -589,7 +571,6 @@ void cal_assign_left(tree_t** node, symtab_t table, expression_t* left_expr, exp
 		if (left_expr->is_const) {
 			PERROR("value required as left operand of assignment", left_expr->node->common.location);
 			/* FIXME: should handle the error */
-	//		exit(-1);
 		}
 	}
 
@@ -636,9 +617,8 @@ expression_t* cal_assign_expr(tree_t** node, symtab_t table, expression_t* expr)
 	assert(expr != NULL);
 	assert(table != NULL);
 	if (expr->is_constant_op) {
-		fprintf(stderr, "Non constant expression '='\n");
+		PERRORN("Non constant expression '='\n", *node);
 		/* TODO: handle the error*/
-		exit(-1);
 	}
 	switch((*node)->expr_assign.type) {
 			/* = */
@@ -681,10 +661,8 @@ expression_t* cal_ternary_expr(tree_t** node, symtab_t table, expression_t* expr
 	if ((((*node)->ternary.cond) == NULL)
 			|| (((*node)->ternary.expr_true) == NULL)
 			|| (((*node)->ternary.expr_false) == NULL)) {
-//		fprintf(stderr, " The ternary need expression\n");
 		PERROR("not expression in ternary operation", expr->node->common.location);
 		/* FIXME: handle the error */
-//		exit(-1);
 	}
 
 	int true_type, false_type;
@@ -724,7 +702,6 @@ int get_left_right_value(tree_t* left, tree_t* right, tree_t** new_node, express
 
 	if (left->common.type == INTEGER_TYPE) {
 		if (left->int_cst.out_64bit) {
-//			fprintf(stderr, "Pay attention: the binary operator have problems: left: %s\n", left->int_cst.int_str);
 			PWARN("the binary operator have problem.(left operand: %s)",
 					left->common.location, left->int_cst.int_str);
 			return -1;
@@ -739,16 +716,13 @@ int get_left_right_value(tree_t* left, tree_t* right, tree_t** new_node, express
 		left_type = FLOAT_TYPE;
 	}
 	else {
-//		fprintf(stderr, "line: %d, error: invalid operands to binary\n", __LINE__);
 		PERROR("(line: %d)invalid operands(%s and %s) to binary",
 				left->common.location, __LINE__, TYPENAME(left->common.type), TYPENAME(right->common.type));
 		/* FXIME: handle the error */
-//		exit(-1);
 	}
 
 	if (right->common.type == INTEGER_TYPE) {
 		if (right->int_cst.out_64bit) {
-//			fprintf(stderr, "Pay attention: the binary operator have problems: left: %s\n", left->int_cst.int_str);
 			PWARN("the binary operator have problem.(left operand: %s)",
 					right->common.location, right->int_cst.int_str);
 			return -1;
@@ -763,8 +737,6 @@ int get_left_right_value(tree_t* left, tree_t* right, tree_t** new_node, express
 		right_type = FLOAT_TYPE;
 	}
 	else {
-//		fprintf(stderr, "The left(%s) or right(%s) node type is invalid operands\n",
-//				right->common.name, right->common.name);
 		PWARN("the left(%s) or right(%s) value is invalid oprand",
 				left->common.location, left->common.name, right->common.name);
 		return -1;
@@ -790,10 +762,8 @@ int get_left_right_value(tree_t* left, tree_t* right, tree_t** new_node, express
 				(right_type != CHAR_TYPE)    && (right_type != SHORT_TYPE) && (right_type != LONG_TYPE) &&
 				(right_type != FLOAT_TYPE)   && (right_type != DOUBLE_TYPE) &&
 				(right_type != SIGNED_TYPE)  && (right_type != UNSIGNED_TYPE)) {
-//				fprintf(stderr, "dividor not int\n");
 				PERROR("divisor is invalid type(%s)", right->common.location, TYPENAME(right->common.type));
 				/* TODO: handle the error */
-//				exit(-1);
 				break;
 			}
 			final_value = (left_value / right_value);
@@ -839,13 +809,10 @@ int get_left_right_value(tree_t* left, tree_t* right, tree_t** new_node, express
 
 	if ((left->common.sibling) || (left->common.child)
 			|| (right->common.sibling) || (right->common.child)) {
-//		fprintf(stderr, "In %s, the left or right node have sibling or child\n", __FUNCTION__);
 		PERROR("(FUNC: %s, Line: %d) the left(%s) or right(%s) node have sibling or child",
 				expr->node->common.location,
 				__FUNCTION__, __LINE__, left->common.name, right->common.name);
 		/* FIXME: only for debugging */
-//		exit(-1);
-
 		return -1;
 	}
 
@@ -1002,8 +969,6 @@ expression_t* binary_expr_common(tree_t** node, symtab_t table, expression_t* ex
 		 tree_t* new_node = NULL;
 		if ((left->common.type == CONST_STRING_TYPE) || (left->common.type == UNDEFINED_TYPE)
 				|| (right->common.type == CONST_STRING_TYPE) || (right->common.type == UNDEFINED_TYPE)) {
-//			fprintf(stderr, "The left(%s) or right(%s) node type is wrong!\n",
-//					left->common.name, right->common.name);
 			PWARN("the left(%s, %s) or right(%s, %s) node type is wrong",
 					(*node)->common.location,
 					left->common.name, TYPENAME(left->common.type),
@@ -1147,7 +1112,6 @@ expression_t* binary_expr_int(tree_t** node, symtab_t table, expression_t* expr)
 				new_node->common.child = (*node)->common.child;
 				if ((left->common.sibling) || (left->common.child)
 						|| (right->common.sibling) || (right->common.child)) {
-//					fprintf(stderr, "The left or right node has sibling or child\n");
 					PWARN("the left(%s) or right(%s) node has sibling or child",
 							(*node)->common.location, left->common.name, right->common.name);
 				}
@@ -1160,8 +1124,6 @@ expression_t* binary_expr_int(tree_t** node, symtab_t table, expression_t* expr)
 			}
 		}
 		else {
-//			fprintf(stderr, "The binary operation's type is wrong, left: %s, right: %s\n",
-//					left->common.name, right->common.name);
 			PWARN("the binary operation's type is wrong.(left: %s, right: %s)",
 					(*node)->common.location, left->common.name, right->common.name);
 			expr->final_type = charge_type(left_type, right_type);
@@ -1260,7 +1222,6 @@ expression_t* cal_binary_expr(tree_t** node, symtab_t table, expression_t* expr)
 			expr = binary_expr_int(node, table, expr);
 			break;
 		default:
-//			fprintf(stderr, "The binary operation is other type : %s\n", (*node)->common.name);
 			PWARN("the binary operation is other type(%s, %s)",
 					(*node)->common.location, (*node)->common.name, TYPENAME((*node)->common.type));
 			expr->node = *node;
@@ -1290,11 +1251,9 @@ expression_t* unary_bit_non(tree_t** node, symtab_t table, expression_t* expr) {
 
 	if (charge_node_is_const(unary_expr)) {
 		if (unary_expr->common.type != INTEGER_TYPE) {
-//			fprintf(stderr, "The bit non operation expression should int\n");
 			PERROR("the bit non operation expression(%s) require integer",
 					(*node)->common.location, TYPENAME(unary_expr->common.type));
 			/* FIXME: should handle the error */
-//			exit(-1);
 		}
 		else {
 			const int int_length = 64;
@@ -1349,12 +1308,9 @@ expression_t* unary_expr_common(tree_t** node, symtab_t table, expression_t* exp
 	if (charge_node_is_const(unary_expr)) {
 		if ((unary_expr->common.type == CONST_STRING_TYPE)
 				|| (unary_expr->common.type == UNDEFINED_TYPE)) {
-//			fprintf(stderr, "The unary operation expression can not be the type: %s\n",
-//					unary_expr->common.name);
 			PERROR("the unary expression can't be type(%s)",
 					(*node)->common.location, TYPENAME(unary_expr->common.type));
 			/* TODO: handle the error */
-//			exit(-1);
 		}
 		else {
 			float value, final_value;
@@ -1362,12 +1318,9 @@ expression_t* unary_expr_common(tree_t** node, symtab_t table, expression_t* exp
 			value = final_value = final_type = 0;
 			if (unary_expr->common.type == INTEGER_TYPE) {
 				if (unary_expr->int_cst.out_64bit) {
-					fprintf(stderr, "Pay attention: the binary operator have problems: left: %s\n", unary_expr->int_cst.int_str);
-//					expr->node = *node;
-					PERROR("the binary operator have problem.(left: %s, %s)",
-							(*node)->common.location, unary_expr->int_cst.int_str, TYPENAME(unary_expr->common.type));
+					PERRORN("Pay attention: the binary operator have problems: (left: %s, %s)\n", *node,
+							unary_expr->int_cst.int_str, TYPENAME(unary_expr->common.type));
 					/* TODO: handle the error */
-//					exit(-1);
 				}
 				value = unary_expr->int_cst.value;
 				final_type = INTEGER_TYPE;
@@ -1487,10 +1440,8 @@ expression_t* cal_unary_expr(tree_t** node, symtab_t table,  expression_t* expr)
 				expr->final_type = change_node_to_const(&((*node)->unary.expr), table, expr);
 			}
 			if (charge_node_is_const((*node)->unary.expr)) {
-//				fprintf(stderr, "The unary operation expression can not constant\n");
 				PERROR("the unary operation expression isn't constant", (*node)->common.location);
 					/* FIXME: should handle the error */
-//					exit(-1);
 			}
 			expr->node = *node;
 			break;
@@ -1504,7 +1455,6 @@ expression_t* cal_unary_expr(tree_t** node, symtab_t table,  expression_t* expr)
 			}
 			break;
 		default:
-//			fprintf(stderr, "Wrong unary type: %s\n", (*node)->common.name);
 			PWARN("wrong unary type(%s, %s)", (*node)->common.location,
 					(*node)->common.name, TYPENAME((*node)->common.type));
 			break;
@@ -1522,9 +1472,8 @@ expression_t* cal_cast_expr(tree_t** node, symtab_t table, expression_t* expr) {
 	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
 			__func__, __LINE__, (*node)->common.name);
 	if (expr->is_constant_op) {
-		fprintf(stderr, "error: none-constant exprsion: cast\n");
+		PERRORN("none-constant exprsion: cast", *node);
 		/* TODO: handle the error*/
-		exit(-1);
 	}
 
 	cal_expression(&((*node)->cast.expr), table, expr);
@@ -1548,9 +1497,8 @@ expression_t* cal_sizeof_expr(tree_t** node, symtab_t table,  expression_t* expr
 	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
 			__func__, __LINE__, (*node)->common.name);
 	if (expr->is_constant_op) {
-		fprintf(stderr, "error: none-constant expression : sizeof\n");
+		PERRORN("none-constant expression : sizeof", *node);
 		/* TODO: handle the error*/
-		exit(-1);
 	}
 
 	tree_t* node_expr = (*node)->sizeof_tree.expr;
@@ -1560,10 +1508,8 @@ expression_t* cal_sizeof_expr(tree_t** node, symtab_t table,  expression_t* expr
 	 * */
 	if ((node_expr->common.type == CDECL_TYPE)
 			&& (node_expr->cdecl.is_data)) {
-//		fprintf(stderr, "sizeof type is datatype\n");
 		PERROR("sizeof type is datatype", (*node)->common.location);
 		/* should handle the error */
-//		exit(-1);
 	}
 	cal_expression(&((*node)->sizeof_tree.expr), table, expr);
 	if (expr->is_undeclare) {
@@ -1601,9 +1547,8 @@ expression_t* cal_quote_expr(tree_t** node, symtab_t table,  expression_t* expr)
 	tree_t* ident = (*node)->quote.ident;
 
 	if (expr->is_constant_op) {
-		fprintf(stderr, "error: none-constant expression : $%s\n", ident->ident.str);
+		PERRORN("none-constant expression : $%s", *node, ident->ident.str);
 		/* TODO: handle the error */
-		exit(-1);
 	}
 
     /*to reference something in the DML object structure
@@ -1613,9 +1558,8 @@ expression_t* cal_quote_expr(tree_t** node, symtab_t table,  expression_t* expr)
         expr->is_undeclare = 1;
         expr->undecl_name = ident->ident.str;
 
-        fprintf(stderr, "reference to unknown object '%s'\n", ident->ident.str);
+        PWARNN("reference to unknown object '%s'\n", *node, ident->ident.str);
         /* TODO: handle the error */
-        //exit(-1);
     }
 
 	cal_expression(&((*node)->quote.ident), table, expr);
@@ -1715,10 +1659,8 @@ int get_typedef_type(symtab_t table, char* name) {
 
 
 	if (symbol == NULL) {
-//		fprintf(stderr, "%s not typdef\n", name);
 		error("%s is not typedef", name);
 		/* TODO: handle the error */
-//		exit(-1);
 	}
 
 	typedef_attr_t* attr = symbol->attr;
@@ -1869,7 +1811,7 @@ int get_c_type(symtab_t table, symbol_t symbol) {
 				type = POINTER_TYPE;
 			}
 			else {
-				fprintf(stderr, "other identifier: %s\n", symbol->name);
+				warning("other identifier: %s", symbol->name);
 			}
 			break;
 		case FUNCTION_TYPE:
@@ -1961,9 +1903,8 @@ expression_t* get_ident_value(tree_t** node, symtab_t table,  expression_t* expr
 	if (expr->is_constant_op) {
 		if (symbol != NULL) {
 			if (symbol->type != CONSTANT_TYPE) {
-				fprintf(stderr, "error: none-constant expression : %s\n", symbol->name);
+				PERRORN("error: none-constant expression : %s", *node, symbol->name);
 				/* TODO: handle the error */
-				exit(-1);
 			}
 			expr->final_type = CONSTANT_TYPE;
 		}
@@ -2032,10 +1973,9 @@ reference_t*  get_bit_slic_ref(tree_t* node, reference_t* ref, expr_t* expr, sym
 			ident_node = expr_node->quote.ident;
 			ref->name = ident_node->ident.str;
 			if (check_dml_obj_refer(ident_node, table) == 0) {
-				fprintf(stderr, "reference to unknown object '%s', table_num: %d, line: %d\n",
+				PERRORN("reference to unknown object '%s', table_num: %d, line: %d", node,
 						ident_node->ident.str, table->table_num, __LINE__);
 				/* TODO: handle the error */
-				exit(-1);
 			}
 			else {
 				expr->is_obj = 1;
@@ -2050,7 +1990,6 @@ reference_t*  get_bit_slic_ref(tree_t* node, reference_t* ref, expr_t* expr, sym
 			break;
 		default:
 			/* FIXME handle the error */
-//			exit(-1);
 			break;
 	}
 
@@ -2089,10 +2028,9 @@ reference_t* get_reference(tree_t* node, reference_t* ref, expr_t* expr, symtab_
 			ident_node = node->quote.ident;
 			new->name = ident_node->ident.str;
 			if (check_dml_obj_refer(ident_node, table) == 0) {
-				fprintf(stderr, "reference to unknown object '%s', table_num: %d, line: %d\n",
+				PERRORN("reference to unknown object '%s', table_num: %d, line: %d", node,
 						ident_node->ident.str, table->table_num, __LINE__);
 				/* TODO: handle the error */
-				exit(-1);
 			}
 			else {
 				expr->is_obj = 1;
@@ -2105,9 +2043,8 @@ reference_t* get_reference(tree_t* node, reference_t* ref, expr_t* expr, symtab_
 			new->next = ref;
 			break;
 		default:
-			error("other node type: %s\n", node->common.name);
+			PERRORN("other node type: %s", node, node->common.name);
 			/* FIXME: handle the error */
-//			exit(-1);
 			break;
 	}
 	return new;
@@ -2168,7 +2105,6 @@ symtab_t get_default_symbol_tale(symbol_t symbol) {
 	else {
 		error("other default symbol: %s\n", symbol->name);
 		/* TODO: handle the error */
-//		exit(-1);
 	}
 
 	return table;
@@ -2211,8 +2147,7 @@ symtab_t get_data_table(symbol_t symbol) {
 		get_record_table(type);
 	}
 	else {
-		fprintf(stderr, "other data type: %d\n", type->common.categ);
-		exit(-1);
+		error("other data type: %d\n", type->common.categ);
 	}
 
 	return table ;
@@ -2434,10 +2369,9 @@ expression_t* get_component_expr(tree_t** node, symtab_t table,  expression_t* e
 	reference->name = ident->ident.str;
 
 	if (expr->is_constant_op) {
-		fprintf(stderr, "error: none-constant expression : %s\n",
+		PERRORN("none-constant expression : %s\n", *node,
 				reference->is_pointer ? "->": ".");
 		/* TODO: handle the error */
-		exit(-1);
 	}
 
 #if 0
@@ -2460,9 +2394,8 @@ expression_t* get_sizeoftype_expr(tree_t** node, symtab_t table,  expression_t* 
 	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
 			__func__, __LINE__, (*node)->common.name);
 	if (expr->is_constant_op) {
-		fprintf(stderr, "error: none-constant expression : sizeoftype\n");
+		PERRORN("none-constant expression : sizeoftype\n", *node);
 		/* TODO: handle the error */
-		exit(-1);
 	}
 	/* FIXME: should charge the identifier type */
 	expr->node = *node;
@@ -2479,9 +2412,8 @@ expression_t* get_new_expr(tree_t** node, symtab_t table,  expression_t* expr) {
 	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
 			__func__, __LINE__, (*node)->common.name);
 	if (expr->is_constant_op) {
-		fprintf(stderr, "error: none-constant expression : new\n");
+		PERRORN("none-constant expression : new\n", *node);
 		/* TODO: handle the error */
-		exit(-1);
 	}
 
 	parse_ctypedecl((*node)->new_tree.type, table);
@@ -2580,9 +2512,8 @@ expression_t* get_brack_expr(tree_t** node, symtab_t table,  expression_t* expr)
 	if ((*node)->expr_brack.expr) {
 		tree_t* out_node = (*node)->expr_brack.expr;
 		if (charge_node_is_const(out_node)) {
-			fprintf(stderr, "The expression is wrong!\n");
+			PERRORN("The expression is wrong!", *node);
 			/* FIXME: handle the error */
-			exit(-1);
 		}
 		else {
 			cal_expression(&((*node)->expr_brack.expr), table, expr);
@@ -2593,10 +2524,9 @@ expression_t* get_brack_expr(tree_t** node, symtab_t table,  expression_t* expr)
 			int arg_num = get_param_num((*node)->expr_brack.expr_in_brack);
 
 			if (arg_num != (func->argc)) {
-				fprintf(stderr, "error: too %s arguments to function : %s\n",
+				PERRORN("too %s arguments to function : %s", *node,
 						(arg_num < func->argc) ? "few": "many", func->func_name);
 				/* FIXME: handle the error */
-				exit(-1);
 			}
 			else {
 				charge_func_param(&(*node)->expr_brack.expr_in_brack, table, func);
@@ -2624,9 +2554,8 @@ expression_t* get_array_expr(tree_t** node, symtab_t table,  expression_t* expr)
 	tree_t* pre_node = (*node)->array.expr;
 
 	if (expr->is_constant_op) {
-		fprintf(stderr, "error: none-constant expression : []\n");
+		PERRORN("none-constant expression : []", *node);
 		/* TODO: handle the error */
-		exit(-1);
 	}
 
 	cal_expression(&((*node)->array.expr), table, expr);
@@ -2652,9 +2581,8 @@ expression_t* get_bit_slic_expr(tree_t** node, symtab_t table,  expression_t* ex
 	DEBUG_EXPR("In %s, line = %d, node type: %s\n",
 			__func__, __LINE__, (*node)->common.name);
 	if (expr->is_constant_op) {
-		fprintf(stderr, "error: none-constant expression : []\n");
+		PERRORN("none-constant expression : []", *node);
 		/* TODO: handle the error */
-		exit(-1);
 	}
 
 	if (expr->is_undeclare) {
@@ -3030,10 +2958,12 @@ expr_t* cal_const_value(expr_t* expr) {
 			cal_unary_int(expr, --);
 			break;
 		default:
-			fprintf(stderr, "other constant operator: %d\n", expr->op);
+			PERRORN("other constant operator: %d", expr->node, expr->op);
+			/*
 			int *a = NULL;
 			*a = 1000;
 			exit(-1);
+			*/
 	}
 
 	return expr;
@@ -3050,9 +2980,8 @@ expr_t* check_binary_kids(tree_t* node, symtab_t table, expr_t* expr) {
 		expr->kids[1] = check_expr(node->expr_assign.right, table);
 	}
 	else {
-		fprintf(stderr, "other node type: %s\n", node->common.name);
+		PERRORN("other node type: %s", node, node->common.name);
 		/* FIXME: this is only for debug, delete it*/
-		exit(-1);
 	}
 
 	return expr;
@@ -3437,8 +3366,7 @@ expr_t* check_binary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 			expr = check_multiplicative_expr(node, table, expr);
 			break;
 		default:
-			fprintf(stderr, "unkown type: %s\n", node->common.name);
-			exit(-1);
+			PERRORN("unkown type: %s", node, node->common.name);
 			break;
 	}
 	expr->node = node;
@@ -3589,8 +3517,7 @@ expr_t* check_unary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 			}
 			break;
 		default:
-			fprintf(stderr, "other unary type: %s(%d)\n", node->common.name, node->unary.type);
-			exit(-1);
+			PERRORN("other unary type: %s(%d)", node, node->common.name, node->unary.type);
 	}
 
 	expr->node = node;
@@ -3638,9 +3565,8 @@ expr_t* check_const_expr(tree_t* node, expr_t* expr) {
 			free(value); value = NULL;
 			break;
 		default:
-			fprintf(stderr, "other const type: %s\n", node->common.name);
+			PERRORN("other const type: %s", node, node->common.name);
 			/* TODO: only for debugging*/
-			exit(-1);
 			break;
 	}
 
@@ -3729,10 +3655,9 @@ expr_t* check_quote_expr(tree_t* node, symtab_t table, expr_t* expr) {
      * the reference must be prefixed by '$' character*/
 	int is_obj = check_dml_obj_refer(ident, table);
 	if (is_obj == 0 && table->no_check == 0) {
-		fprintf(stderr, "reference to unknown object '%s', table_num: %d, line: %d\n",
+		PWARNN("reference to unknown object '%s', table_num: %d, line: %d", node,
 			ident->ident.str, table->table_num, __LINE__);
 		/* TODO: handle the error */
-		exit(-1);
 	}
 
 	expr->node = node;
@@ -3812,8 +3737,7 @@ static cdecl_t* check_parameter_type(symbol_t symbol, expr_t* expr) {
 	else {
 		type->common.categ = NO_TYPE;
 		/* Pay attention: this is only for debugging */
-		fprintf(stderr, "other parameter type\n");
-		exit(-1);
+		PERRORN("other parameter type", expr->node);
 	}
 	return type;
 }
@@ -3883,8 +3807,7 @@ static cdecl_t* check_attribute_type(symbol_t symbol, expr_t* expr) {
 			expr->type->common.categ == BOOL_T;
 		}
 		else {
-			fprintf(stderr, "other attribute type: %s\n", attr_obj->type);
-			exit(-1);
+			PERRORN("other attribute type: %s", expr->node, attr_obj->type);
 		}
 	}
 	else {
@@ -4043,8 +3966,7 @@ expr_t* check_ident_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	if (((type*)attr)->is_array) { \
 		return 1; \
 	} else { \
-		fprintf(stderr, "subscripted value is neither array nor vector\n"); \
-		exit(-1); \
+		error("subscripted value is neither array nor vector"); \
 	}
 
 static int object_array(symbol_t symbol) {
@@ -4100,8 +4022,7 @@ static int check_array_symbol(symtab_t table, symbol_t symbol) {
 			return 0;
 			break;
 		default:
-			fprintf(stderr, "symbol'%s' not array\n", symbol->name);
-			exit(-1);
+			error("symbol'%s' not array", symbol->name);
 	}
 
 	return 0;
@@ -4200,14 +4121,12 @@ expr_t* check_refer(symtab_t table, reference_t* ref, expr_t* expr) {
 			}
 		}
 		else {
-			fprintf(stderr, "Undefined reference '%s'\n", tmp->name);
-			exit(-1);
+			PERRORN("Undefined reference '%s'", expr->node, tmp->name);
 			break;
 		}
 
 		if (ref_table == NULL) {
-			fprintf(stderr, "'%s' is not struct or dml object\n", tmp->name);
-			exit(-1);
+			PERRORN("'%s' is not struct or dml object", expr->node, tmp->name);
 			break;
 		}
 
@@ -4225,14 +4144,12 @@ expr_t* check_refer(symtab_t table, reference_t* ref, expr_t* expr) {
 			expr->type = type;
 			tmp = tmp->next;
 			if (tmp->next) {
-				fprintf(stderr, "Undefined reference '%s' Line: %d\n", tmp->next->name, __LINE__);
-				exit(-1);
+				PERRORN("Undefined reference '%s' Line: %d", expr->node, tmp->next->name, __LINE__);
 			}
 			return expr;
 		}
 		else if (ref_symbol == NULL) {
-			fprintf(stderr, "Undefined reference '%s' Line : %d\n", tmp->next->name, __LINE__);
-			exit(-1);
+			PERRORN("Undefined reference '%s' Line: %d", expr->node, tmp->next->name, __LINE__);
 			break;
 		}
 
@@ -4248,7 +4165,7 @@ expr_t* check_refer(symtab_t table, reference_t* ref, expr_t* expr) {
 		tmp = tmp->next;
 	}
 	if (expr->type->common.categ == INTERFACE_TYPE) {
-		error("the last elment about compent can not be interface\n");
+		PERRORN("the last elment about compent can not be interface", expr->node);
 	}
 	if (tmp->is_array) {
 		check_array_symbol(table, ref_symbol);
@@ -4279,8 +4196,7 @@ expr_t* check_sizeoftype_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	cdecl_t* type = parse_typeoparg(node, table);
 
 	if (record_type(type) == 0) {
-		fprintf(stderr, "sizeoftype not record type\n");
-		exit(-1);
+		PERRORN("sizeoftype not record type", node);
 	}
 	/* TODO: should free the type */
 	expr->type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
@@ -4293,8 +4209,7 @@ expr_t* check_sizeoftype_expr(tree_t* node, symtab_t table, expr_t* expr) {
 
 expr_t* check_new_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
-	fprintf(stderr, "Pay attention: not implement the new expression\n");
-	exit(-1);
+	PERRORN("Pay attention: not implement the new expression", node);
 
 	expr->node = node;
 	return expr;
@@ -4388,10 +4303,9 @@ expr_t* check_function_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	}
 	DEBUG_EXPR("func name: %s, argc: %d, argnum: %d\n", func->type->var_name, argc, arg_num);
 	if (arg_num != argc) {
-		fprintf(stderr, "error: too %s arguments to function\n",
+		PERRORN("too %s arguments to function", node,
 				(arg_num < argc) ? "few": "many");
 		/* FIXME: handle the error */
-		exit(-1);
 	}
 	else {
 		if (arg_num != 0)
@@ -4442,19 +4356,17 @@ expr_t* check_bit_slic_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	expr_t* e2 = node->bit_slic.bit_end ? check_expr(node->bit_slic.bit_end, table) : NULL;
 	if ((!is_int_type(expr->type)) && !is_int_type(e1->type) &&
 			!is_no_type(expr->type) && !is_no_type(e1->type)) {
-		fprintf(stderr, "the bit slicing must be int type\n");
-		exit(-1);
+		PERRORN("the bit slicing must be int type", node);
 	}
 	if (e2 && (!is_int_type(e2->type) && !is_no_type(e2->type))) {
-		fprintf(stderr, "the bit slicing must be int type\n");
-		exit(-1);
+		PERRORN("the bit slicing must be int type", node);
 	}
 
 	tree_t* endian = node->bit_slic.endian;
 	if (endian) {
 		const char* str = endian->ident.str;
 		if ((strcmp(str, "le") != 0) || (strcmp(str, "be") != 0)) {
-			error("unknow bitorde: %s\n", str);
+			PERRORN("unknow bitorde: %s", node, str);
 		}
 	}
 
