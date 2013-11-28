@@ -4194,7 +4194,7 @@ void print_method (tree_t* node, int pos) {
 		tree_t* block = node->method.block;
 		tree_t* statement = block->block.statement;
 		if (statement && (statement->common.print_node))
-			statement->common.print_node(statement, --pos);
+			statement->common.print_node(statement, ++pos);
 	}
 
 	print_sibling(node, pos);
@@ -4547,7 +4547,7 @@ void print_obj_block(tree_t* node, int pos) {
 	 */
 	if (node->block.statement != NULL) {
 		tree_t* statement = node->block.statement;
-		statement->common.print_node(statement, --pos);
+		statement->common.print_node(statement, ++pos);
 	}
 
 	print_sibling(node, pos);
@@ -4648,7 +4648,7 @@ void print_struct(tree_t* node, int pos) {
 	if (node->struct_tree.block) {
 		tree_t* block = node->struct_tree.block;
 		if (block->common.print_node)
-			block->common.print_node(block, --pos);
+			block->common.print_node(block, ++pos);
 	}
 
 	print_sibling(node, pos);
@@ -4688,7 +4688,7 @@ void print_dml(tree_t* node, int pos) {
  */
 void print_ast (tree_t* root)
 {
-	int init_pos = 29;
+	int init_pos = 0;
 	tree_t* it = root;
 	tree_t* child = NULL;
 	printf ("begin print the ast(total node num is %d):\n", node_num);
