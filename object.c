@@ -27,14 +27,15 @@
  * @version 
  * @date 2013-05-10
  */
+#define _GNU_SOURCE
 #include <string.h>
+#include <stdio.h>
 #include <assert.h>
 #include "object.h"
 #include "gen_debug.h"
 #include "info_output.h"
 #include "expression.h"
 extern symtab_t root_table;
-object_t *OBJ;
 object_t *DEV;
 static const char tab[8][8] =
     { {""}, {"\t"}, {"\t\t"}, {"\t\t\t"}, {"\t\t\t\t"}, {"\t\t\t\t\t"} };
@@ -56,7 +57,29 @@ const char *get_obj_ref(object_t *obj){
 	return obj->dotname;
 }
 
+static arraydef_attr_t *_get_arraydef(object_attr_t *attr) {
+	arraydef_attr_t *array_attr = NULL;
+
+    if ((attr->common.obj_type == REGISTER_TYPE)) {
+        array_attr = attr->reg.arraydef;
+    }
+    else if ((attr->common.obj_type == ATTRIBUTE_TYPE)) {
+        array_attr = attr->attribute.arraydef;
+    }
+    else if ((attr->common.obj_type == GROUP_TYPE)) {
+        array_attr = attr->group.arraydef;
+    }
+    else if ((attr->common.obj_type == PORT_TYPE)) {
+        array_attr = attr->port.arraydef;
+    }
+    else if ((attr->common.obj_type == CONNECT_TYPE)) {
+        array_attr = attr->connect.arraydef;
+    }
+	return array_attr;
+}
+
 static void process_object_names(object_t *obj) {
+	/*
 	if(OBJ && (!strcmp(obj->obj_type,"register") || !strcmp(obj->obj_type,"field") || !strcmp(obj->obj_type, "interface"))){
 		obj->qname = string_concat_with(OBJ->qname,obj->name,"__");
 		obj->dotname = string_concat_with(OBJ->dotname,obj->name,".");
@@ -68,6 +91,62 @@ static void process_object_names(object_t *obj) {
 		else {
 			obj->dotname = string_concat_with(OBJ->dotname,obj->name,"->");
 		}
+	}
+	*/
+	char *name = NULL;
+	int depth;
+	arraydef_attr_t *array;
+	object_attr_t *attr;
+	const char *index;
+	tree_t *node;
+
+	if(!strcmp(obj->obj_type, "device")) {
+		obj->qname = obj->name;		
+		obj->dotname = "_dev";
+		obj->is_array = 0;
+		obj->depth = 0;
+		return;
+	}
+	if(obj->is_array) {
+		depth = obj->parent->depth + 1;
+	} else {
+		depth = obj->parent->depth; 
+	}
+	obj->depth = depth;
+	if(obj->parent && !strcmp(obj->parent->obj_type, "device")) {
+		obj->qname = obj->name;
+		if(!obj->is_array) {
+			obj->dotname = string_concat_with(obj->parent->dotname, obj->name, "->");
+		} else {
+			asprintf(&name, "%s->%s[_idx%d]", obj->parent->dotname, obj->name, obj->depth -1);
+			obj->dotname = name;
+		}
+	} else {
+		obj->qname = string_concat_with(obj->parent->qname, obj->name, "__");
+		if(!obj->is_array) {
+			obj->dotname = string_concat_with(obj->parent->dotname, obj->name, ".");
+		} else {
+			asprintf(&name, "%s.%s[_idx%d]", obj->parent->dotname, obj->name, obj->depth - 1);	
+			obj->dotname = name;
+		}
+	}
+	if(obj->is_array) {
+		asprintf(&name, "_idx%d", obj->depth);
+		node = create_string_node(name);
+		obj->i_node = obj->d_node = node;
+		/*rename object */
+		array = _get_arraydef(obj->node->common.attr);
+		if(array->fix_array) {
+			index = "i";		
+		} else {
+			index = array->ident;
+		}
+		asprintf(&name, "%s[$%s]", obj->name, index);	
+		obj->a_name = obj->name;
+		obj->name = name;
+	} else {
+		node = create_string_node(obj->name);
+		obj->i_node = obj->d_node = node;
 	}
 }
 
@@ -142,19 +221,33 @@ static object_type_t get_object_encoding(const char *name) {
 		return Obj_Type_Register;
 	} else if(!strcmp(name, "field")) {
 		return Obj_Type_Field;
+	} else if(!strcmp(name, "attribute")) {
+		return Obj_Type_Attribute;
+	} else if(!strcmp(name, "connect")) {
+		return Obj_Type_Connect;
+	} else if(!strcmp(name, "port")) {
+		return Obj_Type_Port;
+	} else if(!strcmp(name, "implement")) {
+		return Obj_Type_Implement;
+	} else if(!strcmp(name, "data")) {
+		return Obj_Type_Data;
+	} else if(!strcmp(name, "event")) {
+		return Obj_Type_Event;
+	} else if(!strcmp(name, "group")) {
+		return Obj_Type_Group;
 	}
 	return Obj_Type_None;
 }
 
 extern void check_reg_table(void);
 static void process_object_relationship(object_t *obj);
-static void init_object(object_t *obj, const char *name, const char *type, tree_t *node, symtab_t table) {	
+static void init_object(object_t *obj, object_t *parent, const char *name, const char *type, tree_t *node, symtab_t table) {	
 	int i;
 	device_t *dev = (device_t *)DEV;
 	struct list_head *list;
 
 	obj->name = name;
-	obj->parent = OBJ;
+	obj->parent = parent;
 	obj->obj_type = type;
 	obj->encoding = get_object_encoding(type);
 	obj->node = node;
@@ -166,33 +259,36 @@ static void init_object(object_t *obj, const char *name, const char *type, tree_
 	}
 	obj->symtab->sibling->parent  = NULL;
 	obj->symtab->obj = obj;
-	if(OBJ) {
-		obj->symtab->parent = OBJ->symtab;
+	if(parent) {
+		obj->symtab->parent = parent->symtab;
 	} else {
 		obj->symtab->parent = NULL;
 	}
-	BE_DBG(OBJ, "obj %s, symtab %p , sibling %p, parent table %p\n", obj->name, obj->symtab, obj->symtab->sibling, obj->symtab->parent);
+	if(parent) {
+		BE_DBG(OBJ, "obj %s, symtab %p , sibling %p, parent table %p\n", obj->name, obj->symtab, obj->symtab->sibling, obj->symtab->parent);
+	}
 	struct list_head *p = &obj->childs;
-	for(i = 0; i < 6; i++, p++){
+	for(i = 0; i < 7; i++, p++){
 		INIT_LIST_HEAD(p);
 	}
-	process_object_names(obj);
 	process_object_relationship(obj);
 }
 
 static void process_object_relationship(object_t *obj) {
 	device_t *dev = (device_t *)DEV;
 	struct list_head *list;
+	object_type_t type = Obj_Type_None;
+	object_t *parent = obj->parent;
 
-	if(OBJ){
-		obj->symtab->parent = OBJ->symtab;
+	if(parent){
+		obj->symtab->parent = parent->symtab;
 		if(!strcmp(obj->obj_type, "connect")) {
 			list = &dev->connects; 	
 		} else if(!strcmp(obj->obj_type, "implement")) {
-			if(!strcmp(OBJ->obj_type, "device")) {
+			if(!strcmp(parent->obj_type, "device")) {
 				list = &dev->implements;
 			} else {
-				list = &OBJ->childs;
+				list = &parent->childs;
 			}
 		} else if(!strcmp(obj->obj_type, "attribute")) {
 			list = &dev->attributes;
@@ -200,323 +296,246 @@ static void process_object_relationship(object_t *obj) {
 			list = &dev->ports; 
 		} else if(!strcmp(obj->obj_type, "event")) {
 			list = &dev->events;
+		} else if(!strcmp(obj->obj_type, "data")) {
+			list = &parent->data;
+		} else if(!strcmp(obj->obj_type, "group")) {
+			/*only banks, and groups*/
+			if(!strcmp(parent->obj_type, "bank")) {
+				bank_t *bank = (bank_t *)parent;
+				list = &bank->groups;
+			} else if(!strcmp(parent->obj_type, "group")) {
+				group_t *gp = (group_t *)parent;
+				list = &gp->groups;
+			}
 		} else {
-			list = &OBJ->childs;
+			list = &parent->childs;
 		}
 		list_add_tail(&obj->entry, list);	
-		symbol_insert(OBJ->symtab, obj->name, OBJECT_TYPE, obj);
+		symbol_insert(parent->symtab, obj->name, OBJECT_TYPE, obj);
 	} 
 }
 
-static void create_bank_objs(symtab_t table);
-static void create_connect_objs(symtab_t table);
-static void create_attribute_objs(symtab_t table);
 static void process_default_template(object_t *obj);
-static void create_implement_objs(symtab_t table);
-static void create_port_objs(symtab_t table);
-static void create_event_objs(symtab_t table);
-
-object_t *create_device_object(symbol_t sym){
-	int i = 0;
-	struct list_head *p;
-
-	device_t *dev =  (device_t *)gdml_zmalloc(sizeof(*dev));
-	if(OBJ)
-		BE_DBG(OBJ, "device exists\n");
-	device_attr_t *dev_attr = (device_attr_t *)sym->attr;
-	BE_DBG(OBJ, "device %s found\n",sym->name);
-	init_object(&dev->obj, sym->name, "device", dev_attr->common.node, root_table);
-	p = &dev->constants;
-	for(i = 0; i < 7; i++, p++) {
-		INIT_LIST_HEAD(p);
-	}
-	OBJ = &dev->obj;
-	DEV = OBJ;
-	create_bank_objs(root_table);
-	create_connect_objs(root_table);
-	create_attribute_objs(root_table);
-	create_implement_objs(root_table);
-	create_port_objs(root_table);
-	create_event_objs(root_table);
-	return &dev->obj;
+static void create_none_object(object_t *obj, symbol_t sym) {
+	printf("who are you %s something error happened\n", sym->name);
 }
 
-static void create_bank_object(symbol_t sym);
-void create_bank_objs(symtab_t table) {
-	symbol_list_t *list = symbol_list_find_type(table, BANK_TYPE);
-	symbol_list_t *head = list;
-	object_t *obj = OBJ;
+static void create_objs(object_t *obj, type_t type);
+static object_t *create_dummy_field(object_t *obj) {
+	static int index = 1;
+	char *name;
 
-	while(list) {
-		create_bank_object(list->sym);	
-		/*restore OBJ to device*/
-		OBJ = obj;
-		list = list->next;
-	}
-	symbol_list_free(head);
-}
-
-static void create_field_object(symbol_t sym){
-	if(!OBJ || strcmp(OBJ->obj_type,"register"))
-		BE_DBG(OBJ, "field %s not in right place\n",sym->name);
-	BE_DBG(OBJ, "found %s in register %s\n", sym->name, OBJ->name);
-	field_t *fld = gdml_zmalloc(sizeof(*fld));
-	field_attr_t *field_attr = (field_attr_t *)sym->attr;
-	init_object(&fld->obj,sym->name,"field",field_attr->common.node, field_attr->common.table);
-}
-
-
-static void create_dummy_field(void) {
 	field_t *fld = (field_t *)gdml_zmalloc(sizeof(*fld));
 	fld->is_dummy = 1;	
-	init_object(&fld->obj, "dummy","field",NULL, NULL);
+	asprintf(&name, "%s_%s%d", obj->name, "dummy", index);
+	init_object(&fld->obj, obj, name, "field", NULL, NULL);
+	index++;
+	return &fld->obj;
 }
 
-static void create_field_objs(symtab_t symtab){
-	symbol_list_t *list = NULL;
-	symbol_list_t *head = list;
-	symbol_t sym;
-	object_t *obj = OBJ;
-	int i = 0;
-	
-	if(!symtab) {
-		create_dummy_field();
-		return;
-	} else {
-		list = symbol_list_find_type(symtab, FIELD_TYPE);
-	}
-	while(list){
-		sym = list->sym;
-		create_field_object(sym);
-		OBJ = obj;
-		list = list->next;
-		i++;
-	};
-	if(i == 0) {
-		create_dummy_field();
-	}
-	symbol_list_free(head);
+static void create_field_object(object_t *obj, symbol_t sym){
+	field_t *fld = gdml_zmalloc(sizeof(*fld));
+	field_attr_t *field_attr = (field_attr_t *)sym->attr;
+	init_object(&fld->obj, obj, sym->name, "field", field_attr->common.node, field_attr->common.table);
+	create_objs(&fld->obj, DATA_TYPE);
 }
 
-static void create_register_object(symbol_t sym){
-	if(!OBJ || strcmp(OBJ->obj_type,"bank"))
-		BE_DBG(OBJ, "register %s not in right place\n",sym->name);
-	BE_DBG(OBJ, "register %s found in bank %s\n", sym->name, OBJ->name);
+static void create_register_object(object_t *obj, symbol_t sym){
 	dml_register_t *reg = (dml_register_t *)gdml_zmalloc(sizeof(*reg));
 	register_attr_t *reg_attr = (register_attr_t *)(sym->attr);
 	symtab_t table = reg_attr->common.table;
 
-	init_object(&reg->obj,sym->name,"register",reg_attr->common.node, table);
-	OBJ = &reg->obj;
-	create_field_objs(table);
+	init_object(&reg->obj, obj, sym->name,"register",reg_attr->common.node, table);
+	create_objs(&reg->obj, FIELD_TYPE);
+	create_objs(&reg->obj, DATA_TYPE);
 	//print_all_symbol(reg->obj.symtab);
 }
 
-static void create_iface_object(symbol_t sym) {
-	if(!OBJ || strcmp(OBJ->obj_type,"connect"))
-		BE_DBG(OBJ, "iface %s not in right place\n",sym->name);
-	BE_DBG(OBJ, "iface %s found in connect %s\n", sym->name, OBJ->name);
+static void create_iface_object(object_t *obj, symbol_t sym) {
 	interface_t *iface = (interface_t *)gdml_zmalloc(sizeof(*iface));
 	interface_attr_t *attr = (interface_attr_t *)sym->attr;
 	symtab_t table = attr->common.table;
-	init_object(&iface->obj, sym->name, "interface", attr->common.node, table);
+	init_object(&iface->obj, obj, sym->name, "interface", attr->common.node, table);
 }
 
-static void create_ifaces_objs(symtab_t table) {
-	symbol_list_t *list, *head;
-	symbol_t sym;
-	object_t *obj;
-
-	obj = OBJ;
-	list = head = symbol_list_find_type(table, INTERFACE_TYPE);
-	while(list) {
-		sym = list->sym;
-		create_iface_object(sym);
-		OBJ = obj;
-		list = list->next;
-	}
-	symbol_list_free(head);
-}
-
-static void create_connect_object(symbol_t sym) {
-	if(!OBJ || strcmp(OBJ->obj_type, "device")) 
-		BE_DBG(OBJ, "connect %s not in right place\n",sym->name);
-	BE_DBG(OBJ, "connect %s found in device %s", sym->name, OBJ->name);
+static void create_connect_object(object_t *obj, symbol_t sym) {
 	connect_t *con = (connect_t *)gdml_zmalloc(sizeof(*con));
 	connect_attr_t *attr = (connect_attr_t *)(sym->attr);
 	symtab_t table = attr->common.table;
-
-	init_object(&con->obj, sym->name, "connect", attr->common.node, table);
-	OBJ = &con->obj;
-	create_ifaces_objs(table);
+	init_object(&con->obj, obj, sym->name, "connect", attr->common.node, table);
+	create_objs(&con->obj, INTERFACE_TYPE);
+	create_objs(&con->obj, DATA_TYPE);	
 }
 
-static void create_attribute_object(symbol_t sym) {
-	if(!OBJ || strcmp(OBJ->obj_type, "device")) 
-		BE_DBG(OBJ, "attribute %s not in right place\n",sym->name);
-	BE_DBG(OBJ, "attribute %s found in device %s", sym->name, OBJ->name);
+static void create_attribute_object(object_t *obj, symbol_t sym) {
 	attribute_t *att = (attribute_t *)gdml_zmalloc(sizeof(*att));
 	attribute_attr_t *attr = (attribute_attr_t *)(sym->attr);
 	symtab_t table = attr->common.table;
-
-	init_object(&att->obj, sym->name, "attribute", attr->common.node, table);
+	init_object(&att->obj, obj, sym->name, "attribute", attr->common.node, table);
+	create_objs(&att->obj, DATA_TYPE);
 }
 
-static void create_implement_object(symbol_t sym){
-	if(!OBJ || strcmp(OBJ->obj_type, "device"))
-		BE_DBG(OBJ, "implement %s not in right place\n", sym->name);
+static void create_implement_object(object_t *obj, symbol_t sym){
 	implement_t *impl = (implement_t *)gdml_zmalloc(sizeof (*impl));
 	implement_attr_t *attr = (implement_attr_t *)sym->attr;
 	symtab_t table = attr->common.table;
-	init_object(&impl->obj, sym->name, "implement", attr->common.node, table);	
+	init_object(&impl->obj, obj, sym->name, "implement", attr->common.node, table);	
 }
 
-static void create_data_object(symbol_t sym) {
-	if(!OBJ || strcmp(OBJ->obj_type, "device")) 
-		BE_DBG(OBJ, "data should in top level\n");
+static void create_data_object(object_t *obj, symbol_t sym) {
 	data_t *data = (data_t *)gdml_zmalloc(sizeof (*data));
-	init_object(&data->obj, NULL, "data", NULL, NULL );
+	init_object(&data->obj, obj, sym->name, "data", NULL, NULL );
 }
 
-static void create_port_object(symbol_t sym) {
-	if(!OBJ || strcmp(OBJ->obj_type, "device")) {
+static void create_port_object(object_t *obj, symbol_t sym) {
+	if(!obj || strcmp(obj->obj_type, "device")) {
 		BE_DBG(OBJ, "port should in top level\n");
 	}
 	dml_port_t *port = (dml_port_t *)gdml_zmalloc(sizeof(*port));
 	port_attr_t *attr = (port_attr_t *)sym->attr;
 	symtab_t table = attr->common.table;
-	init_object(&port->obj, sym->name, "port", attr->common.node, table);
-	OBJ = &port->obj;
-	create_implement_objs(table);
+	init_object(&port->obj, obj, sym->name, "port", attr->common.node, table);
+	create_objs(&port->obj, IMPLEMENT_TYPE);
+	create_objs(&port->obj, DATA_TYPE);
 }
 
-static void create_event_object(symbol_t sym) {
-	if(!OBJ || strcmp(OBJ->obj_type, "device")) {
+static void create_event_object(object_t *obj, symbol_t sym) {
+	if(!obj || strcmp(obj->obj_type, "device")) {
 		BE_DBG(OBJ, "event should in top level\n");
 	}
 	event_t *event = (event_t *)gdml_zmalloc(sizeof(*event));
 	event_attr_t *attr = (event_attr_t *)sym->attr; 
 	symtab_t table = attr->common.table;
-	init_object(&event->obj, sym->name, "event", attr->common.node, table);
+	init_object(&event->obj, obj, sym->name, "event", attr->common.node, table);
+	create_objs(&event->obj, DATA_TYPE);
 }
 
+static void create_group_object(object_t *obj, symbol_t sym) {
+	group_t *gp = (group_t *)gdml_zmalloc(sizeof(*gp));
+	group_attr_t *attr = (group_attr_t *)sym->attr;
+	symtab_t table;
 
-static void create_connect_objs(symtab_t table) {
-	symbol_list_t *list = symbol_list_find_type(table, CONNECT_TYPE);
-	symbol_list_t *head = list;
-	symbol_t sym;
-	object_t *obj = OBJ;
-
-	while(list) {
-		sym = list->sym;
-		create_connect_object(sym);
-		OBJ = obj;
-		list = list->next;
-	}
-	symbol_list_free(head);
-} 
-
-static void create_attribute_objs(symtab_t table) {
-	symbol_list_t *list = symbol_list_find_type(table, ATTRIBUTE_TYPE);
-	symbol_list_t *head = list;
-	symbol_t sym;
-	object_t *obj = OBJ;
-
-	while(list) {
-		sym = list->sym;
-		create_attribute_object(sym);
-		OBJ = obj;
-		list = list->next;
-	}
-	symbol_list_free(head);
-} 
-
-static void create_data_objs(symtab_t table) {
-	symbol_list_t *list = symbol_list_find_type(table, DATA_TYPE);
-	symbol_list_t *head = list;
-	symbol_t sym;
-	object_t *obj = OBJ;
-
-	while(list) {
-		sym = list->sym;
-		create_data_object(sym);
-		OBJ = obj;
-		list = list->next;
-	}
-	symbol_list_free(head);
+	table = attr->common.table;
+	gp->obj.is_abstract = 1;
+	INIT_LIST_HEAD(&gp->groups);
+	init_object(&gp->obj, obj, sym->name, "group", attr->common.node, table);
+	create_objs(&gp->obj, REGISTER_TYPE);
+	create_objs(&gp->obj, GROUP_TYPE);
+	create_objs(&gp->obj, DATA_TYPE);
 }
 
-static void create_port_objs(symtab_t table) {
-	symbol_list_t *list = symbol_list_find_type(table, PORT_TYPE);
-	symbol_list_t *head = list;
-	symbol_t sym;
-	object_t *obj = OBJ;
-
-	while(list) {
-		sym = list->sym;
-		create_port_object(sym);
-		OBJ = obj;
-		list = list->next;
-	}
-	symbol_list_free(head);
-}
-
-static void create_event_objs(symtab_t table) {
-	symbol_list_t *list = symbol_list_find_type(table, EVENT_TYPE);
-	symbol_list_t *head = list;
-	symbol_t sym;
-	object_t *obj = OBJ;
-
-	while(list) {
-		sym = list->sym;
-		create_event_object(sym);
-		OBJ = obj;
-		list = list->next;
-	}
-	symbol_list_free(head);
-}
-
-static void create_implement_objs(symtab_t table) {
-	symbol_list_t *list = symbol_list_find_type(table, IMPLEMENT_TYPE);
-	symbol_list_t *head = list;
-	symbol_t sym;
-	object_t *obj = OBJ;
-
-	while(list) {
-		sym = list->sym;
-		create_implement_object(sym);
-		OBJ = obj;
-		list = list->next;
-	}
-	symbol_list_free(head);
-}
-
-static void create_register_objs(symtab_t table){
-	symbol_list_t *list = symbol_list_find_type(table, REGISTER_TYPE);
-	symbol_list_t *head = list;
-	symbol_t sym;
-
-	object_t *obj = OBJ;
-	while(list){
-		sym = list->sym;
-		create_register_object(sym);
-		OBJ = obj;
-		list = list->next;
-	}
-	symbol_list_free(head);
-}
-
-static void create_bank_object(symbol_t sym){
-	if(!OBJ || strcmp(OBJ->obj_type,"device"))
-		BE_DBG(OBJ, "bank %s not in right place\n",sym->name);
+static void create_bank_object(object_t *obj, symbol_t sym){
 	bank_t *bank = gdml_zmalloc(sizeof(*bank));
-	BE_DBG(OBJ, "bank %s found in device %s\n",sym->name, OBJ->name);
+	INIT_LIST_HEAD(&bank->groups);
 	bank_attr_t *b = (bank_attr_t *)(sym->attr);
 	symtab_t table = b->common.table;
-	init_object(&bank->obj,sym->name,"bank",b->common.node, table);		
-	OBJ = &bank->obj;
-	create_register_objs(table);
+	init_object(&bank->obj, obj, sym->name,"bank",b->common.node, table);		
+	create_objs(&bank->obj, REGISTER_TYPE);
+	create_objs(&bank->obj, DATA_TYPE);
+	printf("bank created %s\n", sym->name);
 	//print_all_symbol(table);
+}
+
+
+static void (*create_func[])(object_t *obj, symbol_t sym) = {
+	[Obj_Type_None] = create_none_object,
+	[Obj_Type_Device] = create_none_object,
+	[Obj_Type_Bank] = create_bank_object,
+	[Obj_Type_Register] = create_register_object,
+	[Obj_Type_Field]  = create_field_object,
+	[Obj_Type_Attribute] = create_attribute_object,
+	[Obj_Type_Connect]  = create_connect_object,
+	[Obj_Type_Port]    = create_port_object,
+	[Obj_Type_Implement] = create_implement_object,
+	[Obj_Type_Interface] = create_iface_object,
+	[Obj_Type_Data]     = create_data_object,
+	[Obj_Type_Event]    = create_event_object,
+	[Obj_Type_Group]    = create_group_object
+};
+
+static object_type_t type2obj_type(type_t type) {
+	object_type_t ret;
+
+	switch(type) {
+		case DEVICE_TYPE:
+			ret = Obj_Type_Device;
+			break;
+		case BANK_TYPE:
+			ret = Obj_Type_Bank;
+			break;
+		case REGISTER_TYPE:
+			ret = Obj_Type_Register;
+			break;
+		case FIELD_TYPE:
+			ret = Obj_Type_Field;
+			break;
+		case CONNECT_TYPE:
+			ret = Obj_Type_Connect;
+			break;
+		case PORT_TYPE:
+			ret = Obj_Type_Port;
+			break;
+		case IMPLEMENT_TYPE:
+			ret = Obj_Type_Implement;
+			break;
+		case INTERFACE_TYPE:
+			ret = Obj_Type_Interface;
+			break;
+		case ATTRIBUTE_TYPE:
+			ret = Obj_Type_Attribute;
+			break;
+		case DATA_TYPE:
+			ret = Obj_Type_Data;
+			break;
+		case EVENT_TYPE:
+			ret = Obj_Type_Event;
+			break;
+		default:
+			ret = Obj_Type_None;
+	}
+	return ret;
+}
+
+static void create_objs(object_t *obj, type_t type) {
+	symtab_t table = obj->symtab->sibling;
+    symbol_list_t *list = symbol_list_find_type(table, type);
+    symbol_list_t *head = list;
+	object_type_t obj_type;
+
+	obj_type = type2obj_type(type);
+    while(list) {
+		create_func[obj_type](obj, list->sym);
+        /*restore OBJ to device*/
+        list = list->next;
+    }
+    symbol_list_free(head);
+}
+
+object_t *create_device_object(symbol_t sym){
+	int i = 0;
+	struct list_head *p;
+	object_t *obj;
+
+	device_t *dev =  (device_t *)gdml_zmalloc(sizeof(*dev));
+	if(DEV)
+		BE_DBG(OBJ, "device exists\n");
+	device_attr_t *dev_attr = (device_attr_t *)sym->attr;
+	BE_DBG(OBJ, "device %s found\n",sym->name);
+	init_object(&dev->obj, NULL, sym->name, "device", dev_attr->common.node, root_table);
+	p = &dev->constants;
+	for(i = 0; i < 6; i++, p++) {
+		INIT_LIST_HEAD(p);
+	}
+	obj = &dev->obj;
+	DEV = obj;
+	create_objs(obj, BANK_TYPE);
+	create_objs(obj,CONNECT_TYPE );
+	create_objs(obj, ATTRIBUTE_TYPE);
+	create_objs(obj, IMPLEMENT_TYPE);
+	create_objs(obj, PORT_TYPE);
+	create_objs(obj, EVENT_TYPE);
+	create_objs(obj, DATA_TYPE);
+	return obj;
 }
 
 device_t *create_device_tree(tree_t  *root){
@@ -525,14 +544,15 @@ device_t *create_device_tree(tree_t  *root){
 	//print_all_symbol(root_table);
 	symbol_list_t *dev_list = symbol_list_find_type(root_table, DEVICE_TYPE);
 	if(!dev_list || dev_list->next) {
-		BE_DBG(OBJ, "device not correct\n");
+		printf("device not correct\n");
 		exit(-1);
 	}
 	symbol_t sym = dev_list->sym;
 	obj = create_device_object(sym);
 	symbol_list_free(dev_list);
-	return (device_t *)DEV;
+	return (device_t *)obj;
 }
+
 static void add_object_templates(object_t *obj, tree_t *node);
 void create_template_name(object_t *obj, const char *name) {
 	symbol_t sym;
@@ -560,6 +580,7 @@ static void field_realize(object_t *obj) {
 
 	add_object_templates(obj, templates);
 	if(fld->is_dummy) {
+		process_object_names(obj);
 		process_object_templates(obj);	
 		return;
 	} 
@@ -587,6 +608,7 @@ static void field_realize(object_t *obj) {
 			fld->len = fld->high - fld->low + 1;
 		}
 	}
+	process_object_names(obj);
 	process_object_templates(obj);
 	return;
 }
@@ -655,9 +677,15 @@ static void register_realize(object_t *obj) {
 	arraydef_attr_t *arraydef = NULL;
 	symbol_t sym;
 	parameter_attr_t *parameter_attr;
+	const char *index;
+	int depth;
 
 	list_for_each(p, &obj->childs) {
 		i++;
+	}
+	if(i == 0) {
+		/*default one dummy field*/
+		i = 1;
 	}
 	reg->field_count = i;
 	reg->fields = (object_t **)gdml_zmalloc(sizeof(obj) * reg->field_count);
@@ -666,6 +694,11 @@ static void register_realize(object_t *obj) {
 		tmp = list_entry(p, object_t, entry);
 		reg->fields[i] = tmp;
 		i++;
+	}
+	if(i == 0) {
+		/*no field,create a dummy one*/
+		tmp = create_dummy_field(obj); 
+		reg->fields[0] = tmp;
 	}
 
 	add_object_templates(obj, obj->node->reg.templates);
@@ -683,12 +716,14 @@ static void register_realize(object_t *obj) {
 	if(!reg->size || reg->size == -1) {
 		reg->size = register_size;
 	}
+	process_object_names(obj);
 	if(reg->is_array) {
 		arraydef = reg_attr->arraydef;
 		if(!arraydef->fix_array) {
 			reg->array_size = arraydef->high - arraydef->low + 1;
 		} else {
 			reg->array_size = arraydef->fix_array;
+			/*default index*/
 		}
 		obj->array_size = reg->array_size;
 	}
@@ -712,7 +747,6 @@ static void register_realize(object_t *obj) {
 			BE_DBG(GENERAL, "reg offset 0x%x\n", reg->offset);
 		}	
 	}
-	i = 0;
 	list_for_each(p, &obj->childs) {
 		tmp = list_entry(p, object_t, entry);
 		field_realize(tmp);
@@ -807,6 +841,7 @@ static void bank_realize(object_t *obj) {
 	} else {
 		reg_size = 4;
 	}
+	process_object_names(obj);
 
 	bank->register_size = reg_size;	
 	list_for_each(p, &obj->childs) {
@@ -832,6 +867,7 @@ static void connect_realize(object_t *obj) {
 	node = obj->node;
 	attr = node->common.attr;
 	obj->is_array = attr->is_array;
+	process_object_names(obj);
 	if(obj->is_array) {
 		array_def = attr->arraydef;
 		obj->array_size = array_def->fix_array;
@@ -974,12 +1010,13 @@ static void attribute_realize(object_t *obj) {
 		get_param_spec(attr, spec);
 		attr_obj->type = get_type(spec->value->u.string, attr_obj);
 	}
-
+	process_object_names(obj);
 	return;
 }
 
 static void implement_realize(object_t* obj) {
 	parse_implement(obj->node, obj->symtab->sibling);
+	process_object_names(obj);
 	return;
 }
 
@@ -995,7 +1032,7 @@ static void port_realize(object_t *obj) {
 	port = (dml_port_t *)obj;
 	port->num = i;
 	port->impls = (object_t **)gdml_zmalloc(sizeof(*port->impls) * i);
-
+	process_object_names(obj);
 	i = 0;
 	list_for_each(p, &obj->childs) {
 		tmp = list_entry(p, object_t, entry);
@@ -1007,6 +1044,7 @@ static void port_realize(object_t *obj) {
 
 static void event_realize(object_t *obj) {
 	add_object_templates(obj, NULL);	
+	process_object_names(obj);
 }
 
 void device_realize(device_t *dev) {
@@ -1026,6 +1064,7 @@ void device_realize(device_t *dev) {
 		i++;
 	}
 	dev->bank_count = i;
+	dev->obj.depth = 0;
 
 	/* add default templates "template device" into device,
 	 * and insert symbols into table of templates */
@@ -1037,6 +1076,7 @@ void device_realize(device_t *dev) {
 	 * as something can be detemined after the object instantiated*/
 	parse_device(dev->obj.node, dev->obj.symtab->sibling);
 
+	process_object_names(&dev->obj);
 	list_for_each(p, &dev->obj.childs) {
 		tmp = list_entry(p, object_t, entry);
 		bank_realize(tmp);
@@ -1282,7 +1322,7 @@ static void add_default_template(object_t *obj){
 	create_template_name(obj, obj->obj_type);
 	table = obj->symtab->sibling;
 	if(table) {
-		BE_DBG(OBJ, "%s\n", obj->obj_type);
+		BE_DBG(OBJ, "add default template %s\n", obj->obj_type);
 		check_undef_template(table);
 		add_template_to_table(table, obj->obj_type, 0);
 	}
@@ -1483,18 +1523,22 @@ static void process_basic_template(object_t *obj) {
 
 	val = gdml_zmalloc(sizeof(*val));
 	val->type = PARAM_TYPE_STRING;
+	printf("obj name %s\n", obj->name);
 	val->u.string = strdup(obj->name);
 	symbol_insert(table, "name", PARAMETER_TYPE, val);
 
+	printf("obj qname %s\n", obj->qname);
 	val = gdml_zmalloc(sizeof(*val));
 	val->type = PARAM_TYPE_STRING;
 	val->u.string = strdup(obj->qname);
 	symbol_insert(table, "qname", PARAMETER_TYPE, val);
 
+	printf("obj name %s\n", obj->name);
 	val = gdml_zmalloc(sizeof(*val));
 	val->type = PARAM_TYPE_REF;
 	val->u.ref = obj;
 	symbol_insert(table, "this", PARAMETER_TYPE, val);
+	printf("end obj name %s\n", obj->name);
 }
 
 void object_none_temp_fn(object_t *obj) {
@@ -1507,6 +1551,7 @@ static void (*specific_temp_fn[])(object_t *obj) = {
 	[Obj_Type_Bank] = process_bank_template,
 	[Obj_Type_Register] = process_register_template,
 	[Obj_Type_Field] = process_field_template,
+	[Obj_Type_Connect] = object_none_temp_fn,
 };
 
 static void process_default_template(object_t *obj) {
@@ -1598,4 +1643,17 @@ void add_object_generated_method(object_t *obj){
 
 	method_to_generate -= i;
 	list_splice_init(&obj->methods, &obj->method_generated);
+}
+
+object_t *find_index_obj(object_t *obj, int index) {
+	object_t *ret = obj;
+
+	while(ret) {
+		if((ret->is_array) && (ret->depth == index)) {
+			return ret;
+		} else {
+			ret = obj->parent;
+		}
+	}
+	return NULL;
 }

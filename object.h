@@ -48,18 +48,31 @@ typedef enum object_type {
 	Obj_Type_Device,
 	Obj_Type_Bank,
 	Obj_Type_Register,
-	Obj_Type_Field
+	Obj_Type_Field,
+	Obj_Type_Attribute,
+	Obj_Type_Connect,
+	Obj_Type_Port,
+	Obj_Type_Implement,
+	Obj_Type_Interface,
+	Obj_Type_Data,
+	Obj_Type_Event,
+	Obj_Type_Group
 } object_type_t;
 
 typedef struct object {
 	const char *name;
 	const char *qname;
+	const char *a_name;
 	const char *dotname;
 	const char *obj_type;	
 	int is_array;
 	int array_size;
+	int depth;
+	tree_t *i_node;
+	tree_t *d_node;
 	object_type_t encoding;
 	tree_t *node;
+	int is_abstract;
 	struct object *parent;
 	const char *desc;
 	struct list_head childs;
@@ -68,6 +81,7 @@ typedef struct object {
 	struct list_head methods;
 	struct list_head templates;	
 	struct list_head method_generated;
+	struct list_head data;
 	symtab_t symtab;
 	const char *attr_type;
 }object_t;
@@ -79,7 +93,6 @@ typedef struct device {
     struct list_head connects;
     struct list_head implements;
     struct list_head events;
-    struct list_head data;
 	struct list_head ports;
 	int bank_count;
 	object_t **banks;
@@ -91,6 +104,7 @@ typedef struct bank_def {
 	int size;
 	int reg_count;
 	object_t **regs;
+	struct list_head groups;
 }bank_t;
 
 typedef struct register_def {
@@ -168,7 +182,6 @@ typedef struct method {
 
 typedef struct connect {
 	object_t obj;
-	struct list_head ifaces;
 } connect_t;
  
 typedef struct iface {
@@ -205,6 +218,11 @@ typedef struct port {
 	object_t **impls;	
 } dml_port_t;
 
+typedef struct group {
+	object_t obj;
+	struct list_head groups;
+} group_t;
+
 device_t *create_device_tree(tree_t *root);
 void add_object_method(object_t *obj, const char *name);
 void add_object_generated_method(object_t *obj);
@@ -215,4 +233,5 @@ void device_realize(device_t *dev);
 const char *get_obj_ref(object_t *obj);
 const char *get_obj_qname(object_t *obj);
 void process_object_templates(object_t* obj);
+object_t *find_index_obj(object_t *obj, int index);
 #endif
