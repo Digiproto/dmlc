@@ -26,10 +26,12 @@ void translate_assign(tree_t *t) {
 	tree_t *node;
 
 	node = t->expr_assign.left;
+	/*special case field */
 	if(expr_is_bit_slic(node)) {
 		translate_bit_slic_assign(t);
 		return;
 	}
+	/*need more special cases, such as layout etc*/
 	translate(node);
 	D(" %s ",t->expr_assign.assign_symbol);
 	node = t->expr_assign.right;
@@ -220,6 +222,7 @@ void translate_expr_brack_direct(tree_t *t) {
 	sym = get_ref_sym(node, &ref_ret, NULL);
 	if(sym && sym->type == OBJECT_TYPE) {
 		obj = (object_t *)sym->attr;
+		printf("obj %s\n", obj->name);
 		if(!strcmp(obj->obj_type, "interface")) {
 			if(!ref_ret.con) {
 				tmp = obj->parent;
