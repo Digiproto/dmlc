@@ -43,4 +43,4 @@ extern void dbuffer_copy_append(dbuffer_t *dst, dbuffer_t *src, size_t offset, s
 extern void dbuffer_copy_prepend(dbuffer_t *dst, dbuffer_t *src, size_t offset, size_t len);
 extern void dbuffer_append_data(dbuffer_t *buf, const void *data, size_t nmemb);
 extern void dbuffer_truncate(dbuffer_t *dbuffer, size_t new_size);
-typedef struct { } dbuffer_t;
+//typedef struct { } dbuffer_t;
