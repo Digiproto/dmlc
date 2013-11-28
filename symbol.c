@@ -704,6 +704,9 @@ symbol_list_t *_symbol_list_find(symtab_t tab, match_func_t match, void *arg, in
 	symtab_t table;
 
 	/*find in table*/
+	if(!tab) {
+		return first;
+	}
 	first = symbol_list_match(tab, match, arg);
 	if(depth == 1) {
 		return first;
