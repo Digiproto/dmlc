@@ -29,13 +29,16 @@ void gen_obj_method_protos(object_t *obj) {
 	tree_t *method;
 	object_t *tmp;
 	context_t context;
+	obj_ref_t obj_ref;
+	obj_ref.obj = obj;
+	obj_ref.ref = NULL;
 
 	list_for_each(p, &obj->method_generated) {
 		mn = list_entry(p, struct method_name, entry);
 		method = mn->method;
-		pre_gen_method(obj, method, &context);
+		pre_gen_method(&obj_ref, method, &context);
 		gen_dml_method_header(obj, method);
-		post_gen_method(obj, method, &context);
+		post_gen_method(&obj_ref, method, &context);
 		D(";\n");
 	}
 	list_for_each(p, &obj->childs) {
