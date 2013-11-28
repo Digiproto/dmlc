@@ -41,6 +41,11 @@ typedef struct node_info {
 	tree_t *index;
 }node_info_t;
 
+typedef struct index_info {
+	int indexs;
+	struct list_head list;
+} index_info_t;
+
 typedef struct ref_ret {
         int is_obj;
         object_t *con;
@@ -48,6 +53,7 @@ typedef struct ref_ret {
         const char *method;
 		ref_info_t *ref;
 		tree_t *index;
+		index_info_t a_index;
 		symbol_t sym;
 } ref_ret_t;
 
