@@ -107,7 +107,8 @@ static void gen_register_struct(object_t *obj, FILE *f) {
 		if(!reg->is_array) {
         	fprintf(f, "\t\t%s %s;\n", type, obj->name);
 		} else {
-        	fprintf(f, "\t\t%s %s[%d];\n", type, obj->name, reg->array_size);
+
+        	fprintf(f, "\t\t%s %s[%d];\n", type, obj->a_name, reg->array_size);
 		}
         obj->attr_type = type;
     } else {
