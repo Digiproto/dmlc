@@ -27,467 +27,284 @@
 #ifndef __TYPES_H__
 #define __TYPES_H__
 #include "types.h"
+
+#define TYPELIST(fn) \
+	fn(NO_TYPE) \
+	/* dml */ \
+	fn(DML_TYPE) \
+	/*object type*/ \
+	fn(OBJECT_TYPE) \
+	/* device */ \
+	fn(DEVICE_TYPE) \
+	/* parameter */ \
+	fn(PARAMETER_TYPE) \
+	/* method */ \
+	fn(METHOD_TYPE) \
+	/* c function  */ \
+	fn(FUNCTION_TYPE) \
+	/* c function pointer type*/ \
+	fn(FUNCTION_POINTER_TYPE) \
+	fn(FUNCTION_POINTER_VAR) \
+	/* bank */ \
+	fn(BANK_TYPE) \
+	/* register */ \
+	fn(REGISTER_TYPE) \
+	/* group */ \
+	fn(GROUP_TYPE) \
+	/* port */ \
+	fn(PORT_TYPE) \
+	/* import */ \
+	fn(IMPORT_TYPE) \
+	/* template */ \
+	fn(TEMPLATE_TYPE) \
+	/* bitorder */ \
+	fn(BITORDER_TYPE) \
+	/* loggroup */ \
+	fn(LOGGROUP_TYPE) \
+	/* header */ \
+	fn(HEADER_TYPE) \
+	/* foreach */ \
+	fn(FOREACH_TYPE) \
+	/* call  */ \
+	fn(CALL_TYPE) \
+	/* data */ \
+	fn(DATA_TYPE) \
+	/* implement */ \
+	fn(IMPLEMENT_TYPE) \
+	/* field */ \
+	fn(FIELD_TYPE) \
+	/* attribute */ \
+	fn(ATTRIBUTE_TYPE) \
+	/* connect */ \
+	fn(CONNECT_TYPE) \
+	/* interface */ \
+	fn(INTERFACE_TYPE) \
+	/* event */ \
+	fn(EVENT_TYPE) \
+	/* identifier */ \
+	fn(IDENT_TYPE) \
+	/* method param */ \
+	fn(PARAM_TYPE) \
+	/* constant string */ \
+	fn(CONST_STRING_TYPE) \
+	/* constant */ \
+	fn(CONSTANT_TYPE) \
+	/* array type [10] | [i in ...] */ \
+	fn(ARRAY_TYPE) \
+	/* ... */ \
+	fn(ELLIPSIS_TYPE) \
+	/* assign type */ \
+	fn(ASSIGN_TYPE) \
+	/* exprssion = exprssion */ \
+	fn(EXPR_ASSIGN_TYPE) \
+	/* exprssion with brackets */ \
+	fn(EXPR_BRACK_TYPE) \
+	/* unary operator */ \
+	fn(UNARY_TYPE) \
+	/* binary operator */ \
+	fn(BINARY_TYPE) \
+	/* ternary operator */ \
+	fn(TERNARY_TYPE) \
+	/* default */ \
+	fn(DEFAULT_TYPE) \
+	/* auto */ \
+	fn(AUTO_TYPE) \
+	/* $ */ \
+	fn(QUOTE_TYPE) \
+	/* dml keyword */ \
+	fn(DML_KEYWORD_TYPE) \
+	/* c keyword */ \
+	fn(C_KEYWORD_TYPE) \
+	/* ( decl_list )*/ \
+	fn(CDECL_BRACK_TYPE) \
+	/* ctypedecl */ \
+	fn(CTYPEDECL_TYPE) \
+	/* ctypedecl_ptr */ \
+	fn(CTYPEDECL_PTR_TYPE) \
+	/* ctypedecl_simple */ \
+	fn(CTYPEDECL_SIMPLE_TYPE) \
+	/* typeoparg */ \
+	fn(TYPEOPARG_TYPE) \
+	/* stars */ \
+	fn(STARS_TYPE) \
+	/* new */ \
+	fn(NEW_TYPE) \
+	/* bit slicing exprssion */ \
+	fn(BIT_SLIC_EXPR_TYPE) \
+	/* if... else ...*/ \
+	fn(IF_ELSE_TYPE) \
+	/* log */ \
+	fn(LOG_TYPE) \
+	/* . | ->*/ \
+	fn(COMPONENT_TYPE) \
+	/* undefined */ \
+	fn(UNDEFINED_TYPE) \
+	/* throw */ \
+	fn(THROW_TYPE) \
+	/* const */ \
+	fn(CONST_TYPE) \
+	/* extern */ \
+	fn(EXTERN_KEY_TYPE) \
+	/* method extern  */ \
+	fn(METHOD_EXTERN_TYPE) \
+	/* goto */ \
+	fn(GOTO_TYPE) \
+	/* label */ \
+	fn(LABEL_TYPE) \
+	/* break */ \
+	fn(BREAK_TYPE) \
+	/* continue */ \
+	fn(CONTINUE_TYPE) \
+	/* inline */ \
+	fn(INLINE_TYPE) \
+	/* do while */ \
+	fn(DO_WHILE_TYPE) \
+	/* for */ \
+	fn(FOR_TYPE) \
+	/* switch */ \
+	fn(SWITCH_TYPE) \
+	/* delete */ \
+	fn(DELETE_TYPE) \
+	/* try catch */ \
+	fn(TRY_CATCH_TYPE) \
+	/* local_keyword */ \
+	fn(LOCAL_KEYWORD_TYPE) \
+	/* after call */ \
+	fn(AFTER_CALL_TYPE) \
+	/* error */ \
+	fn(ERROR_TYPE) \
+	/* select */ \
+	fn(SELECT_TYPE) \
+	/* return */ \
+	fn(RETURN_TYPE) \
+	/* cast */ \
+	fn(CAST_TYPE) \
+	/* case */ \
+	fn(CASE_TYPE) \
+	/* assert */ \
+	fn(ASSERT_TYPE) \
+	/* sizeof */ \
+	fn(SIZEOF_TYPE) \
+	/* local */ \
+	fn(LOCAL_TYPE) \
+	/* sizeoftype */ \
+	fn(SIZEOFTYPE_TYPE) \
+	/* spec of boject */ \
+	fn(SPEC_TYPE) \
+	/* block  */ \
+	fn(BLOCK_TYPE) \
+	/* cdecl  */ \
+	fn(CDECL_TYPE) \
+	/* bitfields */ \
+	fn(BITFIELDS_TYPE) \
+	/* bitfields decl */ \
+	fn(BITFIELDS_DECL_TYPE) \
+	/* layout */ \
+	fn(LAYOUT_TYPE) \
+	/* typedef */ \
+	fn(TYPEDEF_TYPE) \
+	/* typeof */ \
+	fn(TYPEOF_TYPE) \
+	/* bool */ \
+	fn(BOOL_TYPE) \
+	/* const int data: 0, 1, 3 */ \
+	fn(INTEGER_TYPE) \
+	/* float data */ \
+	fn(FLOAT_TYPE) \
+	/* c keyword */ \
+	fn(CHAR_TYPE) \
+	fn(DOUBLE_TYPE) \
+	fn(INT_TYPE) \
+	fn(LONG_TYPE) \
+	fn(SHORT_TYPE) \
+	fn(SIGNED_TYPE) \
+	fn(UNSIGNED_TYPE) \
+	fn(VOID_TYPE) \
+	fn(ENUM_TYPE) \
+	fn(UNION_TYPE) \
+	/* struct */ \
+	fn(STRUCT_TYPE) \
+	fn(SIZE_TYPE) \
+	fn(CLASS_TYPE) \
+	fn(NAMESPACE_TYPE) \
+	fn(PRIVATE_TYPE) \
+	fn(PROTECTED_TYPE) \
+	fn(PUBLIC_TYPE) \
+	fn(RESTRICT_TYPE) \
+	fn(USING_TYPE) \
+	fn(VIRTUAL_TYPE) \
+	fn(VOLATILE_TYPE) \
+	fn(FOOTER_TYPE) \
+	fn(THIS_TYPE) \
+	fn(TMP_TYPE) \
+	fn(EXPR_STATEMENT) \
+	/* dictionary */ \
+	fn(DICTIONARY_TYPE) \
+	/* nil */ \
+	fn(NIL_TYPE)
+
+#define type_produce(x) x,
 typedef enum
 {
-	NO_TYPE = 1,
-	/* dml */
-	DML_TYPE,
-	/*object type*/
-	OBJECT_TYPE,
-	/* device */
-	DEVICE_TYPE,
-	/* parameter */
-	PARAMETER_TYPE,
-	/* method */
-	METHOD_TYPE,
-	/* c function  */
-	FUNCTION_TYPE,
-	/* c function pointer type*/
-	FUNCTION_POINTER_TYPE,
-	FUNCTION_POINTER_VAR,
-	/* bank */
-	BANK_TYPE,
-	/* register */
-	REGISTER_TYPE,
-	/* group */
-	GROUP_TYPE,
-	/* port */
-	PORT_TYPE,
-	/* import */
-	IMPORT_TYPE,
-	/* template */
-	TEMPLATE_TYPE,
-	/* bitorder */
-	BITORDER_TYPE,
-	/* loggroup */
-	LOGGROUP_TYPE,
-	/* header */
-	HEADER_TYPE,
-	/* foreach */
-	FOREACH_TYPE,
-	/* call  */
-	CALL_TYPE,
-	/* data */
-	DATA_TYPE,
-	/* implement */
-	IMPLEMENT_TYPE,
-	/* field */
-	FIELD_TYPE,
-	/* attribute */
-	ATTRIBUTE_TYPE,
-	/* connect */
-	CONNECT_TYPE,
-	/* interface */
-	INTERFACE_TYPE,
-	/* event */
-	EVENT_TYPE,
-	/* identifier */
-	IDENT_TYPE,
-	/* method param */
-	PARAM_TYPE,
-	/* constant string */
-	CONST_STRING_TYPE,
-	/* constant */
-	CONSTANT_TYPE,
-	/* array type [10] | [i in ...] */
-	ARRAY_TYPE,
-	/* ... */
-	ELLIPSIS_TYPE,
-	/* assign type */
-	ASSIGN_TYPE,
-	/* exprssion = exprssion */
-	EXPR_ASSIGN_TYPE,
-	/* exprssion with brackets */
-	EXPR_BRACK_TYPE,
-	/* unary operator */
-	UNARY_TYPE,
-	/* binary operator */
-	BINARY_TYPE,
-	/* ternary operator */
-	TERNARY_TYPE,
-	/* default */
-	DEFAULT_TYPE,
-	/* auto */
-	AUTO_TYPE,
-	/* $ */
-	QUOTE_TYPE,
-	/* dml keyword */
-	DML_KEYWORD_TYPE,
-	/* c keyword */
-	C_KEYWORD_TYPE,
-	/* ( decl_list )*/
-	CDECL_BRACK_TYPE,
-	/* ctypedecl */
-	CTYPEDECL_TYPE,
-	/* ctypedecl_ptr */
-	CTYPEDECL_PTR_TYPE,
-	/* ctypedecl_simple */
-	CTYPEDECL_SIMPLE_TYPE,
-	/* typeoparg */
-	TYPEOPARG_TYPE,
-	/* stars */
-	STARS_TYPE,
-	/* new */
-	NEW_TYPE,
-	/* bit slicing exprssion */
-	BIT_SLIC_EXPR_TYPE,
-	/* if... else ...*/
-	IF_ELSE_TYPE,
-	/* log */
-	LOG_TYPE,
-	/* . | ->*/
-	COMPONENT_TYPE,
-	/* undefined */
-	UNDEFINED_TYPE,
-	/* throw */
-	THROW_TYPE,
-	/* const */
-	CONST_TYPE,
-	/* extern */
-	EXTERN_KEY_TYPE,
-	/* method extern  */
-	METHOD_EXTERN_TYPE,
-	/* goto */
-	GOTO_TYPE,
-	/* label */
-	LABEL_TYPE,
-	/* break */
-	BREAK_TYPE,
-	/* continue */
-	CONTINUE_TYPE,
-	/* inline */
-	INLINE_TYPE,
-	/* do while */
-	DO_WHILE_TYPE,
-	/* for */
-	FOR_TYPE,
-	/* switch */
-	SWITCH_TYPE,
-	/* delete */
-	DELETE_TYPE,
-	/* try catch */
-	TRY_CATCH_TYPE,
-	/* local_keyword */
-	LOCAL_KEYWORD_TYPE,
-	/* after call */
-	AFTER_CALL_TYPE,
-	/* error */
-	ERROR_TYPE,
-	/* select */
-	SELECT_TYPE,
-	/* return */
-	RETURN_TYPE,
-	/* cast */
-	CAST_TYPE,
-	/* case */
-	CASE_TYPE,
-	/* assert */
-	ASSERT_TYPE,
-	/* sizeof */
-	SIZEOF_TYPE,
-	/* local */
-	LOCAL_TYPE,
-	/* sizeoftype */
-	SIZEOFTYPE_TYPE,
-	/* spec of boject */
-	SPEC_TYPE,
-	/* block  */
-	BLOCK_TYPE,
-	/* cdecl  */
-	CDECL_TYPE,
-	/* bitfields */
-	BITFIELDS_TYPE,
-	/* bitfields decl */
-	BITFIELDS_DECL_TYPE,
-	/* layout */
-	LAYOUT_TYPE,
-	/* typedef */
-	TYPEDEF_TYPE,
-	/* typeof */
-	TYPEOF_TYPE,
-	/* bool */
-	BOOL_TYPE,
-	/* const int data: 0, 1, 3 */
-	INTEGER_TYPE,
-	/* float data */
-	FLOAT_TYPE,
-	/* c keyword */
-	CHAR_TYPE,
-	DOUBLE_TYPE,
-	INT_TYPE,
-	LONG_TYPE,
-	SHORT_TYPE,
-	SIGNED_TYPE,
-	UNSIGNED_TYPE,
-	VOID_TYPE,
-	ENUM_TYPE,
-	UNION_TYPE,
-	/* struct */
-	STRUCT_TYPE,
-	SIZE_TYPE,
-	CLASS_TYPE,
-	NAMESPACE_TYPE,
-	PRIVATE_TYPE,
-	PROTECTED_TYPE,
-	PUBLIC_TYPE,
-	RESTRICT_TYPE,
-	USING_TYPE,
-	VIRTUAL_TYPE,
-	VOLATILE_TYPE,
-	FOOTER_TYPE,
-	THIS_TYPE,
-	TMP_TYPE,
-	EXPR_STATEMENT,
-	/* dictionary */
-	DICTIONARY_TYPE,
-	/* nil */
-	NIL_TYPE,
-	TYPE_END
+	type_produce(START_TYPE)
+	TYPELIST(type_produce)
+	type_produce(TYPE_END)
 } type_t;
 
-enum data_type {
-	BOOL_T = TYPE_END,
-	CHAR_T,
-	SHORT_T,
-	INT_T,
-	UINT_T,
-	LONG_T,
-	FLOAT_T,
-	DOUBLE_T,
-	STRING_T,
-	POINTER_T,
-	VOID_T,
-	ARRAY_T,
-	STRUCT_T,
-	LAYOUT_T,
-	BITFIELDS_T,
-	TYPEDEF_T,
-	FUNCTION_T,
-	INTERFACE_T,
-	DATA_TYPE_END
-}data_type_t;
-
-#define NEWSTR(X) \
-	[(X) - 1] = #X
-
+#define name_produce(x) \
+	[(x)] = #x,
 static const char *type_name[] = {
-	NEWSTR(NO_TYPE),
-	/* dml */
-	NEWSTR(DML_TYPE),
-	/*object type*/
-	NEWSTR(OBJECT_TYPE),
-	/* device */
-	NEWSTR(DEVICE_TYPE),
-	/* parameter */
-	NEWSTR(PARAMETER_TYPE),
-	/* method */
-	NEWSTR(METHOD_TYPE),
-	/* c function  */
-	NEWSTR(FUNCTION_TYPE),
-	/* c function pointer type*/
-	NEWSTR(FUNCTION_POINTER_TYPE),
-	NEWSTR(FUNCTION_POINTER_VAR),
-	/* bank */
-	NEWSTR(BANK_TYPE),
-	/* register */
-	NEWSTR(REGISTER_TYPE),
-	/* group */
-	NEWSTR(GROUP_TYPE),
-	/* port */
-	NEWSTR(PORT_TYPE),
-	/* import */
-	NEWSTR(IMPORT_TYPE),
-	/* template */
-	NEWSTR(TEMPLATE_TYPE),
-	/* bitorder */
-	NEWSTR(BITORDER_TYPE),
-	/* loggroup */
-	NEWSTR(LOGGROUP_TYPE),
-	/* header */
-	NEWSTR(HEADER_TYPE),
-	/* foreach */
-	NEWSTR(FOREACH_TYPE),
-	/* call  */
-	NEWSTR(CALL_TYPE),
-	/* data */
-	NEWSTR(DATA_TYPE),
-	/* implement */
-	NEWSTR(IMPLEMENT_TYPE),
-	/* field */
-	NEWSTR(FIELD_TYPE),
-	/* attribute */
-	NEWSTR(ATTRIBUTE_TYPE),
-	/* connect */
-	NEWSTR(CONNECT_TYPE),
-	/* interface */
-	NEWSTR(INTERFACE_TYPE),
-	/* event */
-	NEWSTR(EVENT_TYPE),
-	/* identifier */
-	NEWSTR(IDENT_TYPE),
-	/* method param */
-	NEWSTR(PARAM_TYPE),
-	/* constant string */
-	NEWSTR(CONST_STRING_TYPE),
-	/* constant */
-	NEWSTR(CONSTANT_TYPE),
-	/* array type [10] | [i in ...] */
-	NEWSTR(ARRAY_TYPE),
-	/* ... */
-	NEWSTR(ELLIPSIS_TYPE),
-	/* assign type */
-	NEWSTR(ASSIGN_TYPE),
-	/* exprssion = exprssion */
-	NEWSTR(EXPR_ASSIGN_TYPE),
-	/* exprssion with brackets */
-	NEWSTR(EXPR_BRACK_TYPE),
-	/* unary operator */
-	NEWSTR(UNARY_TYPE),
-	/* binary operator */
-	NEWSTR(BINARY_TYPE),
-	/* ternary operator */
-	NEWSTR(TERNARY_TYPE),
-	/* default */
-	NEWSTR(DEFAULT_TYPE),
-	/* auto */
-	NEWSTR(AUTO_TYPE),
-	/* $ */
-	NEWSTR(QUOTE_TYPE),
-	/* dml keyword */
-	NEWSTR(DML_KEYWORD_TYPE),
-	/* c keyword */
-	NEWSTR(C_KEYWORD_TYPE),
-	/* ( decl_list )*/
-	NEWSTR(CDECL_BRACK_TYPE),
-	/* ctypedecl */
-	NEWSTR(CTYPEDECL_TYPE),
-	/* ctypedecl_ptr */
-	NEWSTR(CTYPEDECL_PTR_TYPE),
-	/* ctypedecl_simple */
-	NEWSTR(CTYPEDECL_SIMPLE_TYPE),
-	/* typeoparg */
-	NEWSTR(TYPEOPARG_TYPE),
-	/* stars */
-	NEWSTR(STARS_TYPE),
-	/* new */
-	NEWSTR(NEW_TYPE),
-	/* bit slicing exprssion */
-	NEWSTR(BIT_SLIC_EXPR_TYPE),
-	/* if... else ...*/
-	NEWSTR(IF_ELSE_TYPE),
-	/* log */
-	NEWSTR(LOG_TYPE),
-	/* . | ->*/
-	NEWSTR(COMPONENT_TYPE),
-	/* undefined */
-	NEWSTR(UNDEFINED_TYPE),
-	/* throw */
-	NEWSTR(THROW_TYPE),
-	/* const */
-	NEWSTR(CONST_TYPE),
-	/* extern */
-	NEWSTR(EXTERN_KEY_TYPE),
-	/* method extern  */
-	NEWSTR(METHOD_EXTERN_TYPE),
-	/* goto */
-	NEWSTR(GOTO_TYPE),
-	/* label */
-	NEWSTR(LABEL_TYPE),
-	/* break */
-	NEWSTR(BREAK_TYPE),
-	/* continue */
-	NEWSTR(CONTINUE_TYPE),
-	/* inline */
-	NEWSTR(INLINE_TYPE),
-	/* do while */
-	NEWSTR(DO_WHILE_TYPE),
-	/* for */
-	NEWSTR(FOR_TYPE),
-	/* switch */
-	NEWSTR(SWITCH_TYPE),
-	/* delete */
-	NEWSTR(DELETE_TYPE),
-	/* try catch */
-	NEWSTR(TRY_CATCH_TYPE),
-	/* local_keyword */
-	NEWSTR(LOCAL_KEYWORD_TYPE),
-	/* after call */
-	NEWSTR(AFTER_CALL_TYPE),
-	/* error */
-	NEWSTR(ERROR_TYPE),
-	/* select */
-	NEWSTR(SELECT_TYPE),
-	/* return */
-	NEWSTR(RETURN_TYPE),
-	/* cast */
-	NEWSTR(CAST_TYPE),
-	/* case */
-	NEWSTR(CASE_TYPE),
-	/* assert */
-	NEWSTR(ASSERT_TYPE),
-	/* sizeof */
-	NEWSTR(SIZEOF_TYPE),
-	/* local */
-	NEWSTR(LOCAL_TYPE),
-	/* sizeoftype */
-	NEWSTR(SIZEOFTYPE_TYPE),
-	/* spec of boject */
-	NEWSTR(SPEC_TYPE),
-	/* block  */
-	NEWSTR(BLOCK_TYPE),
-	/* cdecl  */
-	NEWSTR(CDECL_TYPE),
-	/* bitfields */
-	NEWSTR(BITFIELDS_TYPE),
-	/* bitfields decl */
-	NEWSTR(BITFIELDS_DECL_TYPE),
-	/* layout */
-	NEWSTR(LAYOUT_TYPE),
-	/* typedef */
-	NEWSTR(TYPEDEF_TYPE),
-	/* typeof */
-	NEWSTR(TYPEOF_TYPE),
-	/* bool */
-	NEWSTR(BOOL_TYPE),
-	/* const int data: 0, 1), 3 */
-	NEWSTR(INTEGER_TYPE),
-	/* float data */
-	NEWSTR(FLOAT_TYPE),
-	/* c keyword */
-	NEWSTR(CHAR_TYPE),
-	NEWSTR(DOUBLE_TYPE),
-	NEWSTR(INT_TYPE),
-	NEWSTR(LONG_TYPE),
-	NEWSTR(SHORT_TYPE),
-	NEWSTR(SIGNED_TYPE),
-	NEWSTR(UNSIGNED_TYPE),
-	NEWSTR(VOID_TYPE),
-	NEWSTR(ENUM_TYPE),
-	NEWSTR(UNION_TYPE),
-	/* struct */
-	NEWSTR(STRUCT_TYPE),
-	NEWSTR(SIZE_TYPE),
-	NEWSTR(CLASS_TYPE),
-	NEWSTR(NAMESPACE_TYPE),
-	NEWSTR(PRIVATE_TYPE),
-	NEWSTR(PROTECTED_TYPE),
-	NEWSTR(PUBLIC_TYPE),
-	NEWSTR(RESTRICT_TYPE),
-	NEWSTR(USING_TYPE),
-	NEWSTR(VIRTUAL_TYPE),
-	NEWSTR(VOLATILE_TYPE),
-	NEWSTR(FOOTER_TYPE),
-	NEWSTR(THIS_TYPE),
-	NEWSTR(TMP_TYPE),
-	NEWSTR(EXPR_STATEMENT),
-	/* dictionary */
-	NEWSTR(DICTIONARY_TYPE),
-	/* nil */
-	NEWSTR(NIL_TYPE),
-	NEWSTR(TYPE_END),
+	name_produce(START_TYPE)
+	TYPELIST(name_produce)
+	name_produce(TYPE_END)
 };
 
-#define TYPENAME(X) (((X) < 0 || (X) >= (sizeof(type_name)/sizeof(char**))) ? "Unknown_TYPE" : type_name[(X)])
+#define DATA_TYPELIST(fn) \
+	fn(BOOL_T) \
+	fn(CHAR_T) \
+	fn(SHORT_T) \
+	fn(INT_T) \
+	fn(UINT_T) \
+	fn(LONG_T) \
+	fn(FLOAT_T) \
+	fn(DOUBLE_T) \
+	fn(STRING_T) \
+	fn(POINTER_T) \
+	fn(VOID_T) \
+	fn(ARRAY_T) \
+	fn(STRUCT_T) \
+	fn(LAYOUT_T) \
+	fn(BITFIELDS_T) \
+	fn(TYPEDEF_T) \
+	fn(FUNCTION_T) \
+	fn(INTERFACE_T)
+
+enum data_type {
+	DATA_TYPE_START = TYPE_END + 1,
+	DATA_TYPELIST(type_produce)
+	DATA_TYPE_END,
+}data_type_t;
+
+#define data_name_produce(x) \
+	[(x) - DATA_TYPE_START] = #x,
+static const char *data_type_name[] = {
+	data_name_produce(DATA_TYPE_START)
+	DATA_TYPELIST(data_name_produce)
+	data_name_produce(DATA_TYPE_END)
+};
+
+#define TYPENAME(X) \
+	( \
+		((X) < START_TYPE || (X) > TYPE_END) ? \
+			( \
+				((X) >= DATA_TYPE_START && (X) <= DATA_TYPE_END) ? \
+					data_type_name[(X)] \
+						: \
+					"Unknown_TYPE" \
+			) \
+		: \
+		type_name[(X)] \
+	)
 
 typedef enum {
 	TYPE_START = DATA_TYPE_END,
