@@ -221,7 +221,7 @@ void translate_ref_expr(tree_t *t){
 		if(!strcmp(obj->obj_type, "device")) {
 			D("_DML_M_%s", sym->name);
 		} else {
-			D("_DML_M__%s__%s", name, sym->name);
+			D("_DML_M_%s__%s", name, sym->name);
 		}
 	}
 

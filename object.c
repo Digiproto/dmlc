@@ -35,6 +35,8 @@
 #include "gen_debug.h"
 #include "info_output.h"
 #include "expression.h"
+#include "gen_common.h"
+extern obj_ref_t *OBJ;
 extern symtab_t root_table;
 object_t *DEV;
 static const char tab[8][8] =
@@ -54,6 +56,10 @@ const char *get_obj_qname(object_t *obj){
 }
 
 const char *get_obj_ref(object_t *obj){
+	/* maybe use $this */
+	if(obj == OBJ->obj) {
+		return obj->name;
+	}
 	return obj->dotname;
 }
 
