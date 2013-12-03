@@ -940,14 +940,14 @@ template event {
             }
     }
 
-    method describe_event(void *data) -> (char *description) default {
+    method describe_event(void *edata) -> (char *description) default {
         if (defined $desc)
             description = $desc;
         else
             description = $qname;
     }
 
-    method get_event_info(void *data) -> (attr_value_t info) default {
+    method get_event_info(void *edata) -> (attr_value_t info) default {
         info = SIM_make_attr_nil();
     }
 
@@ -957,65 +957,66 @@ template event {
         }
     }
 
-    method post(when, void *data) {
-        if ($timebase == "steps")
-            VT_old_step_post($dev.obj, when, &$this.callback, data);
-        else if ($timebase == "cycles")
-            VT_old_time_post_cycle($dev.obj, when, 0, &$this.callback, data);
-        else if ($timebase == "seconds")
-            VT_old_time_post($dev.obj, when, 0, &$this.callback, data);
-        else if ($timebase == "stacked")
-            VT_stacked_post($dev.obj, &$this.callback, data);
-        else
-            error "bad value for parameter 'timebase'";
+    method post(when, void *edata) {
+        //if ($timebase == "steps")
+            //VT_old_step_post($dev.obj, when, &$this.callback, edata);
+        //else if ($timebase == "cycles")
+            //VT_old_time_post_cycle($dev.obj, when, 0, &$this.callback, edata);
+        //else if ($timebase == "seconds")
+            VT_old_time_post($dev.obj, when, 0, &$this.callback, edata);
+        //else if ($timebase == "stacked")
+            //VT_stacked_post($dev.obj, &$this.callback, edata);
+        //else
+            //error "bad value for parameter 'timebase'";
     }
 
-    method post_on_queue(queue, when, void *data) {
+    method post_on_queue(queue, when, void *edata) {
         assert when >= 0;
         if ($timebase == "steps") {
 	    // no VT_step_post implemented yet
             error "timebase 'steps' for post_on_queue not yet implemented";
         } else if ($timebase == "cycles") {
             // log "info": "Posting on queue %s in %d %s", queue->name, when, $timebase;
-            VT_time_post_cycle(queue, $dev.obj, when, 0, &$this.callback, data);
+            VT_time_post_cycle(queue, $dev.obj, when, 0, &$this.callback, edata);
         } else if ($timebase == "seconds") {
             // log "info": "Posting on queue %s in %g %s", queue->name, when, $timebase;
-            VT_time_post(queue, $dev.obj, when, 0, &$this.callback, data);
+            VT_time_post(queue, $dev.obj, when, 0, &$this.callback, edata);
         } else
             error "bad value for parameter 'timebase'";
     }
 
-    method remove(void *data) {
+    method remove(void *edata) {
         if ($timebase == "steps")
-            VT_old_step_clean($dev.obj, &$this.callback, data);
+            VT_old_step_clean($dev.obj, &$this.callback, edata);
         else if ($timebase == "cycles" || $timebase == "seconds")
-            VT_old_time_clean($dev.obj, 0, &$this.callback, data);
+            VT_old_time_clean($dev.obj, 0, &$this.callback, edata);
         else
             error "bad value for parameter 'timebase'";
     }
 
     method extern callback(void *param) {
-        if (defined $repeat)
-            inline $post($repeat, param);
-        try
             inline $event(param);
-        catch
-            log "error": "Error in %s event", $qname;
+        //if (defined $repeat)
+            //inline $post($repeat, param);
+        //try
+            //inline $event(param);
+        //catch
+            //log "error": "Error in %s event", $qname;
     }
 
     method event(void *param) default {
 	log "info": "Event %s triggered", $name;
     }
 
-    method next(void *data) -> (when) {
+    method next(void *edata) -> (when) {
 	// next() always returns negative for 'not in queue'
         if ($timebase == "steps")
-            when = VT_old_step_next_occurrence($dev.obj, &$this.callback, data) - 1;
+            when = VT_old_step_next_occurrence($dev.obj, &$this.callback, edata) - 1;
         else if ($timebase == "cycles")
-            when = VT_old_time_next_occurrence($dev.obj, &$this.callback, data) - 1;
+            when = VT_old_time_next_occurrence($dev.obj, &$this.callback, edata) - 1;
         else if($timebase == "seconds") {
             local cycles_t queue_cycles
-                = VT_old_time_next_occurrence($dev.obj, &$this.callback, data);
+                = VT_old_time_next_occurrence($dev.obj, &$this.callback, edata);
             if (queue_cycles == 0)
                 when = -1.0;
             else {
@@ -1027,11 +1028,11 @@ template event {
             error "bad value for parameter 'timebase'";
     }
 
-    method posted(void *data) -> (bool truth) {
+    method posted(void *edata) -> (bool truth) {
         if ($timebase == "steps")
-            truth = (VT_old_step_next_occurrence($dev.obj, &$this.callback, data) != 0);
+            truth = (VT_old_step_next_occurrence($dev.obj, &$this.callback, edata) != 0);
         else if ($timebase == "cycles" || $timebase == "seconds")
-            truth = (VT_old_time_next_occurrence($dev.obj, &$this.callback, data) != 0);
+            truth = (VT_old_time_next_occurrence($dev.obj, &$this.callback, edata) != 0);
         else
             error "bad value for parameter 'timebase'";
     }

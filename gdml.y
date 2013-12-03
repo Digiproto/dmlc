@@ -2061,6 +2061,7 @@ typeident
 	| VOID {
 		tree_t* node = (tree_t*)c_keyword_node("void", &@$);
 		node->ident.type = VOID_TYPE;
+		node->common.translate = translate_c_keyword;
 		$$ = node;
 	}
 	;

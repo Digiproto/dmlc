@@ -560,6 +560,7 @@ static void get_expr_type(tree_t *t) {
         if(t->common.type == CAST_TYPE) {
                 translate(t->cast.ctype);
         } else {
+                POS;
                 D("typeof( ");
                 translate(t);
                 D(" )");
@@ -583,8 +584,8 @@ static void process_inline_start(method_attr_t *m, tree_t *input, tree_t *output
 		while(node && node2) {
 			/*FIXME: need more general assignment translate*/
 			if(node_has_type(node)) {
-				  translate(node);
 				  POS;
+				  translate(node);
 			} else {
 				  /*just get type info*/
 				  //print_cdecl1(node2, 0, 1);
@@ -607,7 +608,6 @@ static void process_inline_start(method_attr_t *m, tree_t *input, tree_t *output
 			current_table = context->current;
 			D(";");
 			new_line();
-			POS;
 			node = node->common.sibling;
 			node2 = node2->common.sibling;
 		}
@@ -1173,6 +1173,7 @@ void translate_inline(tree_t *t) {
 	/*need to get this ref*/
 	obj_ref.ref = NULL; 
 	pre_gen_method(&obj_ref, method->common.node, &context);
+	POS;
 	enter_scope();
 	process_inline_start(method, expr_list, ret, &context);
 	process_inline_block(method);
@@ -1301,7 +1302,7 @@ static const char *get_basetype_type(tree_t *node) {
 	} else if(node->common.type == C_KEYWORD_TYPE) {
 		name = node->ident.str;
     }else {
-		my_DBG("other base type\n");
+		my_DBG("other base type \"%s\"\n", TYPENAME(node->common.type));
 	}
 	return name;
 }

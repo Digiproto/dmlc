@@ -68,7 +68,21 @@ static void back_to_zero(device_t *dev) {
 	
 	init_obj(&dev->obj);
 	/*init more checked object, connect, attribute etc*/
+#define INIT_ETC(x) \
+	do{ \
+		list_for_each(p, &dev->x) { \
+			tmp = list_entry(p, object_t, entry); \
+			init_obj(tmp); \
+		} \
+	}while(0)
 
+	INIT_ETC(events);
+	INIT_ETC(connects);
+	INIT_ETC(constants);
+	INIT_ETC(attributes);
+	INIT_ETC(implements);
+	INIT_ETC(ports);
+#undef INIT_ETC
 }
 
 static void after_check(device_t *dev) {

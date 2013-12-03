@@ -24,7 +24,9 @@
 #include "ref.h"
 #include "gen_debug.h"
 #include "info_output.h"
+#include "gen_common.h"
 
+extern obj_ref_t *OBJ;
 extern symtab_t current_table;
 void ref_info_init(ref_info_t *fi) {
 	struct list_head *ptr = &fi->list;
@@ -287,13 +289,17 @@ normal_case:
                                 if(!name2 || !name){
                                         my_DBG("error name null\n");
                                 }
-                                sym = symbol_find(symtab, name, OBJECT_TYPE);
-                                my_DBG("object found %s, sym %p\n", name, sym);
-                                if(!sym){
-                                        //my_DBG("no object %s symbol found\n",name);
-                                        error("no object %s symbol found", name);
-                                }
-                                obj = (object_t *)(sym->attr);
+								if(strcmp(name, "this")) {
+									sym = symbol_find(symtab, name, OBJECT_TYPE);
+									my_DBG("object found %s, sym %p\n", name, sym);
+									if(!sym){
+											//my_DBG("no object %s symbol found\n",name);
+											error("no object %s symbol found", name);
+									}
+									obj = (object_t *)(sym->attr);
+								}else{
+									obj = OBJ->obj;
+								}
                                 symtab = obj->symtab;
                                 my_DBG("object name %s, name %s\n", obj->name, name2);
 								if(!strcmp(obj->obj_type, "interface")) {

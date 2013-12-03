@@ -1055,6 +1055,7 @@ static void port_realize(object_t *obj) {
 }
 
 static void event_realize(object_t *obj) {
+	parse_event(obj->node, obj->symtab->sibling);
 	add_object_templates(obj, NULL);
 	process_object_names(obj);
 }

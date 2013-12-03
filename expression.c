@@ -3869,9 +3869,12 @@ static cdecl_t* get_common_type(symtab_t table, symbol_t symbol, expr_t* expr) {
 			type->common.categ = INT_T;
 			break;
 		case METHOD_TYPE:
+			type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
+			type->common.categ = NO_TYPE;
+			break;
 		case TEMPLATE_TYPE:
-			printf("IN %s, line = %d, symbol name: %s, symobl type: %d, not implement(exit)\n",
-					__func__, __LINE__, symbol->name, symbol->type);
+			printf("IN %s, line = %d, symbol name: %s, symobl type: %s, not implement(exit)\n",
+					__func__, __LINE__, symbol->name, TYPENAME(symbol->type));
 			*a = 100;
 			break;
 		case ATTRIBUTE_TYPE:
