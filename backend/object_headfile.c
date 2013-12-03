@@ -43,6 +43,7 @@ static void gen_object_headfile(device_t *dev, FILE *f) {
     fprintf(f, "\n");
     fprintf(f, "#include \"%s/base_types.h\"\n", headfile_dir);
     fprintf(f, "#include \"%s/generic_transaction.h\"\n", headfile_dir);
+    fprintf(f, "#include \"%s/event.h\"\n", headfile_dir);
     fprintf(f, "#include \"%s_struct.h\"\n", dev_name);
     fprintf(f, "\n");
     gen_device_loggroup(dev, f);

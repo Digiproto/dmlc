@@ -56,10 +56,6 @@ const char *get_obj_qname(object_t *obj){
 }
 
 const char *get_obj_ref(object_t *obj){
-	/* maybe use $this */
-	if(obj == OBJ->obj) {
-		return obj->name;
-	}
 	return obj->dotname;
 }
 

@@ -71,4 +71,8 @@ void gen_device_method_protos(device_t *dev, FILE *f) {
 		gen_obj_method_protos(tmp);
 	}
 	gen_device_implement_header(dev, f);
+	list_for_each(p, &dev->events) {
+		tmp = list_entry(p, object_t, entry);
+		gen_obj_method_protos(tmp);
+	}
 }

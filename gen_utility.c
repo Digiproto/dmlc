@@ -30,6 +30,7 @@ const char *simics_apis[] = {
 	"SIM_mem_op_is_read",
 	"SIM_mem_op_set_value",
 	"SIM_mem_op_get_value",
+	"VT_old_time_post",
 	NULL
 };
 

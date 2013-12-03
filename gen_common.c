@@ -217,7 +217,7 @@ void translate_ref_expr(tree_t *t){
 
 	if(sym && sym->type == METHOD_TYPE) {
 		obj = (object_t *)sym->owner;
-		name = get_obj_ref(obj);
+		name = obj->name;
 		if(!strcmp(obj->obj_type, "device")) {
 			D("_DML_M_%s", sym->name);
 		} else {
