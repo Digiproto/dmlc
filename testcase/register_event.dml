@@ -1,0 +1,27 @@
+// Copyright 2005-2009 Virtutech AB
+dml 1.2;
+
+device event_test;
+
+parameter desc = "DML device template";
+
+import "utility.dml";
+
+bank regs {
+	parameter register_size = 4;
+	register counter @ 0x00 {
+		parameter documentation = "A simple counter.";
+		method write(value) {
+			inline $ev.post(5, NULL);
+		}
+
+		event ev {
+			parameter timebase = "seconds";
+			method event(void *data) {
+			++$counter;
+			log "info": "Tick: %d.", $counter;
+			inline $this.post(1, NULL);
+		}
+	}
+	}
+}
