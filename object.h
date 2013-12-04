@@ -82,6 +82,7 @@ typedef struct object {
 	struct list_head templates;	
 	struct list_head method_generated;
 	struct list_head data;
+	struct list_head events;
 	symtab_t symtab;
 	const char *attr_type;
 }object_t;
@@ -105,6 +106,8 @@ typedef struct bank_def {
 	int reg_count;
 	object_t **regs;
 	struct list_head groups;
+	struct list_head implements;
+	struct list_head attributes;
 }bank_t;
 
 typedef struct register_def {
@@ -216,11 +219,16 @@ typedef struct port {
 	object_t obj;
 	int num;
 	object_t **impls;
+	struct list_head connects;
+	struct list_head implements;
+	struct list_head attributes;
 } dml_port_t;
 
 typedef struct group {
 	object_t obj;
 	struct list_head groups;
+	struct list_head attributes;
+	struct list_head registers;
 } group_t;
 
 device_t *create_device_tree(tree_t *root);

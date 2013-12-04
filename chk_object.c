@@ -27,7 +27,7 @@
  * @version 1.0
  * @date 2013-05-24
  */
-
+#include <assert.h>
 #include "chk_object.h"
 extern int method_to_generate;
 
@@ -42,6 +42,125 @@ static void chk_object_method(object_t *obj){
 	add_object_generated_method(obj);
 } 
 
+static void check_none_object(object_t* obj) {
+	assert(obj != NULL);
+	/* we do not need to do anything */
+	return;
+}
+
+static void chk_obj_generic_code(object_t *obj);
+static void check_common_event(object_t* obj) {
+	assert(obj != NULL);
+	struct list_head *p;
+	object_t *tmp;
+	list_for_each(p, &obj->events){
+		tmp = list_entry(p, object_t, entry);
+		chk_obj_generic_code(tmp);
+	}
+	return;
+}
+
+static void check_bank_sepcial_obj(object_t* obj) {
+	assert(obj != NULL);
+	bank_t*  bank = (bank_t*)obj;
+	struct list_head *p;
+	object_t *t;
+	list_for_each(p, &obj->events){
+		t = list_entry(p, object_t, entry);
+		chk_obj_generic_code(t);
+	}
+	list_for_each(p, &bank->attributes){
+		t = list_entry(p, object_t, entry);
+		chk_obj_generic_code(t);
+	}
+	list_for_each(p, &bank->implements){
+		t = list_entry(p, object_t, entry);
+		chk_obj_generic_code(t);
+	}
+	list_for_each(p, &bank->groups){
+		t = list_entry(p, object_t, entry);
+		chk_obj_generic_code(t);
+	}
+
+	return;
+}
+
+static void check_register_special_object(object_t* obj) {
+	assert(obj != NULL);
+	check_common_event(obj);
+	return;
+}
+
+static void check_attribute_special_object(object_t* obj) {
+	assert(obj != NULL);
+	check_common_event(obj);
+	return;
+}
+
+static void check_connect_special_object(object_t* obj) {
+	assert(obj != NULL);
+	check_common_event(obj);
+	return;
+}
+
+static void check_port_special_object(object_t* obj) {
+	assert(obj != NULL);
+	struct list_head *p;
+	object_t *tmp;
+	dml_port_t* port = (dml_port_t*)obj;
+	list_for_each(p, &obj->events){
+		tmp = list_entry(p, object_t, entry);
+		chk_obj_generic_code(tmp);
+	}
+	list_for_each(p, &port->connects){
+		tmp = list_entry(p, object_t, entry);
+		chk_obj_generic_code(tmp);
+	}
+	list_for_each(p, &port->attributes){
+		tmp = list_entry(p, object_t, entry);
+		chk_obj_generic_code(tmp);
+	}
+	list_for_each(p, &port->implements){
+		tmp = list_entry(p, object_t, entry);
+		chk_obj_generic_code(tmp);
+	}
+	return;
+}
+
+static void check_group_special_obj(object_t* obj) {
+	assert(obj != NULL);
+	struct list_head* p;
+	object_t* tmp;
+	dml_register_t* reg = (dml_register_t*)obj;
+	list_for_each(p, &obj->events){
+		tmp = list_entry(p, object_t, entry);
+		chk_obj_generic_code(tmp);
+	}
+}
+
+static void (*check_obj_special[])(object_t* obj) = {
+	[Obj_Type_None] = check_none_object,
+	[Obj_Type_Device] = check_none_object,
+	[Obj_Type_Bank] = check_bank_sepcial_obj,
+	[Obj_Type_Register] = check_register_special_object,
+	[Obj_Type_Field]  = check_none_object,
+	[Obj_Type_Attribute] = check_attribute_special_object,
+	[Obj_Type_Connect]  = check_connect_special_object,
+	[Obj_Type_Port]    = check_port_special_object,
+	[Obj_Type_Implement] = check_none_object,
+	[Obj_Type_Interface] = check_none_object,
+	[Obj_Type_Data]     = check_none_object,
+	[Obj_Type_Event]    = check_none_object,
+	[Obj_Type_Group]    = check_group_special_obj
+};
+
+static void check_obj_special_code(object_t* obj) {
+		assert(obj != NULL);
+		check_obj_special[obj->encoding](obj);
+
+		return;
+}
+
 static void chk_obj_generic_code(object_t *obj){
 	struct list_head *p;
 	object_t *t;
@@ -52,6 +171,7 @@ static void chk_obj_generic_code(object_t *obj){
 		t = list_entry(p, object_t, entry);
 		chk_obj_generic_code(t);
 	}
+	check_obj_special_code(obj);
 }
 
 static void chk_device_code(device_t *obj){
@@ -96,6 +216,7 @@ void chk_dml_code(device_t *dev) {
 	while(method_to_generate){
 		round++;
 		BE_DBG(GENERAL, "code generation round %d, method to generate %d\n",round, method_to_generate);
+		//printf("code generation round %d, method to generate %d\n",round, method_to_generate);
 		chk_device_code(dev);
 	}
 }

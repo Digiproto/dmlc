@@ -270,7 +270,7 @@ static void init_object(object_t *obj, object_t *parent, const char *name, const
 		BE_DBG(OBJ, "obj %s, symtab %p , sibling %p, parent table %p\n", obj->name, obj->symtab, obj->symtab->sibling, obj->symtab->parent);
 	}
 	struct list_head *p = &obj->childs;
-	for(i = 0; i < 7; i++, p++){
+	for(i = 0; i < 8; i++, p++){
 		INIT_LIST_HEAD(p);
 	}
 	process_object_relationship(obj);
@@ -285,19 +285,37 @@ static void process_object_relationship(object_t *obj) {
 	if(parent){
 		obj->symtab->parent = parent->symtab;
 		if(!strcmp(obj->obj_type, "connect")) {
-			list = &dev->connects; 	
+			if (!strcmp(parent->obj_type, "device")) {
+				list = &dev->connects;
+			} else if (!strcmp(parent->obj_type, "port")) {
+				list = &((dml_port_t*)parent)->connects;
+			} else {
+				error("this object is not allowed here\n");
+			}
 		} else if(!strcmp(obj->obj_type, "implement")) {
 			if(!strcmp(parent->obj_type, "device")) {
 				list = &dev->implements;
+			} else if (!strcmp(parent->obj_type, "bank")){
+				list = &((bank_t*)parent)->implements;
+			} else if (!strcmp(parent->obj_type, "port")) {
+				list = &((dml_port_t*)parent)->implements;
 			} else {
-				list = &parent->childs;
+				error("this object is not allowed here\n");
 			}
 		} else if(!strcmp(obj->obj_type, "attribute")) {
-			list = &dev->attributes;
+			if (!strcmp(parent->obj_type, "device")) {
+				list = &dev->attributes;
+			} else if (!strcmp(parent->obj_type, "group")) {
+				list = &((group_t*)parent)->attributes;
+			} else if (!strcmp(parent->obj_type, "port")) {
+				list = &((dml_port_t*)parent)->attributes;
+			} else {
+				error("this object is not allowed here\n");
+			}
 		} else if(!strcmp(obj->obj_type, "port")) {
 			list = &dev->ports; 
 		} else if(!strcmp(obj->obj_type, "event")) {
-			list = &dev->events;
+			list = &parent->events;
 		} else if(!strcmp(obj->obj_type, "data")) {
 			list = &parent->data;
 		} else if(!strcmp(obj->obj_type, "group")) {
@@ -350,6 +368,7 @@ static void create_register_object(object_t *obj, symbol_t sym){
 	init_object(&reg->obj, obj, sym->name,"register",reg_attr->common.node, table);
 	create_objs(&reg->obj, FIELD_TYPE);
 	create_objs(&reg->obj, DATA_TYPE);
+	create_objs(&reg->obj, EVENT_TYPE);
 	//print_all_symbol(reg->obj.symtab);
 }
 
@@ -367,6 +386,7 @@ static void create_connect_object(object_t *obj, symbol_t sym) {
 	init_object(&con->obj, obj, sym->name, "connect", attr->common.node, table);
 	create_objs(&con->obj, INTERFACE_TYPE);
 	create_objs(&con->obj, DATA_TYPE);	
+	create_objs(&con->obj, EVENT_TYPE);
 }
 
 static void create_attribute_object(object_t *obj, symbol_t sym) {
@@ -375,6 +395,7 @@ static void create_attribute_object(object_t *obj, symbol_t sym) {
 	symtab_t table = attr->common.table;
 	init_object(&att->obj, obj, sym->name, "attribute", attr->common.node, table);
 	create_objs(&att->obj, DATA_TYPE);
+	create_objs(&att->obj, EVENT_TYPE);
 }
 
 static void create_implement_object(object_t *obj, symbol_t sym){
@@ -399,6 +420,13 @@ static void create_port_object(object_t *obj, symbol_t sym) {
 	init_object(&port->obj, obj, sym->name, "port", attr->common.node, table);
 	create_objs(&port->obj, IMPLEMENT_TYPE);
 	create_objs(&port->obj, DATA_TYPE);
+	create_objs(&port->obj, EVENT_TYPE);
+	INIT_LIST_HEAD(&port->connects);
+	INIT_LIST_HEAD(&port->implements);
+	INIT_LIST_HEAD(&port->attributes);
+	create_objs(&port->obj, CONNECT_TYPE);
+	create_objs(&port->obj, IMPLEMENT_TYPE);
+	create_objs(&port->obj, ATTRIBUTE_TYPE);
 }
 
 static void create_event_object(object_t *obj, symbol_t sym) {
@@ -420,10 +448,14 @@ static void create_group_object(object_t *obj, symbol_t sym) {
 	table = attr->common.table;
 	gp->obj.is_abstract = 1;
 	INIT_LIST_HEAD(&gp->groups);
+	INIT_LIST_HEAD(&gp->attributes);
+	INIT_LIST_HEAD(&gp->registers);
 	init_object(&gp->obj, obj, sym->name, "group", attr->common.node, table);
 	create_objs(&gp->obj, REGISTER_TYPE);
 	create_objs(&gp->obj, GROUP_TYPE);
 	create_objs(&gp->obj, DATA_TYPE);
+	create_objs(&gp->obj, EVENT_TYPE);
+	create_objs(&gp->obj, ATTRIBUTE_TYPE);
 }
 
 static void create_bank_object(object_t *obj, symbol_t sym){
@@ -434,6 +466,13 @@ static void create_bank_object(object_t *obj, symbol_t sym){
 	init_object(&bank->obj, obj, sym->name,"bank",b->common.node, table);		
 	create_objs(&bank->obj, REGISTER_TYPE);
 	create_objs(&bank->obj, DATA_TYPE);
+	create_objs(&bank->obj, EVENT_TYPE);
+	INIT_LIST_HEAD(&bank->groups);
+	INIT_LIST_HEAD(&bank->implements);
+	INIT_LIST_HEAD(&bank->attributes);
+	create_objs(&bank->obj, GROUP_TYPE);
+	create_objs(&bank->obj, IMPLEMENT_TYPE);
+	create_objs(&bank->obj, ATTRIBUTE_TYPE);
 	printf("bank created %s\n", sym->name);
 	//print_all_symbol(table);
 }
@@ -669,6 +708,7 @@ static int get_reg_offset(paramspec_t *t, int *interval) {
 	return offset;
 }
 
+static void event_realize(object_t *obj);
 static void register_realize(object_t *obj) {
 	dml_register_t *reg  = (dml_register_t *)obj;
 	bank_t *bank = (bank_t *)obj->parent; 
@@ -754,6 +794,10 @@ static void register_realize(object_t *obj) {
 		tmp = list_entry(p, object_t, entry);
 		field_realize(tmp);
 	}
+	list_for_each(p, &obj->events) {
+		tmp = list_entry(p, object_t, entry);
+		event_realize(tmp);
+	}
 	process_object_templates(obj);
 }
 
@@ -796,6 +840,8 @@ static void bank_calculate_register_offset(object_t *obj) {
 	bank->size = offset;
 }
 
+static void attribute_realize(object_t *obj);
+static void implement_realize(object_t* obj);
 static void bank_realize(object_t *obj) {
 	bank_t *bank = (bank_t *)obj;
 	bank_attr_t *attr = obj->node->common.attr;
@@ -851,6 +897,18 @@ static void bank_realize(object_t *obj) {
 		tmp = list_entry(p, object_t, entry);
 		register_realize(tmp);
 	}
+	list_for_each(p, &bank->attributes) {
+		tmp = list_entry(p, object_t, entry);
+		attribute_realize(tmp);
+	}
+	list_for_each(p, &bank->implements) {
+		tmp = list_entry(p, object_t, entry);
+		implement_realize(tmp);
+	}
+	list_for_each(p, &obj->events) {
+		tmp = list_entry(p, object_t, entry);
+		event_realize(tmp);
+	}
 	/*sort the register in user specifid order*/
 	bank_calculate_register_offset(obj);
 	process_object_templates(obj);
@@ -878,6 +936,12 @@ static void connect_realize(object_t *obj) {
 		if(!obj->array_size) {
 			obj->array_size = array_def->high - array_def->low + 1;
 		}
+	}
+	struct list_head *p;
+	object_t *tmp;
+	list_for_each(p, &obj->events) {
+		tmp = list_entry(p, object_t, entry);
+		event_realize(tmp);
 	}
 }
 
@@ -1024,6 +1088,12 @@ static void attribute_realize(object_t *obj) {
 			attr_obj->ty = INT_T;
 		}
 	}
+	struct list_head *p;
+	object_t *tmp;
+	list_for_each(p, &obj->events) {
+		tmp = list_entry(p, object_t, entry);
+		event_realize(tmp);
+	}
 	process_object_names(obj);
 	return;
 }
@@ -1053,6 +1123,18 @@ static void port_realize(object_t *obj) {
 		implement_realize(tmp);
 		port->impls[i] = tmp;
 		i++;
+	}
+	list_for_each(p, &obj->events) {
+		tmp = list_entry(p, object_t, entry);
+		event_realize(tmp);
+	}
+	list_for_each(p, &port->attributes) {
+		tmp = list_entry(p, object_t, entry);
+		attribute_realize(tmp);
+	}
+	list_for_each(p, &port->connects) {
+		tmp = list_entry(p, object_t, entry);
+		connect_realize(tmp);
 	}
 }
 
