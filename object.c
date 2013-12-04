@@ -27,15 +27,31 @@
  * @version 
  * @date 2013-05-10
  */
-#define _GNU_SOURCE
 #include <string.h>
 #include <stdio.h>
 #include <assert.h>
+#include <stdarg.h>
 #include "object.h"
 #include "gen_debug.h"
 #include "info_output.h"
 #include "expression.h"
 #include "gen_common.h"
+
+static int asprintf(char **sptr, const char *fmt, ...) {
+	int retval, wanted;
+	va_list argv;
+
+	va_start(argv, fmt);
+	wanted = vsnprintf(*sptr = NULL, 0, fmt, argv);
+	if((wanted < 0) || ((*sptr = malloc(1 + wanted)) == NULL))
+		return -1;
+	va_end(argv);
+	va_start(argv, fmt);
+	retval = vsprintf(*sptr, fmt, argv);
+	va_end(argv);
+	return retval;
+}
+
 extern obj_ref_t *OBJ;
 extern symtab_t root_table;
 object_t *DEV;
@@ -278,7 +294,7 @@ static void init_object(object_t *obj, object_t *parent, const char *name, const
 
 static void process_object_relationship(object_t *obj) {
 	device_t *dev = (device_t *)DEV;
-	struct list_head *list;
+	struct list_head *list = NULL;
 	object_type_t type = Obj_Type_None;
 	object_t *parent = obj->parent;
 
@@ -1107,7 +1123,7 @@ static void implement_realize(object_t* obj) {
 static void port_realize(object_t *obj) {
 	struct list_head *p;
 	object_t *tmp;
-	int i;
+	int i = 0;
 	dml_port_t *port;
 
 	list_for_each(p, &obj->childs) {
