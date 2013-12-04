@@ -84,8 +84,9 @@ do
 		    -e "s?@QEMU_INSTALL_DIR@?$QEMU_INSTALL_DIR/arm-softmmu?g" \
 		    $EXEC_DIR/def/test.py.def \
 		    > $NEW_DIR/test.py
-		cp $EXEC_DIR/def/skyeye.conf.def $NEW_DIR/skyeye.conf
+#		cp $EXEC_DIR/def/skyeye.conf.def $NEW_DIR/skyeye.conf
 		cp $EXEC_DIR/def/qemu.conf.def $NEW_DIR/qemu.conf
+		cp $EXEC_DIR/def/device.conf.def $NEW_DIR/device.conf
 	fi
 
 	# create a device in {qemu}/hw/simics directory
@@ -106,19 +107,19 @@ do
 	fi
 
 	# create a device in {workspace}/targets/skyeye/ directory
-	if ! [ -z "$SKYEYE_BUILD" ]; then
-		SKYEYE_DEV_DIR=$EXEC_DIR/../targets/skyeye/$var
-		if [ -f $SKYEYE_DEV_DIR -o -d $SKYEYE_DEV_DIR ]; then
-			echo "[ error]" $var have been exist in Skyeye
-		else
-			echo "[normal]" create $var Skyeye device
-			mkdir "$SKYEYE_DEV_DIR"
-			echo "[normal]" create $var Skyeye Makefile
-			if ! [ -f "$SKYEYE_DEV_DIR/Makefile" ]; then
-				sed -e "s?@SKYEYE_DIR@?$SKYEYE_DIR?g" \
-					$EXEC_DIR/def/Makefile_for_skyeye.def \
-					> $SKYEYE_DEV_DIR/Makefile
-			fi
-		fi
-	fi
+#	if ! [ -z "$SKYEYE_BUILD" ]; then
+#		SKYEYE_DEV_DIR=$EXEC_DIR/../targets/skyeye/$var
+#		if [ -f $SKYEYE_DEV_DIR -o -d $SKYEYE_DEV_DIR ]; then
+#			echo "[ error]" $var have been exist in Skyeye
+#		else
+#			echo "[normal]" create $var Skyeye device
+#			mkdir "$SKYEYE_DEV_DIR"
+#			echo "[normal]" create $var Skyeye Makefile
+#			if ! [ -f "$SKYEYE_DEV_DIR/Makefile" ]; then
+#				sed -e "s?@SKYEYE_DIR@?$SKYEYE_DIR?g" \
+#					$EXEC_DIR/def/Makefile_for_skyeye.def \
+#					> $SKYEYE_DEV_DIR/Makefile
+#			fi
+#		fi
+#	fi
 done

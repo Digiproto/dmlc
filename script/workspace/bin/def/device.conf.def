@@ -1,0 +1,121 @@
+{
+	"new_vic": {
+		"class": "pl190",
+		"address": "0x10140000",
+		"interrupt": {
+			"cpu": [0, 1],
+		},
+	},
+	"new_sic": {
+		"class": "versatilepb_sic",
+		"address": "0x10003000",
+	},
+	"g0": {
+		"class": "group",
+		"index": "i",
+		"range": [0, 31],
+		"body": {
+			"new_sic": {
+				"interrupt": {
+					"new_vic": ["#$i#"],
+				},
+			},
+		},
+	},
+	"new_keyboard": {
+		"class": "pl050_keyboard",
+		"address": "0x10006000",
+		"interrupt": {
+			"new_sic": [3],
+		},
+	},
+	"new_mouse": {
+		"class": "pl050_mouse",
+		"address": "0x10007000",
+		"interrupt": {
+			"new_sic": [4],
+		},
+	},
+	"g1": {
+		"class": "group",
+		"index": "i",
+		"range": [0, 2],
+		"body": {
+			"new_uart[#$i#]": {
+				"class": "pl011",
+				"address": "0x101f#$i+1#000",
+				"interrupt": {
+					"new_vic": ["#$i+12#"],
+				},
+			},
+		},
+	},
+	"new_uart[3]": {
+		"class": "pl011",
+		"address": "0x10009000",
+		"interrupt": {
+			"new_sic": [6],
+		},
+	},
+	"new_dma": {
+		"class": "pl080",
+		"address": "0x10130000",
+		"interrupt": {
+			"new_vic": [17],
+		},
+	},
+	"g2": {
+		"class": "group",
+		"index": "i",
+		"range": [0, 1],
+		"body": {
+			"new_sp804[#$i#]": {
+				"class": "sp804",
+				"address": "0x101e#$i+2#000",
+				"interrupt": {
+					"new_vic": ["#$i+4#"],
+				},
+			},
+		},
+	},
+	"g3": {
+		"class": "group",
+		"index": "i",
+		"range": [0, 3],
+		"body": {
+			"new_pl061[#$i#]": {
+				"class": "pl061",
+				"address": "0x101e#$i+4#000",
+				"interrupt": {
+					"new_vic": ["#$i+6#"],
+				},
+			},
+		},
+	},
+	"g4": {
+		"class": "group",
+		"index": "a",
+		"range": [0, 1],
+		"body": {
+			"new_pl181[#$a#]": {
+				"class": "pl181",
+				"interrupt": {
+					"new_sic": ["#$a+22#", "#$a+1#"],
+				}
+			}
+		},
+	},
+	"new_pl181[0]": {
+		"address": "0x10005000",
+	},
+	"new_pl181[1]": {
+		"address": "0x1000b000",
+	},
+	"new_pl031": {
+		"class": "pl031",
+		"address": "0x101e8000",
+		"interrupt": {
+			"new_vic": [10],
+		},
+	},
+}

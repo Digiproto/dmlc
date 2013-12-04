@@ -53,5 +53,5 @@ if __name__ == '__main__':
 	"""
 	if you don't have skyeye or qemu, please comment it
 	"""
-	skyeye_demo()
+	# skyeye_demo()
 	qemu_demo()
