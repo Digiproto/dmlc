@@ -72,7 +72,7 @@ static void gen_device_code(device_t *obj){
 		gen_obj_generic_code(t);
 	} 
 	/*event ect*/
-	list_for_each(p,&dev->events){
+	list_for_each(p,&dev->obj.events){
 		t = list_entry(p,object_t,entry);
 		gen_obj_generic_code(t);
 	}

@@ -315,7 +315,7 @@ static void process_object_relationship(object_t *obj) {
 		} else if(!strcmp(obj->obj_type, "port")) {
 			list = &dev->ports; 
 		} else if(!strcmp(obj->obj_type, "event")) {
-			list = &parent->events;
+				list = &parent->events;
 		} else if(!strcmp(obj->obj_type, "data")) {
 			list = &parent->data;
 		} else if(!strcmp(obj->obj_type, "group")) {
@@ -564,7 +564,7 @@ object_t *create_device_object(symbol_t sym){
 	BE_DBG(OBJ, "device %s found\n",sym->name);
 	init_object(&dev->obj, NULL, sym->name, "device", dev_attr->common.node, root_table);
 	p = &dev->constants;
-	for(i = 0; i < 6; i++, p++) {
+	for(i = 0; i < 5; i++, p++) {
 		INIT_LIST_HEAD(p);
 	}
 	obj = &dev->obj;
@@ -1193,7 +1193,7 @@ void device_realize(device_t *dev) {
 		tmp = list_entry(p, object_t, entry);
 		port_realize(tmp);
 	}
-	list_for_each(p, &dev->events) {
+	list_for_each(p, &dev->obj.events) {
 		tmp = list_entry(p, object_t, entry);
 		event_realize(tmp);
 	}

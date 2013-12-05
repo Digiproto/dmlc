@@ -93,7 +93,7 @@ typedef struct device {
     struct list_head attributes;
     struct list_head connects;
     struct list_head implements;
-    struct list_head events;
+    //struct list_head events;
 	struct list_head ports;
 	int bank_count;
 	object_t **banks;

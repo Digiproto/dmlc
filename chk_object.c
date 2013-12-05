@@ -204,7 +204,7 @@ static void chk_device_code(device_t *obj){
 	}
 
 	/* gen event object */
-	list_for_each(p,&dev->events){
+	list_for_each(p,&dev->obj.events){
 		t = list_entry(p,object_t,entry);
 		chk_obj_generic_code(t);
 	}

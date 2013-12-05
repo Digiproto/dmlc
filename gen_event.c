@@ -54,7 +54,7 @@ void gen_device_event_code(device_t *dev, FILE *f) {
 	struct list_head *p;
 	object_t *tmp;
 
-	list_for_each(p, &dev->events) {
+	list_for_each(p, &dev->obj.events) {
 		tmp = list_entry(p, object_t, entry);
 		gen_event_code(tmp, f);
 	}

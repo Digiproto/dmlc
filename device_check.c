@@ -39,7 +39,7 @@ static void add_pre_method(device_t *dev) {
 		tmp = list_entry(p, object_t, entry);
 		add_port_method(tmp);
 	}
-	list_for_each(p, &dev->events) {
+	list_for_each(p, &dev->obj.events) {
 		tmp = list_entry(p, object_t, entry);
 		add_event_method(tmp);
 	}
@@ -76,13 +76,17 @@ static void back_to_zero(device_t *dev) {
 		} \
 	}while(0)
 
-	INIT_ETC(events);
+	//INIT_ETC(events);
 	INIT_ETC(connects);
 	INIT_ETC(constants);
 	INIT_ETC(attributes);
 	INIT_ETC(implements);
 	INIT_ETC(ports);
 #undef INIT_ETC
+	list_for_each(p, &dev->obj.events) {
+		tmp = list_entry(p, object_t, entry);
+		init_obj(tmp);
+	}
 }
 
 static void after_check(device_t *dev) {
