@@ -2191,16 +2191,19 @@ static symtab_t get_typedef_table(symbol_t symbol) {
 	return table;
 }
 
-static symtab_t get_param_table(symbol_t symbol) {
+static symtab_t get_param_table(symtab_t sym_tab, symbol_t symbol) {
 	assert(symbol != NULL);
 	symtab_t table = NULL;
 	params_t* param = symbol->attr;
-	if (param->is_notype) {
-		return NULL;
+	if (param->is_notype || param->decl == NULL) {
+		return (void*)(0xFFFFFFFF);
 	}
 	cdecl_t* type = param->decl;
-	if (type->common.categ = POINTER_T) {
+	if (type->common.categ == POINTER_T) {
 		type = type->common.bty;
+	}
+	if (type->common.categ == NO_TYPE) {
+		return (void*)0XFFFFFFFF;
 	}
 	if (record_type(type)) {
 		get_record_table(type);
@@ -2213,7 +2216,7 @@ static symtab_t get_param_table(symbol_t symbol) {
 	return table;
 }
 
-symtab_t get_symbol_table(symbol_t symbol) {
+symtab_t get_symbol_table(symtab_t sym_tab, symbol_t symbol) {
 	assert(symbol != NULL);
 
 	symtab_t table = NULL;
@@ -2264,7 +2267,7 @@ symtab_t get_symbol_table(symbol_t symbol) {
 			table = get_data_table(symbol);
 			break;
 		case PARAM_TYPE:
-			table = get_param_table(symbol);
+			table = get_param_table(sym_tab, symbol);
 			break;
 		default:
 			error("Othe symbol %s(%d)\n", symbol->name, symbol->type);
@@ -2308,7 +2311,7 @@ int check_reference(symtab_t table, reference_t* ref, expression_t* expr) {
 				continue;
 			}
 			else {
-				ref_table = get_symbol_table(symbol);
+				ref_table = get_symbol_table(table, symbol);
 			}
 		}
 		else {
@@ -2317,7 +2320,7 @@ int check_reference(symtab_t table, reference_t* ref, expression_t* expr) {
 			break;
 		}
 
-		if (ref_table == NULL) {
+		if (ref_table == NULL || ref_table == (void*)(0XFFFFFFFF)) {
 			expr->is_undeclare = 1;
 			expr->undecl_name = tmp->name;
 			break;
@@ -4040,7 +4043,7 @@ static symtab_t get_symbol_table_from_template(symtab_t table, const char* name)
 	while(temp) {
 		sym = defined_symbol(temp->table, name, 0);
 		if (sym) {
-			ref_table = get_symbol_table(sym);
+			ref_table = get_symbol_table(temp->table, sym);
 			if (ref_table) {
 				return ref_table;
 			}
@@ -4069,8 +4072,8 @@ static symbol_t get_symbol_from_template(symtab_t table, const char* parent_name
 	while (temp) {
 		parent_sym = defined_symbol(temp->table, parent_name, 0);
 		if (parent_sym) {
-			ref_table = get_symbol_table(parent_sym);
-			if (ref_table) {
+			ref_table = get_symbol_table(temp->table, parent_sym);
+			if (ref_table && (ref_table != (void*)(0xFFFFFFFF))) {
 				child_sym = defined_symbol(ref_table, name, 0);
 				if (child_sym) {
 					return child_sym;
@@ -4079,7 +4082,7 @@ static symbol_t get_symbol_from_template(symtab_t table, const char* parent_name
 		}
 		if (temp->table->template_table || temp->table->undef_temp) {
 			ref_table = get_symbol_table_from_template(temp->table, parent_name);
-			if (ref_table) {
+			if (ref_table && (ref_table != (void*)(0xFFFFFFFF))) {
 				child_sym = defined_symbol(ref_table, name, 0);
 				if (child_sym) {
 					return child_sym;
@@ -4087,6 +4090,13 @@ static symbol_t get_symbol_from_template(symtab_t table, const char* parent_name
 			}
 		}
 		temp = temp->next;
+	}
+	if (temp == NULL) {
+		symbol_t symbol = symbol_find_notype(table, parent_name);
+		table = get_symbol_table(table, symbol);
+		table = table->parent;
+		if (table)
+			child_sym = get_symbol_from_template(table, parent_name, name);
 	}
 
 
@@ -4117,7 +4127,7 @@ expr_t* check_refer(symtab_t table, reference_t* ref, expr_t* expr) {
 			symbol = symbol_find_notype(table, tmp->name);
 		}
 		if (symbol != NULL) {
-			ref_table = get_symbol_table(symbol);
+			ref_table = get_symbol_table(table, symbol);
 			ref_table = (ref_table == NULL) ? get_symbol_table_from_template(table, tmp->name) : ref_table;
 			if (tmp->is_array) {
 				check_array_symbol(table, symbol);
@@ -4128,10 +4138,15 @@ expr_t* check_refer(symtab_t table, reference_t* ref, expr_t* expr) {
 			break;
 		}
 
-		if (ref_table == NULL) {
+		if (ref_table == (void*)(0xFFFFFFFF)) {
+			expr->type->common.categ = NO_TYPE;
+			return expr;
+		}
+		else if (ref_table == NULL) {
 			PERRORN("'%s' is not struct or dml object", expr->node, tmp->name);
 			break;
 		}
+
 
 		const char* obj_type = NULL;
 		if (symbol->type == OBJECT_TYPE) {

@@ -855,6 +855,7 @@ static void translate_comma_expr_opt(tree_t *t) {
 
 void translate_for(tree_t *t) {
 	tree_t *node;
+	symtab_t saved = NULL;
 	
 	node = t->for_tree.init;
 	POS;
@@ -878,7 +879,10 @@ void translate_for(tree_t *t) {
 
 	D(")");
 	node = t->for_tree.block;
+	saved = current_table;
+	current_table = t->for_tree.table;
 	translate(node);
+	current_table = saved;
 }
 
 static void translate_try_catch(tree_t *t) {
@@ -1006,6 +1010,9 @@ void translate_foreach(tree_t *t) {
 	ident = node->ident.str;
 	node = t->foreach.in_expr;
 	attr = t->common.attr;
+	if (attr == NULL) {
+		return;
+	}
 	table = attr->table;
 	list = get_expression_sym(node);
 	if(list->type != ARRAY_TYPE){
@@ -1927,6 +1934,7 @@ static void gen_object_info(obj_ref_t *ref, struct method_name *m) {
 	}
 }
 
+extern void print_method (tree_t* node, int pos);
 void gen_dml_method(object_t *obj, struct method_name *m) {
 	tree_t *method = m->method;
 	context_t context;

@@ -784,7 +784,7 @@ object
                 node->port.name = $2->ident.str;
 
                 attr->common.name = $2->ident.str;
-                symbol_insert(current_table, $2->ident.str, IMPLEMENT_TYPE, attr);
+                symbol_insert(current_table, $2->ident.str, PORT_TYPE, attr);
             }
             node->port.templates = create_template_list(node->port.templates, $3);
             current_object_node = node;
@@ -943,7 +943,7 @@ object
 
                 attr->common.name = $2->ident.str;
                 attr->port.is_array = 1;
-                symbol_insert(current_table, $2->ident.str, IMPLEMENT_TYPE, attr);
+                symbol_insert(current_table, $2->ident.str, PORT_TYPE, attr);
             }
             node->port.array = get_obj_default_param(node->port.array, $4, "array");
             node->port.templates = create_template_list(node->port.templates, $6);

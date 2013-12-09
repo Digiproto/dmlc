@@ -1637,22 +1637,18 @@ static void process_basic_template(object_t *obj) {
 
 	val = gdml_zmalloc(sizeof(*val));
 	val->type = PARAM_TYPE_STRING;
-	printf("obj name %s\n", obj->name);
 	val->u.string = strdup(obj->name);
 	symbol_insert(table, "name", PARAMETER_TYPE, val);
 
-	printf("obj qname %s\n", obj->qname);
 	val = gdml_zmalloc(sizeof(*val));
 	val->type = PARAM_TYPE_STRING;
 	val->u.string = strdup(obj->qname);
 	symbol_insert(table, "qname", PARAMETER_TYPE, val);
 
-	printf("obj name %s\n", obj->name);
 	val = gdml_zmalloc(sizeof(*val));
 	val->type = PARAM_TYPE_REF;
 	val->u.ref = obj;
 	symbol_insert(table, "this", PARAMETER_TYPE, val);
-	printf("end obj name %s\n", obj->name);
 }
 
 void object_none_temp_fn(object_t *obj) {
@@ -1779,4 +1775,8 @@ object_t *find_index_obj(object_t *obj, int index) {
 		}
 	}
 	return NULL;
+}
+
+object_t* get_device_obj() {
+	return DEV;
 }

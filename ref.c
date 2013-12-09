@@ -20,7 +20,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
-
+#include <assert.h>
+#include <string.h>
 #include "ref.h"
 #include "gen_debug.h"
 #include "info_output.h"
@@ -117,6 +118,7 @@ void collect_ref_info(tree_t *expr, ref_info_t *fi){
 			add_node_info(fi, ni);
 	} else {
 		my_DBG("TODO: other type %d\n", type);
+		printf("TODO: other type %d\n", type);
 	}
 }
 
@@ -195,6 +197,58 @@ void printf_ref(ref_ret_t *ref_ret){
 	}
 }
 
+extern object_t* get_device_obj();
+extern symtab_t get_symbol_table(symtab_t sym_tab, symbol_t symbol);
+static object_t* get_parameter_obj(symtab_t table, const char* name) {
+	assert(table != NULL); assert(name != NULL);
+	object_t* obj = NULL;
+	symbol_t sym = NULL;
+	if (!strcmp(name, "this")) {
+		obj = OBJ->obj;
+	}
+	else {
+		sym = symbol_find_notype(table, name);
+		printf("sym name: %s, type: %d, REGISTER_TYPE: %d\n", name, sym->type, REGISTER_TYPE);
+		if (sym->type == SELECT_TYPE) {
+			select_attr_t* attr = sym->attr;
+			if (strcmp(name, "bank") || attr->type != PARAMETER_TYPE) {
+				error("no object %s symbol found", name);
+			}
+		} else if (sym->type == DATA_TYPE) {
+			obj = gdml_zmalloc(sizeof(object_t));
+			obj->name = sym->name;
+			obj->obj_type = strdup("data");
+			obj->symtab = get_symbol_table(table, sym);
+			return obj;
+		} else if (sym->type == REGISTER_TYPE) {
+			obj = gdml_zmalloc(sizeof(object_t));
+			obj->name = sym->name;
+			obj->obj_type = strdup("register");
+			symtab_t tmp = get_symbol_table(table, sym);
+			if (tmp == NULL) {
+				//sym = get_symbol_from_template(table, )
+			}
+			/* not implement*/
+			printf("Pay attention : fun: %s, line = %d, not implement exit\n", __func__, __LINE__);
+			exit(-1);
+		} else if (sym->type != PARAMETER_TYPE && sym->type != DATA_TYPE) {
+			int* a = NULL;
+			*a = 1000;
+			error("no object %s symbol found", name);
+		}
+		if (!strcmp(name, "default_bank") || !strcmp(name, "bank")) {
+			object_t* dev = get_device_obj();
+			struct list_head* head = dev->childs.next;
+			obj = (object_t*)(list_entry(head, object_t, entry));
+		}
+		else {
+			error("no object %s symbol found", name);
+		}
+	}
+
+	return obj;
+}
+
 symbol_t get_ref_sym(tree_t *t, ref_ret_t *ret, symtab_t table){
 		ref_info_t *fi;
         tree_t *node;
@@ -205,6 +259,7 @@ symbol_t get_ref_sym(tree_t *t, ref_ret_t *ret, symtab_t table){
         node_info_t *ni;
         struct list_head *p;
         symbol_t sym = NULL;
+		const char* fore_name = NULL;
         const char *name = NULL;
         const char *name2 = NULL;
         struct symtab *symtab;
@@ -228,6 +283,7 @@ symbol_t get_ref_sym(tree_t *t, ref_ret_t *ret, symtab_t table){
         if(p){
                 ni = list_entry(p, node_info_t, entry);
                 node = ni->node;
+				//printf("node name: %s\n", node->common.name);
                 if(node->common.type == IDENT_TYPE){
                         ref_obj = 0;
                         name = node->ident.str;
@@ -289,19 +345,15 @@ normal_case:
                                 if(!name2 || !name){
                                         my_DBG("error name null\n");
                                 }
-								if(strcmp(name, "this")) {
-									sym = symbol_find(symtab, name, OBJECT_TYPE);
-									my_DBG("object found %s, sym %p\n", name, sym);
-									if(!sym){
-											//my_DBG("no object %s symbol found\n",name);
-											error("no object %s symbol found", name);
-									}
-									obj = (object_t *)(sym->attr);
-								}else{
-									obj = OBJ->obj;
+								sym = symbol_find(symtab, name, OBJECT_TYPE);
+								if (sym) {
+									obj = (object_t*)(sym->attr);
+								} else {
+									obj = get_parameter_obj(symtab, name);
 								}
                                 symtab = obj->symtab;
                                 my_DBG("object name %s, name %s\n", obj->name, name2);
+                                printf("object name %s, name %s\n", obj->name, name2);
 								if(!strcmp(obj->obj_type, "interface")) {
 									obj2 = obj;
 									ret->con = NULL;
@@ -333,6 +385,7 @@ normal_case:
                                 }
                         }
                         p = ni_next->entry.next;
+						fore_name = name;
                 } else if (ni_next->index) {
 					/*skip index*/
 					while(ni_next->index) {
@@ -356,4 +409,3 @@ end:
         my_DBG("out of 2\n");
         return sym;
 }
-

@@ -42,6 +42,7 @@
 const char *import_file_list[] = {
 	"simics-auto-api-4_0.dml",
 	"dml-builtins.dml",
+	//"pci-to-pci.dml",
 	"simics/C.dml",
 	NULL
 };
