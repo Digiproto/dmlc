@@ -86,6 +86,7 @@ void translate_case(tree_t *t);
 void translate_default(tree_t *t);
 void translate_throw(tree_t *t);
 void translate_data(tree_t *t);
+void translate_throw(tree_t *t);
 int block_empty(tree_t *t);
 symbol_t  get_call_expr_info(tree_t *node, symtab_t table);
 symbol_t  get_expression_sym(tree_t *node);

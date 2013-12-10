@@ -709,6 +709,7 @@ void translate_local(tree_t *t) {
 	}
 	node = t->local_tree.cdecl;
 	name = get_cdecl_name(node);
+	printf("local var name %s\n", name);
 	char buf[0x100];
 	//symbol_t sym = symbol_find_notype(current_table, name);
 	//type = (cdecl_t *)sym->attr;
