@@ -24,9 +24,13 @@
 #ifndef __PLATFORM_H__ 
 #define __PLATFORM_H__  
 #include "object.h"
+void pre_gen_code(device_t *dev, FILE *f);
+void post_gen_code(device_t *dev, FILE *f);
 void gen_object_struct(device_t *dev, FILE *f);
-void gen_headerfile(device_t *dev, FILE *f);
 void gen_device_init(device_t *dev, FILE *f);
 void gen_device_type_info(device_t * dev, FILE *f);
+#if backend == 3
+void gen_platform_device_info(device_t * dev, const char *out);
+#endif
 void gen_platform_device_module(device_t *dev, const char *out);
 #endif /* __PLATFORM_H__ */
