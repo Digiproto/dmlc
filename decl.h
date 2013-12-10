@@ -25,6 +25,8 @@
 #define __DECL_H__
 #include "types.h"
 #include "symbol.h"
+#include "symbol-common.h"
+#include "tree.h"
 
 enum { CONST_QUAL = 0x1, VECT_QUAL = 0x2 };
 enum { POINTER_TO = 1, ARRAY_OF, FUNCTION_RETURN };
