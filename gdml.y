@@ -3024,6 +3024,7 @@ statement
 	| THROW ';' {
 		tree_t* node = (tree_t*)create_node("throw", THROW_TYPE, sizeof(struct tree_common), &@$);
 		node->common.print_node = print_throw;
+		node->common.translate = translate_throw;
 		$$ = node;
 	}
 	| RETURN ';' {
