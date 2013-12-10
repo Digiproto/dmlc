@@ -82,6 +82,9 @@ const char *get_tabstr(void){
 	return tab[tab_count];
 }
 
+const char *get_tabstr_n(int n) {
+	return tab[n];
+}
 int get_local_index(void){
 	    return local_index++;
 }

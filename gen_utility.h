@@ -50,11 +50,22 @@ void set_label_symbol_alias(symbol_t sym);
 void enter_scope(void);
 void exit_scope(void);
 const char *get_tabstr(void);
+const char *get_tabstr_n(int n);
 void tabcount_set(int num);
 void tabcount_add(int num);
 void tabcount_sub(int num);
+int  get_tab_count(void);
 #define D(fmt,...) fprintf(out, fmt,  ## __VA_ARGS__)
-#define POS fprintf(out, "%s", get_tabstr())
+#define POS_n(n) fprintf(out, "%s", get_tabstr_n(n))
+#define POS do {			\
+				int n = get_tab_count(); \
+				POS_n(n); \
+			} while(0)
+
+#define D_n(pos, fmt, ...) do {         \
+							POS_n(pos); \
+							D(fmt, ## __VA_ARGS__); \
+							} while(0)
 
 //#define DEVICE_TEST
 #ifdef DEVICE_TEST
