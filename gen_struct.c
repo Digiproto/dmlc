@@ -139,7 +139,9 @@ static void gen_bank_struct(object_t *obj, FILE *f) {
         gen_register_struct(reg, f);
     }
     fprintf(f, "\t} %s;\n", obj->name);
+#if backend != 3
     fprintf(f, "\tMemoryRegion mr_%s;\n", obj->name);
+#endif
 }
 
 static void gen_banks_struct(device_t *dev, FILE *f) {
