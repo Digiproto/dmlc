@@ -22,6 +22,7 @@
  */
 #include "gen_implement.h"
 extern object_t *DEV;
+extern FILE *out; 
 static void print_params_protoc(tree_t *params, FILE *f) {
 	const char *type;
 	const char *name;
@@ -97,18 +98,26 @@ static void gen_implement_method(object_t *obj, symbol_t sym, FILE *f) {
 	} else {
 		ret = get_type_info(params->params.ret_params);
 	}
+	out = f;
+	new_line();
+	gen_src_loc(&method->common.location);
 	gen_iface_method_header(obj, method, f);	
 	fprintf(f, "\n");
-	fprintf(f, "{\n");
+	POS;
+	enter_scope();
 	dev = DEV->name;
+	gen_src_loc(&method->common.location);
 	fprintf(f, "\t%s_t *_dev = (%s_t *)obj;\n", dev, dev);
 	if(strcmp(ret, "void")) {
 		has_ret = 1;	
 	}
 	if(has_ret) {
+		gen_src_loc(&method->common.location);
 		fprintf(f, "\t%s result = 0;\n", ret);
 	}
-	fprintf(f, "\t{\n");
+	POS;
+	enter_scope();
+	gen_src_loc(&method->common.location);
 	fprintf(f, "\t\tbool exec;\n");
 	fprintf(f, "\t\texec = _DML_M_%s__%s(_dev", obj->qname, method->method.name);
 	print_params_in(params, f);
@@ -116,15 +125,22 @@ static void gen_implement_method(object_t *obj, symbol_t sym, FILE *f) {
 		fprintf(f, ", &result");
 	}
 	fprintf(f, ");\n");
-	fprintf(f, "\t\tif(exec) {\n");
+	gen_src_loc(&method->common.location);
+	fprintf(f, "\t\tif(exec) ");
+	enter_scope();
+	gen_src_loc(&method->common.location);
 	fprintf(f, "\t\t\tgoto throw;\n");
-	fprintf(f, "\t\t}\n");
-	fprintf(f, "\t}\n");
+	exit_scope();
+	new_line();
+	exit_scope();
+	new_line();
 	fprintf(f, "throw: ;\n");
 	if(has_ret) {
+		gen_src_loc(&method->common.location);
 		fprintf(f, "\treturn result;\n");
 	}
-	fprintf(f, "}\n");
+	exit_scope();
+	new_line();
 	add_object_method(obj, method->method.name);
 }
 
