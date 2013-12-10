@@ -479,12 +479,21 @@ static void translate_call_common(tree_t *expr, tree_t *ret){
 	}
 	D(");\n");
 	/*handle exception,hardcode*/
+	gen_src_loc(&expr->common.location);
 	POS;
 	D("if(%s) ",name);
 	enter_scope();
-	gen_src_loc(flow->loc);
-	POS;
-	D("return 1;\n");
+	if(flow->_throw) {
+		symbol_t throw = flow->_throw;
+		name = get_symbol_alias(throw);	
+		gen_src_loc(flow->throw_loc);
+		POS;
+		D("goto %s;\n", name);
+	} else {
+		gen_src_loc(flow->exec_loc);	
+		POS;
+		D("return 1;\n");
+	}
 	exit_scope();
 }
 
@@ -637,34 +646,6 @@ static void process_inline_start(method_attr_t *m, tree_t *input, tree_t *output
 	}
 }
 
-static int node_is_expression(tree_t *node) {
-	int ret = 0;
-
-	switch(node->common.type) {
-		case EXPR_ASSIGN_TYPE:
-		case BINARY_TYPE:
-		case CAST_TYPE:
-		case SIZEOF_TYPE:
-		case UNARY_TYPE:
-		case EXPR_BRACK_TYPE:
-		case INTEGER_TYPE:
-		case FLOAT_TYPE:
-		case CONST_STRING_TYPE:
-		case UNDEFINED_TYPE:
-		case QUOTE_TYPE:
-		case COMPONENT_TYPE:
-		case SIZEOFTYPE_TYPE:
-		case NEW_TYPE:
-		case ARRAY_TYPE:
-		case BIT_SLIC_EXPR_TYPE:
-			ret = 1;
-			break;
-		default:
-			break;
-	}
-	return ret;
-}
-
 void translate_block(tree_t *t) {
 	tree_t *node;
 	YYLTYPE *l;
@@ -674,18 +655,22 @@ void translate_block(tree_t *t) {
 	if(t->block.statement) {
 		node = t->block.statement;
 		while(node) {
+			/*
 			l = &node->common.location;
-			ret = node_is_expression(node);
+			ret = need_pos(node);*/
 			/*gen line/file info for gcc*/
+			/*
 			gen_src_loc(l);
 			if(ret) {
 				POS;	
-			}
-			translate(node);
+			}*/
+			//translate(node);
 			/*expression ;*/
-			if(ret) {
+			/*
+			if(need_semicolon(node)) {
 				D(";");
-			}
+			}*/
+			handle_one_statement(node);
 			new_line();
 			node = node->common.sibling;
 		}
@@ -695,7 +680,9 @@ void translate_block(tree_t *t) {
  
 void translate_local(tree_t *t) {
 	tree_t *node;
-	
+	cdecl_t *type;
+	const char *name;
+
 	node = t->local_tree.local_keyword;
 	if(node) {
 		/*just ignore local keyword*/	
@@ -705,6 +692,13 @@ void translate_local(tree_t *t) {
 		D("static ");
 	}
 	node = t->local_tree.cdecl;
+	name = get_cdecl_name(node);
+	printf("local var name %s\n", name);
+	char buf[0x100];
+	//symbol_t sym = symbol_find_notype(current_table, name);
+	//type = (cdecl_t *)sym->attr;
+	//undecl(buf, type, "test" );
+	//printf("%s\n", buf);
 	POS;
 	translate(node);
 	
@@ -765,6 +759,7 @@ void translate_if_else(tree_t *t) {
 	node = t->if_else.cond;
 	int explicit;
 	int ret;
+	int if_block;
 	symtab_t table;
 	symtab_t saved;
 	//expr = parse_expression(&node, current_table);
@@ -781,41 +776,63 @@ void translate_if_else(tree_t *t) {
 		}
 		saved = current_table;	
 		current_table = table;
-		POS;
-		translate(node);
+		if(!is_block(node)){
+			new_line();
+			handle_one_statement(node);
+			new_line();
+		} else {
+			translate(node);
+		}
 		current_table = saved;
 		return;
 	}
 
 	if(1) {
-		POS;
+		//POS;
 		D("if ");
 		D("(");
 		translate(node);
 		D(")");
 		node = t->if_else.if_block;
+		int block = if_block = is_block(node);
 		if(node) {
 			table = t->if_else.if_table;
 			saved = current_table;
 			current_table = table;
-			translate(node);
+			if(!block) {
+				new_line();
+				handle_one_statement(node);
+				new_line();
+			} else {
+				translate(node);
+			}
 			current_table = saved;
 		}
 		node = t->if_else.else_if;
 		if(node) {
-			POS;
 			table = node->if_else.if_table;
 			saved = current_table;
 			current_table = table;
+			D("else ");
 			translate(node);
 			current_table = saved;
 		} else if(t->if_else.else_block) {
 			node = t->if_else.else_block;
+			if(!if_block){
+				POS;
+			}
 			D("else ");
 			table = t->if_else.else_table;
 			saved = current_table;
+			block = is_block(node);
 			current_table = table;
-			translate(node);
+			if(!block) {
+				new_line();
+				handle_one_statement(node);
+				new_line();
+			} else {
+				translate(node);
+			}
 			current_table = saved;
 		}
 	} else {
@@ -833,6 +850,7 @@ void translate_if_else(tree_t *t) {
 
 void translate_while(tree_t *t) {
 	tree_t *node = t->do_while.cond;
+	POS;
 	D("while ");
 	D("(");
 	translate(node);
@@ -921,19 +939,27 @@ static void translate_try_catch(tree_t *t) {
 	exit_scope();
 }
 
-static void translate_throw(tree_t *t) {
+void translate_throw(tree_t *t) {
 	tree_t *node = t;
 	symbol_t sym;
 	symbol_t sym2;
 
-	sym = symbol_find(current_table,"exec",TMP_TYPE);
-	sym2 = symbol_find(current_table,"throw",TMP_TYPE);
-
-	enter_scope();
-	D("%s = 1;",get_symbol_alias(sym));
-	new_line();
-	D("goto %s",get_symbol_alias(sym2));
-	exit_scope();
+	if(!flow->_throw) {
+		sym = flow->exec;
+		gen_src_loc(flow->exec_loc);
+		POS;
+		D("return 1;");
+	} else {
+		sym = flow->exec;
+		sym2 = flow->_throw;
+		POS;
+		enter_scope();
+		POS;
+		D("%s = 1;\n",get_symbol_alias(sym));
+		POS;
+		D("goto %s;\n",get_symbol_alias(sym2));
+		exit_scope();
+	}
 }
 
 void translate_break(tree_t *t) {
@@ -988,10 +1014,6 @@ symbol_t get_expression_sym(tree_t *node) {
 	return NULL;
 }
 
-static int is_statement(tree_t *t) {	
-	return 0;	
-}
-
 void translate_foreach(tree_t *t) {
 	tree_t *node;
 	const char *ident;
@@ -1037,12 +1059,11 @@ void translate_foreach(tree_t *t) {
 	}
 	POS;
 	enter_scope();
+	/*{*/
 	for(i = 0; i < len; i++) {
 		symbol_set_value(tmp, val->u.list.vector[i].u.ref);
 		obj = (object_t *)val->u.list.vector[i].u.ref;
 		my_DBG("--------object %s\n", obj->name);
-
-		//enter_scope();
 		node = t->foreach.block;
 		YYLTYPE *loc = &node->common.location;
 		if(obj->is_array) {
@@ -1069,8 +1090,14 @@ void translate_foreach(tree_t *t) {
 				j++;
 			}
 		}
+		/*
 		gen_src_loc(loc);
+		if(is_block(node)) {
+			POS;
+		}
 		translate(node);
+		*/
+		handle_one_statement(node);
 		new_line();
 		if(obj->is_array) {
 			j = 0;
@@ -1349,123 +1376,6 @@ const char *get_type_info(tree_t *node) {
 		my_DBG("TODO get type info:");
 	}
 	return get_basetype_type(node->cdecl.basetype);
-}
-
-static int block_has_call(tree_t *t) {
-	tree_t *node;
-	tree_t *it;
-	tree_t *tmp;
-	symbol_t sym;
-	int dummy;
-	int ret = 0;
-	ref_ret_t ref_ret;
-	
-	node = t;
-	if(!node) {
-		return 0;
-	}
-	if(node->common.type == CALL_TYPE) {
-		return 1;
-	}
-	if(node->common.type == BLOCK_TYPE) {
-		if(node->block.statement) {
-			it = node->block.statement;
-			while(it) {
-				if(it->common.type == CALL_TYPE) {
-					ret = 1;	
-					break;
-				} else if (it->common.type == BLOCK_TYPE) {
-						ret |= block_has_call(it);	
-						if(ret) {
-							break;
-						}
-				} else if(it->common.type == IF_ELSE_TYPE) {
-						ret = block_has_call(it);
-						if(ret) {
-							break;
-						}
-						ret = block_has_call(it);
-						if(ret) {
-							break;
-						}
-				} else if (it->common.type == DO_WHILE_TYPE) {
-					ret = block_has_call(it->do_while.block);
-					if(ret) {
-						break;
-					}
-				} else if (it->common.type == INLINE_TYPE) {
-					/*a little trick for inline*/
-					tmp = it->call_inline.expr;
-					sym = get_ref_sym(tmp->expr_brack.expr,&ref_ret, NULL);		
-					if(!sym) {
-						my_DBG("err,no inline function\n");
-					}
-					method_attr_t *m = sym->attr;
-					tmp = m->common.node;
-					tmp = tmp->method.block;
-					ret = block_has_call(tmp);
-					if(ret) {
-						break;
-					}
-				} else if(it->common.type == FOREACH_TYPE) {
-					tmp = it->foreach.block;
-					ret = block_has_call(tmp);
-					if(ret) {
-						break;
-					}
-				}
-				it = it->common.sibling;
-			}
-		}
-	}
-	return ret;
-}
-
-static int block_has_return(tree_t *t) {
-	tree_t *node;
-	tree_t *tmp;
-	tree_t *it;
-	int ret = 0;
-	
-	node = t;
-	if(node->common.type == BLOCK_TYPE) {
-		if(node->block.statement) {
-			it = node->block.statement;
-			while(it) {
-				if(it->common.type == RETURN_TYPE) {
-					ret = 1;	
-					break;
-				} else if (it->common.type == BLOCK_TYPE) {
-						ret |= block_has_return(it);	
-						if(ret) {
-							break;
-						}
-				} else if(it->common.type == IF_ELSE_TYPE) {
-						ret = block_has_return(it);
-						if(ret) {
-							break;
-						}
-						ret = block_has_return(it);
-						if(ret) {
-							break;
-						}
-				} else if (it->common.type == DO_WHILE_TYPE) {
-					ret = block_has_return(it->do_while.block);
-					if(ret) {
-						break;
-					}
-				} else if(it->common.type == FOREACH_TYPE) {
-					tmp = it->foreach.block;
-					ret = block_has_call(tmp);
-					if(ret) {
-						break;
-					}
-				}
-				it = it->common.sibling;
-			}
-		}
-	}
-	return ret;
 }
 
 int block_empty(tree_t *t) {
@@ -1775,37 +1685,78 @@ static void do_method_params_alias(object_t *obj, tree_t *m){
 	}
 }
 
-void do_block_logic(tree_t *block) {
-	symbol_t sym;
-	const char *name;
+static void gen_method_entry(object_t *obj, tree_t *m) {
+	tree_t *block;
+	int has_return;
+	const char *name = NULL;
 
-	//D("{\n");
-	POS;	
-	enter_scope();
-	symbol_insert(current_table, "exec", TMP_TYPE, NULL); 
-	sym = symbol_find(current_table, "exec", TMP_TYPE);
-	flow_ctrl_t l_flow;
-	l_flow.exec = sym;
-	l_flow.loc = &block->common.location;
-	flow = &l_flow;
-	name = get_symbol_alias(sym);
-	//tabcount_add(1);
-	gen_src_loc(&block->common.location);
-	POS;
-	D("bool %s = 0;\n",name);
-	POS;
-	D("UNUSED(%s);\n", name);
+	block = m->method.block;
+	has_return = method_has_return(m);
+	if(has_return) {
+		symbol_insert(current_table, "exit", TMP_TYPE, NULL); 
+		symbol_t sym = symbol_find(current_table, "exit", TMP_TYPE);
+		set_exit_symbol_alias(sym);
+		name = get_symbol_alias(sym);
+		symbol_t old_exit = flow->exit;
+		YYLTYPE *old_loc = flow->exit_loc;
+		flow->exit = sym;
+		POS;
+		enter_scope();
+	}
 	POS;
 	translate(block);
 	new_line();
-	exit_scope();
+	if(has_return){
+		int tab_count = get_tab_count();
+		int pos = tab_count - 1;
+		D_n(pos, "%s: ;\n", name);		
+		exit_scope();
+		new_line();
+	}
+}
+
+void do_block_logic(object_t *obj, tree_t *m) {
+	tree_t *block;
+	symbol_t sym = NULL;
+	const char *name;
+	int has_exec;
+	
+	block = m->method.block;
+	has_exec = method_has_exec(m);
+	if(has_exec) {
+		symbol_insert(current_table, "exec", TMP_TYPE, NULL); 
+		sym = symbol_find(current_table, "exec", TMP_TYPE);
+		flow_ctrl_t l_flow;
+		l_flow.exec = sym;
+		POS;	
+		enter_scope();
+		l_flow.exec_loc = &block->common.location;
+		flow = &l_flow;
+		flow->_throw = NULL;
+		flow->throw_loc = NULL;
+		name = get_symbol_alias(sym);
+		//tabcount_add(1);
+		gen_src_loc(&block->common.location);
+		POS;
+		D("bool %s = 0;\n",name);
+		POS;
+		D("UNUSED(%s);\n", name);
+	}
+	/*
+	POS;
+	translate(block);
 	new_line();
+	*/
+	gen_method_entry(obj, m);
+	if(has_exec){
+		exit_scope();
+		new_line();
+	}
 }
 
 static void gen_dummy_block(tree_t *block) {
 		enter_scope();
-		POS;
-		D("/*dummy function, need optimized*/\n");
+		gen_src_loc(&block->common.location);
 		POS;
 		D("return 0;\n");
 		exit_scope();
@@ -1820,6 +1771,8 @@ static void gen_method_block(object_t *obj, tree_t *m){
 		gen_dummy_block(block);
 		return;
 	}
+	new_line();
+	POS;
 	enter_scope();
 	/*{\n*/
 	D_HEAD;
@@ -1829,7 +1782,7 @@ static void gen_method_block(object_t *obj, tree_t *m){
 	POS;
 	enter_scope();
 	/*		{\n*/
-	do_block_logic(block);
+	do_block_logic(obj, m);
 	D_END;
 	exit_scope();
 	new_line();
@@ -1854,6 +1807,9 @@ static void gen_object_index(object_t *obj) {
 }
 
 void gen_dml_method_header(object_t *obj, tree_t *m) {
+	method_attr_t *attr;
+
+	attr = m->common.attr;
 	if(obj->encoding == Obj_Type_Device) {
 		/*for global method no, array involved*/
 		D("static bool\
@@ -1866,6 +1822,9 @@ void gen_dml_method_header(object_t *obj, tree_t *m) {
 	gen_method_params(obj, m);
 }
 
+void gen_extern_dml_method_header(object_t *obj, tree_t *m) {
+
+}
 /*need to implemention object ref */
 static void change_object(object_t *obj) {
 }

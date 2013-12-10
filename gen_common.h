@@ -28,12 +28,8 @@
 #include "object.h"
 #include "ref.h"
 #include "gen_utility.h"
-
-typedef struct flow_control {
-        symbol_t exec;
-		YYLTYPE *loc;
-} flow_ctrl_t;
-
+#include "gen_helper.h"
+#include "flow_ctrl.h"
 
 typedef struct obj_context {
 	object_t *obj;
@@ -53,10 +49,10 @@ const char *get_cdecl_name(tree_t *node);
 const char *get_type_info(tree_t *node);
 void gen_dml_method_header(object_t *obj, tree_t *m);
 void cdecl_or_ident_list_params_alias(tree_t *params, int ret);
-void do_block_logic(tree_t *block);
+//void do_block_logic(tree_t *block);
 void pre_gen_method(obj_ref_t *obj, tree_t *method, context_t *context);
 void post_gen_method(obj_ref_t *obj, tree_t *method, context_t *context);
-void do_block_logic(tree_t *block);
+//void do_block_logic(tree_t *block);
 void translate_block(tree_t *node);
 void translate_foreach(tree_t *node);
 void translate_call(tree_t *node);
@@ -88,6 +84,7 @@ void translate_continue(tree_t *t);
 void translate_switch(tree_t *t);
 void translate_case(tree_t *t);
 void translate_default(tree_t *t);
+void translate_throw(tree_t *t);
 int block_empty(tree_t *t);
 symbol_t  get_call_expr_info(tree_t *node, symtab_t table);
 symbol_t  get_expression_sym(tree_t *node);
