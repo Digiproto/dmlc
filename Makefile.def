@@ -1,5 +1,6 @@
 # Written by Michael.Kang(blackfin.kang@gmail.com)
 CC = gcc
+SYSTEMC4SKYEYE ?= no
 #CFLAGS = -g
 CFLAGS = -g -O2 -Werror-implicit-function-declaration -Werror=return-type \
 		-Wmissing-field-initializers -Wuninitialized
@@ -58,7 +59,12 @@ TOP_FILES := $(wildcard *.c)
 BACKEND_FILES  = $(wildcard backend/*.c)
 #BACKEND_SKYEYE_FILES += $(wildcard backend/skyeye/*.c)
 BACKEND_QEMU_FILES += $(wildcard backend/qemu/*.c)
-BACKEND_SYSTEMC_FILES += $(wildcard backend/systemc/*.c)
+ifeq ($(SYSTEMC4SKYEYE),no) 
+BACKEND_SYSTEMC_FILES += $(filter-out backend/systemc/systemc_skyeye%.c, $(wildcard backend/systemc/*.c))
+else
+BACKEND_SYSTEMC_FILES += $(filter backend/systemc/systemc_skyeye%.c, $(wildcard backend/systemc/*.c))
+endif
+BACKEND_SYSTEMC_FILES += $(wildcard backend/object_model/*.c)
 SPECIAL_FILES = Parser.c Lexer.c
 
 # link all c_files string
