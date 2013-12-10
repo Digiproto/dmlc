@@ -28,7 +28,7 @@
 #include <time.h>
 extern object_t *DEV;
 
-void gen_headerfile(device_t *dev, FILE *f) {
+static void gen_headerfile(device_t *dev, FILE *f) {
     const char *name = dev->obj.name;
     time_t timep;
 
@@ -41,6 +41,10 @@ void gen_headerfile(device_t *dev, FILE *f) {
 
     fprintf(f, "\n#include \"%s.h\"\n", name);
     fprintf(f, "\n#include \"%s_protos.c\"\n", name);
+}
+
+void pre_gen_code(device_t *dev, FILE *f) {
+	gen_headerfile(dev, f);
 }
 
 static void gen_bank_read_access(object_t *obj, FILE *f) {
@@ -306,6 +310,8 @@ void gen_device_type_info(device_t * dev, FILE *f)
     fprintf (f, "\ntype_init(%s_register_types)\n", dev_name);
 }
 
+void post_gen_code(device_t *dev, FILE *f) {
+}
 
 
 

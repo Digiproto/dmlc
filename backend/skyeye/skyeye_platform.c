@@ -29,7 +29,7 @@
 
 extern object_t *DEV;
 
-void gen_headerfile(device_t *dev, FILE *f) {
+static void gen_headerfile(device_t *dev, FILE *f) {
     const char *name = dev->obj.name;
     time_t timep;
 
@@ -46,6 +46,10 @@ void gen_headerfile(device_t *dev, FILE *f) {
     fprintf(f, "#include \"skyeye_mm.h\"\n");
     fprintf(f, "#include \"skyeye_class.h\"\n", name);
 	fprintf(f, "#include \"skyeye_interface.h\"\n");
+}
+
+void pre_gen_code(device_t *dev, FILE *f) {
+	gen_headerfile(dev, f);
 }
 
 static void gen_bank_read_access(object_t *obj, FILE *f) {
@@ -238,3 +242,5 @@ void gen_device_type_info(device_t *dev, FILE *f) {
 	fprintf(f, "}\n");
 }
 
+void post_gen_code(device_t *dev, FILE *f) {
+}
