@@ -33,15 +33,19 @@ void gen_cfile(device_t *dev, const char *out) {
 	f = fopen(tmp, "w");
 	if(f) {
 		setbuf(f, NULL);
-		gen_headerfile(dev, f);
+		pre_gen_code(dev, f);
 		gen_device_init(dev, f);
 		/*generate common code for all platforms */
 		gen_dml_code(dev, f);
 		gen_device_type_info(dev, f);
+		post_gen_code(dev, f);
 		fclose(f);
 	} else {
 		printf("can not  open file %s\n", tmp);
 	}
+#if backend == 3 
+	gen_platform_device_info(dev, out);
+#endif
 	snprintf(tmp, 1024, "%s/%s_protos.c", out, dev_name);
 	f = fopen(tmp, "w");
 	if(f) {
