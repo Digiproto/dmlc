@@ -846,7 +846,8 @@ int get_size(tree_t* node, symtab_t table) {
 int get_offset(tree_t* node, symtab_t table) {
 	/* we do not need to check the offset as it will be
 	checked when the code generated*/
-	return  0;
+	/* why? no implement !!!??? */
+	/* return  0; */
 	if (node == NULL) {
 		return -1;
 	}
@@ -1667,7 +1668,7 @@ static void parse_call_inline_method(symtab_t table, tree_t* call_expr, tree_t* 
 				error("method object cannot empty\n");
 			} else {
 				if (!block_empty(block))
-					printf("ADD: obj name %s, method name %s\n", obj->name, method_sym->name);
+					DBG("ADD: obj name %s, method name %s\n", obj->name, method_sym->name);
 					add_object_method(obj, method_sym->name);
 			}
 		} else {

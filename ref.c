@@ -353,7 +353,6 @@ normal_case:
 								}
                                 symtab = obj->symtab;
                                 my_DBG("object name %s, name %s\n", obj->name, name2);
-                                printf("object name %s, name %s\n", obj->name, name2);
 								if(!strcmp(obj->obj_type, "interface")) {
 									obj2 = obj;
 									ret->con = NULL;
