@@ -429,19 +429,19 @@ static void create_data_object(object_t *obj, symbol_t sym) {
 static void create_port_object(object_t *obj, symbol_t sym) {
 	if(!obj || strcmp(obj->obj_type, "device")) {
 		BE_DBG(OBJ, "port should in top level\n");
+		printf("port should in top level\n");
 	}
 	dml_port_t *port = (dml_port_t *)gdml_zmalloc(sizeof(*port));
 	port_attr_t *attr = (port_attr_t *)sym->attr;
 	symtab_t table = attr->common.table;
 	init_object(&port->obj, obj, sym->name, "port", attr->common.node, table);
-	create_objs(&port->obj, IMPLEMENT_TYPE);
-	create_objs(&port->obj, DATA_TYPE);
-	create_objs(&port->obj, EVENT_TYPE);
 	INIT_LIST_HEAD(&port->connects);
 	INIT_LIST_HEAD(&port->implements);
 	INIT_LIST_HEAD(&port->attributes);
-	create_objs(&port->obj, CONNECT_TYPE);
 	create_objs(&port->obj, IMPLEMENT_TYPE);
+	create_objs(&port->obj, DATA_TYPE);
+	create_objs(&port->obj, EVENT_TYPE);
+	create_objs(&port->obj, CONNECT_TYPE);
 	create_objs(&port->obj, ATTRIBUTE_TYPE);
 }
 
@@ -1704,7 +1704,9 @@ static void add_object_templates(object_t *obj, tree_t *t){
 	//process_object_templates(obj);
 }
 
+#include <unistd.h>
 int method_to_generate = 0;
+extern symbol_t get_symbol_from_templates(symtab_t table, const char* name, int type);
 void add_object_method(object_t *obj,const char *name){
 	struct method_name *m;
 	struct list_head *p;
@@ -1732,6 +1734,7 @@ void add_object_method(object_t *obj,const char *name){
 	INIT_LIST_HEAD(&m->entry);
 	BE_DBG(OBJ, "add object %s, name, %s\n", obj->name, name);
 	sym = object_symbol_find(obj->symtab, name, METHOD_TYPE);
+	//sym = (sym == NULL) ? get_symbol_from_templates(obj->symtab->sibling, name, METHOD_TYPE) : sym;
 	if(!sym) {
 		BE_DBG(OBJ, "object %s has no method %s\n",obj->name, name);
 	}
