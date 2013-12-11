@@ -4060,7 +4060,28 @@ static symtab_t get_symbol_table_from_template(symtab_t table, const char* name)
 	return ref_table;
 }
 
-static symbol_t get_symbol_from_template(symtab_t table, const char* parent_name, const char* name) {
+symbol_t get_symbol_from_templates(symtab_t table, const char* name, int type) {
+	assert(table != NULL); assert(name != NULL);
+	symtab_t ref_table = NULL;
+	symbol_t sym = NULL;
+	struct template_table* temp = table->template_table;
+	while(temp) {
+		sym = defined_symbol(temp->table, name, type);
+		if (sym) {
+			break;
+		}
+		if (temp->table->template_table || temp->table->undef_temp) {
+			sym = get_symbol_from_templates(temp->table, name, type);
+			if (sym) {
+				break;
+			}
+		}
+		temp = temp->next;
+	}
+	return sym;
+}
+
+symbol_t get_symbol_from_template(symtab_t table, const char* parent_name, const char* name) {
 	assert(table != NULL); assert(parent_name != NULL); assert(name != NULL);
 	if (table->table_num == 0)
 		table = table->sibling;

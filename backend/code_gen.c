@@ -61,7 +61,7 @@ void gen_code (tree_t * root, const char *name)
 	print_device_tree(dev_obj);
 	device_check(dev_obj);
 	printf("---------------------------------------check finished-------------------------\n");
-	//exit(-1);
+	exit(-1);
 	gen_headerfiles(dev_obj, name);
 	gen_cfile(dev_obj, name);
 }

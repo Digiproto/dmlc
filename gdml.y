@@ -2542,7 +2542,6 @@ expression
 		$$ = node;
 	}
 	| ident {
-		DBG("ident: %s\n", $1->ident.str);
 		$$ = $1;
 	}
 	| expression '.' objident {
@@ -3168,7 +3167,6 @@ maybe_objident
 
 objident
 	:ident {
-		DBG("ident: %s\n", $1->ident.str);
 		$$ = $1;
 	}
 	| THIS {

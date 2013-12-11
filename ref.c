@@ -22,6 +22,7 @@
  */
 #include <assert.h>
 #include <string.h>
+#include  "ast.h"
 #include "ref.h"
 #include "gen_debug.h"
 #include "info_output.h"
@@ -214,7 +215,9 @@ void printf_ref(ref_ret_t *ref_ret){
 
 extern object_t* get_device_obj();
 extern symtab_t get_symbol_table(symtab_t sym_tab, symbol_t symbol);
-static object_t* get_parameter_obj(symtab_t table, const char* name) {
+extern symbol_t get_symbol_from_root_table(const char* name, type_t type);
+extern symbol_t get_symbol_from_template(symtab_t table, const char* parent_name, const char* name);
+static object_t* get_parameter_obj(symtab_t table, const char* parent_name, const char* name) {
 	assert(table != NULL); assert(name != NULL);
 	object_t* obj = NULL;
 	symbol_t sym = NULL;
@@ -223,10 +226,8 @@ static object_t* get_parameter_obj(symtab_t table, const char* name) {
 	}
 	else {
 		sym = symbol_find_notype(table, name);
-		printf("sym name: %s, type: %d, REGISTER_TYPE: %d\n", name, sym->type, REGISTER_TYPE);
 		if (sym->type == SELECT_TYPE) {
-			select_attr_t* attr = sym->attr;
-			if (strcmp(name, "bank") || attr->type != PARAMETER_TYPE) {
+			select_attr_t* attr = sym->attr; if (strcmp(name, "bank") || attr->type != PARAMETER_TYPE) {
 				error("no object %s symbol found", name);
 			}
 		} else if (sym->type == DATA_TYPE) {
@@ -240,21 +241,33 @@ static object_t* get_parameter_obj(symtab_t table, const char* name) {
 			obj->name = sym->name;
 			obj->obj_type = strdup("register");
 			symtab_t tmp = get_symbol_table(table, sym);
-			if (tmp == NULL) {
-				//sym = get_symbol_from_template(table, )
+			if (tmp == NULL && parent_name) {
+				sym = get_symbol_from_template(table, parent_name, name);
+				tmp = get_symbol_table(table, sym);
 			}
+			obj->symtab = tmp;
+			return obj;
 			/* not implement*/
-			printf("Pay attention : fun: %s, line = %d, not implement exit\n", __func__, __LINE__);
-			exit(-1);
-		} else if (sym->type != PARAMETER_TYPE && sym->type != DATA_TYPE) {
-			int* a = NULL;
-			*a = 1000;
+		} else if (sym->type != PARAMETER_TYPE && sym->type != DATA_TYPE &&
+				sym->type != REGISTER_TYPE) {
 			error("no object %s symbol found", name);
 		}
 		if (!strcmp(name, "default_bank") || !strcmp(name, "bank")) {
 			object_t* dev = get_device_obj();
 			struct list_head* head = dev->childs.next;
-			obj = (object_t*)(list_entry(head, object_t, entry));
+			long long head_ptr = (long long)(head);
+			long long childs_ptr = (long long)(&(dev->childs));
+			if (head_ptr != childs_ptr) {
+				obj = (object_t*)(list_entry(head, object_t, entry));
+			} else {
+				/* when a device not have bank, the default_bank is template bank*/
+				obj = gdml_zmalloc(sizeof(object_t));
+				sym = get_symbol_from_root_table("bank", TEMPLATE_TYPE);
+				obj->name = strdup(name);
+				obj->obj_type = strdup("bank");
+				obj->symtab = get_symbol_table(table, sym);
+				parse_undef_template("bank");
+			}
 		}
 		else {
 			error("no object %s symbol found", name);
@@ -360,12 +373,12 @@ normal_case:
                                 if(!name2 || !name){
                                         my_DBG("error name null\n");
                                 }
-								sym = symbol_find(symtab, name, OBJECT_TYPE);
-								if (sym) {
-									obj = (object_t*)(sym->attr);
-								} else {
-									obj = get_parameter_obj(symtab, name);
-								}
+				sym = symbol_find(symtab, name, OBJECT_TYPE);
+				if (sym) {
+					obj = (object_t*)(sym->attr);
+				} else {
+					obj = get_parameter_obj(symtab, fore_name, name);
+				}
                                 symtab = obj->symtab;
                                 my_DBG("object name %s, name %s\n", obj->name, name2);
 								if(!strcmp(obj->obj_type, "interface")) {
