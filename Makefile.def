@@ -2,7 +2,7 @@
 CC = gcc
 SYSTEMC4SKYEYE ?= no
 #CFLAGS = -g
-CFLAGS = -g -O2 -Werror-implicit-function-declaration -Werror=return-type \
+CFLAGS = -g -O2 -Werror-implicit-function-declaration \
 		-Wmissing-field-initializers -Wuninitialized
 INCLUDE = -I. -I./backend/
 BUILD_DIR = build
