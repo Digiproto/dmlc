@@ -55,6 +55,7 @@ void tabcount_set(int num);
 void tabcount_add(int num);
 void tabcount_sub(int num);
 int  get_tab_count(void);
+//#define GEN_LOC 1
 #define D(fmt,...) fprintf(out, fmt,  ## __VA_ARGS__)
 #define POS_n(n) fprintf(out, "%s", get_tabstr_n(n))
 #define POS do {			\
@@ -95,6 +96,7 @@ const char *size2str(int size);
 const char *bits2str(int bits);
 int adjust_size(int size);
 int is_simics_api(const char *name);
+#ifdef GEN_LOC
 static void gen_src_loc(YYLTYPE *l) {
     if(l) {
         POS;
@@ -102,5 +104,10 @@ static void gen_src_loc(YYLTYPE *l) {
     }
     new_line();
 }
+#else 
+static void gen_src_loc(YYLTYPE *l) {
+}
+#endif
+
 #endif /* __GEN_UTILITY_H__ */
 
