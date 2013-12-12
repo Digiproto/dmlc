@@ -95,7 +95,7 @@ void parse_case(tree_t* node, symtab_t table);
 void parse_default(tree_t* node, symtab_t table);
 void parse_goto(tree_t* node, symtab_t table);
 void parse_undef_templates(symtab_t table);
-void parse_undef_template(const char* name);
+void check_template_parsed(const char* name);
 
 void print_dml(tree_t* node, int pos);
 void print_device(tree_t* node, int pos);

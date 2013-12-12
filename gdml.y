@@ -1280,7 +1280,7 @@ object_spec
 				the template do not have object_comm_attr */
 			if (object_comm_attr->common.obj_type == IMPLEMENT_TYPE) {
 				table = symtab_create(IMPLEMENT_TYPE);
-				table->no_check = 1;
+				table->no_check = 0;
 				table->table_num = ++current_table_num;
 				block->block.table = symtab_insert_child(current_table, table);
 			}
@@ -1333,7 +1333,7 @@ object_spec
 		}
 		else if (object_comm_attr->common.obj_type == IMPLEMENT_TYPE) {
 			table = symtab_create(IMPLEMENT_TYPE);
-			table->no_check = 1;
+			table->no_check = 0;
 			table->table_num = ++current_table_num;
 			block->block.table = symtab_insert_child(current_table, table);
 		}

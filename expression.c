@@ -2071,6 +2071,7 @@ static symtab_t get_tempalte_table(const char* name) {
 	template_attr_t* attr = NULL;
 	symtab_t table = NULL;
 	if (symbol) {
+		check_template_parsed(name);
 		attr = symbol->attr;
 		return attr->table;
 	} else {
@@ -2096,11 +2097,13 @@ symtab_t get_default_symbol_tale(symbol_t symbol) {
 	else if (strcmp(symbol->name, "reg") == 0) {
 		table = get_tempalte_table("register");
 	}
-	else if (strcmp(symbol->name, "banks") == 0) {
+	else if (strcmp(symbol->name, "banks") == 0 ||
+			strcmp(symbol->name, "bank") == 0 ||
+			strcmp(symbol->name, "default_bank") == 0) {
 		table = get_tempalte_table("bank");
 	}
 	else if (strcmp(symbol->name, "interface") == 0) {
-		table = get_tempalte_table("bank");
+		table = get_tempalte_table("interface");
 	}
 	else {
 		error("other default symbol: %s\n", symbol->name);
@@ -2146,8 +2149,17 @@ symtab_t get_data_table(symbol_t symbol) {
 	else if (record_type(type)) {
 		get_record_table(type);
 	}
+	else if (is_array_type(type)) {
+		type = type->common.bty;
+		if (record_type(type)) {
+			get_record_table(type);
+		}
+		else {
+			error("other data '%s' type: %d\n", symbol->name, type->common.categ);
+		}
+	}
 	else {
-		error("other data type: %d\n", type->common.categ);
+		error("other data '%s' type: %d\n", symbol->name, type->common.categ);
 	}
 
 	return table ;
@@ -2191,6 +2203,19 @@ static symtab_t get_typedef_table(symbol_t symbol) {
 	return table;
 }
 
+static symtab_t get_select_table(symtab_t sym_tab, symbol_t symbol) {
+	assert(symbol != NULL);
+	symtab_t table = NULL;
+	select_attr_t* attr = symbol->attr;
+	if (!strcmp(symbol->name, "bank") && (attr->type == PARAMETER_TYPE)) {
+		table = get_default_symbol_tale(symbol);			
+	} else {
+		printf("othe select : %s\n", symbol->name);
+		exit(-1);
+	}
+	return table;
+}
+
 static symtab_t get_param_table(symtab_t sym_tab, symbol_t symbol) {
 	assert(symbol != NULL);
 	symtab_t table = NULL;
@@ -2223,6 +2248,7 @@ symtab_t get_symbol_table(symtab_t sym_tab, symbol_t symbol) {
 	void* attr = symbol->attr;
 
 	int *a = NULL;
+	printf("symbol '%s' type: %d, bitfields: %d\n", symbol->name, symbol->type, BITFIELDS_T);
 	switch(symbol->type) {
 		case TEMPLATE_TYPE:
 			table = ((template_attr_t*)attr)->table;
@@ -2231,10 +2257,15 @@ symtab_t get_symbol_table(symtab_t sym_tab, symbol_t symbol) {
 			table = ((cdecl_t*)attr)->struc.table;
 			break;
 		case BITFIELDS_T:
-			table = ((cdecl_t*)attr)->layout.table;
+			table = ((cdecl_t*)attr)->bitfields.table;
+			printf("table: 0x%x\n", table);
+			if (strcmp(symbol->name, "block1") == 0) {
+				printf("bitfield '%s', table: 0x%x\n", symbol->name, table);
+				exit(-1);
+			}
 			break;
 		case LAYOUT_T:
-			table = ((cdecl_t*)attr)->bitfields.table;
+			table = ((cdecl_t*)attr)->layout.table;
 			break;
 		case TYPEDEF_T:
 			table = get_typedef_table(symbol);
@@ -2268,6 +2299,9 @@ symtab_t get_symbol_table(symtab_t sym_tab, symbol_t symbol) {
 			break;
 		case PARAM_TYPE:
 			table = get_param_table(sym_tab, symbol);
+			break;
+		case SELECT_TYPE:
+			table = get_select_table(sym_tab, symbol);
 			break;
 		default:
 			error("Othe symbol %s(%d)\n", symbol->name, symbol->type);
@@ -3096,6 +3130,11 @@ expr_t* check_bitwise_expr(tree_t* node, symtab_t table, expr_t* expr) {
 		expr->type = type1->common.categ > type2->common.categ ? type1 : type2;
 		return expr;
 	}
+	else if (is_ptr_type(type1) || is_ptr_type(type2)
+		|| is_array_type(type1) || is_array_type(type2)) {
+		new_int_type(expr);
+		return expr;
+	}
 	error("Line: %d, Invalid operands, type1: %d, type2: %d\n",
 		__LINE__, expr->kids[0]->type->common.categ, expr->kids[1]->type->common.categ);
 	return expr;
@@ -3170,7 +3209,13 @@ expr_t* check_shift_expr(tree_t* node, symtab_t table, expr_t* expr) {
 		(is_no_type(type1) || is_no_type(type2))) {
 		expr->type = type1->common.categ > type2->common.categ ? type1 : type2;
 		return expr;
+	} else if (is_ptr_type(type1) || is_ptr_type(type2) ||
+			is_array_type(type1) || is_array_type(type2)) {
+		new_int_type(expr);
+		return expr;
 	} else {
+		printf("array: %d, point: %d, int: %d\n", ARRAY_T, POINTER_T, INT_T);
+		printf("type1: %d, type2: %d\n", type1->common.categ, type2->common.categ);
 		error("Invalid operands line : %d\n", __LINE__);
 	}
 
@@ -3242,7 +3287,7 @@ static int two_type_compatible(cdecl_t* type1, cdecl_t* type2) {
 		return 1;
 	if ((is_ptr_type(type1) && is_int_type(type2)) ||
 		is_ptr_type(type2) && is_int_type(type1)) {
-		warning("conversion between pointer and integer without a cast\n");
+		warning("conversion between pointer and integer without a cast");
 		return 1;
 	}
 	if (is_no_type(type1) || is_no_type(type2))
@@ -3502,7 +3547,8 @@ expr_t* check_unary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 			if (is_int_type(expr->kids[0]->type)) {
 				expr = cal_const_value(expr);
 			}
-			else if (is_array_type(expr->kids[0]->type)){
+			else if (is_array_type(expr->kids[0]->type) ||
+				is_parameter_type(expr->kids[0]->type)){
 				expr->type = expr->kids[0]->type;
 			}
 			else {
@@ -3512,7 +3558,9 @@ expr_t* check_unary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 		case AFT_INC_OP_TYPE:
 		case AFT_DEC_OP_TYPE:
 			expr->kids[0] = check_expr(node->unary.expr, table);
-			if ((is_int_type(expr->kids[0]->type) || is_array_type(expr->kids[0]->type))) {
+			if ((is_int_type(expr->kids[0]->type) ||
+				is_array_type(expr->kids[0]->type) ||
+				is_parameter_type(expr->kids[0]->type))) {
 				expr->type = expr->kids[0]->type;
 			}
 			else {
@@ -3578,6 +3626,10 @@ expr_t* check_const_expr(tree_t* node, expr_t* expr) {
 }
 
 static int dml_obj_type(symbol_t symbol) {
+	if (symbol == NULL) {
+	  int* a = NULL;
+	  *a = 100;
+	}
     assert(symbol != NULL);
 
     int type = symbol->type;
@@ -3619,7 +3671,13 @@ static int find_dml_obj(symtab_t table, const char* name) {
 		}
 		else {
 			symbol = get_symbol_from_root_table(name, 0);
-			obj_type = dml_obj_type(symbol);
+			if (symbol)
+				obj_type = dml_obj_type(symbol);
+			else {
+				symbol = get_symbol_from_banks(name);
+				if(symbol)
+					obj_type = dml_obj_type(symbol);
+			}
 			return obj_type;
 		}
 	}
@@ -3785,6 +3843,7 @@ static cdecl_t* check_attribute_type(symbol_t symbol, expr_t* expr) {
 	assert(symbol != NULL); assert(expr != NULL);
 	attribute_attr_t* attr = (attribute_attr_t*)(symbol->attr);
 	attribute_t* attr_obj = (attribute_t*)(attr->attr_obj);
+	printf("attribute symbol: %s\n", symbol->name);
 	if (attr_obj->alloc_type) {
 		if (attr_obj->alloc == INT_T) {
 			new_int_type(expr);
@@ -3994,28 +4053,44 @@ static int object_array(symbol_t symbol) {
         return 0;
 }
 
+static int data_is_array(symbol_t symbol) {
+	assert(symbol != NULL);
+	int ret_value = 0;
+	cdecl_t* attr = symbol->attr;
+	if (attr->common.categ == ARRAY_T ||
+		attr->common.categ == POINTER_T) {
+		ret_value = 1;
+	} else {
+		ret_value = 0;
+	}
+	return ret_value;
+}
+
 static int check_array_symbol(symtab_t table, symbol_t symbol) {
 	assert(table != NULL); assert(symbol != NULL);
 	void* attr = symbol->attr;
 	switch (symbol->type) {
 		case REGISTER_TYPE:
 			object_is_array(attr, register_attr_t);
-		break;
+			break;
 		case FIELD_TYPE:
 			object_is_array(attr, field_attr_t);
-		break;
+			break;
 		case ATTRIBUTE_TYPE:
 			object_is_array(attr, attribute_attr_t);
-		break;
+			break;
 		case GROUP_TYPE:
 			object_is_array(attr, group_attr_t);
-		break;
+			break;
 		case CONNECT_TYPE:
 			object_is_array(attr, connect_attr_t);
-		break;
+			break;
 		case  ARRAY_T:
 			return 1;
-		break;
+			break;
+		case DATA_TYPE:
+			return data_is_array(symbol);
+			break;
 	        case OBJECT_TYPE:
                         return object_array(symbol);
 		case PARAMETER_TYPE:
@@ -4258,12 +4333,13 @@ void check_func_param(tree_t* node, symtab_t table, signature_t* sig, int param_
 	assert(node != NULL); assert(table != NULL);
 	expr_t* expr = NULL;
 	vector_t* vect = sig->params;
+	int argc = sig->params->len;
 	param_t* param = NULL;
 
 	int i = param_start;
 	while (node) {
 		param = (param_t*)(vect->data[i]);
-		if (param->is_ellipsis) {
+		if ((sig->has_ellipse) && (i >= (argc - 1))) {
 			return;
 		}
 		expr = check_expr(node, table);
@@ -4340,8 +4416,16 @@ expr_t* check_function_expr(tree_t* node, symtab_t table, expr_t* expr) {
 			}
 		}
 	}
-	DEBUG_EXPR("func name: %s, argc: %d, argnum: %d\n", func->type->var_name, argc, arg_num);
-	if (arg_num != argc) {
+	object_t* obj = get_current_obj();
+	if (obj && !strcmp(obj->obj_type, "attribute")) {
+		if ((func->type->common.categ == POINTER_T) &&
+			(argc - arg_num == 1)) {
+			argc -= 1;
+			param_start = 1;
+		}
+	}
+	DEBUG_EXPR("func name: %s, argc: %d, argnum: %d has_ellipse: %d\n", func->type->var_name, argc, arg_num, sig->has_ellipse);
+	if ((arg_num != argc) && (sig->has_ellipse == 0)) {
 		PERRORN("too %s arguments to function", node,
 				(arg_num < argc) ? "few": "many");
 		/* FIXME: handle the error */
@@ -4394,10 +4478,12 @@ expr_t* check_bit_slic_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	expr_t* e1 = check_expr(node->bit_slic.bit, table);
 	expr_t* e2 = node->bit_slic.bit_end ? check_expr(node->bit_slic.bit_end, table) : NULL;
 	if ((!is_int_type(expr->type)) && !is_int_type(e1->type) &&
-			!is_no_type(expr->type) && !is_no_type(e1->type)) {
+			!is_no_type(expr->type) && !is_no_type(e1->type) &&
+			!is_parameter_type(expr->type) && !is_parameter_type(e1->type)) {
 		PERRORN("the bit slicing must be int type", node);
 	}
-	if (e2 && (!is_int_type(e2->type) && !is_no_type(e2->type))) {
+	if (e2 && (!is_int_type(e2->type) && !is_no_type(e2->type) &&
+			is_no_type(e2->type) && !is_parameter_type(e2->type))) {
 		PERRORN("the bit slicing must be int type", node);
 	}
 

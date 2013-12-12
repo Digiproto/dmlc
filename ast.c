@@ -1347,6 +1347,7 @@ void parse_method_block(tree_t* node) {
 	attr->is_parsed = 1;
 	table->no_check = 0;
 	DEBUG_AST("parse method '%s' block, table num: %d----------------------------------------\n", attr->name, table->table_num);
+	printf("parse method '%s' block, table num: %d----------------------------------------\n", attr->name, table->table_num);
 
 	if (block->block.statement == NULL)
 		return;
@@ -2036,12 +2037,25 @@ extern void check_undef_template(symtab_t table);
 void parse_undef_template(const char* name) {
 	assert(name != NULL);
 	symbol_t symbol = get_symbol_from_root_table(name, TEMPLATE_TYPE);
+	printf("name: %s\n", name);
 	template_attr_t* attr = symbol->attr;
 	tree_t* node = attr->common.node;
 	obj_spec_t* spec = node->temp.spec;
 	tree_t* block = spec->node->spec.block;
 	parse_undef_temp_block(block, attr->table);
 	check_undef_template(attr->table);
+
+	return;
+}
+
+void check_template_parsed(const char* name) {
+	assert(name != NULL);
+	symbol_t symbol = get_symbol_from_root_table(name, TEMPLATE_TYPE);
+	template_attr_t* attr = symbol->attr;
+	symtab_t table = attr->table;
+	if (table->is_parsed == 0) {
+		parse_undef_template(name);
+	}
 
 	return;
 }

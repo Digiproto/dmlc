@@ -216,6 +216,28 @@ void printf_ref(ref_ret_t *ref_ret){
 extern object_t* get_device_obj();
 extern symtab_t get_symbol_table(symtab_t sym_tab, symbol_t symbol);
 extern symbol_t get_symbol_from_root_table(const char* name, type_t type);
+static object_t* get_bank_obj(symtab_t table, const char* name) {
+	object_t* obj = NULL;
+	symbol_t sym = NULL;
+	object_t* dev = get_device_obj();
+	struct list_head* head = dev->childs.next;
+	long long head_ptr = (long long)(head);
+	long long childs_ptr = (long long)(&(dev->childs));
+	if (head_ptr != childs_ptr) {
+		obj = (object_t*)(list_entry(head, object_t, entry));
+	} else {
+	/* when a device not have bank, the default_bank is template bank*/
+		obj = gdml_zmalloc(sizeof(object_t));
+		sym = get_symbol_from_root_table("bank", TEMPLATE_TYPE);
+		obj->name = strdup(name);
+		obj->obj_type = strdup("bank");
+		obj->symtab = get_symbol_table(table, sym);
+		check_template_parsed("bank");
+	}
+
+	return obj;
+}
+
 extern symbol_t get_symbol_from_template(symtab_t table, const char* parent_name, const char* name);
 static object_t* get_parameter_obj(symtab_t table, const char* parent_name, const char* name) {
 	assert(table != NULL); assert(name != NULL);
@@ -253,21 +275,7 @@ static object_t* get_parameter_obj(symtab_t table, const char* parent_name, cons
 			error("no object %s symbol found", name);
 		}
 		if (!strcmp(name, "default_bank") || !strcmp(name, "bank")) {
-			object_t* dev = get_device_obj();
-			struct list_head* head = dev->childs.next;
-			long long head_ptr = (long long)(head);
-			long long childs_ptr = (long long)(&(dev->childs));
-			if (head_ptr != childs_ptr) {
-				obj = (object_t*)(list_entry(head, object_t, entry));
-			} else {
-				/* when a device not have bank, the default_bank is template bank*/
-				obj = gdml_zmalloc(sizeof(object_t));
-				sym = get_symbol_from_root_table("bank", TEMPLATE_TYPE);
-				obj->name = strdup(name);
-				obj->obj_type = strdup("bank");
-				obj->symtab = get_symbol_table(table, sym);
-				parse_undef_template("bank");
-			}
+			obj = get_bank_obj(table, name);
 		}
 		else {
 			error("no object %s symbol found", name);

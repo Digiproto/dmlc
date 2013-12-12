@@ -121,24 +121,32 @@ typedef struct expr {
 #define is_parameter_type(type) (type->common.categ == PARAMETER_TYPE)
 
 #define new_int_type(expr) \
-	expr->type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t)); \
-	expr->type->common.categ = INT_T;	\
-	expr->type->common.size = sizeof(int) * 8;
+	do { \
+		expr->type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t)); \
+		expr->type->common.categ = INT_T;	\
+		expr->type->common.size = sizeof(int) * 8; \
+	} while(0)
 
 #define new_long_type(expr) \
-	expr->type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t)); \
-	expr->type->common.categ = LONG_T;	\
-	expr->type->common.size = sizeof(long) * 8;
+	do { \
+		expr->type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t)); \
+		expr->type->common.categ = LONG_T;	\
+		expr->type->common.size = sizeof(long) * 8; \
+	} while(0)
 
 #define new_char_type(expr) \
-	expr->type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t)); \
-	expr->type->common.categ = CHAR_T;	\
-	expr->type->common.size = sizeof(char) * 8;
+	do { \
+		expr->type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t)); \
+		expr->type->common.categ = CHAR_T;	\
+		expr->type->common.size = sizeof(char) * 8; \
+	} while(0)
 
 #define new_doule_type(expr) \
-	expr->type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t)); \
-	expr->type->common.categ = DOUBLE_T;	\
-	expr->type->common.size = sizeof(double) * 8;
+	do { \
+		expr->type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t)); \
+		expr->type->common.categ = DOUBLE_T;	\
+		expr->type->common.size = sizeof(double) * 8; \
+	} while(0)
 
 typedef struct reference {
 	const char* name;
