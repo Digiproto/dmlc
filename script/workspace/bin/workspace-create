@@ -68,6 +68,8 @@ fi
 
 for var in $@
 do
+	dml_var=`echo "$@" | sed -e "s/-/_/g"`
+
 	# create a module in modules directory
 	NEW_DIR=$EXEC_DIR/../modules/$var
 	if [ -f $NEW_DIR -o -d $NEW_DIR ]; then
@@ -78,7 +80,7 @@ do
 		echo "[normal]" create $var Makefile
 		newmakefile "$NEW_DIR"
 		echo "[normal]" create $var sample
-		sed "s/@HELLOWORLD@/$var/g" $EXEC_DIR/def/sample.dml.def > $NEW_DIR/$var.dml
+		sed "s/@HELLOWORLD@/$dml_var/g" $EXEC_DIR/def/sample.dml.def > $NEW_DIR/$var.dml
 		echo "[normal]" create $var test
 		sed -e "s?@SKYEYE_INSTALL_DIR@?$SKYEYE_INSTALL_DIR/lib/skyeye?g" \
 		    -e "s?@QEMU_INSTALL_DIR@?$QEMU_INSTALL_DIR/arm-softmmu?g" \
@@ -97,7 +99,7 @@ do
 		else
 			echo "[normal]" create $var QEMU device
 			mkdir "$QEMU_DEV_DIR"
-			echo "common-obj-y += $var.o" > $QEMU_DEV_DIR/Makefile.objs
+			echo "common-obj-y += $dml_var.o" > $QEMU_DEV_DIR/Makefile.objs
 			echo "[normal]" create $var QEMU Makefile
 			tmp_str=`grep "common-obj-y += $var/" $QEMU_DEV_DIR/../Makefile.objs`
 			if [ -z "$tmp_str" ]; then
