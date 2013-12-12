@@ -23,8 +23,7 @@
 
 #ifndef __OBJECT_MODEL_H__ 
 #define __OBJECT_MODEL_H__
-#include <stdlib.h>
-#include <stdbool.h>
+#include <simics/base_types.h>
 struct conf_class;
 struct conf_object {
 	const struct conf_class *class_data;
@@ -34,4 +33,8 @@ struct conf_object {
 	bool configured;
 };
 
+conf_object_t *pre_conf_object(const char *obj_name, const char *cls_name);
+void conf_object_register(conf_object_t *obj, const char *name);
+void SIM_finalize_object(conf_object_t *obj);
+int SIM_delete_object(conf_object_t *obj);
 #endif /* __OBJECT_MODEL_H__ */
