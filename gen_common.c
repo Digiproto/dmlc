@@ -132,8 +132,9 @@ void translate_quote(tree_t *t) {
 			translate_parameter(sym);
 		} else if(sym && (sym->type == OBJECT_TYPE)){
 			obj = (object_t *)sym->attr;
-			name = get_obj_ref(obj);
-			D("%s", name);
+			//name = get_obj_ref(obj);
+			printf_ref(&ref_ret);
+			//D("%s", name);
 		} else {
 			my_DBG("TODO: sym %p\n", sym);
 		}
@@ -224,7 +225,6 @@ void translate_ref_expr(tree_t *t){
 			D("_DML_M_%s__%s", name, sym->name);
 		}
 	}
-
 }
 
 extern object_t *interface_obj;
@@ -407,7 +407,7 @@ static void translate_call_common(tree_t *expr, tree_t *ret){
 	tree_t *expr_list;
 	symbol_t sym;
 	symbol_t method_sym;
-	const char *name;
+	const char *name = NULL;
 	const char *obj_name;
 	object_t *obj = NULL;
 	tree_t *block = NULL;
@@ -435,7 +435,9 @@ static void translate_call_common(tree_t *expr, tree_t *ret){
 	sym = symbol_find(current_table,"exec",TMP_TYPE);
 	*/
 	sym = flow->exec;
-	name = get_symbol_alias(sym);
+	if(sym) {
+		name = get_symbol_alias(sym);
+	}
 	//POS;
 	if(method_sym && (method_sym->type == METHOD_TYPE)) {
 		obj = (object_t *)method_sym->owner;
@@ -448,8 +450,10 @@ static void translate_call_common(tree_t *expr, tree_t *ret){
 	} else {
 		my_DBG("method not right %p, %d\n", method_sym, method_sym->type);
 	}
-	POS;
-	D("%s = ",name);
+	if(sym) {
+		POS;
+		D("%s = ",name);
+	}
 	obj_name = get_obj_qname(obj);
 	if(!strcmp(obj->obj_type, "device")) {
 		D("_DML_M_%s", method_sym->name);	
@@ -464,7 +468,6 @@ static void translate_call_common(tree_t *expr, tree_t *ret){
            D(", ");
            translate(ref_ret.index);
        }
-
 	}
     if(expr->common.type == EXPR_BRACK_TYPE) {
 		expr_list = expr->expr_brack.expr_in_brack;
@@ -508,6 +511,7 @@ void translate_after_call(tree_t *t) {
 	tree_t *node = t;
 	tree_t *call = node->after_call.call_expr;
 	/*TODO just ignore timing info */
+	
 	translate_call_common(call, NULL);
 }
 
@@ -693,7 +697,6 @@ void translate_local(tree_t *t) {
 	}
 	node = t->local_tree.cdecl;
 	name = get_cdecl_name(node);
-	printf("local var name %s\n", name);
 	char buf[0x100];
 	//symbol_t sym = symbol_find_notype(current_table, name);
 	//type = (cdecl_t *)sym->attr;
@@ -1077,7 +1080,7 @@ void translate_foreach(tree_t *t) {
 				POS;
 				D("int _idx%d;\n", j);
 				POS;
-				D("UNUSED(_idx%d)\n", j);
+				D("UNUSED(_idx%d);\n", j);
 				j++;
 			}
 			j = 0;
