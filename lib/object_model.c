@@ -25,7 +25,7 @@
 #include <simics/core/object_model.h>
 #include <simics/core/object_class.h>
 
-conf_object_t *SIM_new_object(const conf_class_t *cls, const char *name) {
+static conf_object_t *SIM_new_object(const conf_class_t *cls, const char *name) {
 	conf_object_t *tmp = NULL;
 
 	if(cls->cls_data->new_instance) {
@@ -37,6 +37,10 @@ conf_object_t *SIM_new_object(const conf_class_t *cls, const char *name) {
 }
 
 void VT_object_constructor(conf_object_t *obj, const char *name) {
+}
+
+void conf_object_register(conf_object_t *obj, const char *name) {
+	/*add object info hash table*/
 }
 
 conf_object_t *pre_conf_object(const char *obj_name, const char *cls_name) {
