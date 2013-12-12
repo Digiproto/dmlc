@@ -660,6 +660,7 @@ static void field_realize(object_t *obj) {
 		fld->high = expr->int_cst.value;
 		if(fld->is_fixed) {
 			fld->len = 1;
+			fld->low = fld->high;
 		} else {
 			expr = bitrange->array.expr_end;
 			fld->low = expr->int_cst.value;
@@ -1716,8 +1717,9 @@ void add_object_method(object_t *obj,const char *name){
 
 	list_for_each(p,&obj->method_generated){
 		m = list_entry(p,struct method_name,entry);
-		if(!strcmp(m->name,name))
+		if(!strcmp(m->name,name)) {
 			return;
+		}
 	}
 
 	list_for_each(p,&obj->methods){
@@ -1730,8 +1732,9 @@ void add_object_method(object_t *obj,const char *name){
 	INIT_LIST_HEAD(&m->entry);
 	BE_DBG(OBJ, "add object %s, name, %s\n", obj->name, name);
 	sym = object_symbol_find(obj->symtab, name, METHOD_TYPE);
-	if(!sym)
+	if(!sym) {
 		BE_DBG(OBJ, "object %s has no method %s\n",obj->name, name);
+	}
 	else {
 		attr = sym->attr;	
 		m->method = attr->common.node;	
