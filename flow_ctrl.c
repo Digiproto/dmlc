@@ -47,6 +47,13 @@ static int handle_inline_case(tree_t *t, type_t type) {
 	return ret;
 }
 
+static int handle_after_call_case(tree_t *t, type_t type) {
+	if(type == CALL_TYPE || type == THROW_TYPE) {
+		return 1;
+	}
+	return 0;
+}
+
 static int handle_try_catch(tree_t *t, type_t type) {
     int ret; 
 
@@ -132,7 +139,12 @@ static int block_has_node_type(tree_t *t, type_t node_type) {
                     if(ret) {
                         break;
                     }
-                }
+                } else if(type == AFTER_CALL_TYPE) {
+					ret = handle_after_call_case(it, node_type);
+					if(ret) {
+						break;
+					}
+				}
                 it = it->common.sibling;
             }
     }
