@@ -27,7 +27,7 @@
 
 typedef struct bank_access {
 	exception_type_t (*read)(conf_object_t *obj, physical_address_t addr, void *buf, size_t size);
-	exception_type_t (*write)(conf_object_t *obj, physical_address_t addr, void *buf, size_t size);
+	exception_type_t (*write)(conf_object_t *obj, physical_address_t addr, const void *buf, size_t size);
 } bank_access_t;
 
 struct bank_access_description {
