@@ -238,14 +238,14 @@ void translate_expr_brack_direct(tree_t *t) {
 				if(tmp->is_array) {
 						D("[_idx0]");
 				}
-				D(".%s.obj", ref_ret.iface->name);
+				D(".obj", ref_ret.iface->name);
 			} else {
 				printf_ref(&ref_ret);
 				D(".%s->%s",ref_ret.iface->name, ref_ret.method);
 				D("(");
 				//ref_name = get_obj_ref(tmp);
 				printf_ref(&ref_ret);
-				D(".%s.obj",ref_ret.iface->name);
+				D(".obj",ref_ret.iface->name);
 			}
 			node = t->expr_brack.expr_in_brack;
 			if(node) {
@@ -312,10 +312,12 @@ void translate_bit_slice2(tree_t *t) {
 
 	expr = t->bit_slic.expr;
 	index = t->bit_slic.bit;
-	translate(expr);
-	D("[");
-	translate(index);
-	D("]");
+	if(!t->bit_slic.endian) {
+		translate(expr);
+		D("[");
+		translate(index);
+		D("]");
+	}
 }
 
 void translate_bit_slic_assign(tree_t *t) {
