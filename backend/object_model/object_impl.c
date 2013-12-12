@@ -42,7 +42,7 @@ static void gen_headerfile(device_t *dev, FILE *f) {
 	fprintf(f, "\n");
     fprintf(f, "#include \"%s.h\"\n", name);
     fprintf(f, "#include \"%s_protos.c\"\n", name);
-	fprintf(f, "\nstatic void %s_pre_delete_instance(conf_object_t *obj);\n");
+	fprintf(f, "\nstatic void %s_pre_delete_instance(conf_object_t *obj);\n", name);
 	fprintf(f, "");
 }
 
@@ -54,7 +54,7 @@ static void gen_bank_read_access(object_t *obj, FILE *f) {
 	const char *name = obj->name;
 	const char *dev_name = DEV->name;
 
-	fprintf(f, "\nstatic exception_t\n");
+	fprintf(f, "\nstatic exception_type_t\n");
 	fprintf(f, "%s_read(conf_object_t *obj, physical_address_t addr, void *buf, size_t count) {\n", name);
 	F_HEAD;
 	fprintf(f, "\t%s_t *_dev = (%s_t *)obj;\n", dev_name, dev_name);
@@ -77,7 +77,7 @@ static void gen_bank_write_access(object_t *obj, FILE *f) {
 	const char *name = obj->name;
 	const char *dev_name = DEV->name;
 
-	fprintf(f, "\nstatic exception_t\n");
+	fprintf(f, "\nstatic exception_type_t\n");
 	fprintf(f, "%s_write(conf_object_t *obj, physical_address_t addr, const void *buf, size_t count) {\n", name);
 	F_HEAD;
 	fprintf(f, "\t%s_t *_dev = (%s_t *)obj;\n", dev_name, dev_name);
@@ -118,7 +118,7 @@ static void gen_bank_access_iface(object_t *obj, FILE *f) {
 	fprintf(f, "\nstatic const bank_access_t %s_access = {\n", name);
 	fprintf(f, "\t.read = &%s_read,\n", name);
 	fprintf(f, "\t.write = &%s_write,\n", name);
-	fprintf(f, "}\n");
+	fprintf(f, "};\n");
 }
 
 static void gen_bank_access_descriptor(device_t *dev, FILE *f) {
@@ -134,7 +134,7 @@ static void gen_bank_access_descriptor(device_t *dev, FILE *f) {
 		fprintf(f, "\t},\n");
     }	
 	fprintf(f, "\t[%d] = {}\n", i);
-	fprintf(f, "}\n");
+	fprintf(f, "};\n");
 }
 
 static void gen_bank_access_info(device_t *dev, FILE *f) {
@@ -164,7 +164,7 @@ void gen_device_constructor(device_t *dev, FILE *f) {
     add_object_method(&dev->obj, "init");
 	add_object_method(&dev->obj, "post_init");
     fprintf(f, "\nstatic conf_object_t  *%s_new_instance(const char *name) {\n", dev_name);
-    fprintf(f, "\t%s_t *_dev = MM_ZALLOC(sizeof(*_dev));\n", dev_name);
+    fprintf(f, "\t%s_t *_dev = (%s_t *)MM_ZALLOC(sizeof(*_dev));\n", dev_name, dev_name);
 	fprintf(f, "\tconf_object_register(&_dev->obj, name);\n");
     fprintf(f, "\tbool v%d_exec = 0;\n", index);
     fprintf(f, "\tUNUSED(v%d_exec);\n", index);
@@ -179,12 +179,12 @@ static void gen_device_destructor(device_t *dev, FILE *f) {
 	const char *name = dev->obj.name;
 
 	fprintf(f, "\nstatic void %s_finalize_instance(conf_object_t *obj) {\n", name);
-	fprintf(f, "\t%s_t _dev = (%s_t *)obj;\n", name, name);
+	fprintf(f, "\t%s_t *_dev = (%s_t *)obj;\n", name, name);
 	fprintf(f, "\tUNUSED(_dev);\n");
 	fprintf(f, "\treturn;\n");
 	fprintf(f, "}\n");
 
-	fprintf(f, "\nstatic int %s_delete(conf_object_t *obj) {\n", name);
+	fprintf(f, "\nstatic int %s_delete_instance(conf_object_t *obj) {\n", name);
 	fprintf(f, "\tMM_FREE(obj);\n");
 	fprintf(f, "\treturn 0;\n");
 	fprintf(f, "}\n");
@@ -235,10 +235,14 @@ static void gen_device_resources(device_t *dev, FILE *f) {
 	gen_device_connect(dev, f);	
 	gen_device_implement(dev, f);
 	fprintf(f, "\nstatic const class_resource_t %s_resources = {\n", name);
-	fprintf(f, "\t.ifaces = &%s_ifaces,\n", name);
-	fprintf(f, "\t.connects = &%s_connects,\n", name);
-	fprintf(f, "\t.ports = &%s_ports,\n", name);
-	fprintf(f, "}\n");
+	fprintf(f, "\t.ifaces = %s_ifaces,\n", name);
+	fprintf(f, "\t.connects = %s_connects,\n", name);
+	if(!list_empty(&dev->ports)) {
+		fprintf(f, "\t.ports = %s_ports,\n", name);
+	} else {
+		fprintf(f, "\t.ports = NULL,\n");
+	}
+	fprintf(f, "};\n");
 }
 
 static void gen_device_class_data(device_t *dev, FILE *f) {
@@ -246,14 +250,14 @@ static void gen_device_class_data(device_t *dev, FILE *f) {
 
 	gen_device_resources(dev, f);
 	gen_bank_access_info(dev, f);
-	fprintf(f, "\nstatic class_data_t %s_class_data = {\n", name);
+	fprintf(f, "\nstatic const class_data_t %s_class_data = {\n", name);
 	fprintf(f, "\t.new_instance = %s_new_instance,\n", name);
 	fprintf(f, "\t.finalize_instance = %s_finalize_instance,\n", name);
 	fprintf(f, "\t.pre_delete_instance = %s_pre_delete_instance,\n", name);
 	fprintf(f, "\t.delete_instance = %s_delete_instance,\n", name);
 	fprintf(f, "\t.resources = &%s_resources,\n", name);
-	fprintf(f, "\t.bank_access = &%s_bank_access,\n", name);
-	fprintf(f, "}\n");
+	fprintf(f, "\t.bank_access = %s_bank_access,\n", name);
+	fprintf(f, "};\n");
 }
 
 void gen_device_type_info(device_t *dev, FILE *f) {
@@ -281,7 +285,7 @@ void gen_pre_delete(device_t *dev, FILE *f) {
 
 	name = dev->obj.name;
 	fprintf(f, "\nstatic void\n");
-	fprintf(f, "%s_pre_delete(conf_object_t *obj){\n", name);
+	fprintf(f, "%s_pre_delete_instance(conf_object_t *obj){\n", name);
 	fprintf(f, "\treturn ;\n");
 	fprintf(f, "}\n");
 }
