@@ -134,6 +134,7 @@ void printf_ref(ref_ret_t *ref_ret){
 	object_t *obj = NULL;
 	struct list_head *head;
 	const char *alias = NULL;
+	char *tmp_str = NULL;
 	object_t *con = NULL;
 
 	if(ref_ret->con) {
@@ -169,6 +170,17 @@ void printf_ref(ref_ret_t *ref_ret){
 					if(ref_ret->is_obj) {
 							obj = (object_t *)sym->attr;
 							alias = get_obj_ref(obj);
+							if(obj->is_array) {
+								int len = 0;
+								tmp_str = strrchr(alias, '[');	
+								if(tmp_str) {
+									len = tmp_str - alias;
+								}
+								tmp_str = gdml_zmalloc(len + 1);
+								memcpy(tmp_str, alias, len);
+								tmp_str[len] = '\0';	
+								alias = tmp_str;
+							}
 					} else {
 							alias = get_symbol_alias(sym);
 					}
@@ -194,6 +206,9 @@ void printf_ref(ref_ret_t *ref_ret){
 					goto normal_case;
 			}
 		}
+	}
+	if(tmp_str){
+		free(tmp_str);
 	}
 }
 

@@ -44,7 +44,7 @@ static void gen_object_headfile(device_t *dev, FILE *f) {
 #if backend != 3
     fprintf(f, "#include \"%s/base_types.h\"\n", headfile_dir);
     fprintf(f, "#include \"%s/generic_transaction.h\"\n", headfile_dir);
-	fprintf(f, "#include \"%s/dev_iface.h\"", headfile_dir);
+	fprintf(f, "#include \"%s/dev_iface.h\"\n", headfile_dir);
 #else 
     fprintf(f, "#include <%s/base_types.h>\n", headfile_dir);
 	fprintf(f, "#include <%s/core/object_model.h>\n", headfile_dir);
