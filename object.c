@@ -782,7 +782,7 @@ static void register_realize(object_t *obj) {
 		if(!arraydef->fix_array) {
 			reg->array_size = arraydef->high - arraydef->low + 1;
 		} else {
-			reg->array_size = arraydef->fix_array;
+			reg->array_size = arraydef->high;
 			/*default index*/
 		}
 		obj->array_size = reg->array_size;

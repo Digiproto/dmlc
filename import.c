@@ -110,7 +110,7 @@ int link_dir_filename(char* buf, size_t n, const char* dir, const char* filename
 static const char* get_library_dir(const char *dir_r)
 {
 	int len;
-	char tmp[DIR_MAX_LEN];
+	char tmp[DIR_MAX_LEN] = {0};
 
 	/* if exe is on windows, dir is like "d:\mingw\msys\1.0\usr\bin\dmlc" */
 #ifdef _WIN32
