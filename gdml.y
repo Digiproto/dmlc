@@ -1886,8 +1886,12 @@ layout
 
 layout_decls
 	:layout_decls cdecl ';' {
-		create_node_list($1, $2);
-		$$ = $1;
+		if ($1 != NULL) {
+			create_node_list($1, $2);
+			$$ = $1;
+		} else {
+			$$ = $2;
+		}
 	}
 	|  {
 		$$ = NULL;

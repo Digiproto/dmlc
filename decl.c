@@ -1682,8 +1682,6 @@ static cdecl_t* parse_layout(tree_t* node, symtab_t table) {
 			type->layout.elem = add_element(type->layout.elem, elem);
 		}
 		elem_node = elem_node->common.sibling;
-		printf("In %s, line = %d, parse the layout elements\n", __func__, __LINE__);
-		exit(-1);
 	}
 
 	return type;
@@ -2017,12 +2015,14 @@ static signature_t* parse_function_param(tree_t* node, symtab_t table) {
 		}
 		tree_t* basetype = tmp->cdecl.basetype;
 		int type = basetype->common.type;
+#if 0
 		/* in function parameter, can not be allowed to defined new record type */
 		if((type == STRUCT_TYPE || type == LAYOUT_TYPE || type == BITFIELDS_TYPE)) {
 			free(param);
 			error("the function parameter type define '%s'\n", node->common.name);
 			break;
 		}
+#endif
 		ty = parse_cdecl(tmp, table);
 		param->id = ty->var_name;
 		param->ty = ty;
