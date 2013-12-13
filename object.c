@@ -554,8 +554,10 @@ static object_type_t type2obj_type(type_t type) {
 
 static void create_objs(object_t *obj, type_t type) {
 	symtab_t table = obj->symtab->sibling;
-    symbol_list_t *list = NULL;
-    symbol_list_t *head = list;
+	if (table)
+		check_undef_template(table);
+	symbol_list_t *list = symbol_list_find_type(table, type);
+	symbol_list_t *head = list;
 	object_type_t obj_type;
 	
 	if(table) {
@@ -1144,7 +1146,8 @@ static void port_realize(object_t *obj) {
 	int i = 0;
 	dml_port_t *port = (dml_port_t *)obj;
 
-	list_for_each(p, &port->implements) {
+	add_object_templates(obj, obj->node->port.templates);
+	list_for_each(p, &obj->childs) {
 		i++;
 	}
 	port = (dml_port_t *)obj;
@@ -1432,12 +1435,19 @@ struct template_def *create_template_def(tree_t *t){
 }
 */
 
+#define not_port_data_obj(obj) \
+	strcmp(obj->obj_type, "port") && \
+	strcmp(obj->obj_type, "data")
+
 static void obj_templates_list(object_t* obj, const char* name) {
 	assert(obj != NULL);
 	assert(name != NULL);
 	struct template_table* templates = NULL;
 	symtab_t table = obj->symtab->sibling;
 
+	if (not_port_data_obj(obj)) {
+		create_template_name(obj, obj->obj_type);
+	}
 	create_template_name(obj, obj->obj_type);
 	if (table) {
 		templates = table->template_table;
@@ -1453,12 +1463,11 @@ static void obj_templates_list(object_t* obj, const char* name) {
 static void add_default_template(object_t *obj){
 	symtab_t table;	
 
-	create_template_name(obj, obj->obj_type);
 	table = obj->symtab->sibling;
 	if(table) {
 		BE_DBG(OBJ, "add default template %s\n", obj->obj_type);
-		check_undef_template(table);
-		add_template_to_table(table, obj->obj_type, 0);
+		if (not_port_data_obj(obj))
+			add_template_to_table(table, obj->obj_type, 1);
 	}
 	obj_templates_list(obj, obj->obj_type);
 }

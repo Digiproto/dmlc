@@ -389,6 +389,7 @@ normal_case:
 				}
                                 symtab = obj->symtab;
                                 my_DBG("object name %s, name %s\n", obj->name, name2);
+                                printf("object name %s, name: %s name2 %s, symtab: 0x%x\n", obj->name, name, name2, symtab->table_num);
 								if(!strcmp(obj->obj_type, "interface")) {
 									obj2 = obj;
 									ret->con = NULL;
@@ -401,7 +402,7 @@ normal_case:
 								}
                                 sym = symbol_find_notype(symtab, name2);
                                 if(sym){
-										my_DBG("sym type %d, interface type %d\n", sym->type, INTERFACE_TYPE);
+					my_DBG("sym type %d, interface type %d\n", sym->type, INTERFACE_TYPE);
                                         /*may be interface function need */
                                         if(sym->type == OBJECT_TYPE) {
                                                 obj2 = (object_t *)sym->attr;
@@ -412,15 +413,15 @@ normal_case:
                                                         node = t->component.ident;
                                                         name = node->ident.str;
                                                         ret->method = name;
-														ret->index = index;
-														has_interface = 1;
+							ret->index = index;
+							has_interface = 1;
                                                         break;
                                                 }
                                         }
                                 }
                         }
                         p = ni_next->entry.next;
-						fore_name = name;
+			fore_name = name;
                 } else if (ni_next->index) {
 					/*skip index*/
 					while(ni_next->index) {

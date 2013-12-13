@@ -2174,8 +2174,6 @@ void check_undef_template(symtab_t table) {
 	}
 	undef_template_t* temp = table->undef_temp;
 	while (temp) {
-		parse_undef_template(temp->name);
-		printf("check undef template %s\n", temp->name);
 		add_template_to_table(table, temp->name, 1);
 		temp = temp->next;
 	}
