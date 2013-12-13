@@ -15,7 +15,7 @@ import "simics/util/dbuffer.dml";
 import "simics/pywrap.dml";
 
 typedef struct { void (*record)(conf_object_t *obj, conf_object_t *sender, bytes_t data); int (*playback)(conf_object_t *obj); } recorder_v2_interface_t;
-typedef void (*recorder_input_handler_t)(conf_object_t *obj, dbuffer_t *data, uint32 uint_data);
-typedef struct { } recorder_t;
-typedef struct { recorder_t *(*attach)(conf_object_t *rec, conf_object_t *obj, recorder_input_handler_t input_from_recorder); void (*detach)(conf_object_t *rec, recorder_t *r); void (*input)(conf_object_t *rec, recorder_t *r, dbuffer_t *data, uint32 uint_data); int (*playback)(conf_object_t *rec); } recorder_interface_t;
+//typedef void (*recorder_input_handler_t)(conf_object_t *obj, dbuffer_t *data, uint32 uint_data);
+//typedef struct { } recorder_t;
+//typedef struct { recorder_t *(*attach)(conf_object_t *rec, conf_object_t *obj, recorder_input_handler_t input_from_recorder); void (*detach)(conf_object_t *rec, recorder_t *r); void (*input)(conf_object_t *rec, recorder_t *r, dbuffer_t *data, uint32 uint_data); int (*playback)(conf_object_t *rec); } recorder_interface_t;
 typedef struct { void (*input)(conf_object_t *obj, bytes_t data, int playback); } recorded_interface_t;
