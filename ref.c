@@ -319,7 +319,7 @@ symbol_t get_ref_sym(tree_t *t, ref_ret_t *ret, symtab_t table){
         if(p){
                 ni = list_entry(p, node_info_t, entry);
                 node = ni->node;
-				//printf("node name: %s\n", node->common.name);
+		//printf("node name: %s\n", node->common.name);
                 if(node->common.type == IDENT_TYPE){
                         ref_obj = 0;
                         name = node->ident.str;
@@ -389,7 +389,7 @@ normal_case:
 				}
                                 symtab = obj->symtab;
                                 my_DBG("object name %s, name %s\n", obj->name, name2);
-                                printf("object name %s, name: %s name2 %s, symtab: 0x%x\n", obj->name, name, name2, symtab->table_num);
+                                printf("object name %s,  name: %s name2 %s, symtab: 0x%x\n", obj->name, name, name2, symtab->table_num);
 								if(!strcmp(obj->obj_type, "interface")) {
 									obj2 = obj;
 									ret->con = NULL;
@@ -419,6 +419,9 @@ normal_case:
                                                 }
                                         }
                                 }
+				else {
+					printf("symbol '%s' not find\n", name2);
+				}
                         }
                         p = ni_next->entry.next;
 			fore_name = name;

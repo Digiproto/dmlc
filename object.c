@@ -1164,6 +1164,7 @@ static void port_realize(object_t *obj) {
 	port->impls = (object_t **)gdml_zmalloc(sizeof(*port->impls) * i);
 	parse_port(obj->node, obj->symtab->sibling);
 	process_object_names(obj);
+	parse_port(obj->node, obj->symtab->sibling);
 	i = 0;
 	list_for_each(p, &port->implements) {
 		tmp = list_entry(p, object_t, entry);
@@ -1182,6 +1183,10 @@ static void port_realize(object_t *obj) {
 	list_for_each(p, &port->connects) {
 		tmp = list_entry(p, object_t, entry);
 		connect_realize(tmp);
+	}
+	list_for_each(p, &port->implements) {
+		tmp = list_entry(p, object_t, entry);
+		implement_realize(tmp);
 	}
 }
 
