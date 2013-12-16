@@ -7,14 +7,14 @@ sys.path.append("../../bin/library")
 from libtest_framework import *
 os_info = platform.system()
 
-lib_path_skyeye = r"@SKYEYE_INSTALL_DIR@"
+lib_path_skyeye = r"@SYSTEMC_INSTALL_DIR@"
 lib_path_qemu   = r"@QEMU_INSTALL_DIR@"
 if os_info == "Linux":
 	lib_suffix = ".so"
 else:
 	lib_suffix = ".dll"
 
-def skyeye_demo():
+def systemc_demo():
 	tmp = skyeye(lib_path_skyeye, lib_suffix)
 	tmp.test_init()
 	"""
@@ -51,7 +51,7 @@ def qemu_demo():
 # only for test
 if __name__ == '__main__':
 	"""
-	if you don't have skyeye or qemu, please comment it
+	if you don't have systemc or qemu, please comment it
 	"""
-	# skyeye_demo()
+	# systemc_demo()
 	qemu_demo()

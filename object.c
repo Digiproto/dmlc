@@ -891,7 +891,6 @@ static void attribute_realize(object_t *obj);
 static void implement_realize(object_t* obj);
 static void bank_realize(object_t *obj) {
 	bank_t *bank = (bank_t *)obj;
-	bank_attr_t *attr = obj->node->common.attr;
 	symbol_t sym;
 	int reg_size;
 	object_t *tmp;
@@ -919,6 +918,7 @@ static void bank_realize(object_t *obj) {
 
 	add_object_templates(obj);
 	if (obj->node == NULL) return;
+	bank_attr_t *attr = obj->node->common.attr;
 	/* parse the symbols, parameters and check expressions
 	 * that in the bank table */
 	parse_bank(obj->node, obj->symtab->sibling);

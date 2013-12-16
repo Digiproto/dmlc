@@ -39,12 +39,12 @@ do
 		echo "[warning]" \"$var\" is not exist in QEMU
 	fi
 
-	# clean the {workspace}/targets/skyeye/ directory
-	SKYEYE_DEV_DIR=$EXEC_DIR/../targets/skyeye/$var
-	if [ -f $SKYEYE_DEV_DIR -o -d $SKYEYE_DEV_DIR ]; then
-		echo "[normal]" remove $var Skyeye device
-		rm -rf "$SKYEYE_DEV_DIR"
+	# clean the {workspace}/targets/systemc/ directory
+	SYSTEMC_DEV_DIR=$EXEC_DIR/../targets/systemc/$var
+	if [ -f $SYSTEMC_DEV_DIR -o -d $SYSTEMC_DEV_DIR ]; then
+		echo "[normal]" remove $var SystemC device
+		rm -rf "$SYSTEMC_DEV_DIR"
 	else
-		echo "[warning]" \"$var\" is not exist in Skyeye
+		echo "[warning]" \"$var\" is not exist in SystemC
 	fi
 done

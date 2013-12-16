@@ -1,7 +1,7 @@
 # The file is automatically created, don't edit it.
 # The file.def is created by eJim Lee (lyjforjob@gmail.com)
-SKYEYE_DIR = @SKYEYE_DIR@
-SKYEYE_INSTALL_DIR = @SKYEYE_INSTALL_DIR@
+SYSTEMC_DIR = @SYSTEMC_DIR@
+SYSTEMC_INSTALL_DIR = @SYSTEMC_INSTALL_DIR@
 
 CFLAGS := -Wall -fPIC
 LDFLAGS := -shared
@@ -18,11 +18,11 @@ libname := lib$(OBJ_NAME).dll
 #LIBRARY_DIR = -L../../../bin/library
 #LIBRARY = -lcommon
 endif
-LIBRARY_DIR = $(SKYEYE_INSTALL_DIR)/lib/skyeye
-LIBRARY = -lcommon
-INCLUDES := -I$(SKYEYE_DIR)/common/include/
+LIBRARY_DIR = -L$(SYSTEMC_DIR)/lib/
+LIBRARY = -ldml_common
+INCLUDES := -I$(SYSTEMC_DIR)/include/
 
-$(libname): $(OBJ_NAME).o $(OBJ_NAME)_module.o
+$(libname): $(OBJ_NAME).o
 	@echo [LD] $@
 	@$(CC) $(LDFLAGS) -o $(libname) $^ $(LIBRARY) $(LIBRARY_DIR)
 

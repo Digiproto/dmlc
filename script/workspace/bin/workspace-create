@@ -10,26 +10,15 @@ EXEC_DIR=`dirname $0`
 # function (dash undefined the keyword)
 # newmakefile [path]
 newmakefile() {
-#	IFS_TMP=$IFS
-#	IFS=
 	echo "# The Makefile is created automatically, don't edit it" \
 	> $1/Makefile.tmp
 
-#	while read -r line
-#	do
-#		echo "$line" | sed "s?@QEMU_DIR@?$QEMU_DIR?g" \
-#		| sed "s?@SKYEYE_DIR@?$SKYEYE_DIR?g" \
-#		| sed "s?@QEMU_CONF_FLAGS@?$QEMU_CONF_FLAGS?g" \
-#		| sed "s?@SKYEYE_CONF_FLAGS@?$SKYEYE_CONF_FLAGS?g" \
-#		| sed "s?@DMLC@?$DMLC?g" \
-#		>> $1/Makefile
-#	done < "$MAKEFILE_DEF" 
 	sed -e "s?@QEMU_DIR@?$QEMU_DIR?g" \
 		-e "s?@QEMU_INSTALL_DIR@?$QEMU_INSTALL_DIR?g" \
-		-e "s?@SKYEYE_DIR@?$SKYEYE_DIR?g" \
-		-e "s?@SKYEYE_INSTALL_DIR@?$SKYEYE_INSTALL_DIR?g" \
+		-e "s?@SYSTEMC_DIR@?$SYSTEMC_DIR?g" \
+		-e "s?@SYSTEMC_INSTALL_DIR@?$SYSTEMC_INSTALL_DIR?g" \
 		-e "s?@QEMU_CONF_FLAGS@?$QEMU_CONF_FLAGS?g" \
-		-e "s?@SKYEYE_CONF_FLAGS@?$SKYEYE_CONF_FLAGS?g" \
+		-e "s?@SYSTEMC_CONF_FLAGS@?$SYSTEMC_CONF_FLAGS?g" \
 		-e "s?@DMLC@?$DMLC?g" \
 		-e "s?@PYTHON@?$PYTHON?g" \
 		"$EXEC_DIR/def/Makefile.def" \
@@ -38,25 +27,24 @@ newmakefile() {
 	if [ -z "$QEMU_BUILD" ]; then
 		sed -e "/@FOR_ALL@/d" \
 			-e "/@FOR_QEMU@/d" \
-			-e "s/@FOR_SKYEYE@//g" \
+			-e "s/@FOR_SYSTEMC@//g" \
 			"$1/Makefile.tmp" \
 			> "$1/Makefile"
-	elif [ -z "$SKYEYE_BUILD" ]; then
+	elif [ -z "$SYSTEMC_BUILD" ]; then
 		sed -e "/@FOR_ALL@/d" \
-			-e "/@FOR_SKYEYE@/d" \
+			-e "/@FOR_SYSTEMC@/d" \
 			-e "s/@FOR_QEMU@//g" \
 			"$1/Makefile.tmp" \
 			> "$1/Makefile"
 	else
 		sed -e "s/@FOR_ALL@//g" \
 			-e "s/@FOR_QEMU@//g" \
-			-e "s/@FOR_SKYEYE@//g" \
+			-e "s/@FOR_SYSTEMC@//g" \
 			"$1/Makefile.tmp" \
 			> "$1/Makefile"
 	fi
 	rm "$1/Makefile.tmp"
 
-#	IFS=$IFS_TMP
 }
 
 if [ -z "$*" ]; then
@@ -82,11 +70,12 @@ do
 		echo "[normal]" create $var sample
 		sed "s/@HELLOWORLD@/$dml_var/g" $EXEC_DIR/def/sample.dml.def > $NEW_DIR/$var.dml
 		echo "[normal]" create $var test
-		sed -e "s?@SKYEYE_INSTALL_DIR@?$SKYEYE_INSTALL_DIR/lib/skyeye?g" \
-		    -e "s?@QEMU_INSTALL_DIR@?$QEMU_INSTALL_DIR/arm-softmmu?g" \
+		sed -e "s?@SYSTEMC_INSTALL_DIR@?$SYSTEMC_INSTALL_DIR?g" \
+		    -e "s?@QEMU_INSTALL_DIR@?$QEMU_INSTALL_DIR?g" \
 		    $EXEC_DIR/def/test.py.def \
 		    > $NEW_DIR/test.py
-#		cp $EXEC_DIR/def/skyeye.conf.def $NEW_DIR/skyeye.conf
+		# systemc use skyeye core
+		cp $EXEC_DIR/def/skyeye.conf.def $NEW_DIR/skyeye.conf
 		cp $EXEC_DIR/def/qemu.conf.def $NEW_DIR/qemu.conf
 		cp $EXEC_DIR/def/device.conf.def $NEW_DIR/device.conf
 	fi
@@ -108,20 +97,21 @@ do
 		fi
 	fi
 
-	# create a device in {workspace}/targets/skyeye/ directory
-#	if ! [ -z "$SKYEYE_BUILD" ]; then
-#		SKYEYE_DEV_DIR=$EXEC_DIR/../targets/skyeye/$var
-#		if [ -f $SKYEYE_DEV_DIR -o -d $SKYEYE_DEV_DIR ]; then
-#			echo "[ error]" $var have been exist in Skyeye
-#		else
-#			echo "[normal]" create $var Skyeye device
-#			mkdir "$SKYEYE_DEV_DIR"
-#			echo "[normal]" create $var Skyeye Makefile
-#			if ! [ -f "$SKYEYE_DEV_DIR/Makefile" ]; then
-#				sed -e "s?@SKYEYE_DIR@?$SKYEYE_DIR?g" \
-#					$EXEC_DIR/def/Makefile_for_skyeye.def \
-#					> $SKYEYE_DEV_DIR/Makefile
-#			fi
-#		fi
-#	fi
+	# create a device in {workspace}/targets/systemc/ directory
+	if ! [ -z "$SYSTEMC_BUILD" ]; then
+		SYSTEMC_DEV_DIR=$EXEC_DIR/../targets/systemc/$var
+		if [ -f $SYSTEMC_DEV_DIR -o -d $SYSTEMC_DEV_DIR ]; then
+			echo "[ error]" $var have been exist in Skyeye
+		else
+			echo "[normal]" create $var SystemC device
+			mkdir "$SYSTEMC_DEV_DIR"
+			echo "[normal]" create $var SystemC Makefile
+			if ! [ -f "$SYSTEMC_DEV_DIR/Makefile" ]; then
+				sed -e "s?@SYSTEMC_DIR@?$SYSTEMC_DIR?g" \
+					-e "s?@SYSTEMC_INSTALL_DIR@?$SYSTEMC_INSTALL_DIR?g" \
+					$EXEC_DIR/def/Makefile_for_systemc.def \
+					> $SYSTEMC_DEV_DIR/Makefile
+			fi
+		fi
+	fi
 done

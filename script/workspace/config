@@ -4,12 +4,12 @@
 
 QEMU_DIR=$HOME/qemu/qemu
 QEMU_INSTALL_DIR=$HOME/qemu/qemu
-SKYEYE_DIR=$HOME/skyeye_src/code
-SKYEYE_INSTALL_DIR=/opt/skyeye
+SYSTEMC_DIR=/opt/dml_all
+SYSTEMC_INSTALL_DIR=/opt/dml_all
 QEMU_CONF_FLAGS="--target-list=arm-softmmu --enable-dml"
-SKYEYE_CONF_FLAGS=""
+SYSTEMC_CONF_FLAGS=""
 DMLC=dmlc
 PYTHON=python
 
 QEMU_BUILD=yes
-SKYEYE_BUILD=yes
+SYSTEMC_BUILD=yes
