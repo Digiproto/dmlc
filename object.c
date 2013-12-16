@@ -636,12 +636,14 @@ void create_template_name(object_t *obj, const char *name) {
 	}
 }
 
+extern void set_current_obj(object_t* obj);
 static void field_realize(object_t *obj) {
 	field_t *fld = (field_t *)obj;
 	tree_t *bitrange;
 	tree_t *expr;
 	tree_t *templates = (obj->node) ? obj->node->field.templates : NULL;
 
+	set_current_obj(obj);
 	add_object_templates(obj, templates);
 	if(fld->is_dummy) {
 		process_object_names(obj);
@@ -746,6 +748,7 @@ static void register_realize(object_t *obj) {
 	const char *index;
 	int depth;
 
+	set_current_obj(obj);
 	list_for_each(p, &obj->childs) {
 		i++;
 	}
@@ -879,6 +882,7 @@ static void bank_realize(object_t *obj) {
 	paramspec_t *spec;
 	param_value_t* value;
 
+	set_current_obj(obj);
 	list_for_each(p, &obj->childs) {
 		i++;
 	}
@@ -942,6 +946,7 @@ static void connect_realize(object_t *obj) {
 	tree_t *node;
 	connect_attr_t *attr;
 
+	set_current_obj(obj);
 	add_object_templates(obj, obj->node->connect.templates);
 	/* parse the connect arraydef expression */
 	parse_connect_attr(obj->node, obj->symtab->parent);
@@ -1071,6 +1076,7 @@ static void attribute_realize(object_t *obj) {
 	attribute_t *attr_obj = (attribute_t *)obj;
 	arraydef_attr_t *array = NULL;
 
+	set_current_obj(obj);
 	add_object_templates(obj, obj->node->attribute.templates);
 	/* parse the arraydef about attribute */
 	parse_attribute_attr(obj->node, obj->symtab->parent);
@@ -1135,6 +1141,7 @@ static void attribute_realize(object_t *obj) {
 }
 
 static void implement_realize(object_t* obj) {
+	set_current_obj(obj);
 	parse_implement(obj->node, obj->symtab->sibling);
 	process_object_names(obj);
 	return;
@@ -1146,6 +1153,7 @@ static void port_realize(object_t *obj) {
 	int i = 0;
 	dml_port_t *port = (dml_port_t *)obj;
 
+	set_current_obj(obj);
 	add_object_templates(obj, obj->node->port.templates);
 	list_for_each(p, &obj->childs) {
 		i++;
@@ -1178,6 +1186,7 @@ static void port_realize(object_t *obj) {
 }
 
 static void event_realize(object_t *obj) {
+	set_current_obj(obj);
 	parse_event(obj->node, obj->symtab->sibling);
 	add_object_templates(obj, NULL);
 	process_object_names(obj);
@@ -1200,6 +1209,7 @@ void device_realize(device_t *dev) {
 	}
 	dev->bank_count = i;
 	dev->obj.depth = 0;
+	set_current_obj((object_t*)dev);
 
 	/* add default templates "template device" into device,
 	 * and insert symbols into table of templates */

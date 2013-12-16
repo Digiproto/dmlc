@@ -44,6 +44,20 @@ inline static object_t* get_current_obj() {
 	return OBJ->obj;
 }
 
+void set_current_obj(object_t* obj) {
+	if (OBJ == NULL) {
+		OBJ = (obj_ref_t*)gdml_zmalloc(sizeof(obj_ref_t));
+	}
+	OBJ->obj = obj;
+}
+
+void set_obj_array() {
+	object_t* obj = get_current_obj();
+	obj->is_array = 1;
+	return;
+}
+
+
 void free_sibling(tree_t** node) {
 	assert(*node != NULL);
 	if ((*node)->common.sibling) {
@@ -3698,7 +3712,14 @@ static int check_dml_obj_refer(tree_t* node, symtab_t table) {
 	char* refer_name = (char*)(node->ident.str);
 	if (strcmp(refer_name, "this") == 0) {
 		obj_type = 1;
-	} else {
+	}
+	else if (strcmp(refer_name, "i") == 0) {
+		object_t* obj = get_current_obj();
+		if (obj && obj->is_array) {
+			obj_type = 1;
+		}
+	}
+	else {
 		obj_type = find_dml_obj(table, refer_name);
 	}
 
@@ -3841,7 +3862,6 @@ static cdecl_t* check_attribute_type(symbol_t symbol, expr_t* expr) {
 	assert(symbol != NULL); assert(expr != NULL);
 	attribute_attr_t* attr = (attribute_attr_t*)(symbol->attr);
 	attribute_t* attr_obj = (attribute_t*)(attr->attr_obj);
-	printf("attribute symbol: %s\n", symbol->name);
 	if (attr_obj->alloc_type) {
 		if (attr_obj->alloc == INT_T) {
 			new_int_type(expr);
@@ -4015,6 +4035,14 @@ expr_t* check_ident_expr(tree_t* node, symtab_t table, expr_t* expr) {
 			/* This may be some problems */
 			type->common.categ = INT_T;
 			expr->type = type;
+		}
+		else if (strcmp(str, "i") == 0) {
+			object_t* obj = get_current_obj();
+			if (obj && obj->is_array) {
+				new_int_type(expr);
+			} else {
+				error("%s no undeclared\n", str);
+			}
 		}
 		else {
 			error("%s no undeclared in template\n", str);

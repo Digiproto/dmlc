@@ -635,11 +635,13 @@ arraydef_attr_t* get_range_arraydef(tree_t* node, symtab_t table, arraydef_attr_
 	return array;
 }
 
+extern inline void set_obj_array();
 arraydef_attr_t* get_arraydef(tree_t* node, symtab_t table) {
 	if (node == NULL) {
 		return NULL;
 	}
 	arraydef_attr_t* arraydef = (arraydef_attr_t*)gdml_zmalloc(sizeof(arraydef_attr_t));
+	set_obj_array();
 	if ((node->array.is_fix) == 1) {
 		arraydef->fix_array = 1;
 		arraydef->high = get_int_value(node->array.expr, table);
@@ -846,24 +848,21 @@ int get_size(tree_t* node, symtab_t table) {
 int get_offset(tree_t* node, symtab_t table) {
 	/* we do not need to check the offset as it will be
 	checked when the code generated*/
-	/* why? no implement !!!??? */
-	/* return  0; */
 	if (node == NULL) {
-		return -1;
+		return 0;
 	}
 	if (node->common.type == INTEGER_TYPE) {
 		int offset = node->int_cst.value;
 		return offset;
 	}
 	else if (node->common.type == UNDEFINED_TYPE) {
-		return -1;
+		return 0;
 	}
 	else {
 		expr_t* expr = check_expr(node, table);
 
 		if (expr->is_const == 0) {
-			PERROR("%s is non-constan value",
-					node->common.location, expr->node->common.name);
+			return 4;
 		}
 		if (expr->type->common.categ == INT_T) {
 			if (expr->val->int_v.out_64bit) {
@@ -909,12 +908,13 @@ void parse_register_attr(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
 	object_attr_t* attr = node->common.attr;
-	attr->reg.size = get_size(node->reg.sizespec, table);
-	attr->reg.offset = get_offset(node->reg.offset, table);
 	if (node->reg.array) {
+		set_obj_array();
 		attr->reg.is_array = 1;
 		attr->reg.arraydef = get_arraydef(node->reg.array, table);
 	}
+	attr->reg.size = get_size(node->reg.sizespec, table);
+	attr->reg.offset = get_offset(node->reg.offset, table);
 	attr->common.desc = get_obj_desc(node->reg.spec);
 
 	return;
