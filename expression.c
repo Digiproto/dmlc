@@ -2248,7 +2248,6 @@ symtab_t get_symbol_table(symtab_t sym_tab, symbol_t symbol) {
 	void* attr = symbol->attr;
 
 	int *a = NULL;
-	printf("symbol '%s' type: %d, bitfields: %d\n", symbol->name, symbol->type, BITFIELDS_T);
 	switch(symbol->type) {
 		case TEMPLATE_TYPE:
 			table = ((template_attr_t*)attr)->table;
@@ -2258,7 +2257,6 @@ symtab_t get_symbol_table(symtab_t sym_tab, symbol_t symbol) {
 			break;
 		case BITFIELDS_T:
 			table = ((cdecl_t*)attr)->bitfields.table;
-			printf("table: 0x%x\n", table);
 			if (strcmp(symbol->name, "block1") == 0) {
 				printf("bitfield '%s', table: 0x%x\n", symbol->name, table);
 				exit(-1);
@@ -4307,7 +4305,8 @@ expr_t* check_component_expr(tree_t* node, symtab_t table, expr_t* expr) {
 
 expr_t* check_sizeoftype_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
-	cdecl_t* type = parse_typeoparg(node, table);
+
+	cdecl_t* type = parse_typeoparg(node->sizeoftype.typeoparg, table);
 
 	if (record_type(type) == 0) {
 		PERRORN("sizeoftype not record type", node);
