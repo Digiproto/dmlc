@@ -57,7 +57,6 @@ static void init_obj(object_t *obj) {
 	init_list_head(obj);
 	list_for_each(p, &obj->childs) {
 		tmp = list_entry(p, object_t, entry);
-		init_list_head(tmp);
 		init_obj(tmp);
 	}	
 }
@@ -65,6 +64,7 @@ static void init_obj(object_t *obj) {
 static void back_to_zero(device_t *dev) {
 	struct list_head *p;
 	object_t *tmp;
+	int i;
 	
 	init_obj(&dev->obj);
 	/*init more checked object, connect, attribute etc*/
@@ -82,6 +82,13 @@ static void back_to_zero(device_t *dev) {
 	INIT_ETC(attributes);
 	INIT_ETC(implements);
 	INIT_ETC(ports);
+	list_for_each(p, &dev->ports) {
+		tmp = list_entry(p, object_t, entry); 
+		dml_port_t *port = (dml_port_t *)tmp;
+		for(i = 0; i < port->num; i++) {
+			init_obj(port->impls[i]);
+		}
+	}
 #undef INIT_ETC
 	list_for_each(p, &dev->obj.events) {
 		tmp = list_entry(p, object_t, entry);
