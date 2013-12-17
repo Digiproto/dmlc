@@ -1077,9 +1077,9 @@ method
         $<tree_type>$ = node;
 	}
 	compound_statement {
-        tree_t* node = $<tree_type>6;
-        node->method.block = $7;
-        current_table = pop(table_stack);
+	tree_t* node = $<tree_type>6;
+	node->method.block = $7;
+	current_table = pop(table_stack);
 		$$ = node;
 	}
 	;

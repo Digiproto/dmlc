@@ -259,8 +259,10 @@ static object_t* get_parameter_obj(symtab_t table, const char* parent_name, cons
 			obj->symtab = get_symbol_table(table, sym);
 			return obj;
 		} else if (sym->type == REGISTER_TYPE) {
+			object_attr_t* attr = sym->attr;
 			obj = gdml_zmalloc(sizeof(object_t));
 			obj->name = sym->name;
+			obj->node = attr->common.node;
 			obj->obj_type = strdup("register");
 			symtab_t tmp = get_symbol_table(table, sym);
 			if (tmp == NULL && parent_name) {
@@ -388,7 +390,11 @@ normal_case:
 					obj = get_parameter_obj(symtab, fore_name, name);
 				}
                                 symtab = obj->symtab;
+				if (symtab->is_parsed == 0 && obj->node) {
+					parse_unparsed_obj(obj->node, symtab);
+				}
                                 my_DBG("object name %s, name %s\n", obj->name, name2);
+				//printf("table parsed: %d, obj node: 0x%x\n", symtab->is_parsed, obj->node);
                                 printf("object name %s,  name: %s name2 %s, symtab: 0x%x\n", obj->name, name, name2, symtab->table_num);
 								if(!strcmp(obj->obj_type, "interface")) {
 									obj2 = obj;
@@ -400,6 +406,7 @@ normal_case:
 									has_interface = 1;
 									break;
 								}
+				symtab->obj = obj;
                                 sym = symbol_find_notype(symtab, name2);
                                 if(sym){
 					my_DBG("sym type %d, interface type %d\n", sym->type, INTERFACE_TYPE);

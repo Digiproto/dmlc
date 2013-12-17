@@ -639,6 +639,7 @@ void get_all_symbol(symtab_t symtab, symbol_callback func_callback)
 #endif
 
 void print_all_symbol(symtab_t table) {
+	printf("------------------start print-----------------------\n");
 	symbol_t symbol = table->list;
 	const char *type;
 	while(symbol != NULL) {
@@ -646,6 +647,7 @@ void print_all_symbol(symtab_t table) {
 		printf("symbol: %s, type %s\n", symbol->name, type);
 		symbol = symbol->lnext;
 	}
+	printf("------------------finish print-----------------------\n");
 
 	return ;
 }
@@ -718,7 +720,8 @@ symbol_list_t *_symbol_list_find(symtab_t tab, match_func_t match, void *arg, in
 	tmpl = tab->template_table;
 	while(tmpl) {
 		table = tmpl->table;
-		tmp = symbol_list_match(table, match, arg);
+		//tmp = symbol_list_match(table, match, arg);
+		tmp = _symbol_list_find(table, match, arg, depth+1);
 		if(tmp) {
 			first = list_join(first, tmp);	
 		}

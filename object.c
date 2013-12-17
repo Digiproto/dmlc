@@ -489,7 +489,6 @@ static void create_bank_object(object_t *obj, symbol_t sym){
 	create_objs(&bank->obj, GROUP_TYPE);
 	create_objs(&bank->obj, IMPLEMENT_TYPE);
 	create_objs(&bank->obj, ATTRIBUTE_TYPE);
-	printf("bank created %s\n", sym->name);
 	//print_all_symbol(table);
 }
 

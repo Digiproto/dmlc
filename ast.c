@@ -1012,6 +1012,7 @@ void parse_device(tree_t* node, symtab_t table) {
 
 	/* the second time to parse symbols and expressions */
 	parse_undef_list(table);
+	table->is_parsed = 1;
 
 	return;
 }
@@ -1036,6 +1037,7 @@ void parse_obj_spec(obj_spec_t* spec, symtab_t table) {
 
 	/* the second time to parse symbols */
 	parse_undef_list(table);
+	table->is_parsed = 1;
 
 	return;
 }
@@ -1186,6 +1188,61 @@ void parse_implement(tree_t* node, symtab_t table) {
 
 	obj_spec_t* spec = node->implement.spec;
 	printf("parse implement\n");
+	parse_obj_spec(spec, table);
+
+	return;
+}
+
+void parse_unparsed_obj(tree_t* node, symtab_t table) {
+	assert(node != NULL); assert(table != NULL);
+	obj_spec_t* spec = NULL;
+	if (table->table_num == 0) {
+		return;
+	}
+	if (node->common.type == BANK_TYPE) {
+		printf("IN %s, line = %d\n", __FUNCTION__, __LINE__);
+		exit(-1);
+		spec = node->bank.spec;
+	} else if (node->common.type == REGISTER_TYPE) {
+		spec = node->reg.spec;
+	} else if (node->common.type == FIELD_TYPE) {
+		printf("IN %s, line = %d\n", __FUNCTION__, __LINE__);
+		exit(-1);
+		spec = node->field.spec;
+	} else if (node->common.type == CONNECT_TYPE) {
+		printf("IN %s, line = %d\n", __FUNCTION__, __LINE__);
+		exit(-1);
+		spec = node->connect.spec;
+	} else if (node->common.type == INTERFACE_TYPE) {
+		printf("IN %s, line = %d\n", __FUNCTION__, __LINE__);
+		exit(-1);
+		spec = node->interface.spec;
+	} else if (node->common.type == ATTRIBUTE_TYPE) {
+		printf("IN %s, line = %d\n", __FUNCTION__, __LINE__);
+		exit(-1);
+		spec = node->attribute.spec;
+	} else if (node->common.type == EVENT_TYPE) {
+		printf("IN %s, line = %d\n", __FUNCTION__, __LINE__);
+		exit(-1);
+		spec = node->event.spec;
+	} else if (node->common.type == GROUP_TYPE) {
+		printf("IN %s, line = %d\n", __FUNCTION__, __LINE__);
+		exit(-1);
+		spec = node->group.spec;
+	} else if (node->common.type == PORT_TYPE) {
+		printf("IN %s, line = %d\n", __FUNCTION__, __LINE__);
+		exit(-1);
+		spec = node->port.spec;
+	} else if (node->common.type == IMPLEMENT_TYPE) {
+		printf("IN %s, line = %d\n", __FUNCTION__, __LINE__);
+		exit(-1);
+		node->implement.spec;
+	} else if (node->common.type == DEVICE_TYPE){
+		error("other object type\n");
+		return;
+	} else {
+		error("other object type\n");
+	}
 	parse_obj_spec(spec, table);
 
 	return;
@@ -1668,7 +1725,7 @@ static void parse_call_inline_method(symtab_t table, tree_t* call_expr, tree_t* 
 		if(method_sym && (method_sym->type == METHOD_TYPE)) {
 			obj = (object_t *)method_sym->owner;
 			if(!obj) {
-				error("method object cannot empty\n");
+				error("method '%s' object cannot empty\n", method_sym->name);
 			} else {
 				if (!block_empty(block))
 					DBG("ADD: obj name %s, method name %s\n", obj->name, method_sym->name);
@@ -2039,7 +2096,6 @@ extern void check_undef_template(symtab_t table);
 void parse_undef_template(const char* name) {
 	assert(name != NULL);
 	symbol_t symbol = get_symbol_from_root_table(name, TEMPLATE_TYPE);
-	printf("try to check template name: %s\n", name);
 	template_attr_t* attr = symbol->attr;
 	tree_t* node = attr->common.node;
 	obj_spec_t* spec = node->temp.spec;
@@ -2065,11 +2121,16 @@ void check_template_parsed(const char* name) {
 void print_templates(symtab_t table) {
 	assert(table);
 	struct template_table* tmp = table->template_table;
+	//print_all_symbol(table);
 
 	int i = 0;
 	while ((tmp) != NULL) {
+		//print_all_symbol(tmp->table);
 		DEBUG_TEMPLATES("templates name(%d): %s, table_num: %d\n", i++, tmp->template_name, tmp->table->table_num);
 		printf("templates name(%d): %s, table_num: %d\n", i++, tmp->template_name, tmp->table->table_num);
+		if (tmp->table->template_table) {
+			print_templates(tmp->table);
+		}
 		tmp = tmp->next;
 	}
 

@@ -2271,10 +2271,6 @@ symtab_t get_symbol_table(symtab_t sym_tab, symbol_t symbol) {
 			break;
 		case BITFIELDS_T:
 			table = ((cdecl_t*)attr)->bitfields.table;
-			if (strcmp(symbol->name, "block1") == 0) {
-				printf("bitfield '%s', table: 0x%x\n", symbol->name, table);
-				exit(-1);
-			}
 			break;
 		case LAYOUT_T:
 			table = ((cdecl_t*)attr)->layout.table;
@@ -3299,7 +3295,7 @@ static int two_type_compatible(cdecl_t* type1, cdecl_t* type2) {
 		return 1;
 	if ((is_ptr_type(type1) && is_int_type(type2)) ||
 		is_ptr_type(type2) && is_int_type(type1)) {
-		warning("conversion between pointer and integer without a cast");
+		//warning("conversion between pointer and integer without a cast");
 		return 1;
 	}
 	if (is_no_type(type1) || is_no_type(type2))
@@ -4196,7 +4192,7 @@ symbol_t get_symbol_from_template(symtab_t table, const char* parent_name, const
 		if (parent_sym) {
 			ref_table = get_symbol_table(temp->table, parent_sym);
 			if (ref_table && (ref_table != (void*)(0xFFFFFFFF))) {
-				child_sym = defined_symbol(ref_table, name, 0);
+				child_sym = symbol_find_notype(ref_table, name);
 				if (child_sym) {
 					return child_sym;
 				}
@@ -4205,7 +4201,7 @@ symbol_t get_symbol_from_template(symtab_t table, const char* parent_name, const
 		if (temp->table->template_table || temp->table->undef_temp) {
 			ref_table = get_symbol_table_from_template(temp->table, parent_name);
 			if (ref_table && (ref_table != (void*)(0xFFFFFFFF))) {
-				child_sym = defined_symbol(ref_table, name, 0);
+				child_sym = symbol_find_notype(ref_table, name);
 				if (child_sym) {
 					return child_sym;
 				}
@@ -4220,7 +4216,6 @@ symbol_t get_symbol_from_template(symtab_t table, const char* parent_name, const
 		if (table)
 			child_sym = get_symbol_from_template(table, parent_name, name);
 	}
-
 
 	return child_sym;
 }
@@ -4442,6 +4437,11 @@ expr_t* check_function_expr(tree_t* node, symtab_t table, expr_t* expr) {
 				arg_num = get_param_num(node->expr_brack.expr_in_brack);
 			}
 		}
+	}
+	else {
+		cdecl_t* type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
+		type->common.categ = NO_TYPE;
+		expr->type = type;
 	}
 	object_t* obj = get_current_obj();
 	if (obj && !strcmp(obj->obj_type, "attribute")) {
