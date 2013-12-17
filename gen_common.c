@@ -146,11 +146,23 @@ void translate_quote(tree_t *t) {
 static void translate_parameter(symbol_t sym) {
 	param_type_t type;
 	param_value_t *val;
+	paramspec_t *spec;
+	parameter_attr_t *attr;
 	object_t *obj;
 	const char *name;
-
-	val = (param_value_t *)sym->attr;
+	
+	val = (param_value_t *)sym->attr;		
+	if(val->is_original) {
+		attr = (parameter_attr_t *)sym->attr;
+		spec = (paramspec_t *)attr->param_spec;
+		val = (param_value_t *)spec->value;
+	} else {
+		val = (param_value_t *)sym->attr;
+	}
 	type = val->type;
+	if(!strcmp("irq_no", sym->name)) {
+		printf("translate parameter %s, type %d\n", sym->name, type);
+	}
 	switch(type) {
 		case PARAM_TYPE_INT:
 			D("0x%x", val->u.integer);
