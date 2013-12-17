@@ -1,23 +1,21 @@
 CC = gcc
-PREFIX ?= /usr/local
+PREFIX ?= /usr
 DIR_NAME = simics
-INSTALL_DIR = $(PREFIX)/$(DIR_NAME)
-INCLUDES = -I./ -ldl -I$(INSTALL_DIR)/include 
-TARGET = common.a
-CFLAGS = -g -O2 -Werror-implicit-function-declaration -Werror=return-type \
-		-Wmissing-field-initializers -Wuninitialized
-
+INSTALL_DIR = $(PREFIX)
+INCLUDES = -I. -ldl
+#CFLAGS = -g -O2 -Werror-implicit-function-declaration -Werror=return-type \
+#		-Wmissing-field-initializers -Wuninitialized
+CFLAGS = -g
 BUILD_DIR = build
 C_FILES = $(wildcard *.c) 
-HEADER= ./simics/
+HEADER= ./simics
 OBJS = $(patsubst %.c, $(BUILD_DIR)/%.o, $(C_FILES))
-LIB_NAME = common
-TARGET = $(LIB_NAME).so
+LIB_NAME = dml_common
 LIB_TARGET = lib$(LIB_NAME).so
 HOST_CONFIG = simics/host-config.h
 
-all: gen_build_dir gen_install_info $(TARGET)
-	@echo "build finished."
+all: gen_build_dir gen_install_info $(LIB_TARGET)
+	@echo "[END] build finished."
 
 gen_build_dir:
 	@mkdir -p $(BUILD_DIR)
@@ -29,9 +27,9 @@ gen_install_info:
 	@echo "#define SYSTEM_LIB \"$(INSTALL_DIR)/lib\"" >> $(HOST_CONFIG)
 	@echo "#endif" >> $(HOST_CONFIG)
 
-$(TARGET): $(OBJS)
-	@echo [LD] lib$@
-	@$(CC) -shared $(CFLAGS) $(INCLUDES) -Wl,-soname,lib$@ -o lib$@ $^
+$(LIB_TARGET): $(OBJS)
+	@echo [LD] $@
+	@$(CC) -shared $(CFLAGS) $(INCLUDES) -Wl,-soname,$@ -o $@ $^
 
 $(BUILD_DIR)/%.o: %.c
 	@echo [CC] $@ 
@@ -44,14 +42,16 @@ endif
 endif
 
 $(BUILD_DIR)/%.d: %.c
-	@$(CC)  -MM $(C_FLAGS) $< 2>/dev/null > $@ 
+	@mkdir -p $(BUILD_DIR)
+	@$(CC) -MM $(CFLAGS) $(INCLUDES) $< 2>/dev/null | sed -e 's#.*\.o#$(patsubst %.d,%.o,$@)#' > $@
 
 clean:
-	rm -fr build 
-	rm -fr lib$(TARGET)
+	rm -fr build/*
 	rm -fr simics/host-config.h
 
 distclean: clean
+	rm -fr build 
+	rm -rf $(LIB_TARGET)
 
 install: all 
 	@echo [install] to $(INSTALL_DIR)

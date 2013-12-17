@@ -51,6 +51,10 @@ typedef physical_address_t logical_address_t;
 typedef struct conf_object  conf_object_t;
 #define MM_STRDUP strdup
 #define MM_FREE free
+#define MEMSET memset
+#define MEMCPY memcpy
+#define MM_ZALLOC(n) memset(malloc(n), 0, n)
+#define No_exp 0
 #define SIM_c_get_port_interface qdev_get_port_interface
 #define SIM_c_get_interface qdev_get_interface
 #define UNUSED(x) (void)(x)

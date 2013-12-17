@@ -33,7 +33,7 @@ struct conf_object {
 	bool configured;
 };
 
-conf_object_t *pre_conf_object(const char *obj_name, const char *cls_name);
+conf_object_t *SIM_pre_conf_object(const char *obj_name, const char *cls_name);
 void conf_object_register(conf_object_t *obj, const char *name);
 void SIM_finalize_object(conf_object_t *obj);
 int SIM_delete_object(conf_object_t *obj);

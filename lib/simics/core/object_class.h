@@ -31,4 +31,5 @@ typedef struct conf_class {
 } conf_class_t;
 
 const conf_class_t *SIM_class_find(const char *cls_name);
+void SIM_register_conf_class(const char *name, const conf_class_t *cls);
 #endif /* __OBJECT_CLASS_H__ */
