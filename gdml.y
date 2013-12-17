@@ -791,7 +791,6 @@ object
 
             attr->common.templates_num = get_list_num(node->port.templates);
             attr->common.templates = get_templates(attr->common.templates, node->port.templates, attr->common.templates_num);
-
             object_spec_type = PORT_TYPE;
             object_comm_attr = attr;
             $<tree_type>$ = node;
@@ -1329,6 +1328,7 @@ object_spec
 			table = symtab_create(TEMPLATE_TYPE);
 			table->no_check = 1;
 			table->table_num = ++current_table_num;
+			table->block = block;
 			block->block.table = symtab_insert_child(current_table, table);
 		}
 		else if (object_comm_attr->common.obj_type == IMPLEMENT_TYPE) {
@@ -2123,6 +2123,7 @@ expression
 		node->expr_assign.left = $1;
 		node->expr_assign.right = $3;
 		node->common.print_node = print_binary;
+		node->common.translate = translate_assign;
 		$$ = node;
 	}
 	| expression MOD_ASSIGN expression {
@@ -2230,6 +2231,7 @@ expression
 		node->binary.left = $1;
 		node->binary.right = $3;
 		node->common.print_node = print_binary;
+		node->common.translate = translate_binop_expr;
 		$$ = node;
 	}
 	| expression '%' expression {
@@ -3436,7 +3438,13 @@ void insert_array_index(object_attr_t* attr, symtab_t table) {
 		 * inserted into table automatic
 		 */
 		parameter_attr_t* param_i = (parameter_attr_t*)gdml_zmalloc(sizeof(parameter_attr_t));
-
+		param_i->is_original = 100;
+		paramspec_t *spec = (paramspec_t *)gdml_zmalloc(sizeof(*spec));
+		param_value_t *value = (param_value_t *)gdml_zmalloc(sizeof(param_value_t)); 
+		value->type = PARAM_TYPE_STRING;
+		value->u.string = strdup("_idx0");
+		spec->value = value;
+		param_i->param_spec = spec;
 		param_i->name = strdup("i");
 		symbol_insert(table, "i", PARAMETER_TYPE, param_i);
 	}
