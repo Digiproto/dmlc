@@ -59,6 +59,7 @@ static void gen_device_code(device_t *obj){
 	struct list_head *p;
 	object_t *t;
 	device_t *dev = (device_t *)obj;
+	int i;
 
 	gen_obj_generic_code(&dev->obj);
 	/*gen connect object */
@@ -77,6 +78,14 @@ static void gen_device_code(device_t *obj){
 		gen_obj_generic_code(t);
 	}
 	/*connect,port ect*/
+	list_for_each(p,&dev->ports){
+		t = list_entry(p,object_t,entry);
+		gen_obj_generic_code(t);
+		dml_port_t *port = (dml_port_t *)t;
+		for(i = 0; i < port->num; i++) {
+			gen_obj_generic_code(port->impls[i]);
+		}
+	}
 }
 
 extern FILE *out;
