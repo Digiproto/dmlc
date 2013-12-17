@@ -493,7 +493,6 @@ static void create_bank_object(object_t *obj, symbol_t sym){
 	//print_all_symbol(table);
 }
 
-
 static void (*create_func[])(object_t *obj, symbol_t sym) = {
 	[Obj_Type_None] = create_none_object,
 	[Obj_Type_Device] = create_none_object,
@@ -555,16 +554,21 @@ static object_type_t type2obj_type(type_t type) {
 
 static void create_objs(object_t *obj, type_t type) {
 	symtab_t table = obj->symtab->sibling;
-    symbol_list_t *list = symbol_list_find_type(table, type);
+    symbol_list_t *list = NULL;
     symbol_list_t *head = list;
 	object_type_t obj_type;
-
+	
+	if(table) {
+		check_undef_template(table);
+	}	
+	list = symbol_list_find_type(table, type);
 	obj_type = type2obj_type(type);
     while(list) {
 		create_func[obj_type](obj, list->sym);
         /*restore OBJ to device*/
         list = list->next;
     }
+
     symbol_list_free(head);
 }
 
@@ -1063,6 +1067,7 @@ static void attribute_realize(object_t *obj) {
 	parameter_attr_t* attr;
 	paramspec_t* spec;
 	attribute_t *attr_obj = (attribute_t *)obj;
+	arraydef_attr_t *array = NULL;
 
 	add_object_templates(obj, obj->node->attribute.templates);
 	/* parse the arraydef about attribute */
@@ -1071,7 +1076,19 @@ static void attribute_realize(object_t *obj) {
 	attribute_attr->attr_obj = attr_obj;
 	/* parse the elements that in the attribute table*/
 	parse_attribute(obj->node, obj->symtab->sibling);
-
+	if(attribute_attr->is_array) {
+		array = attribute_attr->arraydef;	
+	}
+	if(array) {
+		int size;
+		obj->is_array = 1;
+		if(array->fix_array) {
+			size = array->high;	
+		} else {
+			size = array->high - array->low + 1;
+		}
+		obj->array_size = size;
+	}
 	sym = defined_symbol(obj->symtab->sibling, "allocate_type", PARAMETER_TYPE);
 	if (sym) {
 		get_param_spec(attr, spec);
@@ -1125,17 +1142,19 @@ static void port_realize(object_t *obj) {
 	struct list_head *p;
 	object_t *tmp;
 	int i = 0;
-	dml_port_t *port;
+	dml_port_t *port = (dml_port_t *)obj;
 
-	list_for_each(p, &obj->childs) {
+	list_for_each(p, &port->implements) {
 		i++;
 	}
 	port = (dml_port_t *)obj;
 	port->num = i;
+	printf("ixxx %d\n", i);
 	port->impls = (object_t **)gdml_zmalloc(sizeof(*port->impls) * i);
+	parse_port(obj->node, obj->symtab->sibling);
 	process_object_names(obj);
 	i = 0;
-	list_for_each(p, &obj->childs) {
+	list_for_each(p, &port->implements) {
 		tmp = list_entry(p, object_t, entry);
 		implement_realize(tmp);
 		port->impls[i] = tmp;
