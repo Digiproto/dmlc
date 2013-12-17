@@ -985,7 +985,7 @@ void parse_port_attr(tree_t* node, symtab_t table) {
 	return;
 }
 
-static void parse_object(tree_t* node, symtab_t table) {
+void parse_object(tree_t* node, symtab_t table) {
 	assert(table != NULL);
 	/* the symbols, parameters, constant, expressions that
 	 * in the current table are the sibling about the object node*/
@@ -1057,7 +1057,7 @@ static cdecl_t* new_int() {
 
 	return type;
 }
-
+extern void insert_array_index(object_attr_t *attr, symtab_t table); 
 static void  insert_i_into_obj(symtab_t table) {
 	assert(table != NULL);
 	cdecl_t* type = new_int();
@@ -1074,14 +1074,15 @@ static void insert_index_into_obj(symtab_t table) {
 	return;
 }
 
-static void insert_array_index_into_obj(arraydef_attr_t* array, symtab_t table) {
+static void insert_array_index_into_obj(tree_t *node, arraydef_attr_t* array, symtab_t table) {
 	assert(array != NULL); assert(table != NULL);
 	if ((array->fix_array == 0) && (table->table_num != 0)) {
 		cdecl_t* type = new_int(); 
 		symbol_insert(table, array->ident, PARAMETER_TYPE, type);
 		insert_index_into_obj(table);	
 	} else if ((array->fix_array == 1) && (table->table_num != 0)){
-		insert_i_into_obj(table);
+		//insert_i_into_obj(table);
+		insert_array_index(node->common.attr, table);	
 		insert_index_into_obj(table);
 	}
 
@@ -1092,7 +1093,7 @@ void parse_register(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 	object_attr_t* attr = node->common.attr;
 	if (attr->reg.is_array) {
-		insert_array_index_into_obj(attr->reg.arraydef, table);
+		insert_array_index_into_obj(node, attr->reg.arraydef, table);
 	}
 
 	obj_spec_t* spec = node->reg.spec;
@@ -1114,7 +1115,7 @@ void parse_connect(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 	object_attr_t* attr = node->common.attr;
 	if (attr->connect.is_array) {
-		insert_array_index_into_obj(attr->connect.arraydef, table);
+		insert_array_index_into_obj(node, attr->connect.arraydef, table);
 	}
 
 	obj_spec_t* spec = node->connect.spec;
@@ -1136,7 +1137,7 @@ void parse_attribute(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 	object_attr_t* attr = node->common.attr;
 	if (attr->attribute.is_array) {
-		insert_array_index_into_obj(attr->attribute.arraydef, table);
+		insert_array_index_into_obj(node, attr->attribute.arraydef, table);
 	}
 
 	obj_spec_t* spec = node->attribute.spec;
@@ -1158,7 +1159,7 @@ void parse_group(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 	object_attr_t* attr = node->common.attr;
 	if (attr->group.is_array) {
-		insert_array_index_into_obj(attr->group.arraydef, table);
+		insert_array_index_into_obj(node, attr->group.arraydef, table);
 	}
 
 	obj_spec_t* spec = node->group.spec;
@@ -1171,7 +1172,7 @@ void parse_port(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 	object_attr_t* attr = node->common.attr;
 	if (attr->port.is_array) {
-		insert_array_index_into_obj(attr->port.arraydef, table);
+		insert_array_index_into_obj(node, attr->port.arraydef, table);
 	}
 
 	obj_spec_t* spec = node->port.spec;
@@ -1184,6 +1185,7 @@ void parse_implement(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
 	obj_spec_t* spec = node->implement.spec;
+	printf("parse implement\n");
 	parse_obj_spec(spec, table);
 
 	return;
@@ -2037,7 +2039,7 @@ extern void check_undef_template(symtab_t table);
 void parse_undef_template(const char* name) {
 	assert(name != NULL);
 	symbol_t symbol = get_symbol_from_root_table(name, TEMPLATE_TYPE);
-	printf("name: %s\n", name);
+	printf("try to check template name: %s\n", name);
 	template_attr_t* attr = symbol->attr;
 	tree_t* node = attr->common.node;
 	obj_spec_t* spec = node->temp.spec;
@@ -2081,6 +2083,7 @@ static void insert_undef_template(symtab_t table, const char* name) {
 	undef_template_t* tmp = table->undef_temp;
 	if (table->undef_temp == NULL) {
 		table->undef_temp = new_undef;
+		printf("add to undef template %s\n", name);
 	} else {
 		while (tmp->next) {
 			tmp = tmp->next;
@@ -2131,6 +2134,7 @@ void add_template_to_table(symtab_t table, const char* template, int second_chec
 	new_table->template_name = strdup(template);
 
 	if (new_table->table != NULL) {
+		printf("add template %s to table %p\n", template, table);
 		if (table->template_table == NULL) {
 			table->template_table = new_table;
 		}
@@ -2165,11 +2169,13 @@ static void free_undef_templates(symtab_t table) {
 void check_undef_template(symtab_t table) {
 	assert(table != NULL);
 	if (table->undef_temp == NULL) {
+		printf("none undef template to check\n");
 		return;
 	}
 	undef_template_t* temp = table->undef_temp;
 	while (temp) {
 		parse_undef_template(temp->name);
+		printf("check undef template %s\n", temp->name);
 		add_template_to_table(table, temp->name, 1);
 		temp = temp->next;
 	}

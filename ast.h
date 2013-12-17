@@ -4,6 +4,7 @@
 #include "tree.h"
 #include "symbol.h"
 #include "debug_color.h"
+#include "symbol-common.h"
 
 typedef struct node
 {
@@ -47,6 +48,7 @@ object_attr_t* create_object(symtab_t table, const char* node_name, const char* 
 tree_t* create_template_list(tree_t* head, tree_t* templates);
 tree_t* get_obj_default_param(tree_t* head, tree_t* new, const char* name);
 
+void parse_object(tree_t *node, symtab_t table);
 void parse_device(tree_t* node, symtab_t table);
 void parse_bitorder(tree_t* node, symtab_t table);
 void parse_parameter(tree_t* node, symtab_t table);
