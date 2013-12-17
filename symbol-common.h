@@ -26,7 +26,6 @@
 
 #include "types.h"
 #include "pre_parse_dml.h"
-
 #define MAX_SYMBOLS 10000
 #define SYMBOL_DEBUG
 
@@ -68,6 +67,7 @@ typedef symbol_t (*symbol_find_fn_t)(symtab_t tab, const char *name, type_t type
 typedef symbol_t (*symbol_find_notype_fn_t)(symtab_t tab, const char *name);
 /* a hash table for storing symbols. it have a pointer to a brother,
  * have a pointer to a child.  */
+union tree_node;
 struct symtab {
     struct symtab *parent;
     struct symtab *sibling;
@@ -83,6 +83,7 @@ struct symtab {
 	int no_check;
 	int is_parsed;
 	void *obj;
+	union tree_node *block;
 	symbol_find_fn_t cb;
 	symbol_find_notype_fn_t notype_cb;
 };

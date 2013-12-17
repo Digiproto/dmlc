@@ -681,7 +681,7 @@ static symbol_list_t *symbol_list_match(symtab_t tab, match_func_t match, void *
 	return first;
 }
 
-static void list_join(symbol_list_t *first, symbol_list_t *new) {
+static symbol_list_t* list_join(symbol_list_t *first, symbol_list_t *new) {
 	symbol_list_t *tmp;
 	symbol_list_t *next;
 	symbol_list_t *last;
@@ -694,7 +694,11 @@ static void list_join(symbol_list_t *first, symbol_list_t *new) {
 			tmp = tmp->next;
 		}
 		last->next = new;
-	}
+		return first;
+	} else if(new) {
+		return new;
+	} 
+	return first;
 }
 
 symbol_list_t *_symbol_list_find(symtab_t tab, match_func_t match, void *arg, int depth) {
@@ -716,7 +720,7 @@ symbol_list_t *_symbol_list_find(symtab_t tab, match_func_t match, void *arg, in
 		table = tmpl->table;
 		tmp = symbol_list_match(table, match, arg);
 		if(tmp) {
-			list_join(first, tmp);	
+			first = list_join(first, tmp);	
 		}
 		tmpl = tmpl->next;
 	}
@@ -725,7 +729,6 @@ symbol_list_t *_symbol_list_find(symtab_t tab, match_func_t match, void *arg, in
 
 static int match_type(symbol_t sym, void *arg) {
 	type_t type = (type_t )arg;
-
 	if(sym->type == type) {
 		return 1;
 	} else {
