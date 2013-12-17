@@ -60,8 +60,12 @@ static void gen_connect_struct(object_t *obj, FILE *f) {
 
 static void gen_attribute_struct(object_t *obj, FILE *f) {
 	attribute_t *attr = (attribute_t *)obj;	
-
-	fprintf(f, "\t%s %s;\n", attr->alloc_type, obj->name);
+	
+	if(!obj->is_array) {
+		fprintf(f, "\t%s %s;\n", attr->alloc_type, obj->name);
+	} else {
+		fprintf(f, "\t%s %s[%d];\n", attr->alloc_type, obj->a_name, obj->array_size);
+	}
 }
 
 static void gen_device_attribute(device_t *dev, FILE *f) {
