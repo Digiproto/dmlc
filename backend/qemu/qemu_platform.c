@@ -20,12 +20,13 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
+#include <time.h>
 #include "gen_utility.h"
 #include "gen_object.h"
 #include "platform.h"
 #include "gen_connect.h"
 #include "gen_implement.h"
-#include <time.h>
+#include <gen_port.h>
 extern object_t *DEV;
 
 static void gen_headerfile(device_t *dev, FILE *f) {
@@ -272,6 +273,7 @@ static void gen_device_class_init(device_t *dev, FILE *f)
     gen_device_vmstate(dev, f);
 	gen_device_connect(dev, f);
 	gen_device_implement(dev, f);
+	gen_device_port_description(dev, f);
 
     fprintf (f, "\nstatic void %s_class_init(ObjectClass *klass,void *data){", name);
 	F_HEAD;
@@ -283,7 +285,8 @@ static void gen_device_class_init(device_t *dev, FILE *f)
             \n\tdc->props = %s_props; \
             \n\tdc->vmsd = &%s_vmstate; \
 			\n\tdc->connects = %s_connects;\
-			\n\tdc->ifaces = %s_ifaces;", name, name, name, name, name, name, name);
+			\n\tdc->ifaces = %s_ifaces; \
+			\n\tdc->ports  = %s_ports;", name, name, name, name, name, name, name, name);
 	F_END;
     fprintf (f, "\n}\n");
 }
