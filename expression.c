@@ -2245,6 +2245,7 @@ static symtab_t get_select_table(symtab_t sym_tab, symbol_t symbol) {
 	return table;
 }
 
+extern symtab_t get_symbol_table(symtab_t sym_tab, symbol_t symbol);
 static symtab_t get_param_table(symtab_t sym_tab, symbol_t symbol) {
 	assert(symbol != NULL);
 	symtab_t table = NULL;
@@ -2263,8 +2264,13 @@ static symtab_t get_param_table(symtab_t sym_tab, symbol_t symbol) {
 		get_record_table(type);
 	}
 	else {
-		fprintf(stderr, "method param is other type '%d'\n", type->common.categ);
-		exit(-1);
+		symbol = get_symbol_from_root_table(symbol->name, 0);
+		if (symbol) {
+			table = get_symbol_table(sym_tab->parent, symbol);
+		} else {
+			fprintf(stderr, "method param is other type '%d'\n", type->common.categ);
+			exit(-1);
+		}
 	}
 
 	return table;
@@ -4255,6 +4261,15 @@ symbol_t get_symbol_from_template(symtab_t table, const char* parent_name, const
 	return child_sym;
 }
 
+static int is_param_connect(symbol_t symbol) {
+	assert(symbol != NULL);
+	int ret = 0;
+	symbol_t sym = get_symbol_from_root_table(symbol->name, CONNECT_TYPE);
+	ret = (sym != NULL) ? 1 : 0;
+
+	return ret;
+}
+
 extern void check_reg_table(void);
 expr_t* check_refer(symtab_t table, reference_t* ref, expr_t* expr) {
 	assert(table != NULL); assert(ref != NULL); assert(expr != NULL);
@@ -4277,6 +4292,7 @@ expr_t* check_refer(symtab_t table, reference_t* ref, expr_t* expr) {
 			tmp->name = get_interface_name(symbol->name);
 			//symbol = get_symbol_from_root_table(tmp->name, 0);
 			symbol = symbol_find_notype(table, tmp->name);
+			symbol = (symbol == NULL) ? get_symbol_from_root_table(tmp->name, 0) : symbol;
 		}
 		if (symbol != NULL) {
 			ref_table = get_symbol_table(table, symbol);
@@ -4307,7 +4323,8 @@ expr_t* check_refer(symtab_t table, reference_t* ref, expr_t* expr) {
 		ref_symbol = symbol_find_notype(ref_table, tmp->next->name);
 		ref_symbol = (ref_symbol == NULL) ? get_symbol_from_template(table, tmp->name, tmp->next->name) : ref_symbol;
 		if ((symbol->type == CONNECT_TYPE && !strcmp(tmp->next->name, "obj")) ||
-			((symbol->type == OBJECT_TYPE) && !(strcmp(obj_type, "connect")) && (!strcmp(tmp->next->name, "obj")))) {
+			((symbol->type == OBJECT_TYPE) && !(strcmp(obj_type, "connect")) && (!strcmp(tmp->next->name, "obj")))||
+			(!strcmp(tmp->next->name, "obj") && is_param_connect(symbol))) {
 			cdecl_t* type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
 			type->common.categ = INT_T;
 			type->common.size = sizeof(int) * 8;

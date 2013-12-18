@@ -1024,6 +1024,11 @@ symbol_t get_expression_sym(tree_t *node) {
 		my_DBG("try to find %s\n", name);
 		sym = symbol_find(current_table, name, PARAMETER_TYPE);
 		return sym;
+	} else if (node->common.type == COMPONENT_TYPE){
+		ref_ret_t ref_ret;
+		init_ref_ret(&ref_ret);
+		sym = get_ref_sym(node, &ref_ret, NULL);
+		return sym;
 	} else {
 		my_DBG("TODO: other cases \n");
 	}

@@ -1961,7 +1961,11 @@ void parse_foreach(tree_t* node, symtab_t table) {
 		}
 	}
 	symbol_t tmp = symbol_find(attr->table, ident->ident.str, FOREACH_TYPE);
-	if(val->u.list.vector[0].type == PARAM_TYPE_REF) {
+	if (val->u.list.vector == NULL) {
+		current_table = saved;
+		return;
+	}
+	else if(val->u.list.vector[0].type == PARAM_TYPE_REF) {
 		symbol_set_type(tmp, OBJECT_TYPE);
 	}
 	tree_t* block = node->foreach.block;
