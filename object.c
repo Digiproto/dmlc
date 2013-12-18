@@ -551,6 +551,19 @@ static object_type_t type2obj_type(type_t type) {
 	return ret;
 }
 
+symbol_list_t* fake_bank_list() {
+	bank_attr_t* attr = (bank_attr_t*)gdml_zmalloc(sizeof(bank_attr_t));
+	attr->common.obj_type = BANK_TYPE;
+	attr->common.name = strdup("__fake_bank");
+	attr->common.table = symtab_create(BANK_TYPE);
+	symbol_t sym = (symbol_t)gdml_zmalloc(sizeof(symbol_t));
+	sym->name = strdup("__fake_bank");
+	sym->attr = attr;
+	symbol_list_t* list = (symbol_list_t*)gdml_zmalloc(sizeof(symbol_list_t));
+	list->sym = sym;
+	return list;
+}
+
 static void create_objs(object_t *obj, type_t type) {
 	symtab_t table = obj->symtab->sibling;
 	if (table)
@@ -564,6 +577,9 @@ static void create_objs(object_t *obj, type_t type) {
 	}	
 	list = symbol_list_find_type(table, type);
 	obj_type = type2obj_type(type);
+	if (type == BANK_TYPE && list == NULL) {
+		list = fake_bank_list();
+	}
     while(list) {
 		create_func[obj_type](obj, list->sym);
         /*restore OBJ to device*/
@@ -615,7 +631,7 @@ device_t *create_device_tree(tree_t  *root){
 	return (device_t *)obj;
 }
 
-static void add_object_templates(object_t *obj, tree_t *node);
+static void add_object_templates(object_t *obj);
 void create_template_name(object_t *obj, const char *name) {
 	symbol_t sym;
 	template_attr_t *tem_attr;
@@ -643,7 +659,7 @@ static void field_realize(object_t *obj) {
 	tree_t *templates = (obj->node) ? obj->node->field.templates : NULL;
 
 	set_current_obj(obj);
-	add_object_templates(obj, templates);
+	add_object_templates(obj);
 	if(fld->is_dummy) {
 		process_object_names(obj);
 		process_object_templates(obj);	
@@ -769,7 +785,7 @@ static void register_realize(object_t *obj) {
 		reg->fields[0] = tmp;
 	}
 
-	add_object_templates(obj, obj->node->reg.templates);
+	add_object_templates(obj);
 	/* parse the attribute about registers
 	 * such as: size, offset, array*/
 	parse_register_attr(reg->obj.node, obj->symtab->parent);
@@ -895,7 +911,8 @@ static void bank_realize(object_t *obj) {
 		i++;
 	}
 
-	add_object_templates(obj, obj->node->bank.templates);
+	add_object_templates(obj);
+	if (obj->node == NULL) return;
 	/* parse the symbols, parameters and check expressions
 	 * that in the bank table */
 	parse_bank(obj->node, obj->symtab->sibling);
@@ -946,7 +963,7 @@ static void connect_realize(object_t *obj) {
 	connect_attr_t *attr;
 
 	set_current_obj(obj);
-	add_object_templates(obj, obj->node->connect.templates);
+	add_object_templates(obj);
 	/* parse the connect arraydef expression */
 	parse_connect_attr(obj->node, obj->symtab->parent);
 	/* parse elements and calculate expressions that
@@ -1076,7 +1093,7 @@ static void attribute_realize(object_t *obj) {
 	arraydef_attr_t *array = NULL;
 
 	set_current_obj(obj);
-	add_object_templates(obj, obj->node->attribute.templates);
+	add_object_templates(obj);
 	/* parse the arraydef about attribute */
 	parse_attribute_attr(obj->node, obj->symtab->parent);
 	attribute_attr_t* attribute_attr = obj->node->common.attr;
@@ -1153,7 +1170,7 @@ static void port_realize(object_t *obj) {
 	dml_port_t *port = (dml_port_t *)obj;
 
 	set_current_obj(obj);
-	add_object_templates(obj, obj->node->port.templates);
+	add_object_templates(obj);
 	list_for_each(p, &obj->childs) {
 		i++;
 	}
@@ -1192,7 +1209,7 @@ static void port_realize(object_t *obj) {
 static void event_realize(object_t *obj) {
 	set_current_obj(obj);
 	parse_event(obj->node, obj->symtab->sibling);
-	add_object_templates(obj, NULL);
+	add_object_templates(obj);
 	process_object_names(obj);
 }
 
@@ -1217,7 +1234,7 @@ void device_realize(device_t *dev) {
 
 	/* add default templates "template device" into device,
 	 * and insert symbols into table of templates */
-	add_object_templates(&dev->obj, NULL);
+	add_object_templates(&dev->obj);
 	/* In parsing, we only insert the object and method symbol
 	 * into table, and create the table, but the constant, parameters
 	 * and expression are not handled, we should insert the constant,
@@ -1736,11 +1753,7 @@ static void parse_rely_templates(object_t* obj) {
 	return;
 }
 
-static void add_object_templates(object_t *obj, tree_t *t){
-	tree_t *it = t;
-	struct tree_ident *ident;
-	struct template_name *temp;
-	
+static void add_object_templates(object_t *obj){
 	add_default_template(obj);
 	parse_rely_templates(obj);
 	//process_object_templates(obj);
@@ -1756,6 +1769,9 @@ void add_object_method(object_t *obj,const char *name){
 	method_attr_t *attr;
 
 	if(!strcmp(obj->obj_type,"bank") && (!strcmp(name,"read_access") || !strcmp(name,"write_access"))){
+		return;
+	}
+	if ((!strcmp(obj->obj_type, "bank")) && (!strcmp(obj->name, "__fake_bank"))) {
 		return;
 	}
 
