@@ -620,8 +620,8 @@ template register {
 		}
 	    } else {
 		// No explicit fields
-		//inline $read() -> (fieldval);
-			call $read() -> (fieldval);
+		inline $read() -> (fieldval);
+			//call $read() -> (fieldval);
 	    }
 	    value = fieldval[msb1 - 1 : lsb];
 	/*} else {
@@ -719,11 +719,12 @@ template register {
 		    // Partial access
 		    call $get -> (fieldval);
 		    fieldval[msb1 - 1:lsb] = value;
-		    call $write(fieldval);
+		    // call $write(fieldval);
+		    inline $write(fieldval);
 		} else {
 		    // Whole-field access
-		    //inline $write(value);
-		    call $write(value);
+		    inline $write(value);
+		    //call $write(value);
 		}
 	    }
 	/*} else {
@@ -828,12 +829,14 @@ template field {
 
     method read_access() -> (typeof($this) value) default {
 		local typeof($this) tmp;
-        call $read -> (tmp);
+        	//call $read -> (tmp);
+		inline $read->(tmp);
 		value = tmp;
     }
 
     method write_access(typeof($this) value) default {
-        call $write(value);
+        //call $write(value);
+	inline $write(value);
     }
 }
 
