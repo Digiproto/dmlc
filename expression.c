@@ -2179,6 +2179,21 @@ symtab_t get_data_table(symbol_t symbol) {
 	return table ;
 }
 
+static symtab_t get_point_table(symbol_t symbol) {
+	assert(symbol != NULL);
+	symtab_t table = NULL;
+	cdecl_t* attr = symbol->attr;
+	cdecl_t* type = attr->common.bty;
+	if (record_type(type)) {
+		get_record_table(type);
+	} else {
+		fprintf(stderr, "other pointer type: %d\n", type->common.categ);
+		exit(-1);
+	}
+
+	return table;
+}
+
 static symtab_t get_array_table(symbol_t symbol) {
 	assert(symbol != NULL);
 	symtab_t table = NULL;
@@ -2281,6 +2296,9 @@ symtab_t get_symbol_table(symtab_t sym_tab, symbol_t symbol) {
 		case ARRAY_T:
 			table = get_array_table(symbol);
 			break;
+		case POINTER_T:
+			table = get_point_table(symbol);
+			break;
 		case BANK_TYPE:
 		case REGISTER_TYPE:
 		case FIELD_TYPE:
@@ -2312,6 +2330,7 @@ symtab_t get_symbol_table(symtab_t sym_tab, symbol_t symbol) {
 			table = get_select_table(sym_tab, symbol);
 			break;
 		default:
+			printf("STRUCT_TYPE: %d, POINTER_T: %d\n", STRUCT_TYPE, POINTER_T);
 			error("Othe symbol %s(%d)\n", symbol->name, symbol->type);
 			/* FIXME: handle the error */
 //			exit(-1);
@@ -3979,8 +3998,10 @@ static cdecl_t* get_common_type(symtab_t table, symbol_t symbol, expr_t* expr) {
 		case OBJECT_TYPE:
 			type = get_obj_type(symbol, table, expr);
 			break;
+		case STRUCT_TYPE:
+			type = ((struct_attr_t*)(symbol->attr))->decl;
+			break;
 		default:
-			*a = 100;
 			error("In %s, line = %d, other dml %s(%s)\n",
 					__FUNCTION__, __LINE__, symbol->name, TYPENAME(symbol->type));
 			/* FIXME: only for debugging */
@@ -4091,6 +4112,7 @@ static int data_is_array(symbol_t symbol) {
 static int check_array_symbol(symtab_t table, symbol_t symbol) {
 	assert(table != NULL); assert(symbol != NULL);
 	void* attr = symbol->attr;
+	int *a = NULL;
 	switch (symbol->type) {
 		case REGISTER_TYPE:
 			object_is_array(attr, register_attr_t);
@@ -4124,7 +4146,18 @@ static int check_array_symbol(symtab_t table, symbol_t symbol) {
 			fprintf(stderr, "symbol'%s' not array\n", symbol->name);
 			return 0;
 			break;
+		case PARAM_TYPE:
+			attr = symbol->attr;
+			if (((((params_t*)attr)->decl->common.categ) == NO_TYPE) ||
+				((((params_t*)attr)->decl->common.categ) == POINTER_T) ||
+				((((params_t*)attr)->decl->common.categ) == ARRAY_T) ||
+				((((params_t*)attr)->decl->common.categ) == PARAMETER_TYPE)) {
+				return 1;
+			}
+			break;
 		default:
+			printf("symbol name: %s, type: %s\n", symbol->name, TYPENAME(symbol->type));
+			*a = 1000;
 			error("symbol'%s' not array", symbol->name);
 	}
 
