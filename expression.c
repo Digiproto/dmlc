@@ -3241,8 +3241,6 @@ expr_t* check_shift_expr(tree_t* node, symtab_t table, expr_t* expr) {
 		new_int_type(expr);
 		return expr;
 	} else {
-		printf("array: %d, point: %d, int: %d\n", ARRAY_T, POINTER_T, INT_T);
-		printf("type1: %d, type2: %d\n", type1->common.categ, type2->common.categ);
 		error("Invalid operands line : %d\n", __LINE__);
 	}
 
@@ -3339,7 +3337,9 @@ static int can_assign(expr_t* l_expr, expr_t* r_expr) {
 	cdecl_t* l_type = unqual(l_expr->type);
 	cdecl_t* r_type = unqual(r_expr->type);
 
-	if (is_ptr_type(l_type) && is_null_ptr(r_expr)) {
+	if (is_same_type(l_type, r_type)) {
+		return 1;
+	} else if (is_ptr_type(l_type) && is_null_ptr(r_expr)) {
 		return 1;
 	} else if (is_parameter_type(l_type) || is_parameter_type(r_type)){
 		return 1;
@@ -3977,6 +3977,7 @@ static cdecl_t* get_common_type(symtab_t table, symbol_t symbol, expr_t* expr) {
 			break;
 		case BANK_TYPE:
 		case CONNECT_TYPE:
+		case GROUP_TYPE:
 			type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
 			type->common.categ = INT_T;
 			break;
@@ -4000,6 +4001,9 @@ static cdecl_t* get_common_type(symtab_t table, symbol_t symbol, expr_t* expr) {
 			break;
 		case STRUCT_TYPE:
 			type = ((struct_attr_t*)(symbol->attr))->decl;
+			break;
+		case BITFIELDS_ELEM_TYPE:
+			type = ((bit_element_t*)(symbol->attr))->decl;
 			break;
 		default:
 			error("In %s, line = %d, other dml %s(%s)\n",
@@ -4156,8 +4160,6 @@ static int check_array_symbol(symtab_t table, symbol_t symbol) {
 			}
 			break;
 		default:
-			printf("symbol name: %s, type: %s\n", symbol->name, TYPENAME(symbol->type));
-			*a = 1000;
 			error("symbol'%s' not array", symbol->name);
 	}
 

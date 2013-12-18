@@ -240,6 +240,7 @@
 	fn(EXPR_STATEMENT) \
 	/* dictionary */ \
 	fn(DICTIONARY_TYPE) \
+	fn(BITFIELDS_ELEM_TYPE) \
 	/* nil */ \
 	fn(NIL_TYPE)
 
@@ -265,6 +266,7 @@ static const char *type_name[] = {
 	fn(SHORT_T) \
 	fn(INT_T) \
 	fn(UINT_T) \
+	fn(BITFIELDS_T) \
 	fn(LONG_T) \
 	fn(FLOAT_T) \
 	fn(DOUBLE_T) \
@@ -274,7 +276,6 @@ static const char *type_name[] = {
 	fn(ARRAY_T) \
 	fn(STRUCT_T) \
 	fn(LAYOUT_T) \
-	fn(BITFIELDS_T) \
 	fn(TYPEDEF_T) \
 	fn(FUNCTION_T) \
 	fn(INTERFACE_T)

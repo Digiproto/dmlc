@@ -1397,6 +1397,8 @@ void parse_data_cdecl(tree_t* node, symtab_t table) {
 	return;
 }
 
+extern int record_type(cdecl_t* type);
+static void insert_record_elems(cdecl_t* type);
 void parse_local_decl(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -1434,6 +1436,9 @@ void parse_local_decl(tree_t* node, symtab_t table) {
 		}
 	}
 
+	if (record_type(decl)) {
+		insert_record_elems(decl);
+	}
 	symbol_insert(table, decl->var_name, decl->common.categ, decl);
 
 	return;
@@ -2356,7 +2361,7 @@ static void insert_record_elems(cdecl_t* type) {
 		symtab_t table = type->bitfields.table;
 		while(elem) {
 			int catag = elem->decl->common.categ;
-			symbol_insert(table, elem->decl->var_name, catag, elem);
+			symbol_insert(table, elem->decl->var_name, BITFIELDS_ELEM_TYPE, elem);
 			if (record_type(elem->decl))
 				insert_record_elems(elem->decl);
 			elem = elem->next;
