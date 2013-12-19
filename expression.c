@@ -2056,6 +2056,10 @@ reference_t* get_reference(tree_t* node, reference_t* ref, expr_t* expr, symtab_
 			new->name = node->ident.str;
 			new->next = ref;
 			break;
+		case EXPR_BRACK_TYPE:
+			free(new);
+			new = get_reference(node->expr_brack.expr_in_brack, ref, expr, table);
+			break;
 		default:
 			PERRORN("other node type: %s", node, node->common.name);
 			/* FIXME: handle the error */
@@ -2335,8 +2339,10 @@ symtab_t get_symbol_table(symtab_t sym_tab, symbol_t symbol) {
 		case SELECT_TYPE:
 			table = get_select_table(sym_tab, symbol);
 			break;
+		case STRUCT_TYPE:
+			table = ((struct_attr_t*)attr)->table;
+			break;
 		default:
-			printf("STRUCT_TYPE: %d, POINTER_T: %d\n", STRUCT_TYPE, POINTER_T);
 			error("Othe symbol %s(%d)\n", symbol->name, symbol->type);
 			/* FIXME: handle the error */
 //			exit(-1);
