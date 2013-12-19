@@ -904,17 +904,25 @@ void parse_undef_list(symtab_t table) {
 	return;
 }
 
+static void insert_array_index_into_obj(arraydef_attr_t* array, symtab_t table);
 void parse_register_attr(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
 	object_attr_t* attr = node->common.attr;
+	symtab_t reg_table = attr->common.table;
 	if (node->reg.array) {
 		set_obj_array();
 		attr->reg.is_array = 1;
 		attr->reg.arraydef = get_arraydef(node->reg.array, table);
+		if (reg_table)
+			insert_array_index_into_obj(attr->reg.arraydef, reg_table);
 	}
 	attr->reg.size = get_size(node->reg.sizespec, table);
-	attr->reg.offset = get_offset(node->reg.offset, table);
+	if (reg_table) {
+		attr->reg.offset = get_offset(node->reg.offset, reg_table);
+	} else {
+		attr->reg.offset = get_offset(node->reg.offset, table);
+	}
 	attr->common.desc = get_obj_desc(node->reg.spec);
 
 	return;
@@ -1094,9 +1102,6 @@ static void insert_array_index_into_obj(tree_t *node, arraydef_attr_t* array, sy
 void parse_register(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 	object_attr_t* attr = node->common.attr;
-	if (attr->reg.is_array) {
-		insert_array_index_into_obj(node, attr->reg.arraydef, table);
-	}
 
 	obj_spec_t* spec = node->reg.spec;
 	parse_obj_spec(spec, table);
