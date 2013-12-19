@@ -910,19 +910,15 @@ void parse_register_attr(tree_t* node, symtab_t table) {
 
 	object_attr_t* attr = node->common.attr;
 	symtab_t reg_table = attr->common.table;
+	
 	if (node->reg.array) {
 		set_obj_array();
 		attr->reg.is_array = 1;
 		attr->reg.arraydef = get_arraydef(node->reg.array, table);
-		if (reg_table)
-			insert_array_index_into_obj(attr->reg.arraydef, reg_table);
+		insert_array_index_into_obj(attr->reg.arraydef, reg_table);
 	}
 	attr->reg.size = get_size(node->reg.sizespec, table);
-	if (reg_table) {
-		attr->reg.offset = get_offset(node->reg.offset, reg_table);
-	} else {
-		attr->reg.offset = get_offset(node->reg.offset, table);
-	}
+	attr->reg.offset = get_offset(node->reg.offset, reg_table);
 	attr->common.desc = get_obj_desc(node->reg.spec);
 
 	return;

@@ -258,6 +258,7 @@ static object_type_t get_object_encoding(const char *name) {
 }
 
 extern void check_reg_table(void);
+extern int inc_current_table_num();
 static void process_object_relationship(object_t *obj);
 static void init_object(object_t *obj, object_t *parent, const char *name, const char *type, tree_t *node, symtab_t table) {	
 	int i;
@@ -272,6 +273,11 @@ static void init_object(object_t *obj, object_t *parent, const char *name, const
 	obj->symtab = symtab_create_with_cb(OBJECT_TYPE, object_symbol_find, object_symbol_find_notype);
 	if(!table) {
 		obj->symtab->sibling = symtab_create(TMP_TYPE);
+		obj->symtab->sibling->table_num = inc_current_table_num();
+		if (node) {
+			object_attr_t* attr = node->common.attr;
+			attr->common.table = obj->symtab->sibling;
+		}
 	} else {
 		obj->symtab->sibling = table;
 	}

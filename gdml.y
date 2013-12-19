@@ -94,7 +94,7 @@ int object_spec_type = -1;
 object_attr_t* object_comm_attr = NULL;
 static symtab_t current_table = NULL;
 static symtab_t prefix_table = NULL;
-static long int current_table_num = 0;
+extern long int current_table_num;
 tree_t* current_object_node = NULL;
 %}
 

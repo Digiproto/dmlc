@@ -85,6 +85,7 @@ tree_t* get_ast (const char *filename)
 
 struct file_stack* filestack_top = NULL;
 symtab_t root_table = NULL;
+long int current_table_num = 0;
 extern void gen_qemu_code(tree_t *root, const char *out_dir);
 extern void gen_skyeye_code(tree_t *root, const char *out_dir);
 int main (int argc, char *argv[])
@@ -143,4 +144,8 @@ normal:
 #endif
 
 	return 0;
+}
+
+int inc_current_table_num() {
+	return current_table_num++;
 }
