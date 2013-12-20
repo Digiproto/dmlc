@@ -239,16 +239,22 @@ static void gen_device_connect(device_t *dev, FILE *f) {
 	struct list_head *p;
 	object_t *tmp;
 	int i = 0;
+	const char *name;
 
 	gen_device_connect_code(dev, f);
 
 	fprintf(f, "\nconst struct ConnectDescription %s_connects[] = {\n", dev->obj.name);
 	list_for_each(p, &dev->connects) {
 		tmp = list_entry(p, object_t, entry);
+		if(tmp->is_array) {
+			name = tmp->a_name;
+		} else 	{
+			name = tmp->name;
+		}
 		fprintf(f, "\t[%d] = (struct ConnectDescription) {\n", i);
-		fprintf(f, "\t\t.name = \"%s\",\n", tmp->name);
-		fprintf(f, "\t\t.set = %s_set,\n", tmp->name);
-		fprintf(f, "\t\t.get = %s_get,\n", tmp->name);
+		fprintf(f, "\t\t.name = \"%s\",\n", name);
+		fprintf(f, "\t\t.set = %s_set,\n", name);
+		fprintf(f, "\t\t.get = %s_get,\n", name);
 		fprintf(f, "\t},\n");
 		i++;
 	}
