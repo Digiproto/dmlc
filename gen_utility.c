@@ -30,7 +30,9 @@ const char *simics_apis[] = {
 	"SIM_mem_op_is_read",
 	"SIM_mem_op_set_value",
 	"SIM_mem_op_get_value",
+	"SIM_step_count",
 	"VT_old_time_post",
+	"VT_old_step_post",
 	NULL
 };
 
@@ -40,6 +42,7 @@ const char *simics_typedefs[] = {
 	"Sim_RW_Read",
 	"Sim_Endian_Target",
 	"Sim_PE_No_Exception",
+	"NULL",
 	NULL
 };
 
