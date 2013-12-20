@@ -9,7 +9,7 @@ static void gen_port_description(object_t *obj, FILE *f) {
 	for (i = 0; i < port->num; i++) {
 		impl = port->impls[i];
 		fprintf(f, "\t[%d] = (struct InterfaceDescription ) {\n", i);
-		fprintf(f, "\t\t.name = %s,\n", impl->name);
+		fprintf(f, "\t\t.name = \"%s\",\n", impl->name);
 		fprintf(f, "\t\t.iface = &%s_iface,\n", impl->qname);
 		fprintf(f, "\t},\n");
 	}
@@ -26,7 +26,7 @@ void gen_device_port(device_t  *dev, FILE *f) {
 	list_for_each(p, &dev->ports){
 		tmp = (object_t *)list_entry(p, object_t, entry);
 		fprintf(f, "\t[%d] = (struct PortDescription) {\n", i);
-		fprintf(f, "\t\t.name = %s,\n", tmp->name);
+		fprintf(f, "\t\t.name = \"%s\",\n", tmp->name);
 		fprintf(f, "\t\t.id = %s_port_ifaces,\n", tmp->name);
 		fprintf(f, "\t},\n");
 		i++;
