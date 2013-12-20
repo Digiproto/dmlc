@@ -2025,6 +2025,7 @@ typeident
 	| DOUBLE {
 		tree_t* node = (tree_t*)c_keyword_node("double", &@$);
 		node->ident.type = DOUBLE_TYPE;
+		node->ident.translate = translate_c_keyword;
 		$$ = node;
 	}
 	| FLOAT {
