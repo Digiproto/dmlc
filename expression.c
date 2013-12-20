@@ -4477,7 +4477,7 @@ expr_t* check_bit_slic_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	expr = check_expression(node->bit_slic.expr, table, expr);
 	expr_t* e1 = check_expr(node->bit_slic.bit, table);
 	expr_t* e2 = node->bit_slic.bit_end ? check_expr(node->bit_slic.bit_end, table) : NULL;
-	if ((!is_int_type(expr->type)) && !is_int_type(e1->type) &&
+	if ((e2 && !is_int_type(expr->type)) && !is_int_type(e1->type) &&
 			!is_no_type(expr->type) && !is_no_type(e1->type) &&
 			!is_parameter_type(expr->type) && !is_parameter_type(e1->type)) {
 		PERRORN("the bit slicing must be int type", node);
