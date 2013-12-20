@@ -2411,6 +2411,7 @@ expression
 		node->unary.type = NON_OP_TYPE;
 		node->unary.expr = $2;
 		node->common.print_node = print_unary;
+		node->common.translate = translate_unary_expr;
 		$$ = node;
 	}
 	| '~' expression {
@@ -3230,6 +3231,7 @@ ident
 	| DATA {
 		tree_t* node = (tree_t*)dml_keyword_node("data", &@$);
 		node->ident.type = DATA_TYPE;
+		node->common.translate = translate_data;
 		$$ = node;
 	}
 	| DEVICE {
