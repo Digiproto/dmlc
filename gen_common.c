@@ -640,6 +640,8 @@ static void process_inline_start(method_attr_t *m, tree_t *input, tree_t *output
 	
 	node2 = output;
 	while(node && node2) {
+				gen_src_loc(&node2->common.location);
+				POS;
 				if(node_has_type(node)) {
 						translate(node);
 				} else {
