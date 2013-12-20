@@ -597,7 +597,7 @@ template register {
 			local uint64 readval;
         	call $read_access_main(memop, msb1, lsb) -> (readval);
 			value = readval;
-        	//call $after_read(memop);
+        	call $after_read(memop);
         //}
     }
 
