@@ -160,9 +160,6 @@ static void translate_parameter(symbol_t sym) {
 		val = (param_value_t *)sym->attr;
 	}
 	type = val->type;
-	if(!strcmp("irq_no", sym->name)) {
-		printf("translate parameter %s, type %d\n", sym->name, type);
-	}
 	switch(type) {
 		case PARAM_TYPE_INT:
 			D("0x%x", val->u.integer);
@@ -191,6 +188,7 @@ static void translate_parameter(symbol_t sym) {
 			}
 			break;
 		default:
+			D("0x0");
 			my_DBG("invalide parameter type %d\n", type);
 			break;
 	}
@@ -585,7 +583,6 @@ static void get_expr_type(tree_t *t) {
         if(t->common.type == CAST_TYPE) {
                 translate(t->cast.ctype);
         } else {
-                POS;
                 D("typeof( ");
                 translate(t);
                 D(" )");
@@ -608,8 +605,9 @@ static void process_inline_start(method_attr_t *m, tree_t *input, tree_t *output
 	if(node){
 		while(node && node2) {
 			/*FIXME: need more general assignment translate*/
+			gen_src_loc(&node2->common.location);
+			POS;
 			if(node_has_type(node)) {
-				  POS;
 				  translate(node);
 			} else {
 				  /*just get type info*/
@@ -1350,7 +1348,9 @@ static const char *get_basetype_type(tree_t *node) {
 		name = node->ident.str;
 	} else if(node->common.type == C_KEYWORD_TYPE) {
 		name = node->ident.str;
-    }else {
+	}else if(node->common.type == DML_KEYWORD_TYPE) {
+		name = node->ident.str;
+	}else {
 		my_DBG("other base type \"%s\"\n", TYPENAME(node->common.type));
 	}
 	return name;
@@ -1417,6 +1417,10 @@ static void translate_char(tree_t *t) {
 
 static void translate_double(tree_t *t) {
 	D("double ");
+}
+
+void translate_data(tree_t *t) {
+	translate_ident(t);
 }
 
 void translate_float(tree_t *t) {
@@ -1502,6 +1506,13 @@ void translate_ident(tree_t *t) {
 	if(!sym) {
 		my_DBG("no sym %s found in table\n",name);
 	}
+	if(sym && sym->type == CONSTANT_TYPE) {
+		constant_attr_t *attr = (constant_attr_t *)sym->attr;	
+		expr_t *expr = attr->value;
+		int tmp = expr->val->int_v.value;
+		D("0x%x", tmp);
+		return;
+	} 
 	if(no_alias) {
 		if(no_star) {
 			D("%s",name);
