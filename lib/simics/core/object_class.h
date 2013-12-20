@@ -24,7 +24,7 @@
 #ifndef __OBJECT_CLASS_H__ 
 #define __OBJECT_CLASS_H__  
 #include <stdlib.h>
-#include <simics/core/object_resource.h>
+#include "object_resource.h"
 typedef struct conf_class {
 	const char *cls_name;
 	const class_data_t *cls_data;

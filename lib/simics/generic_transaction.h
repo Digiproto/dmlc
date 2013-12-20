@@ -30,7 +30,7 @@
 
 #ifndef __GENERIC_TRANSACTION_H__ 
 #define __GENERIC_TRANSACTION_H__  
-#include <simics/base_types.h>
+#include "base_types.h"
 typedef uint16 stall_id_t;
 
 typedef enum {

@@ -20,9 +20,9 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
-#include <simics/core/object_class.h>
-#include <simics/core/object_model.h>
-#include <simics/core/object_iface.h>
+#include "simics/core/object_class.h"
+#include "simics/core/object_model.h"
+#include "simics/core/object_iface.h"
 
 static const void *qdev_find_interface(const struct InterfaceDescription *id, const char *iface_name){
     const void *iface = NULL;
@@ -103,4 +103,21 @@ int SIM_connect_port(conf_object_t *dev1, const char *name, conf_object_t *dev2,
     return obj_connect_internal(dev1, name, dev2, port, 0);
 }
 
+int SIM_set_attr(conf_object_t *dev, const char *name, attr_value_t val)
+{
+	const struct conf_class *cd = dev->class_data;
+	const struct AttributeDescription *attr;
+	sim_set_attr set = NULL;
 
+	attr = cd->cls_data->resources->attributes;
+	for (; attr->name; attr++) {
+		if(!strcmp(attr->name, name)) {
+			set = attr->set;
+			break;
+		}
+	}
+	if(set) {
+		return set(dev, val);
+	}
+	return 0;
+}

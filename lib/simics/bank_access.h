@@ -23,7 +23,7 @@
 
 #ifndef __BANK_ACCESS_H__
 #define __BANK_ACCESS_H__  
-#include <simics/base_types.h>
+#include "base_types.h"
 
 typedef struct bank_access {
 	exception_type_t (*read)(conf_object_t *obj, physical_address_t addr, void *buf, size_t size);
@@ -36,4 +36,6 @@ struct bank_access_description {
 };
 
 const bank_access_t *SIM_find_bank_access(conf_object_t *dev, const char *bank_name);
+const bank_access_t *SIM_get_bank_access(conf_object_t *dev, int index);
+
 #endif /* __BANK_ACCESS_H__ */

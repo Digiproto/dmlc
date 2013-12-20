@@ -22,8 +22,16 @@
  */
 #include <stdio.h>
 #include <string.h>
-#include <simics/core/object_model.h>
-#include <simics/core/object_class.h>
+#include <assert.h>
+#include "simics/util/list.h"
+#include "simics/core/object_model.h"
+#include "simics/core/object_class.h"
+
+static LIST_HEAD(obj_list);
+typedef struct object_list {
+	struct list_head entry;
+	conf_object_t *obj; 
+} obj_list_t;
 
 static conf_object_t *SIM_new_object(const conf_class_t *cls, const char *name) {
 	conf_object_t *tmp = NULL;
@@ -39,11 +47,18 @@ static conf_object_t *SIM_new_object(const conf_class_t *cls, const char *name) 
 void VT_object_constructor(conf_object_t *obj, const char *name) {
 }
 
-void conf_object_register(conf_object_t *obj, const char *name) {
-	/*add object info hash table*/
+void SIM_object_register(conf_object_t *obj, const char *name) {
+	obj_list_t *tmp;
+	tmp = (obj_list_t*) MM_ZALLOC(sizeof(*tmp));
+	assert(tmp);
+
+	INIT_LIST_HEAD(&tmp->entry);
+	obj->name = strdup(name);
+	tmp->obj = obj;
+	list_add_tail(&tmp->entry, &obj_list);
 }
 
-conf_object_t *pre_conf_object(const char *obj_name, const char *cls_name) {
+conf_object_t* SIM_pre_conf_object(const char *obj_name, const char *cls_name) {
 	const conf_class_t *cls = NULL;
 
 	cls = SIM_class_find(cls_name);
@@ -51,6 +66,19 @@ conf_object_t *pre_conf_object(const char *obj_name, const char *cls_name) {
 		return SIM_new_object(cls, obj_name);
 	} else {
 		printf("cannot find class: %s\n", cls_name);
+	}
+	return NULL;
+}
+
+conf_object_t* SIM_get_conf_object(const char *obj_name) {
+	struct list_head *p;
+	obj_list_t *tmp;
+
+	list_for_each(p, &obj_list) {
+		tmp = list_entry(p, obj_list_t, entry);
+		if(!strcmp(tmp->obj->name, obj_name)) {
+			return tmp->obj;
+		}
 	}
 	return NULL;
 }

@@ -20,13 +20,12 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <dlfcn.h>
-#include <simics/util/list.h>
-#include <simics/core/object_class.h>
-#include <simics/host-config.h>
+#include "simics/util/list.h"
+#include "simics/core/object_class.h"
+#include "simics/host-config.h"
 
 #define DEFAULT_SO_DIR "$PWD/$OS/lib/"
 
@@ -36,7 +35,8 @@ const char *suffix = "so";
 const char *suffix = "dll";
 #endif
 const char *entry = "init_local";
-static const char *def_so_dir = SYSTEM_LIB;
+//static const char *def_so_dir = SYSTEM_LIB;
+static const char *def_so_dir = "/opt/skyeye/lib";
 
 static LIST_HEAD(class_list);
 typedef struct class_list {
@@ -53,7 +53,7 @@ int load_class(const char *dir, const char *so) {
 	char *error;
 	char *p = buf;
 
-	n = snprintf(p, sizeof(buf), "%s/%s.%s", dir, so, suffix);
+	n = snprintf(p, sizeof(buf), "%s/lib%s.%s", dir, so, suffix);
 	handle = dlopen(buf, RTLD_LAZY);	
 	if(!handle) {
 		printf("%s\n", dlerror());
@@ -68,7 +68,8 @@ int load_class(const char *dir, const char *so) {
 	if(pf) {
 		pf();
 	}
-	dlclose(handle);	
+	// text segment would destroy for mem if handle closed
+	//dlclose(handle);
 	return 0;
 }
 

@@ -20,9 +20,9 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
-#include <simics/bank_access.h>
-#include <simics/core/object_class.h>
-#include <simics/core/object_model.h>
+#include "simics/bank_access.h"
+#include "simics/core/object_class.h"
+#include "simics/core/object_model.h"
 
 static const bank_access_t *find_bank_access(const struct bank_access_description *array, const char *name) {
 	const struct bank_access_description *tmp;
@@ -44,4 +44,28 @@ const bank_access_t *SIM_find_bank_access(conf_object_t *dev, const char *name) 
 	cls_data = cls->cls_data;
 	p = cls_data->bank_access;
 	return find_bank_access(p, name);
+}
+
+static const bank_access_t *get_bank_access(const struct bank_access_description *array, int index) {
+	const struct bank_access_description *tmp;
+	int i = 0;
+	if(index < 0)
+		return NULL;
+	for(tmp = array; tmp->name; tmp++) {
+		if(i == index) {
+			return tmp->access;
+		}
+	}
+	return NULL;
+}
+
+const bank_access_t *SIM_get_bank_access(conf_object_t *dev, int index) {
+	const conf_class_t *cls;
+	const class_data_t *cls_data;
+	const struct bank_access_description *p;
+
+	cls = dev->class_data;
+	cls_data = cls->cls_data;
+	p = cls_data->bank_access;
+	return get_bank_access(p, index);
 }

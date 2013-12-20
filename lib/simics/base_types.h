@@ -45,7 +45,6 @@ typedef int64_t int64;
 typedef uint64_t uint64;
 typedef uint64 uintptr_t;
 typedef int set_error_t;
-typedef int exception_type_t;
 typedef uint32 physical_address_t;
 typedef physical_address_t logical_address_t;
 typedef struct conf_object  conf_object_t;
@@ -54,10 +53,11 @@ typedef struct conf_object  conf_object_t;
 #define MEMSET memset
 #define MEMCPY memcpy
 #define MM_ZALLOC(n) memset(malloc(n), 0, n)
-#define No_exp 0
-#define SIM_c_get_port_interface qdev_get_port_interface
-#define SIM_c_get_interface qdev_get_interface
+#define SIM_c_get_port_interface SIM_get_port_interface
+#define SIM_c_get_interface SIM_get_interface
+#define conf_object_register SIM_object_register
 #define UNUSED(x) (void)(x)
+//#define UNUSED __attribute__((unused)) 
 #define MASK(x) ((x) < 32 \
                  ? ((1 << (x)) - 1) \
                  : (x) < 64 \
@@ -65,5 +65,33 @@ typedef struct conf_object  conf_object_t;
                  : UINT64_C(0xffffffffffffffff))
 #define MASK1(x) MASK((x) + 1)
 #define MIX(x, y, mask) (((x) & ~(mask)) | ((y) & (mask)))
+
+typedef enum{
+	/* No exception */
+	No_exp = 0,
+	/* Memory allocation exception */
+	Malloc_exp,
+	/* File open exception */
+	File_open_exp,
+	/* DLL open exception */
+	Dll_open_exp,
+	/* Invalid argument exception */
+	Invarg_exp,
+	/* Invalid module exception */
+	Invmod_exp,
+	/* wrong format exception for config file parsing */
+	Conf_format_exp,
+	/* some reference excess the predefiend range. Such as the index out of array range */
+	Excess_range_exp,
+	/* Can not find the desirable result */
+	Not_found_exp,
+	/* Wrong executable file format */
+	Exec_format_exp,
+	/* Access exception */
+	Access_exp,
+	//Sim_PE_No_Exception = No_exp,
+	/* Unknown exception */
+	Unknown_exp
+}exception_type_t;
 
 #endif /* __BASE_TYPES_H__ */

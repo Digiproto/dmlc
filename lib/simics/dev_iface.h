@@ -23,7 +23,7 @@
 
 #ifndef __DEV_IFACE_H__ 
 #define __DEV_IFACE_H__  
-#include <simics/generic_transaction.h>
+#include "generic_transaction.h"
 typedef struct signal {
 	void (*signal_raise)(conf_object_t *obj);
 	void (*signal_lower)(conf_object_t *obj);
@@ -50,6 +50,10 @@ typedef struct simple_interrupt {
 	void (*interrupt) (conf_object_t *obj, int irq);
 	void (*interrupt_clear) (conf_object_t *obj, int irq);
 } simple_interrupt_interface_t;
+
+typedef struct int_update {
+	void (*int_update)(conf_object_t *obj);
+}int_update_interface_t;
 
 typedef enum {
 	I2C_flag_exclusive,

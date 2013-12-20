@@ -23,16 +23,16 @@
 
 #ifndef __OBJECT_RESOURCE_H__ 
 #define __OBJECT_RESOURCE_H__  
-#include <simics/core/object_iface.h>
-#include <simics/bank_access.h>
+#include "object_iface.h"
+#include "../bank_access.h"
 
 typedef struct resource_descriptor {
     const struct InterfaceDescription *ifaces;
-
     /*device connects*/
     const struct ConnectDescription *connects;
     /*device port interfaces*/
     const struct PortDescription *ports;
+	const struct AttributeDescription *attributes;
 } class_resource_t;
 
 typedef struct class_data {
