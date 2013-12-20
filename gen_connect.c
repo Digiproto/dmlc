@@ -34,14 +34,15 @@ static void gen_connect_set(object_t *obj, FILE *f) {
 	if(is_array) {
 		name = obj->a_name;
 	}
-	fprintf(f, "\nstatic int set_%s(void *_, conf_object_t *obj, attr_value_t *val,  attr_value_t *_index) {\n", name);
+	fprintf(f, "\nstatic int %s_set(void *_, conf_object_t *obj, attr_value_t *val,  attr_value_t *_index) {\n", name);
+	F_HEAD;
 	fprintf(f, "\t%s_t *_dev = (%s_t *)obj;\n", dev_name, dev_name);
 	fprintf(f, "\tint ret = 0;\n");
 	fprintf(f, "\tvoid const *iface = NULL;\n");
 	fprintf(f, "\tconf_object_t *peer = NULL;\n");
 	fprintf(f, "\tconst char *port = NULL;\n");
 	if(is_array) {
-		fprintf(f, "unsigned _idx = SIM_attr_integer(*_index);\n");
+		fprintf(f, "\tunsigned _idx = SIM_attr_integer(*_index);\n");
 	}
 	fprintf(f, "\t");
 	fprintf(f, "\n");
@@ -107,6 +108,11 @@ static void gen_connect_set(object_t *obj, FILE *f) {
 
 static void gen_connect_get(object_t *obj, FILE *f) {
 	const char *name = obj->name;
+	int is_array = obj->is_array;
+
+	if(is_array) {
+		name = obj->a_name;
+	}
 	/*dummy get function*/	
 	int is_array = obj->is_array;
 
