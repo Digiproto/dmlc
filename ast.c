@@ -1408,7 +1408,6 @@ void parse_method_block(tree_t* node) {
 	attr->is_parsed = 1;
 	table->no_check = 0;
 	DEBUG_AST("parse method '%s' block, table num: %d----------------------------------------\n", attr->name, table->table_num);
-	printf("parse method '%s' block, table num: %d----------------------------------------\n", attr->name, table->table_num);
 
 	if (block->block.statement == NULL)
 		return;

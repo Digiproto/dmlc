@@ -435,18 +435,16 @@ normal_case:
 					parse_unparsed_obj(obj->node, symtab);
 				}
                                 my_DBG("object name %s, name %s\n", obj->name, name2);
-				//printf("table parsed: %d, obj node: 0x%x\n", symtab->is_parsed, obj->node);
-                                printf("object name %s,  name: %s name2 %s, symtab: 0x%x\n", obj->name, name, name2, symtab->table_num);
-								if(!strcmp(obj->obj_type, "interface")) {
-									obj2 = obj;
-									ret->con = NULL;
-									ret->iface = obj2;
-									ret->index = index;
-									node = t->component.ident;
-									ret->method = node->ident.str;
-									has_interface = 1;
-									break;
-								}
+				if(!strcmp(obj->obj_type, "interface")) {
+					obj2 = obj;
+					ret->con = NULL;
+					ret->iface = obj2;
+					ret->index = index;
+					node = t->component.ident;
+					ret->method = node->ident.str;
+					has_interface = 1;
+					break;
+				}
 				symtab->obj = obj;
                                 sym = symbol_find_notype(symtab, name2);
                                 if(sym){
