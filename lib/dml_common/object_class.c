@@ -35,8 +35,8 @@ const char *suffix = "so";
 const char *suffix = "dll";
 #endif
 const char *entry = "init_local";
-//static const char *def_so_dir = SYSTEM_LIB;
-static const char *def_so_dir = "/opt/skyeye/lib";
+static const char *def_so_dir = SYSTEM_LIB;
+//static const char *def_so_dir = "/opt/skyeye/lib";
 
 static LIST_HEAD(class_list);
 typedef struct class_list {
@@ -47,13 +47,12 @@ typedef struct class_list {
 #define BUF_SIZE 1024
 static char buf[BUF_SIZE];
 int load_class(const char *dir, const char *so) {
-	int n;
 	void *handle;
 	void (*pf)(void);
 	char *error;
 	char *p = buf;
 
-	n = snprintf(p, sizeof(buf), "%s/lib%s.%s", dir, so, suffix);
+	snprintf(p, sizeof(buf), "%s/lib%s.%s", dir, so, suffix);
 	handle = dlopen(buf, RTLD_LAZY);	
 	if(!handle) {
 		printf("%s\n", dlerror());

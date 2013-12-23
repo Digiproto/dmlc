@@ -1,66 +1,34 @@
-CC = gcc
-PREFIX ?= /usr
-DIR_NAME = simics
-INSTALL_DIR = $(PREFIX)
-INCLUDES = -I. -ldl
-#CFLAGS = -g -O2 -Werror-implicit-function-declaration -Werror=return-type \
-#		-Wmissing-field-initializers -Wuninitialized
-CFLAGS = -g
-BUILD_DIR = build
-C_FILES = $(wildcard *.c) 
-HEADER= ./simics
-OBJS = $(patsubst %.c, $(BUILD_DIR)/%.o, $(C_FILES))
-LIB_NAME = dml_common
-LIB_TARGET = lib$(LIB_NAME).so
-HOST_CONFIG = simics/host-config.h
+targets = dml_common common proxy device loader
 
-all: gen_build_dir gen_install_info $(LIB_TARGET)
-	@echo "[END] build finished."
+prefix ?= /opt/dml_all
 
-gen_build_dir:
-	@mkdir -p $(BUILD_DIR)
-	@touch  $(HOST_CONFIG)
+targets_dir = $(patsubst %,%_dir,$(targets))
+targets_clean = $(patsubst %,%_clean,$(targets))
+targets_distclean = $(patsubst %,%_distclean,$(targets))
+targets_ins = $(patsubst %,%_ins,$(targets))
 
-gen_install_info:
-	@echo "#ifndef __HOST_INFO__" > $(HOST_CONFIG)
-	@echo "#define __HOST_INFO__" >> $(HOST_CONFIG)
-	@echo "#define SYSTEM_LIB \"$(INSTALL_DIR)/lib\"" >> $(HOST_CONFIG)
-	@echo "#endif" >> $(HOST_CONFIG)
+all: $(targets_dir)
+	@echo "[END] finish compiling all dirs"
 
-$(LIB_TARGET): $(OBJS)
-	@echo [LD] $@
-	@$(CC) -shared $(CFLAGS) $(INCLUDES) -Wl,-soname,$@ -o $@ $^
+%_dir: %
+	cd $< && make
 
-$(BUILD_DIR)/%.o: %.c
-	@echo [CC] $@ 
-	@$(CC) -fPIC $(CFLAGS) $(INCLUDES) -o $@ -c $<
+%_clean: %
+	@cd $< && make clean
 
-ifndef ($(MAKECMDGOALS),clean)
-ifndef ($(MAKECMDGOALS),distclean)
-sinclude $(OBJS:.o=.d)
-endif
-endif
+%_distclean: %
+	@cd $< && make distclean
 
-$(BUILD_DIR)/%.d: %.c
-	@mkdir -p $(BUILD_DIR)
-	@$(CC) -MM $(CFLAGS) $(INCLUDES) $< 2>/dev/null | sed -e 's#.*\.o#$(patsubst %.d,%.o,$@)#' > $@
+%_ins: %
+	@cd $< && make install
 
-clean:
-	rm -fr build/*
-	rm -fr simics/host-config.h
+clean: $(targets_clean)
 
-distclean: clean
-	rm -fr build 
-	rm -rf $(LIB_TARGET)
+distclean: clean $(targets_distclean)
 
-install: all 
-	@echo [install] to $(INSTALL_DIR)
-	@mkdir -p $(INSTALL_DIR)
-	@mkdir -p $(INSTALL_DIR)/lib
-	@mkdir -p $(INSTALL_DIR)/doc
-	@mkdir -p $(INSTALL_DIR)/include/simics
-	@cp  -a $(LIB_TARGET) $(INSTALL_DIR)/lib/
-	@cp  -r $(HEADER)/* $(INSTALL_DIR)/include/simics/
+install: $(targets_ins)
+	@echo "[INS] include to $(prefix)/include"
+	@mkdir -p $(prefix)/include
+	@cp -r include/* $(prefix)/include
 
-.PHONY: all clean distclean install gen_build_dir gen_install_info
-
+.PHONY: clean distclean install
