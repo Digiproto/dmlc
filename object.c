@@ -1253,13 +1253,13 @@ void device_realize(device_t *dev) {
 		tmp = list_entry(p, object_t, entry);
 		bank_realize(tmp);
 	}
-	list_for_each(p, &dev->connects) {
-		tmp = list_entry(p, object_t, entry);
-		connect_realize(tmp);
-	}
 	list_for_each(p, &dev->attributes) {
 		tmp = list_entry(p, object_t, entry);
 		attribute_realize(tmp);
+	}
+	list_for_each(p, &dev->connects) {
+		tmp = list_entry(p, object_t, entry);
+		connect_realize(tmp);
 	}
 	list_for_each(p, &dev->implements) {
 		tmp = list_entry(p, object_t, entry);

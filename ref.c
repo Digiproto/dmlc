@@ -238,8 +238,47 @@ static object_t* get_bank_obj(symtab_t table, const char* name) {
 	return obj;
 }
 
+static object_t* get_parameter_obj(symtab_t table, const char* name) {
+	assert(table != NULL); assert(name != NULL);
+	symbol_t symbol = symbol_find(table, name, PARAMETER_TYPE);
+        parameter_attr_t* attr = symbol->attr;
+        if (attr->is_original == 0) return;
+        tree_t* node = attr->common.node;
+        tree_t* param_spec = node->param.paramspec;
+        tree_t* expr_node = NULL;
+        if (param_spec && param_spec->paramspec.expr) {
+                expr_node = param_spec->paramspec.expr;
+        } else {
+                return NULL;
+        }
+        tree_t* ident = NULL;
+        symbol_t obj_sym = NULL;
+        if (expr_node->common.type == QUOTE_TYPE) {
+                ident = expr_node->quote.ident;
+                obj_sym = symbol_find(table, ident->ident.str, OBJECT_TYPE);
+                if (obj_sym) {
+                        return (object_t*)(obj_sym->attr);
+                }
+        }
+        else {
+		fprintf(stderr, "other expr node type '%s'\n", expr_node->common.name);
+		exit(-1);
+        }
+        return (object_t*)(obj_sym->attr);
+}
+
+symtab_t get_obj_param_table(symtab_t table, symbol_t symbol) {
+	assert(table != NULL);  assert(symbol != NULL);
+	object_t* obj = get_parameter_obj(table, symbol->name);
+	symtab_t ret_table = NULL;
+	if (obj) {
+		ret_table = obj->symtab;
+	}
+	return ret_table;
+}
+
 extern symbol_t get_symbol_from_template(symtab_t table, const char* parent_name, const char* name);
-static object_t* get_parameter_obj(symtab_t table, const char* parent_name, const char* name) {
+static object_t* get_other_type_obj(symtab_t table, const char* parent_name, const char* name) {
 	assert(table != NULL); assert(name != NULL);
 	object_t* obj = NULL;
 	symbol_t sym = NULL;
@@ -250,7 +289,7 @@ static object_t* get_parameter_obj(symtab_t table, const char* parent_name, cons
 		sym = symbol_find_notype(table, name);
 		if (sym->type == SELECT_TYPE) {
 			select_attr_t* attr = sym->attr; if (strcmp(name, "bank") || attr->type != PARAMETER_TYPE) {
-				error("no object %s symbol found", name);
+				error("no object %s symbol found line: %d", name, __LINE__);
 			}
 		} else if (sym->type == DATA_TYPE) {
 			obj = gdml_zmalloc(sizeof(object_t));
@@ -274,13 +313,15 @@ static object_t* get_parameter_obj(symtab_t table, const char* parent_name, cons
 			/* not implement*/
 		} else if (sym->type != PARAMETER_TYPE && sym->type != DATA_TYPE &&
 				sym->type != REGISTER_TYPE) {
-			error("no object %s symbol found", name);
+			error("no object %s symbol found line: %d", name, __LINE__);
 		}
 		if (!strcmp(name, "default_bank") || !strcmp(name, "bank")) {
 			obj = get_bank_obj(table, name);
+		} else if (sym->type == PARAMETER_TYPE) {
+			return get_parameter_obj(table, sym->name);
 		}
 		else {
-			error("no object %s symbol found", name);
+			error("no object %s symbol found lien: %d", name, __LINE__);
 		}
 	}
 
@@ -387,7 +428,7 @@ normal_case:
 				if (sym) {
 					obj = (object_t*)(sym->attr);
 				} else {
-					obj = get_parameter_obj(symtab, fore_name, name);
+					obj = get_other_type_obj(symtab, fore_name, name);
 				}
                                 symtab = obj->symtab;
 				if (symtab->is_parsed == 0 && obj->node) {

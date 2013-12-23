@@ -2099,36 +2099,36 @@ static symtab_t get_tempalte_table(const char* name) {
 	return NULL;
 }
 
-symtab_t get_default_symbol_tale(symbol_t symbol) {
+extern symtab_t get_obj_param_table(symtab_t table, symbol_t symbol);
+symtab_t get_default_symbol_tale(symtab_t table, symbol_t symbol) {
 	assert(symbol != NULL);
-	symtab_t table = NULL;
+	symtab_t ret_table = NULL;
 
 	if (strcmp(symbol->name, "dev") == 0) {
-		table = get_root_table();
+		ret_table = get_root_table();
 	} // device
 	else if (strcmp(symbol->name, "this") == 0) {
-		table = get_current_table();
+		ret_table = get_current_table();
 	}
 	else if (strcmp(symbol->name, "fields") == 0) {
-		table = get_tempalte_table("field");
+		ret_table = get_tempalte_table("field");
 	}
 	else if (strcmp(symbol->name, "reg") == 0) {
-		table = get_tempalte_table("register");
+		ret_table = get_tempalte_table("register");
 	}
 	else if (strcmp(symbol->name, "banks") == 0 ||
 			strcmp(symbol->name, "bank") == 0 ||
 			strcmp(symbol->name, "default_bank") == 0) {
-		table = get_tempalte_table("bank");
+		ret_table = get_tempalte_table("bank");
 	}
 	else if (strcmp(symbol->name, "interface") == 0) {
-		table = get_tempalte_table("interface");
+		ret_table = get_tempalte_table("interface");
 	}
 	else {
-		error("other default symbol: %s\n", symbol->name);
-		/* TODO: handle the error */
+		ret_table = get_obj_param_table(table, symbol);
 	}
 
-	return table;
+	return ret_table;
 }
 
 symtab_t get_object_table(symbol_t symbol) {
@@ -2157,7 +2157,7 @@ symtab_t get_data_table(symbol_t symbol) {
 	cdecl_t* type = symbol->attr;
 	symtab_t table = NULL;
 	if (type->common.categ == POINTER_T) {
-		symbol_t new_sym = (symbol_t)gdml_zmalloc(sizeof(symbol_t));
+		symbol_t new_sym = (symbol_t)gdml_zmalloc(sizeof(struct symbol));
 		new_sym->name = symbol->name;
 		new_sym->attr = type->common.bty;
 		table = get_data_table(new_sym);
@@ -2241,7 +2241,7 @@ static symtab_t get_select_table(symtab_t sym_tab, symbol_t symbol) {
 	symtab_t table = NULL;
 	select_attr_t* attr = symbol->attr;
 	if (!strcmp(symbol->name, "bank") && (attr->type == PARAMETER_TYPE)) {
-		table = get_default_symbol_tale(symbol);			
+		table = get_default_symbol_tale(sym_tab, symbol);
 	} else {
 		printf("othe select : %s\n", symbol->name);
 		exit(-1);
@@ -2325,7 +2325,7 @@ symtab_t get_symbol_table(symtab_t sym_tab, symbol_t symbol) {
 			}
 			break;
 		case PARAMETER_TYPE:
-			table = get_default_symbol_tale(symbol);
+			table = get_default_symbol_tale(sym_tab, symbol);
 			break;
 		case OBJECT_TYPE:
 			table = get_object_table(symbol);
@@ -4078,6 +4078,8 @@ expr_t* check_ident_expr(tree_t* node, symtab_t table, expr_t* expr) {
 			}
 		}
 		else {
+			int*a = NULL;
+			*a = 1000;
 			error("%s no undeclared in template\n", str);
 		}
 	}

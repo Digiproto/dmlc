@@ -1374,6 +1374,7 @@ void parse_method(tree_t* node, symtab_t table) {
 		attr = symbol->attr;
 		//symtab_t method_table = attr->table;
 		attr->table = node->method.block->block.table;
+		params_insert_table(attr->table, attr->method_params);
 		//attr->table->sibling = method_table;
 		//error("duplicate definition of method '%s'\n", node->method.name);
 		return;
