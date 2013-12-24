@@ -73,12 +73,12 @@ const void *SIM_get_port_interface(conf_object_t *dev, const char *iface, const 
 }
 
 /*connect qdev1' connect to dev2 */
-static int obj_connect_internal(conf_object_t *dev1, const char *connect, conf_object_t *dev2, const char *port, int idx)
+static int obj_connect_internal(conf_object_t *dev1, const char *connect, attr_value_t *value, attr_value_t *index)
 {
     int ret = 0;
     const struct conf_class  *dc = dev1->class_data;
     const struct ConnectDescription *con;
-    connect_set_t set = NULL;
+    sim_set_t set = NULL;
 
     con = dc->cls_data->resources->connects;
     for (; con->name; con++) {
@@ -88,22 +88,22 @@ static int obj_connect_internal(conf_object_t *dev1, const char *connect, conf_o
         }
     }
     if (set) {
-        return set(dev1, dev2, port, idx);
+        return set(NULL, dev1, value, index);
     }
     return ret;
 }
 
-int SIM_obj_connect(conf_object_t *dev1, const char *name, conf_object_t *dev2)
+int SIM_obj_connect(conf_object_t *dev1, attr_value_t *value, attr_value_t *index)
 {
-    return obj_connect_internal(dev1, name, dev2, NULL, 0);
+    return obj_connect_internal(dev1, name, value, index);
 }
 
-int SIM_connect_port(conf_object_t *dev1, const char *name, conf_object_t *dev2, const char *port)
+int SIM_connect_port(conf_object_t *dev1, attr_value_t *value, attr_value_t *index)
 {
-    return obj_connect_internal(dev1, name, dev2, port, 0);
+    return obj_connect_internal(dev1, name, value, index);
 }
 
-int SIM_set_attr(conf_object_t *dev, const char *name, attr_value_t val)
+int SIM_set_attr(conf_object_t *dev, const char *name, attr_value_t *val, attr_value_t *index)
 {
 	const struct conf_class *cd = dev->class_data;
 	const struct AttributeDescription *attr;
@@ -117,7 +117,7 @@ int SIM_set_attr(conf_object_t *dev, const char *name, attr_value_t val)
 		}
 	}
 	if(set) {
-		return set(dev, val);
+		return set(NULL, dev, val, index);
 	}
 	return 0;
 }
