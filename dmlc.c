@@ -177,9 +177,6 @@ normal:
 		fprintf(stderr, "a module should have device\n");
 		exit(-1);
 	}
-	else {
-		parse_undef_node(root_table);
-	}
 #ifndef RELEASE
 	//print_ast (ast);
 	printf("Print the syntax tree ok!\n");
