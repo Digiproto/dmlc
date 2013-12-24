@@ -57,7 +57,6 @@ struct file_stack* push_file_stack(struct file_stack* top, const char* name)
 		/* stop import, if the file have been imported before. */
 		while(tmp != NULL) {
 			if(strcmp(tmp->name, name) == 0) {
-				printf("Have imported a same file: %s\n", name);
 				return NULL;
 			}
 			tmp = tmp->next;

@@ -246,9 +246,6 @@ dml
 		set_root_table(root_table);
 		table_stack = initstack();
 		push(table_stack, current_table);
-#ifndef RELEASE
-		printf("current_table_num: %ld\n", current_table_num);
-#endif
 		device_attr_t* attr = (device_attr_t*)malloc(sizeof(device_attr_t));
 		attr->name = $2->ident.str;
 		if (symbol_insert(root_table, $2->ident.str, DEVICE_TYPE, attr) == -1) {
@@ -266,16 +263,10 @@ dml
 		int i = 0;
 		tree_t* import_ast = NULL;
 		while(import_file_list[i] != NULL) {
-#ifndef RELEASE
-			printf("start parse file: %s\n", import_file_list[i]);
-#endif
 			import_ast = (tree_t*)get_ast(import_file_list[i]);
 			if(import_ast->common.child != NULL) {
 				create_node_list(node, import_ast->common.child);
 			}
-#ifndef RELEASE
-			printf("finished parse file: %s\n", import_file_list[i]);
-#endif
 			i++;
 		}
 
@@ -289,7 +280,6 @@ dml
 			create_node_list($<tree_type>4, $6);
 		}
 
-		DBG("Device type is %s\n", $2->ident.str);
 		$$ = $<tree_type>4;
 	}
 	| syntax_modifiers device_statements {
@@ -304,8 +294,6 @@ dml
 			$$ = $1;
 		}
 		else {
-//			printf("Line = %d, maybe something Wrong\n", __LINE__);
-			PWARN("can't find syntax_modifiers and device_statements", @$);
 			$$ = NULL;
 		}
 	}
@@ -316,7 +304,6 @@ syntax_modifiers
 		$$ = NULL;
 	}
 	| syntax_modifiers syntax_modifier {
-		DBG("In syntax_modifiers\n");
 		if($1 == NULL && $2 != NULL) {
 			$$ = $2;
 		}
@@ -331,7 +318,6 @@ syntax_modifiers
 
 syntax_modifier
 	: BITORDER ident ';' {
-		DBG("In BITORDER: %s\n", $2->ident.str);
 		tree_t* node = (tree_t*)create_node("bitorder", BITORDER_TYPE, sizeof(struct tree_bitorder), &@$);
 		node->bitorder.endian = $2->ident.str;
 		node->common.print_node = print_bitorder;
@@ -350,13 +336,12 @@ device_statements
 			$$ = $2;
 		}
 		else if($1 != NULL && $2 != NULL){
-			DBG("create_node_list, $1=0x%x, $2=0x%x. | device_statements device_statement\n",
-					(unsigned)$1, (unsigned)$2);
 			$$ = (tree_t*)create_node_list($1, $2);
 		}
-		else {
-//			printf("maybe something wrong in device_statements\n");
-			PWARN("can't find device_statements and device_statements", @$);
+		else if ($1 != NULL && $2 == NULL){
+			$$ = $1;
+		} else {
+			$$ = NULL;
 		}
 	}
 	;
@@ -369,7 +354,6 @@ device_statement
 		$$ = $1;
 	}
 	| import {
-		/* FIXME: there maybe some problems */
 		$$ = $1;
 	}
 	;

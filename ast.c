@@ -904,7 +904,7 @@ void parse_undef_list(symtab_t table) {
 	return;
 }
 
-static void insert_array_index_into_obj(arraydef_attr_t* array, symtab_t table);
+static void insert_array_index_into_obj(tree_t *node, arraydef_attr_t* array, symtab_t table);
 void parse_register_attr(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -915,7 +915,7 @@ void parse_register_attr(tree_t* node, symtab_t table) {
 		set_obj_array();
 		attr->reg.is_array = 1;
 		attr->reg.arraydef = get_arraydef(node->reg.array, table);
-		insert_array_index_into_obj(attr->reg.arraydef, reg_table);
+		insert_array_index_into_obj(node, attr->reg.arraydef, reg_table);
 	}
 	attr->reg.size = get_size(node->reg.sizespec, table);
 	attr->reg.offset = get_offset(node->reg.offset, reg_table);
@@ -1188,7 +1188,6 @@ void parse_implement(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
 	obj_spec_t* spec = node->implement.spec;
-	printf("parse implement\n");
 	parse_obj_spec(spec, table);
 
 	return;
@@ -1201,42 +1200,24 @@ void parse_unparsed_obj(tree_t* node, symtab_t table) {
 		return;
 	}
 	if (node->common.type == BANK_TYPE) {
-		printf("IN %s, line = %d\n", __FUNCTION__, __LINE__);
-		exit(-1);
 		spec = node->bank.spec;
 	} else if (node->common.type == REGISTER_TYPE) {
 		spec = node->reg.spec;
 	} else if (node->common.type == FIELD_TYPE) {
-		printf("IN %s, line = %d\n", __FUNCTION__, __LINE__);
-		exit(-1);
 		spec = node->field.spec;
 	} else if (node->common.type == CONNECT_TYPE) {
-		printf("IN %s, line = %d\n", __FUNCTION__, __LINE__);
-		exit(-1);
 		spec = node->connect.spec;
 	} else if (node->common.type == INTERFACE_TYPE) {
-		printf("IN %s, line = %d\n", __FUNCTION__, __LINE__);
-		exit(-1);
 		spec = node->interface.spec;
 	} else if (node->common.type == ATTRIBUTE_TYPE) {
-		printf("IN %s, line = %d\n", __FUNCTION__, __LINE__);
-		exit(-1);
 		spec = node->attribute.spec;
 	} else if (node->common.type == EVENT_TYPE) {
-		printf("IN %s, line = %d\n", __FUNCTION__, __LINE__);
-		exit(-1);
 		spec = node->event.spec;
 	} else if (node->common.type == GROUP_TYPE) {
-		printf("IN %s, line = %d\n", __FUNCTION__, __LINE__);
-		exit(-1);
 		spec = node->group.spec;
 	} else if (node->common.type == PORT_TYPE) {
-		printf("IN %s, line = %d\n", __FUNCTION__, __LINE__);
-		exit(-1);
 		spec = node->port.spec;
 	} else if (node->common.type == IMPLEMENT_TYPE) {
-		printf("IN %s, line = %d\n", __FUNCTION__, __LINE__);
-		exit(-1);
 		node->implement.spec;
 	} else if (node->common.type == DEVICE_TYPE){
 		error("other object type\n");
@@ -2149,7 +2130,6 @@ static void insert_undef_template(symtab_t table, const char* name) {
 	undef_template_t* tmp = table->undef_temp;
 	if (table->undef_temp == NULL) {
 		table->undef_temp = new_undef;
-		printf("add to undef template %s\n", name);
 	} else {
 		while (tmp->next) {
 			tmp = tmp->next;
@@ -2200,7 +2180,6 @@ void add_template_to_table(symtab_t table, const char* template, int second_chec
 	new_table->template_name = strdup(template);
 
 	if (new_table->table != NULL) {
-		printf("add template %s to table %p\n", template, table);
 		if (table->template_table == NULL) {
 			table->template_table = new_table;
 		}
@@ -2235,7 +2214,6 @@ static void free_undef_templates(symtab_t table) {
 void check_undef_template(symtab_t table) {
 	assert(table != NULL);
 	if (table->undef_temp == NULL) {
-		printf("none undef template to check\n");
 		return;
 	}
 	undef_template_t* temp = table->undef_temp;

@@ -205,10 +205,10 @@ symbol_t symbol_find_from_templates(struct template_table* templates, const char
         while (templates != NULL) {
                 table = templates->table;
                 if(table) {
-                rt = _symbol_find(table->table, name, type);
-                if(rt) {
-                return rt;
-                }
+		rt = _symbol_find(table->table, name, type);
+		if(rt) {
+			return rt;
+		}
                 }
                 templates = templates->next;
         }
@@ -286,6 +286,7 @@ symbol_t symbol_find_from_templates_notype(struct template_table* templates, con
 	while (templates != NULL) {
 		//table = templates->table->table;
 		table = templates->table;
+		check_template_parsed(templates->template_name);
 		if (table) {
 			rt = symbol_find_notype(table, name);
 		}
@@ -318,6 +319,7 @@ symbol_t default_symbol_find_notype(symtab_t symtab, const char *name)
         if(rt) {
             return rt;
         }
+	check_undef_template(tmp);
 	rt = symbol_find_from_templates_notype(tmp->template_table, name);
 	if (rt) {
 		return rt;

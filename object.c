@@ -1182,7 +1182,6 @@ static void port_realize(object_t *obj) {
 	}
 	port = (dml_port_t *)obj;
 	port->num = i;
-	printf("ixxx %d\n", i);
 	port->impls = (object_t **)gdml_zmalloc(sizeof(*port->impls) * i);
 	parse_port(obj->node, obj->symtab->sibling);
 	process_object_names(obj);

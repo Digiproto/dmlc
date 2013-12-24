@@ -2036,6 +2036,8 @@ reference_t* get_reference(tree_t* node, reference_t* ref, expr_t* expr, symtab_
 			expr_node = node->bit_slic.expr;
 			if (expr_node->common.type == COMPONENT_TYPE) {
 				new = get_reference(expr_node->component.expr, new, expr, table);
+			} else if (expr_node->common.type == BIT_SLIC_EXPR_TYPE) {
+				new = get_reference(expr_node->bit_slic.expr, ref, expr, table);
 			}
 			break;
 		case QUOTE_TYPE:
@@ -2156,6 +2158,7 @@ symtab_t get_data_table(symbol_t symbol) {
 	assert(symbol != NULL);
 	cdecl_t* type = symbol->attr;
 	symtab_t table = NULL;
+
 	if (type->common.categ == POINTER_T) {
 		symbol_t new_sym = (symbol_t)gdml_zmalloc(sizeof(struct symbol));
 		new_sym->name = symbol->name;
@@ -2170,6 +2173,10 @@ symtab_t get_data_table(symbol_t symbol) {
 	else if (is_array_type(type)) {
 		type = type->common.bty;
 		if (record_type(type)) {
+			get_record_table(type);
+		}
+		else if (is_array_type(type)) {
+			type = type->common.bty;
 			get_record_table(type);
 		}
 		else {
@@ -3665,10 +3672,6 @@ expr_t* check_const_expr(tree_t* node, expr_t* expr) {
 }
 
 static int dml_obj_type(symbol_t symbol) {
-	if (symbol == NULL) {
-	  int* a = NULL;
-	  *a = 100;
-	}
     assert(symbol != NULL);
 
     int type = symbol->type;
@@ -3689,7 +3692,8 @@ static int dml_obj_type(symbol_t symbol) {
         case DATA_TYPE:
         case METHOD_TYPE:
         case PARAMETER_TYPE:
-		case OBJECT_TYPE:
+	case OBJECT_TYPE:
+	case PARAM_TYPE:
             refer_type = type;
             break;
         default:
@@ -3740,12 +3744,6 @@ static int check_dml_obj_refer(tree_t* node, symtab_t table) {
 	if (strcmp(refer_name, "this") == 0) {
 		obj_type = 1;
 	}
-	else if (strcmp(refer_name, "i") == 0) {
-		object_t* obj = get_current_obj();
-		if (obj && obj->is_array) {
-			obj_type = 1;
-		}
-	}
 	else {
 		obj_type = find_dml_obj(table, refer_name);
 	}
@@ -3761,11 +3759,12 @@ expr_t* check_quote_expr(tree_t* node, symtab_t table, expr_t* expr) {
     /*to reference something in the DML object structure
      * the reference must be prefixed by '$' character*/
 	int is_obj = check_dml_obj_refer(ident, table);
+#if 0
 	if (is_obj == 0 && table->no_check == 0) {
 		PWARNN("reference to unknown object '%s', table_num: %d, line: %d", node,
 			ident->ident.str, table->table_num, __LINE__);
-		/* TODO: handle the error */
 	}
+#endif
 
 	expr->node = node;
 	if (table->no_check && is_obj == 0) {
