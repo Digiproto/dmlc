@@ -93,12 +93,12 @@ static int obj_connect_internal(conf_object_t *dev1, const char *connect, attr_v
     return ret;
 }
 
-int SIM_obj_connect(conf_object_t *dev1, attr_value_t *value, attr_value_t *index)
+int SIM_obj_connect(conf_object_t *dev1, const char *name, attr_value_t *value, attr_value_t *index)
 {
     return obj_connect_internal(dev1, name, value, index);
 }
 
-int SIM_connect_port(conf_object_t *dev1, attr_value_t *value, attr_value_t *index)
+int SIM_connect_port(conf_object_t *dev1, const char *name, attr_value_t *value, attr_value_t *index)
 {
     return obj_connect_internal(dev1, name, value, index);
 }
