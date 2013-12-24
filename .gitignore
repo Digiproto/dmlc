@@ -1,9 +1,9 @@
-Lexer.c
-Lexer.h
-Makefile
-Makefile.build
-Parser.c
-Parser.h
+/Lexer.c
+/Lexer.h
+/Makefile
+/Makefile.build
+/Parser.c
+/Parser.h
 build/
-dmlc_*
-output/*
+/dmlc_*
+/output/*
