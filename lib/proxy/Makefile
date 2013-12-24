@@ -1,16 +1,17 @@
 CC = gcc
 AR = ar
 prefix ?= /opt/dml_all
-INCLUDES = -I../common -I../include -I$(prefix)/include
-LIBRARY_DIRS = -L../common -L$(prefix)/lib
-LIBRARYS = -ldml_common -lthread_tmp -lschedule_tmp
-CFLAGS = -g -Wall -Werror
+INCLUDES = -I../common -I../include -I$(prefix)/include -I../dml_common
+LIBRARY_DIRS = -L../common -L$(prefix)/lib -L../dml_common -L../loader
+LIBRARYS = -ldml_common -lthread_tmp -lschedule_tmp -lpthread -ljson_loader
+CFLAGS = -g -Wall
 build_dir = build
 
 ifeq ($(shell uname),Linux)
 CFLAGS := $(CFLAGS) -fPIC
 suffix = so
 else
+LIBRARYS := $(LIBRARYS) -lwsock32
 suffix = dll
 endif
 

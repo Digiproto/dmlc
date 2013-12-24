@@ -3,8 +3,13 @@ AR = ar
 INCLUDES =
 LIBRARY_DIRS = -L.
 LIBRARYS = -lthread_tmp -lpthread
-CFLAGS = -g -fPIC -Wall -Werror
+CFLAGS = -g -Wall -Werror
 build_dir = build
+
+ifeq ($(shell uname),Linux)
+CFLAGS := $(CFLAGS) -fPIC
+else
+endif
 
 cfiles = $(wildcard *.c)
 #cfiles = thread_tmp.c

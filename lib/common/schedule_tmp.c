@@ -7,6 +7,11 @@
 #include <pthread.h>
 #include <unistd.h>
 
+#ifdef __MINGW32__
+#include <windows.h>
+#define sleep(ms) Sleep(1000*(ms))
+#endif
+
 #include "schedule_tmp.h"
 
 #define SCHED_DEBUG

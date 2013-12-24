@@ -2,8 +2,8 @@ CC = gcc
 CPP = g++
 AR = ar
 prefix ?= /opt/dml_all
-INCLUDES = -I. -I../common -I../include -I$(prefix)/include
-LIBRARY_DIRS = -L../common -L$(prefix)/lib
+INCLUDES = -I. -I../common -I../include -I$(prefix)/include -I../dml_common
+LIBRARY_DIRS = -L../common -L$(prefix)/lib -L../dml_common
 LIBRARYS = -ldml_common -ldl -ljson -lpthread
 CFLAGS = -g
 build_dir = build
@@ -55,7 +55,7 @@ install:
 distclean: clean
 	rm -rf build
 	rm -rf $(targets)
-	rm -rf lib*.so
+	rm -rf lib*.$(suffix)
 
 clean:
 	rm -rf build/*

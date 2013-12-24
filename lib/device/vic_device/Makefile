@@ -1,10 +1,10 @@
 CC = gcc
 AR = ar
 prefix ?= /opt/dml_all
-INCLUDES = -I$(prefix)/include
-LIBRARY_DIRS = -L$(prefix)/lib
+INCLUDES = -I$(prefix)/include -I../../dml_common
+LIBRARY_DIRS = -L$(prefix)/lib -L../../dml_common
 LIBRARYS = -ldml_common
-CFLAGS = -g -fPIC -Wall -Werror
+CFLAGS = -g -Wall -Werror
 build_dir = build
 
 ifeq ($(shell uname),Linux)

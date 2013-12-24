@@ -38,7 +38,7 @@ gen_install_info:
 
 $(LIB_TARGET): $(OBJS)
 	@echo [LD] $@
-	@$(CC) -shared $^ $(CFLAGS) $(INCLUDES) -Wl,-soname,$@ -o $@
+	@$(CC) -shared $^ $(CFLAGS) $(LIBS) $(INCLUDES) -Wl,-soname,$@ -o $@
 
 $(BUILD_DIR)/%.o: %.c
 	@echo [CC] $@ 

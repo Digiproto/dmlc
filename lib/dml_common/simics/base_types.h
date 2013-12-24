@@ -43,7 +43,9 @@ typedef int32_t int32;
 typedef uint32_t uint32;
 typedef int64_t int64;
 typedef uint64_t uint64;
+#ifndef __MINGW32__
 typedef uint64 uintptr_t;
+#endif
 typedef int set_error_t;
 typedef uint32 physical_address_t;
 typedef physical_address_t logical_address_t;

@@ -128,8 +128,8 @@ static int serial_write(conf_object_t *obj, int value)
 static DWORD create_term(term_proxy_t* dev_uart, int port){
 #else
 static pid_t create_term(term_proxy_t* dev_uart, int port){
-#endif
 	pid_t pid;
+#endif
 
 	char port_str[32];
 	sprintf(port_str, "%d", port);
