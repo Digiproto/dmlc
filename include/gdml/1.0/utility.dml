@@ -19,9 +19,9 @@ template read_write {
 }
 
 // Value can only be changed by software, not hardware
-//template scratch {
+template scratch {
     // for info only - read/write
-//}
+}
 
 template ignore_write {
     method write(value) {
