@@ -92,59 +92,61 @@ static void vic_proxy_interrupt_clear(conf_object_t *obj, int irq) {
 }
 
 static int set_intr(conf_object_t *obj,
-		conf_object_t *peer, const char *port, int n) {
+		attr_value_t *val, int n) {
 	vic_proxy_t *proxy = (vic_proxy_t*) obj;
+	conf_object_t *peer = SIM_attr_object(*val);
 	proxy->vic[n].obj = peer;
 	proxy->vic[n].interrupt = SIM_get_interface(peer, "simple_interrupt");
 	return 0;
 }
 
-static int set_intr0(conf_object_t *obj,
-		conf_object_t *peer, const char *port, int idx) {
-	return set_intr(obj, peer, port, 0);
+static int set_intr0(void *_, conf_object_t *obj,
+		attr_value_t *peer, attr_value_t *idx) {
+	return set_intr(obj, peer, 0);
 }
 
-static int set_intr1(conf_object_t *obj,
-		conf_object_t *peer, const char *port, int idx) {
-	return set_intr(obj, peer, port, 1);
+static int set_intr1(void *_, conf_object_t *obj,
+		attr_value_t *peer, attr_value_t *idx) {
+	return set_intr(obj, peer, 1);
 }
 
-static int get_intr0(conf_object_t *obj,
-		conf_object_t **peer, char **port, int idx) {
-	return 0;
+static attr_value_t get_intr0(void *_, conf_object_t *obj, attr_value_t *idx) {
+	attr_value_t attr;
+	return attr;
 }
 
-static int get_intr1(conf_object_t *obj,
-		conf_object_t **peer, char **port, int idx) {
-	return 0;
+static attr_value_t get_intr1(void *_, conf_object_t *obj, attr_value_t *idx) {
+	attr_value_t attr;
+	return attr;
 }
 
 static int set_update(conf_object_t *obj,
-		conf_object_t *peer, const char *port, int n) {
+		attr_value_t *val, int n) {
 	vic_proxy_t *proxy = (vic_proxy_t*) obj;
+	conf_object_t *peer = SIM_attr_object(*val);
 	proxy->int_update[n].obj = peer;
 	proxy->int_update[n].int_update = SIM_get_interface(peer, "int_update");
 	return 0;
 }
 
-static int set_update0(conf_object_t *obj,
-		conf_object_t *peer, const char *port, int n) {
-	return set_update(obj, peer, port, 0);
+static int set_update0(void *_, conf_object_t *obj,
+		attr_value_t *val, attr_value_t *idx) {
+	return set_update(obj, val, 0);
 }
 
-static int set_update1(conf_object_t *obj,
-		conf_object_t *peer, const char *port, int n) {
-	return set_update(obj, peer, port, 1);
+static int set_update1(void *_, conf_object_t *obj,
+		attr_value_t *val, attr_value_t *idx) {
+	return set_update(obj, val, 1);
 }
 
-static int get_update0(conf_object_t *obj,
-		conf_object_t **peer, char **port, int idx) {
-	return 0;
+static attr_value_t get_update0(void *_, conf_object_t *obj, attr_value_t *idx) {
+	attr_value_t attr;
+	return attr;
 }
 
-static int get_update1(conf_object_t *obj,
-		conf_object_t **peer, char **port, int idx) {
-	return 0;
+static attr_value_t get_update1(void *_, conf_object_t *obj, attr_value_t *idx) {
+	attr_value_t attr;
+	return attr;
 }
 
 const struct ConnectDescription vic_proxy_connects[] = {

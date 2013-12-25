@@ -41,8 +41,8 @@ typedef attr_value_t (*sim_get_attr)(void *_, struct conf_object *obj, attr_valu
 
 struct ConnectDescription {
     const char *name;
-    sim_set_t set;
-    sim_get_t get;
+    sim_set_attr set;
+    sim_get_attr get;
 };
 
 struct AttributeDescription {
@@ -53,7 +53,7 @@ struct AttributeDescription {
 
 const void *SIM_get_interface(conf_object_t *dev, const char *iface);
 const void *SIM_get_port_interface(conf_object_t *dev, const char *iface, const char *port);
-int SIM_obj_connect(conf_object_t *dev1, const char *name, conf_object_t *dev2);
-int SIM_connect_port(conf_object_t *dev1, const char *name, conf_object_t *dev2, const char *port);
+int SIM_obj_connect(conf_object_t *dev1, const char *name, attr_value_t *dev2, attr_value_t *index);
+int SIM_connect_port(conf_object_t *dev1, const char *name, attr_value_t *dev2, attr_value_t *index);
 int SIM_set_attr(conf_object_t *dev, const char *name, attr_value_t *attr, attr_value_t *index);
 #endif /* __OBJECT_IFACE_H__ */

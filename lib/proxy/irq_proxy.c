@@ -56,6 +56,7 @@ static conf_object_t* irq_proxy_new_instance(const char *objname) {
 	return &proxy->obj;
 }
 
+#if 0
 static int sig_num_set(conf_object_t *obj, attr_value_t val) {
 	irq_proxy_t *proxy = (irq_proxy_t *)obj;
 	proxy->sig_no = (int) ((long) val);
@@ -66,7 +67,38 @@ static attr_value_t sig_num_get(conf_object_t *obj) {
 	irq_proxy_t *proxy = (irq_proxy_t *)obj;
 	return (attr_value_t*) ((long) proxy->sig_no);
 }
+#endif
 
+static int signal_set(void *_, conf_object_t *obj, attr_value_t *val,  attr_value_t *_index) {
+	irq_proxy_t *proxy = (irq_proxy_t *)obj;
+	conf_object_t *peer = NULL;
+	int irqnum = 0;
+	
+	if(SIM_attr_is_list(*val)) {
+		irqnum = SIM_attr_integer(SIM_attr_list_item(*val, 0));
+		peer = SIM_attr_object(SIM_attr_list_item(*val, 1));
+	}else{
+		return -1;
+	}
+	proxy->sig_no = irqnum;
+	proxy->sig_obj = peer;
+	proxy->signal = SIM_get_interface(peer, "device_irq");
+	return No_exp;
+}
+
+static attr_value_t signal_get(void *_, conf_object_t *obj, attr_value_t *_index) {
+	irq_proxy_t *proxy = (irq_proxy_t *)obj;
+	attr_value_t attr;
+	if(proxy->sig_obj) {
+		attr = SIM_alloc_attr_list(2);
+		SIM_attr_list_set_item(&attr, 0, SIM_make_attr_integer(proxy->sig_no));
+		SIM_attr_list_set_item(&attr, 1, SIM_make_attr_obj(proxy->sig_obj));
+	}
+	return attr;
+}
+
+
+#if 0
 static int signal_set(conf_object_t *obj, conf_object_t *peer,
 		const char *port, int idx)
 {
@@ -85,14 +117,18 @@ static int signal_get(conf_object_t *obj, conf_object_t **peer,
 {
 	return 0;
 }
+#endif
 
 static const struct ConnectDescription irq_proxy_connects[] = {
+	[0] = {}
+#if 0
 	[0] = {
 		.name = "signal",
 		.set = signal_set,
 		.get = signal_get,
 	},
 	[1] = {}
+#endif
 };
 
 static const struct InterfaceDescription irq_proxy_ifaces[] =  {
@@ -105,10 +141,17 @@ static const struct InterfaceDescription irq_proxy_ifaces[] =  {
 
 static const struct AttributeDescription irq_proxy_attributes[] = {
 	[0] = (struct AttributeDescription) {
+		.name = "signal",
+		.set = signal_set,
+		.get = signal_get,
+	},
+#if 0
+	[0] = (struct AttributeDescription) {
 		.name = "sig_num",
 		.set = sig_num_set,
 		.get = sig_num_get,
 	},
+#endif
 	[1] = {}
 };
 

@@ -349,10 +349,18 @@ retry:
  * port: The interface name
  * index: unused
  */
-static int serail_device_set(conf_object_t *obj, conf_object_t *obj2, const char *port, int index)
+static int serail_device_set(void *_, conf_object_t *obj, attr_value_t *val, attr_value_t *index)
 {
 	term_proxy_t* dev = (term_proxy_t*) obj;
+	conf_object_t *obj2 = NULL;
+	const char *port = NULL;
 
+	if(SIM_attr_is_object(*val)) {
+		obj2 = SIM_attr_object(*val);
+	}else if(SIM_attr_is_list(*val)) {
+		obj2 = SIM_attr_object(SIM_attr_list_item(*val, 0));
+		port = SIM_attr_string(SIM_attr_list_item(*val, 1));
+	}
 	if(dev->serial_device.obj == obj2 && dev->serial_device.port == port){
 		return No_exp;
 	}

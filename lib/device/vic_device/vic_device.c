@@ -4742,11 +4742,19 @@ _DML_M_vic_update_irq(vic_device_t *_dev)
 	}
 }
 
-static int irq_set(conf_object_t *obj, conf_object_t *peer, const char *port, int _idx) {
+static int irq_set(void *_, conf_object_t *obj, attr_value_t *val,  attr_value_t *_index) {
 	vic_device_t *_dev = (vic_device_t *)obj;
 	int ret = 0;
 	void const *iface = NULL;
-
+	conf_object_t *peer = NULL;
+	const char *port = NULL;
+	
+	if(SIM_attr_is_object(*val)){
+		peer = SIM_attr_object(*val);
+	} else if(SIM_attr_is_list(*val)) {
+		peer = SIM_attr_object(SIM_attr_list_item(*val, 0));
+		port = SIM_attr_string(SIM_attr_list_item(*val, 1));
+	}
 	if(_dev->irq.obj == peer && _dev->irq.port == port) {
 		return 0;
 	}
@@ -4767,10 +4775,17 @@ static int irq_set(conf_object_t *obj, conf_object_t *peer, const char *port, in
 	return ret;
 }
 
-static int irq_get(conf_object_t *obj, conf_object_t **peer, char **port, int index) {
+static attr_value_t irq_get(void *_, conf_object_t *obj, attr_value_t *_index) {
+	vic_device_t *_dev = (vic_device_t *)obj;
 	int ret = 0;
 	UNUSED(ret);
-	return ret;
+	attr_value_t attr;
+	if(_dev->irq.port) {
+		attr = SIM_alloc_attr_list(2);
+		SIM_attr_list_set_item(&attr, 0, SIM_make_attr_string(_dev->irq.port));
+		SIM_attr_list_set_item(&attr, 1, SIM_make_attr_obj(_dev->irq.obj));
+	}
+	return attr;
 }
 
 const struct ConnectDescription vic_device_connects[] = {

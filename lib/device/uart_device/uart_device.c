@@ -4249,11 +4249,19 @@ _DML_M_regs__uintm__write(uart_device_t *_dev, uint32 value)
 	}
 }
 
-static int uart_proxy_set(conf_object_t *obj, conf_object_t *peer, const char *port, int _idx) {
+static int uart_proxy_set(void *_, conf_object_t *obj, attr_value_t *val,  attr_value_t *_index) {
 	uart_device_t *_dev = (uart_device_t *)obj;
 	int ret = 0;
 	void const *iface = NULL;
-
+	conf_object_t *peer = NULL;
+	const char *port = NULL;
+	
+	if(SIM_attr_is_object(*val)){
+		peer = SIM_attr_object(*val);
+	} else if(SIM_attr_is_list(*val)) {
+		peer = SIM_attr_object(SIM_attr_list_item(*val, 0));
+		port = SIM_attr_string(SIM_attr_list_item(*val, 1));
+	}
 	if(_dev->uart_proxy.obj == peer && _dev->uart_proxy.port == port) {
 		return 0;
 	}
@@ -4274,17 +4282,32 @@ static int uart_proxy_set(conf_object_t *obj, conf_object_t *peer, const char *p
 	return ret;
 }
 
-static int uart_proxy_get(conf_object_t *obj, conf_object_t **peer, char **port, int index) {
+static attr_value_t uart_proxy_get(void *_, conf_object_t *obj, attr_value_t *_index) {
+	uart_device_t *_dev = (uart_device_t *)obj;
 	int ret = 0;
 	UNUSED(ret);
-	return ret;
+	attr_value_t attr;
+	if(_dev->uart_proxy.port) {
+		attr = SIM_alloc_attr_list(2);
+		SIM_attr_list_set_item(&attr, 0, SIM_make_attr_string(_dev->uart_proxy.port));
+		SIM_attr_list_set_item(&attr, 1, SIM_make_attr_obj(_dev->uart_proxy.obj));
+	}
+	return attr;
 }
 
-static int irq_set(conf_object_t *obj, conf_object_t *peer, const char *port, int _idx) {
+static int irq_set(void *_, conf_object_t *obj, attr_value_t *val,  attr_value_t *_index) {
 	uart_device_t *_dev = (uart_device_t *)obj;
 	int ret = 0;
 	void const *iface = NULL;
-
+	conf_object_t *peer = NULL;
+	const char *port = NULL;
+	
+	if(SIM_attr_is_object(*val)){
+		peer = SIM_attr_object(*val);
+	} else if(SIM_attr_is_list(*val)) {
+		peer = SIM_attr_object(SIM_attr_list_item(*val, 0));
+		port = SIM_attr_string(SIM_attr_list_item(*val, 1));
+	}
 	if(_dev->irq.obj == peer && _dev->irq.port == port) {
 		return 0;
 	}
@@ -4305,10 +4328,17 @@ static int irq_set(conf_object_t *obj, conf_object_t *peer, const char *port, in
 	return ret;
 }
 
-static int irq_get(conf_object_t *obj, conf_object_t **peer, char **port, int index) {
+static attr_value_t irq_get(void *_, conf_object_t *obj, attr_value_t *_index) {
+	uart_device_t *_dev = (uart_device_t *)obj;
 	int ret = 0;
 	UNUSED(ret);
-	return ret;
+	attr_value_t attr;
+	if(_dev->irq.port) {
+		attr = SIM_alloc_attr_list(2);
+		SIM_attr_list_set_item(&attr, 0, SIM_make_attr_string(_dev->uart_proxy.port));
+		SIM_attr_list_set_item(&attr, 1, SIM_make_attr_obj(_dev->uart_proxy.obj));
+	}
+	return attr;
 }
 
 const struct ConnectDescription uart_device_connects[] = {

@@ -4,7 +4,7 @@ prefix ?= /opt/dml_all
 INCLUDES = -I../common -I../include -I$(prefix)/include -I../dml_common
 LIBRARY_DIRS = -L../common -L$(prefix)/lib -L../dml_common -L../loader
 LIBRARYS = -ldml_common -lthread_tmp -lschedule_tmp -lpthread -ljson_loader
-CFLAGS = -g -Wall
+CFLAGS = -g -Wall -Werror
 build_dir = build
 
 ifeq ($(shell uname),Linux)

@@ -44,7 +44,7 @@ typedef enum {
         Sim_Val_Unresolved_Object
 } attr_kind_t;
 
-struct attr_value {
+typedef struct attr_value {
         attr_kind_t          kind;
         union {
                 const char *string;          /* Sim_Val_String */
@@ -82,54 +82,54 @@ struct attr_value {
                 /* Sim_Val_Unresolved_Object (internal use only) */
                 char *uobject;
         } u;
-};
+}attr_value_t;
 
 struct attr_dict_pair {
         struct attr_value   key;
         struct attr_value   value;
 };
 
-static bool SIM_attr_is_list(attr_value_t attr) {
+static inline bool SIM_attr_is_list(attr_value_t attr) {
 	return attr.kind == Sim_Val_List;
 }
 
 
-static bool SIM_attr_is_object(attr_value_t attr) {
+static inline bool SIM_attr_is_object(attr_value_t attr) {
 	return attr.kind == Sim_Val_Object;
 }
 
 static inline attr_value_t SIM_make_attr_invalid() {
 	attr_value_t tmp;
-	tmp.kind = Sim_Value_Invalid;
+	tmp.kind = Sim_Val_Invalid;
 	return tmp;
 }
 
 /*exact data from attr*/
 static inline integer_t SIM_attr_integer(attr_value_t val) {
-	return val->u.integer;
+	return val.u.integer;
 }
 
 static inline const char* SIM_attr_string(attr_value_t val) {
-	return val->u.string;
+	return val.u.string;
 }
 
 static inline bool SIM_attr_boolean(attr_value_t val) {
-	return val->u.boolean;
+	return val.u.boolean;
 }
 
 static inline double SIM_attr_floating(attr_value_t val) {
-	return val->u.floating;
+	return val.u.floating;
 }
 
 static inline unsigned SIM_attr_list_size(attr_value_t val) {
-	return val->u.list.size;	
+	return val.u.list.size;
 }
 
 static inline conf_object_t *SIM_attr_object(attr_value_t val) {
-	return val->u.object;
+	return val.u.object;
 }
 static inline attr_value_t SIM_attr_list_item(attr_value_t val, unsigned index) {
-	return val->u.list.vector[index];
+	return val.u.list.vector[index];
 }
 
 static inline attr_value_t SIM_alloc_attr_list(unsigned len) {
@@ -148,7 +148,7 @@ static inline void SIM_attr_list_set_item(attr_value_t *attr, unsigned index, at
 
 static inline attr_value_t SIM_make_attr_boolean(bool b) {
 	attr_value_t tmp;
-	tmp.kind = SIm_Val_Boolean;
+	tmp.kind = Sim_Val_Boolean;
 	tmp.u.boolean = b;
 	return tmp;
 }

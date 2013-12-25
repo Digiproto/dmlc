@@ -273,11 +273,18 @@ s3c6410x_timer_read (conf_object_t *obj, physical_address_t offset, void *buf, s
 	return No_exp;
 }
 
-static int signal_set(conf_object_t *obj, conf_object_t *peer, const char *port, int _idx) {
+static int signal_set(void *_, conf_object_t *obj, attr_value_t *val, attr_value_t *_index) {
     s3c6410x_timer_t *_dev = (s3c6410x_timer_t *)obj;
-    int ret = 0;
-    void const *iface = NULL;
+	void const *iface = NULL;
+	conf_object_t *peer = NULL;
+	const char *port = NULL;
 
+	if(SIM_attr_is_object(*val)) {
+		peer = SIM_attr_object(*val);
+	}else if(SIM_attr_is_list(*val)) {
+		peer = SIM_attr_object(SIM_attr_list_item(*val, 0));
+		port = SIM_attr_string(SIM_attr_list_item(*val, 1));
+	}
     if(_dev->irq.obj == peer && _dev->irq.port == port) {
         return 0;
     }
@@ -295,11 +302,18 @@ static int signal_set(conf_object_t *obj, conf_object_t *peer, const char *port,
         iface = SIM_get_interface(peer, "signal");
     }
     _dev->irq.iface = iface;
-    return ret;
+    return No_exp;
 }
 
-static int signal_get(conf_object_t *obj, conf_object_t **peer, char **port, int index) {
-    return 0;
+static attr_value_t signal_get(void *_, conf_object_t *obj, attr_value_t *_index) {
+    s3c6410x_timer_t *_dev = (s3c6410x_timer_t *)obj;
+	attr_value_t attr;
+	if(_dev->irq.port) {
+		attr = SIM_alloc_attr_list(2);
+		SIM_attr_list_set_item(&attr, 0, SIM_make_attr_string(_dev->irq.port));
+		SIM_attr_list_set_item(&attr, 0, SIM_make_attr_obj(_dev->irq.obj));
+	}
+	return attr;
 }
 
 static const struct ConnectDescription timer_connects[] = {

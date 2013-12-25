@@ -51,7 +51,8 @@ int device_con(struct devargs *dev, void *extra)
 
 	for(i = 0; i < dev->con_num; i++) {
 		conf_object_t *condev = (conf_object_t*) SIM_get_conf_object(dev->conlist[i].dev);
-		ret = SIM_obj_connect(obj, dev->conlist[i].con, condev);
+		attr_value_t attr = SIM_make_attr_obj(condev);
+		ret = SIM_obj_connect(obj, dev->conlist[i].con, &attr, NULL);
 		if(ret) {
 			fprintf(stderr, "have something wrong while setting %s con to %s.\n",
 					dev->name, dev->conlist[i].dev);
@@ -68,19 +69,30 @@ int device_irq(struct devargs *dev, void *extra)
 	int i;
 
 	for(i = 0; i < dev->irq_num; i++) {
-		/* setting irq number */
-		ret = SIM_set_attr(obj, "sig_num", (attr_value_t) ((size_t) dev->irqlist[i].num));
+		conf_object_t *irqdev = (conf_object_t*) SIM_get_conf_object(dev->irqlist[i].dev);
+		int irqnum = dev->irqlist[i].num;
+		attr_value_t attr = SIM_alloc_attr_list(2);
+		SIM_attr_list_set_item(&attr, 0, SIM_make_attr_integer(irqnum));
+		SIM_attr_list_set_item(&attr, 1, SIM_make_attr_obj(irqdev));
+		ret = SIM_set_attr(obj, "signal", &attr, NULL);
 		if(ret != No_exp) {
 			fprintf(stderr, "have something wrong while setting %s irq.\n", dev->name);
 			return -1;
 		}
-		conf_object_t *irqdev = (conf_object_t*) SIM_get_conf_object(dev->irqlist[i].dev);
+#if 0
+		/* setting irq number */
+		ret = SIM_set_attr(obj, "sig_num", (void*)((size_t)dev->irqlist[i].num));
+		if(ret != No_exp) {
+			fprintf(stderr, "have something wrong while setting %s irq.\n", dev->name);
+			return -1;
+		}
 		/* setting irq target */
 		ret = SIM_obj_connect(obj, "signal", irqdev);
 		if(ret != No_exp) {
 			fprintf(stderr, "have something wrong while setting %s irq.\n", dev->name);
 			return -1;
 		}
+#endif
 	}
 	return 0;
 }

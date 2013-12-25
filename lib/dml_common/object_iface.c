@@ -78,7 +78,7 @@ static int obj_connect_internal(conf_object_t *dev1, const char *connect, attr_v
     int ret = 0;
     const struct conf_class  *dc = dev1->class_data;
     const struct ConnectDescription *con;
-    sim_set_t set = NULL;
+    sim_set_attr set = NULL;
 
     con = dc->cls_data->resources->connects;
     for (; con->name; con++) {
