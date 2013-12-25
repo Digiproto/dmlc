@@ -184,12 +184,13 @@ $(BUILD_DIRS_SYSTEMC):
 
 clean:
 	@echo ===== start clean =====
+	cd output && make clean
 	-rm Parser.* Lexer.* dmlc_* tags -rf
-	-rm output/* -rf
 	-find . -name "*.d" | xargs rm -f
 	-find . -name "*.o" | xargs rm -f
 
 distclean: clean
+	cd output && make distclean
 	-rm build Makefile.build -rf
 	-rm Makefile -rf
 
