@@ -91,6 +91,29 @@ struct file_stack* pop_file_stack(struct file_stack* top)
 	return top->next;
 }
 
+int list_get_len(char **dir_list)
+{
+	int i;
+	/* list = [dir0, dir1, ...., dirn, NULL] len = n + 1*/
+	if(dir_list) {
+		for(i = 0; dir_list[i]; i++);
+		return i;
+	}
+	return 0;
+}
+
+char** list_add_dir(char **dir_list, const char *dir)
+{
+	char **tmp;
+	int len = list_get_len(dir_list);
+
+	tmp = (char**) realloc(dir_list, sizeof(char*) * (len + 2));
+	assert(tmp);
+	tmp[len] = strdup(dir);
+	tmp[len + 1] = NULL;
+	return tmp;
+}
+
 int link_dir_filename(char* buf, size_t n, const char* dir, const char* filename)
 {
 	int rt;
@@ -154,36 +177,43 @@ static const char* get_file_dir(const char* filename) {
 	return strdup(dir);
 }
 
-void set_import_dir(const char* execname, const char* fullname, const char* extradir)
+void set_import_dir(const char* execname, const char* fullname, char** extradirs)
 {
-	const char *library_dir = get_library_dir(execname);
-	const char *extra_library_dir = extradir;
-	const char *file_dir = get_file_dir(fullname);
-	int i;
+	const char  *library_dir = get_library_dir(execname);
+	char       **extra_library_dirs = extradirs;
+	const char  *file_dir = get_file_dir(fullname);
+	int i, j, len = 0;
 
-	if(extradir) {
-		/* format extra library directory. */
-		char* tmp_str = strdup(extradir);
-		i = strlen(extradir);
-		do{
-			i--;
-			if(extradir[i] != '\\' && extradir[i] != '/')
-				break;
-		}while(i >= 0);
-		if(i < 0) {
-			error("extra library directory %s is wrong.", extradir);
+	if(extradirs) {
+		len = list_get_len(extradirs);
+		extra_library_dirs = gdml_zmalloc(sizeof(char*) * (len + 1));
+		for(i = 0; i < len; i++) {
+			/* format extra library directory. */
+			char* tmp_str = strdup(extradirs[i]);
+			char* org_str = extradirs[i];
+			j = strlen(org_str);
+			do{
+				j--;
+				if(org_str[j] != '\\' && org_str[j] != '/')
+					break;
+			}while(j >= 0);
+			if(j < 0) {
+				error("extra library directory %s is wrong.", org_str);
+			}
+			tmp_str[j + 1] = '\0';
+			extra_library_dirs[i] = tmp_str;
 		}
-		tmp_str[i + 1] = '\0';
-		extra_library_dir = tmp_str;
 	}
 
 	/* NULL is end. */
-	if(extra_library_dir) {
-		import_dir_list = gdml_zmalloc((3 + 1) * sizeof(char*));
+	if(extra_library_dirs) {
+		import_dir_list = gdml_zmalloc((len + 2 + 1) * sizeof(char*));
 		import_dir_list[0] = file_dir;
-		import_dir_list[1] = extra_library_dir;
-		import_dir_list[2] = library_dir;
-		import_dir_list[3] = NULL;
+		for(i = 0; i < len; i++) {
+			import_dir_list[1 + i] = extra_library_dirs[i];
+		}
+		import_dir_list[1 + len] = library_dir;
+		import_dir_list[1 + len + 1] = NULL;
 	}else{
 		import_dir_list = gdml_zmalloc((2 + 1) * sizeof(char*));
 		import_dir_list[0] = file_dir;
@@ -191,7 +221,7 @@ void set_import_dir(const char* execname, const char* fullname, const char* extr
 		import_dir_list[2] = NULL;
 	}
 
-	int dirlen = strlen(gdml_library_dir), len;
+	int dirlen = strlen(gdml_library_dir);
 	/* add the full patch about import file */
 	for(i = 0; import_file_list[i] != NULL; i++) {
 		len = dirlen + strlen(import_file_list[i]);

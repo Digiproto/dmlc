@@ -56,6 +56,8 @@ typedef struct YYLTYPE
 extern struct file_stack* push_file_stack(struct file_stack* top, const char* name);
 extern struct file_stack* pop_file_stack(struct file_stack* top);
 extern int link_dir_filename(char* buf, size_t n, const char* dir, const char* filename);
-extern void set_import_dir(const char* execname, const char* filename, const char* extradir);
+extern void set_import_dir(const char* execname, const char* filename, char** extradirs);
+extern char** list_add_dir(char** dir_list, const char* dir);
+extern int list_get_len(char** dir_list);
 
 #endif /* __IMPORT_H__ */

@@ -61,7 +61,7 @@ static void gen_constructor(device_t *dev, FILE *f) {
 static void gen_destructor(device_t *dev, FILE *f) {
 	const char *name = dev->obj.name;
 
-	fprintf(f, "\nLt_%s_target::~Lt_%s_target(){\n", name);
+	fprintf(f, "\nLt_%s_target::~Lt_%s_target(){\n", name, name);
 	fprintf(f, "}\n");
 }
 

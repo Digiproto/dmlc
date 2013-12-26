@@ -91,10 +91,57 @@ extern void gen_skyeye_code(tree_t *root, const char *out_dir);
 int main (int argc, char *argv[])
 {
 	/* initial extra library directory. */
-	char* extra_library_dir = NULL;
-	int file_num = 1;
+	char** extra_library_dirs = NULL;
+	int file_num = 0;
 
 	/* check argument. */
+	int i;
+	for(i = 1; i < argc; i++) {
+		if(argv[i][0] == '-') {
+			/* options with '-' on top */
+			if(strcmp(argv[i], "-I") == 0) {
+				/* -I path set header file path */
+				if(i + 1 < argc) {
+					if(access(argv[i + 1], F_OK)) {
+						perror(argv[i + 1]);
+						fprintf (stderr, "Usage: %s source [-I library_path]\n", argv[0]);
+						return -1;
+					}
+					extra_library_dirs = list_add_dir(extra_library_dirs, argv[i + 1]);
+					i++;
+				}else{
+					fprintf (stderr, "[error] lack path after \"-I\"\n");
+					fprintf (stderr, "Usage: %s source [-I library_path]\n", argv[0]);
+					return -1;
+				}
+			}else if(argv[i][1] == 'I') {
+				/* -Ipath set header file path */
+				if(access(argv[i] + 2, F_OK)) {
+					perror(argv[i] + 2);
+					fprintf (stderr, "Usage: %s source [-I library_path]\n", argv[0]);
+					return -1;
+				}
+				extra_library_dirs = list_add_dir(extra_library_dirs, argv[i] + 2);
+			}else{
+				/* unknown options */
+				fprintf (stderr, "[error] unknown option \"%s\"\n", argv[i]);
+				fprintf (stderr, "Usage: %s source [-I library_path]\n", argv[0]);
+				return -1;
+			}
+		}else{
+			if(file_num != 0) {
+				fprintf (stderr, "[error] only support a file\n", argv[0]);
+				fprintf (stderr, "Usage: %s source [-I library_path]\n", argv[0]);
+				return -1;
+			}
+			file_num = i;
+		}
+	}
+	if(file_num == 0) {
+		fprintf (stderr, "Usage: %s source [-I library]\n", argv[0]);
+		return -1;
+	}
+#if 0
 	if (argc != 2) {
 		if(argc == 4) {
 			int i;
@@ -119,7 +166,8 @@ int main (int argc, char *argv[])
 	}
 
 normal:
-	set_import_dir(argv[0], argv[file_num], extra_library_dir);
+#endif
+	set_import_dir(argv[0], argv[file_num], extra_library_dirs);
 
 	insert_pre_dml_struct();
 	/* main ast */
