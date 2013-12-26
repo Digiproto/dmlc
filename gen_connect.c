@@ -34,30 +34,39 @@ static void gen_connect_set(object_t *obj, FILE *f) {
 	if(is_array) {
 		name = obj->a_name;
 	}
+#if backend != 1
 	fprintf(f, "\nstatic int %s_set(void *_, conf_object_t *obj, attr_value_t *val,  attr_value_t *_index) {\n", name);
+#else
+	fprintf(f, "\nstatic int %s_set(conf_object_t *obj, conf_object_t *peer, const char *port, int _idx) {\n", name);
+#endif
 	F_HEAD;
 	fprintf(f, "\t%s_t *_dev = (%s_t *)obj;\n", dev_name, dev_name);
 	fprintf(f, "\tint ret = 0;\n");
 	fprintf(f, "\tvoid const *iface = NULL;\n");
+#if backend != 1
 	fprintf(f, "\tconf_object_t *peer = NULL;\n");
 	fprintf(f, "\tconst char *port = NULL;\n");
 	if(is_array) {
 		fprintf(f, "\tunsigned _idx = SIM_attr_integer(*_index);\n");
 	}
 	fprintf(f, "\t");
+#endif
 	fprintf(f, "\n");
 
+#if backend != 1
 	fprintf(f, "\tif(SIM_attr_is_object(*val)){\n");
 	fprintf(f, "\t\tpeer = SIM_attr_object(*val);\n");
 	fprintf(f, "\t} else if(SIM_attr_is_list(*val)) {\n");
 	fprintf(f, "\t\tpeer = SIM_attr_object(SIM_attr_list_item(*val, 0));\n");
 	fprintf(f, "\t\tport = SIM_attr_string(SIM_attr_list_item(*val, 1));\n");
 	fprintf(f, "\t}\n");
+#endif
 	if(!is_array) {
 		fprintf(f, "\tif(_dev->%s.obj == peer && _dev->%s.port == port) {\n", name, name);
 	} else {
 		fprintf(f, "\tif(_dev->%s[_idx].obj == peer && _dev->%s[_idx].port == port) {\n", name, name);
 	}
+	F_END;
 	fprintf(f, "\t\treturn 0;\n");
 	fprintf(f, "\t}\n");
 	if(!is_array) {
@@ -102,6 +111,7 @@ static void gen_connect_set(object_t *obj, FILE *f) {
 			fprintf(f, "\t_dev->%s[_idx].%s = iface;\n", name, iface);
 		}
 	}
+	F_END;
 	fprintf(f, "\treturn ret;\n");
 	fprintf(f, "}\n");
 }
@@ -116,11 +126,16 @@ static void gen_connect_get(object_t *obj, FILE *f) {
 		name = obj->a_name;
 	}
 
+#if backend != 1
 	fprintf(f, "\nstatic attr_value_t %s_get(void *_, conf_object_t *obj, attr_value_t *_index) {\n", name);
 	fprintf(f, "\t%s_t *_dev = (%s_t*) obj;\n", dev_name, dev_name);
+#else
+	fprintf(f, "\nstatic int %s_get(conf_object_t *obj, conf_object_t **peer, char **port, int index) {\n", name);
+#endif
 	F_HEAD;
 	fprintf(f, "\tint ret = 0;\n");
 	fprintf(f, "\tUNUSED(ret);\n");
+#if backend != 1
 	if(is_array) {
 		fprintf(f, "\tunsigned index = SIM_attr_integer(*_index);\n");
 	}
@@ -142,8 +157,13 @@ static void gen_connect_get(object_t *obj, FILE *f) {
 		fprintf(f, "\t\tSIM_attr_list_set_item(&attr, 1, SIM_make_attr_obj(_dev->%s.obj));\n", name);
 	}
 	fprintf(f, "\t}\n");
+#endif
 	F_END;
+#if backend != 1
 	fprintf(f, "\treturn attr;\n");
+#else
+	fprintf(f, "\treturn ret;\n");
+#endif
 	fprintf(f, "}\n");
 }
 
