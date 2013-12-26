@@ -986,11 +986,11 @@ template event {
     }
 
     method remove(void *edata) {
-        if ($timebase == "steps")
-            VT_old_step_clean($dev.obj, &$this.callback, edata);
-        else if ($timebase == "cycles" || $timebase == "seconds")
+        //if ($timebase == "steps")
+            //VT_old_step_clean($dev.obj, &$this.callback, edata);
+        //else if ($timebase == "cycles" || $timebase == "seconds")
             VT_old_time_clean($dev.obj, 0, &$this.callback, edata);
-        else
+        //else
             error "bad value for parameter 'timebase'";
     }
 
