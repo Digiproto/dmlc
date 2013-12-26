@@ -5,7 +5,7 @@ static void gen_port_description(object_t *obj, FILE *f) {
 	int  i = 0;
 	object_t  *impl;
 
-	fprintf(f, "\nstatic InterfaceDescription %s_port_ifaces[] = {\n", obj->name);
+	fprintf(f, "\nstatic struct InterfaceDescription %s_port_ifaces[] = {\n", obj->name);
 	for (i = 0; i < port->num; i++) {
 		impl = port->impls[i];
 		fprintf(f, "\t[%d] = (struct InterfaceDescription ) {\n", i);
@@ -22,7 +22,7 @@ void gen_device_port(device_t  *dev, FILE *f) {
 	object_t *tmp;
 	int i = 0;
 
-	fprintf(f, "\nstatic const PortDescription %s_ports[] = {\n", dev->obj.name);	
+	fprintf(f, "\nstatic const struct PortDescription %s_ports[] = {\n", dev->obj.name);	
 	list_for_each(p, &dev->ports){
 		tmp = (object_t *)list_entry(p, object_t, entry);
 		fprintf(f, "\t[%d] = (struct PortDescription) {\n", i);
@@ -44,7 +44,7 @@ static void gen_port_implement_code(object_t *obj, FILE *f) {
 	}
 }
 
-static void gen_port_implement_iface(object_t *obj, FILE *f) {
+void gen_port_implement_iface(object_t *obj, FILE *f) {
 	dml_port_t *port = (dml_port_t *)obj;
 	int i = 0;
 	
@@ -69,7 +69,9 @@ void gen_device_port_code(device_t *dev, FILE *f) {
 	list_for_each(p, &dev->ports) {
 		tmp = (object_t *)list_entry(p, object_t, entry);
 		gen_port_implement_code(tmp, f);
+#if backend != 4
 		gen_port_implement_iface(tmp, f);
+#endif
 	}
 }
 
