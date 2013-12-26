@@ -181,6 +181,7 @@ static void gen_device_destructor(device_t *dev, FILE *f) {
 	fprintf(f, "\nstatic void %s_finalize_instance(conf_object_t *obj) {\n", name);
 	fprintf(f, "\t%s_t *_dev = (%s_t *)obj;\n", name, name);
 	fprintf(f, "\tUNUSED(_dev);\n");
+	fprintf(f, "\tbool exec = _DML_M_post_init(_dev);\n");
 	fprintf(f, "\treturn;\n");
 	fprintf(f, "}\n");
 
