@@ -232,7 +232,11 @@ void translate_ref_expr(tree_t *t){
 		if(!strcmp(obj->obj_type, "device")) {
 			D("_DML_M_%s", sym->name);
 		} else {
-			D("_DML_M_%s__%s", name, sym->name);
+			if(obj->encoding == Obj_Type_Event) {
+				D("_DML_EV_%s__%s", name, sym->name);
+			} else {
+				D("_DML_M_%s__%s", name, sym->name);
+			}
 		}
 	}
 }
@@ -365,6 +369,7 @@ static int check_method_in_param(symbol_t sym, tree_t* call_expr, int in_line) {
 		ret = 0;
 	} else if (params->in_argc != arg_num) {
 		//error("wrong number of input arguments\n");
+		printf("params->in %d, arg %d\n", params->in_argc, arg_num);
 		PERRORN("wrong number of input arguments\n", param_node);
 		//ret = 1;
 	} else {
@@ -708,8 +713,8 @@ void translate_local(tree_t *t) {
 		D("static ");
 	}
 	node = t->local_tree.cdecl;
-	name = get_cdecl_name(node);
-	printf("local var name %s\n", name);
+	//name = get_cdecl_name(node);
+	//printf("local var name %s\n", name);
 	char buf[0x100];
 	//symbol_t sym = symbol_find_notype(current_table, name);
 	//type = (cdecl_t *)sym->attr;
@@ -1493,6 +1498,7 @@ void translate_log(tree_t *t) {
 void translate_ident(tree_t *t) {
 	const char *name = t->ident.str;
 	const char *alias_name;
+	cdecl_t *type;
 	
 	if(is_simics_api(name)) {
 		D("%s", name);
@@ -1513,6 +1519,12 @@ void translate_ident(tree_t *t) {
 	symbol_t sym = symbol_find_notype(current_table, name);
 	if(!sym) {
 		my_DBG("no sym %s found in table\n",name);
+	} else {
+		type = (cdecl_t *)sym->attr;
+		if(type->common.categ == STRUCT_T){
+			D("struct %s\n", sym->name);
+			return;
+		}
 	}
 	if(sym && sym->type == CONSTANT_TYPE) {
 		constant_attr_t *attr = (constant_attr_t *)sym->attr;	
