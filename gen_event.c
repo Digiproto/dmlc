@@ -32,7 +32,7 @@ static void gen_event_code(object_t *obj, FILE *f) {
 	const char *dev = DEV->name;
 
 	fprintf(f, "\nstatic void\n");
-	fprintf(f, "_DML_M_%s__callback_com(conf_object_t *obj, void *param)\n", evt);
+	fprintf(f, "_DML_EV_%s__callback(conf_object_t *obj, void *param)\n", evt);
 	fprintf(f, "{\n");
 	fprintf(f, "\t%s_t *_dev = (%s_t *)obj;\n", dev, dev);
 	fprintf(f, "\t{\n");
