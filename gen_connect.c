@@ -108,11 +108,7 @@ static void gen_connect_set(object_t *obj, FILE *f) {
 
 static void gen_connect_get(object_t *obj, FILE *f) {
 	const char *name = obj->name;
-	int is_array = obj->is_array;
-
-	if(is_array) {
-		name = obj->a_name;
-	}
+	const char *dev_name = DEV->name;
 	/*dummy get function*/	
 	int is_array = obj->is_array;
 
@@ -120,7 +116,8 @@ static void gen_connect_get(object_t *obj, FILE *f) {
 		name = obj->a_name;
 	}
 
-	fprintf(f, "\nstatic attr_value_t get_%s(void *_, conf_object_t *obj, attr_value_t *_index) {\n", name);
+	fprintf(f, "\nstatic attr_value_t %s_get(void *_, conf_object_t *obj, attr_value_t *_index) {\n", name);
+	fprintf(f, "\t%s_t *_dev = (%s_t*) obj;\n", dev_name, dev_name);
 	F_HEAD;
 	fprintf(f, "\tint ret = 0;\n");
 	fprintf(f, "\tUNUSED(ret);\n");
@@ -135,14 +132,14 @@ static void gen_connect_get(object_t *obj, FILE *f) {
 	}
 	fprintf(f, "\t\tattr = SIM_alloc_attr_list(2);\n");
 	if(is_array) {
-		fprintf(f, "\t\tSIM_set_list_item(&attr, 0, SIM_attr_string(_dev->%s[%s].port));\n", name, "index");
+		fprintf(f, "\t\tSIM_attr_list_set_item(&attr, 0, SIM_make_attr_string(_dev->%s[%s].port));\n", name, "index");
 	} else {
-		fprintf(f, "\t\tSIM_set_list_item(&attr, 0, SIM_attr_string(_dev->%s.port));\n", name);
+		fprintf(f, "\t\tSIM_attr_list_set_item(&attr, 0, SIM_make_attr_string(_dev->%s.port));\n", name);
 	}
 	if(is_array) {
-		fprintf(f, "\t\tSIM_set_list_item(&attr, 1, SIM_attr_object(_dev->%s[%s].obj));\n", name, "index");
+		fprintf(f, "\t\tSIM_attr_list_set_item(&attr, 1, SIM_make_attr_obj(_dev->%s[%s].obj));\n", name, "index");
 	} else {
-		fprintf(f, "\t\tSIM_set_list_item(&attr, 1, SIM_attr_object(_dev->%s.obj));\n", name);
+		fprintf(f, "\t\tSIM_attr_list_set_item(&attr, 1, SIM_make_attr_obj(_dev->%s.obj));\n", name);
 	}
 	fprintf(f, "\t}\n");
 	F_END;

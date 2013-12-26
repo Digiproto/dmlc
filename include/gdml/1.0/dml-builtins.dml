@@ -719,11 +719,10 @@ template register {
 		    // Partial access
 		    call $get -> (fieldval);
 		    fieldval[msb1 - 1:lsb] = value;
-		    call $write(fieldval);
+		    inline $write(fieldval);
 		} else {
 		    // Whole-field access
-		    //inline $write(value);
-		    call $write(value);
+		    inline $write(value);
 		}
 	    }
 	/*} else {

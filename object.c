@@ -1230,6 +1230,9 @@ void device_realize(device_t *dev) {
 	i = 0;
 	list_for_each(p, &dev->obj.childs) {
 		tmp = list_entry(p, object_t, entry);
+		if ((!strcmp(tmp->obj_type, "bank")) && (!strcmp(tmp->name, "__fake_bank"))) {
+			continue;
+		}
 		dev->banks[i] = tmp;
 		i++;
 	}

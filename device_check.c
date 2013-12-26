@@ -97,7 +97,18 @@ static void back_to_zero(device_t *dev) {
 }
 
 static void after_check(device_t *dev) {
+	struct list_head *p;
+	object_t *tmp;
+
 	back_to_zero(dev);
+	
+	list_for_each(p, &dev->obj.childs) {
+		tmp = list_entry(p, object_t, entry);
+		if ((!strcmp(tmp->obj_type, "bank")) && (!strcmp(tmp->name, "__fake_bank"))) {
+			p = p->next;
+			list_del(&tmp->entry);
+		}
+	}
 }
 
 void device_check(device_t *dev) {
