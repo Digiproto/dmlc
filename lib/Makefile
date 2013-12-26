@@ -1,4 +1,4 @@
-targets = dml_common common device loader proxy
+targets = common dml_common device loader proxy
 
 prefix ?= /opt/dml_all
 

@@ -182,6 +182,19 @@ void* schedule_tmp_get_return(schedule_t *sched)
 	return ret;
 }
 
+int schedule_tmp_sched_count(schedule_t *sched)
+{
+	assert(sched);
+	pthread_mutex_lock(&sched->belong->mutex);
+	int ret = sched->timeout - sched->overtime;
+	pthread_mutex_unlock(&sched->belong->mutex);
+	if(ret >= 0) {
+		return ret;
+	}else{
+		return 0;
+	}
+}
+
 schedule_status_t schedule_tmp_status_sched(schedule_t *sched)
 {
 	if(!sched)

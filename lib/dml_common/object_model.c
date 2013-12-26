@@ -27,6 +27,8 @@
 #include "simics/core/object_model.h"
 #include "simics/core/object_class.h"
 
+static conf_object_t *clock;
+#define CLOCK_NAME "event_proxy"
 static LIST_HEAD(obj_list);
 typedef struct object_list {
 	struct list_head entry;
@@ -39,6 +41,7 @@ static conf_object_t *SIM_new_object(const conf_class_t *cls, const char *name) 
 	if(cls->cls_data->new_instance) {
 		tmp = cls->cls_data->new_instance(name);	
 		tmp->class_data = cls;
+		tmp->clock = clock;
 		tmp->name = (const char *)strdup(name); 
 	}
 	return tmp;
@@ -60,6 +63,16 @@ void SIM_object_register(conf_object_t *obj, const char *name) {
 
 conf_object_t* SIM_pre_conf_object(const char *obj_name, const char *cls_name) {
 	const conf_class_t *cls = NULL;
+
+	/* create a clock */
+	if(!clock) {
+		cls = SIM_class_find(CLOCK_NAME);
+		if(cls) {
+			clock = SIM_new_object(cls, CLOCK_NAME);
+		}else{
+			printf("cannot find class: %s\n", CLOCK_NAME);
+		}
+	}
 
 	cls = SIM_class_find(cls_name);
 	if(cls) {

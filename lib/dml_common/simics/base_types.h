@@ -58,6 +58,8 @@ typedef struct conf_object  conf_object_t;
 #define SIM_c_get_port_interface SIM_get_port_interface
 #define SIM_c_get_interface SIM_get_interface
 #define conf_object_register SIM_object_register
+#define VT_old_time_post SIM_event_post
+#define VT_old_time_clean SIM_event_cancel
 #define UNUSED(x) (void)(x)
 //#define UNUSED __attribute__((unused)) 
 #define MASK(x) ((x) < 32 \

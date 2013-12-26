@@ -4,7 +4,7 @@ prefix ?= /opt/dml_all
 INCLUDES = -I$(prefix)/include
 LIBRARY_DIRS = -L$(prefix)/lib
 LIBRARYS = -ldml_common
-CFLAGS = -g -Wall -Werror
+CFLAGS = -g -Wall
 build_dir = build
 
 ifeq ($(shell uname),Linux)
