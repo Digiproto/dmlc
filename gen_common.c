@@ -429,6 +429,7 @@ static void translate_call_common(tree_t *expr, tree_t *ret){
 	tree_t *node;
 	method_attr_t *method_attr;
 	ref_ret_t ref_ret;
+	
 
 	method_sym = get_call_expr_ref(expr, &ref_ret);
 	if(method_sym) {
@@ -476,7 +477,7 @@ static void translate_call_common(tree_t *expr, tree_t *ret){
 		D("_DML_M_%s__%s", obj_name, method_sym->name);
 	}
 	D("(_dev");
-	if(obj->is_array) {
+	if(obj->depth) {
        if(!ref_ret.index) {
            D(", _idx0");
        } else {
@@ -708,14 +709,7 @@ void translate_local(tree_t *t) {
 	if(node) {
 		/*just ignore local keyword*/	
 	}
-	if(t->local_tree.is_static) {
-		/*static varable should be in dev struct */
-		D("static ");
-	}
 	node = t->local_tree.cdecl;
-	//name = get_cdecl_name(node);
-	//printf("local var name %s\n", name);
-	char buf[0x100];
 	//symbol_t sym = symbol_find_notype(current_table, name);
 	//type = (cdecl_t *)sym->attr;
 	//undecl(buf, type, "test" );
