@@ -245,11 +245,12 @@ static int term_proxy_receive(term_proxy_t* dev_uart)
 static void* create_uart_console(void* obj) {
 	term_proxy_t* dev_uart = (term_proxy_t*) obj;
 	struct hostent * hp;
-	int on, length;
+	int length;
 	struct sockaddr_in server, from;
 	char * froms;
 
 #ifndef __MINGW32__
+	int on;
 	int term_socket = socket(AF_INET, SOCK_STREAM, 0);
 	if (term_socket < 0)
 		SKYEYE_ERR("opening stream socket");
@@ -258,9 +259,7 @@ static void* create_uart_console(void* obj) {
 	if (setsockopt(term_socket, SOL_SOCKET, SO_REUSEADDR, (uint8_t*)&on, sizeof(on))<0)
 		SKYEYE_ERR("turning on REUSEADDR");
 #else
-	int nsize;
 	int err;
-	struct timeval tv;
 	WSADATA wsaData;
 	SOCKET term_socket = INVALID_SOCKET;
 	BOOL bOptVal = FALSE;

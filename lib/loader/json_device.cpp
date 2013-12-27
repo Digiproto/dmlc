@@ -30,7 +30,6 @@ int device_create(struct devargs *dev, void *extra)
 	NewDevice create_new_device = data->create_fn;
 	dml_proxy_interrupt = data->intr.intr;
 	dml_proxy_interrupt_clear = data->intr.intr_clear;
-	int idx;
 
 	newdev = create_new_device(dev->name, dev->devclass);
 	if(dev->has_addr) {

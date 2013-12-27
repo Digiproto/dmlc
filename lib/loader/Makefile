@@ -5,7 +5,7 @@ prefix ?= /opt/dml_all
 INCLUDES = -I. -I../common -I../include -I$(prefix)/include -I../dml_common
 LIBRARY_DIRS = -L../common -L$(prefix)/lib -L../dml_common
 LIBRARYS = -ldml_common -ldl -ljson -lpthread
-CFLAGS = -g
+CFLAGS = -g -Wall -Werror
 build_dir = build
 
 ifeq ($(shell uname),Linux)
