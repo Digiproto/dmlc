@@ -3134,6 +3134,7 @@ local
 		node->local_tree.cdecl = $2;
 		node->local_tree.expr = $4;
 		node->common.print_node = print_local;
+		node->common.translate = translate_local;
 		$$ = node;
 	}
 	;
