@@ -63,6 +63,7 @@ static inline void init_ref_ret(ref_ret_t *fr) {
 		fr->iface = NULL;
 		fr->method = NULL;
 		fr->ref = NULL;
+		fr->index = NULL;
 }
 
 void ref_info_init(ref_info_t *info);
