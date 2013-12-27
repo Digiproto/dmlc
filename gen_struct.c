@@ -54,7 +54,7 @@ static void gen_connect_struct(object_t *obj, FILE *f) {
 	if(!obj->is_array) {
     	fprintf(f, "\t} %s;\n", obj->name);
 	} else {
-    	fprintf(f, "\t} %s[%d];\n", obj->name, obj->array_size);
+    	fprintf(f, "\t} %s[%d];\n", obj->a_name, obj->array_size);
 	}
 }
 
@@ -124,7 +124,7 @@ static void gen_register_struct(object_t *obj, FILE *f) {
 		if(!reg->is_array) {
         	fprintf(f, "\t\t} %s;\n", obj->name);
 		} else {
-        	fprintf(f, "\t\t} %s[%d];\n", obj->name, reg->array_size);
+        	fprintf(f, "\t\t} %s[%d];\n", obj->a_name, reg->array_size);
 		}
 		type = size2str(reg_size);
         obj->attr_type = type;
