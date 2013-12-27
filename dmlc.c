@@ -130,7 +130,7 @@ int main (int argc, char *argv[])
 			}
 		}else{
 			if(file_num != 0) {
-				fprintf (stderr, "[error] only support a file\n", argv[0]);
+				fprintf (stderr, "[error] only support a file\n");
 				fprintf (stderr, "Usage: %s source [-I library_path]\n", argv[0]);
 				return -1;
 			}

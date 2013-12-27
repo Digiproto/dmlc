@@ -71,7 +71,7 @@ static void gen_bank_read_access(bank_t *b, reg_array_t *list, FILE *f){
 	fprintf(f,"\t\t\t\t\tuint64 v%d_offset = offset;\n",param);	
 	fprintf(f,"\t\t\t\t\tint64 v%d_size = size;\n",param);
 	fprintf(f,"\t\t\t\t\tint64 v%d_size2;\n",param);
-	fprintf(f,"\t\t\t\t\t*readvalue = 0;\n",param);
+	fprintf(f,"\t\t\t\t\t*readvalue = 0;\n");
 	
 	/*genenrate register array access function*/
 	for(i = 1; i < list_count; i++) {
@@ -103,10 +103,10 @@ static void gen_bank_read_access(bank_t *b, reg_array_t *list, FILE *f){
 			fprintf(f,"\t\t\t\t\t\t\t\t\tv%d_size2 = %d;\n", param, reg->size);
 			fprintf(f,"\t\t\t\t\t\t\t\t\tv%d_exec = _DML_M_%s__read_access(_dev, _idx0, memop, 31, 0, &v%d_ret_value);\n", exec_index, item->obj->qname, ret_index);
 			fprintf(f,"\t\t\t\t\t\t\t\t\tif(v%d_exec){\n", exec_index);
-			fprintf(f,"\t\t\t\t\t\t\t\t\t\treturn 1;\n", exec_index);
-			fprintf(f,"\t\t\t\t\t\t\t\t\t}\n", exec_index);
+			fprintf(f,"\t\t\t\t\t\t\t\t\t\treturn 1;\n");
+			fprintf(f,"\t\t\t\t\t\t\t\t\t}\n");
 			fprintf(f,"\t\t\t\t\t\t\t\t\t*readvalue = v%d_ret_value;\n", ret_index);
-			fprintf(f,"\t\t\t\t\t\t\t\t\tgoto found;\n", exec_index);
+			fprintf(f,"\t\t\t\t\t\t\t\t\tgoto found;\n");
 			fprintf(f,"\t\t\t\t\t\t\t\t}\n");
 			//fprintf(f,"\t\t\t\t\t\t\t\tbreak;\n");
 			fprintf(f,"\t\t\t\t\t\t\t}\n");
@@ -146,7 +146,7 @@ static void gen_bank_read_access(bank_t *b, reg_array_t *list, FILE *f){
 		add_object_method(t,"read_access");	
 		fprintf(f,"\t\t\t\t\t\t\t\t\t\tv%d_exec = _DML_M_%s__read_access(_dev, memop, v%d_msb, v%d_lsb, &v%d_ret_value);\n",exec_index,t->qname,local_index,local_index,ret_index);	
 		fprintf(f,"\t\t\t\t\t\t\t\t\t\tif(v%d_exec)\n",exec_index);		
-		fprintf(f,"\t\t\t\t\t\t\t\t\t\t\treturn 1;\n",exec_index);
+		fprintf(f,"\t\t\t\t\t\t\t\t\t\t\treturn 1;\n");
 		
 		fprintf(f,"\t\t\t\t\t\t\t\t\t}\n");
 		
@@ -272,7 +272,7 @@ static void gen_bank_write_access(bank_t *b, reg_array_t *list, FILE *f){
 		add_object_method(t,"write_access");
 		fprintf(f,"\t\t\t\t\t\t\t\t\tv%d_exec = _DML_M_%s__write_access(_dev, memop, v%d_msb, v%d_lsb, writevalue);\n",exec_index,t->qname,local_index,local_index);	
 		fprintf(f,"\t\t\t\t\t\t\t\t\tif(v%d_exec)\n",exec_index);		
-		fprintf(f,"\t\t\t\t\t\t\t\t\t\treturn 1;\n",exec_index);	
+		fprintf(f,"\t\t\t\t\t\t\t\t\t\treturn 1;\n");	
 		fprintf(f,"\t\t\t\t\t\t\t\t}\n");
 		fprintf(f,"\t\t\t\t\t\t\t\tgoto found;\n");
 		fprintf(f,"\t\t\t\t\t\t\t}\n");
@@ -301,7 +301,7 @@ static void  gen_hard_reset(device_t *dev, FILE *f) {
     fprintf(f, "\tbool v%d_exec;\n", index);
     fprintf(f, "\tUNUSED(v%d_exec);\n", index);
     fprintf(f, "\n");
-    fprintf(f, "\tv%d_exec = _DML_M_hard_reset(obj);\n",index, name);
+    fprintf(f, "\tv%d_exec = _DML_M_hard_reset(obj);\n",index);
     fprintf(f, "}\n");
 }
 
@@ -314,7 +314,7 @@ static void  gen_soft_reset(device_t *dev, FILE *f) {
     fprintf(f, "\tbool v%d_exec;\n", index);
     fprintf(f, "\tUNUSED(v%d_exec);\n", index);
     fprintf(f, "\n");
-    fprintf(f, "\tv%d_exec = _DML_M_soft_reset(obj);\n", index, name);
+    fprintf(f, "\tv%d_exec = _DML_M_soft_reset(obj);\n", index);
     fprintf(f, "}\n");
 }
 

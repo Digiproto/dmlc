@@ -2836,7 +2836,7 @@ expr_t* adjust(expr_t* expr, int rvalue) {
 		expr->lvalue = 0;
 	}
 
-	if (expr->type->common.categ = FUNCTION_T) {
+	if (expr->type->common.categ == FUNCTION_T) {
 		expr->type = pointer_to(expr->type);
 		expr->isfunc = 1;
 	}
@@ -3330,7 +3330,7 @@ static int two_type_compatible(cdecl_t* type1, cdecl_t* type2) {
 	if (is_ptr_type(type1) && is_ptr_type(type2))
 		return 1;
 	if ((is_ptr_type(type1) && is_int_type(type2)) ||
-		is_ptr_type(type2) && is_int_type(type1)) {
+		(is_ptr_type(type2) && is_int_type(type1))) {
 		//warning("conversion between pointer and integer without a cast");
 		return 1;
 	}

@@ -43,7 +43,7 @@ static void gen_headerfile(device_t *dev, FILE *f) {
     fprintf(f, "#include \"%s.h\"\n", name);
     fprintf(f, "#include \"%s_protos.c\"\n", name);
 	fprintf(f, "\nstatic void %s_pre_delete_instance(conf_object_t *obj);\n", name);
-	fprintf(f, "");
+	//fprintf(f, "");
 }
 
 void pre_gen_code(device_t *dev, FILE *f) {

@@ -242,7 +242,8 @@ static object_t* get_parameter_obj(symtab_t table, const char* name) {
 	assert(table != NULL); assert(name != NULL);
 	symbol_t symbol = symbol_find(table, name, PARAMETER_TYPE);
         parameter_attr_t* attr = symbol->attr;
-        if (attr->is_original == 0) return;
+        //if (attr->is_original == 0) return;
+        if (attr->is_original == 0) return NULL;
         tree_t* node = attr->common.node;
         tree_t* param_spec = node->param.paramspec;
         tree_t* expr_node = NULL;

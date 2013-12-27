@@ -238,14 +238,16 @@ void translate_expr_brack_direct(tree_t *t) {
 				if(tmp->is_array) {
 						D("[_idx0]");
 				}
-				D(".obj", ref_ret.iface->name);
+				//D(".obj", ref_ret.iface->name);
+				D(".obj");
 			} else {
 				printf_ref(&ref_ret);
 				D(".%s->%s",ref_ret.iface->name, ref_ret.method);
 				D("(");
 				//ref_name = get_obj_ref(tmp);
 				printf_ref(&ref_ret);
-				D(".obj",ref_ret.iface->name);
+				//D(".obj",ref_ret.iface->name);
+				D(".obj");
 			}
 			node = t->expr_brack.expr_in_brack;
 			if(node) {
