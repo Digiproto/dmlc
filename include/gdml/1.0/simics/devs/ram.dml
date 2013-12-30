@@ -16,4 +16,4 @@ import "simics/pywrap.dml";
 
 typedef struct { get_page_t (*get_page)(conf_object_t *obj, physical_address_t addr); void (*fill)(conf_object_t *obj, physical_address_t start, uint64 length, uint8 value); } ram_interface_t;
 typedef struct { page_t *page; physical_address_t page_base; physical_address_t page_size; page_t *extra_page; uint32 extra_page_offset; } get_page_t;
-typedef ram_interface_t rom_interface_t;
+//typedef ram_interface_t rom_interface_t;

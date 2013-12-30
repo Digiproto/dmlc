@@ -1,0 +1,11 @@
+dml 1.0;
+
+extern typedef struct { int log_level; } log_object_t;
+typedef struct { get_page_t (*get_page)(conf_object_t *obj, physical_address_t addr); } ram_interface_t;
+extern uinteger_t SIM_mem_op_get_value(generic_transaction_t *mop);
+extern void SIM_mem_op_set_value(generic_transaction_t *mop, uinteger_t value);
+extern uinteger_t SIM_mem_op_get_value(generic_transaction_t *mop);
+extern attr_value_t SIM_get_attribute(conf_object_t *obj, const char *name);
+extern set_error_t SIM_set_attribute(conf_object_t *obj, const char *name, attr_value_t *value);
+extern void SIM_set_frontend_context(void *context);
+extern void SIM_frontend_exception(sim_exception_t exc_type, const char *str);

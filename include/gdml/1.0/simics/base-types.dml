@@ -14,3 +14,5 @@ import "simics/module-host-config.dml";
 import "simics/host-info.dml";
 
 typedef SOCKET socket_t;
+typedef uint64 uinteger_t;
+typedef int64 integer_t;

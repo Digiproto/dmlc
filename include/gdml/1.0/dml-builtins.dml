@@ -967,15 +967,17 @@ template event {
 
     method post(when, void *edata) {
         //if ($timebase == "steps")
-            //VT_old_step_post($dev.obj, when, &$this.callback, edata);
-        //else if ($timebase == "cycles")
-            //VT_old_time_post_cycle($dev.obj, when, 0, &$this.callback, edata);
-        //else if ($timebase == "seconds")
+            VT_old_step_post($dev.obj, when, &$this.callback, edata);
+	/*
+        else if ($timebase == "cycles")
+            VT_old_time_post_cycle($dev.obj, when, 0, &$this.callback, edata);
+        else if ($timebase == "seconds")
             VT_old_time_post($dev.obj, when, 0, &$this.callback, edata);
-        //else if ($timebase == "stacked")
-            //VT_stacked_post($dev.obj, &$this.callback, edata);
-        //else
-            //error "bad value for parameter 'timebase'";
+        else if ($timebase == "stacked")
+            VT_stacked_post($dev.obj, &$this.callback, edata);
+        else
+            error "bad value for parameter 'timebase'";
+	*/
     }
 
     method post_on_queue(queue, when, void *edata) {
@@ -995,11 +997,13 @@ template event {
 
     method remove(void *edata) {
         //if ($timebase == "steps")
-            //VT_old_step_clean($dev.obj, &$this.callback, edata);
-        //else if ($timebase == "cycles" || $timebase == "seconds")
+            VT_old_step_clean($dev.obj, &$this.callback, edata);
+	/*
+        else if ($timebase == "cycles" || $timebase == "seconds")
             VT_old_time_clean($dev.obj, 0, &$this.callback, edata);
-        //else
+        else
             error "bad value for parameter 'timebase'";
+	*/
     }
 
     method extern callback(void *param) {
