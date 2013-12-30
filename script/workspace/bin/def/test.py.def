@@ -7,7 +7,7 @@ sys.path.append("../../bin/library")
 from libtest_framework import *
 os_info = platform.system()
 
-lib_path_skyeye = r"@SYSTEMC_INSTALL_DIR@"
+lib_path_systemc = r"@SYSTEMC_INSTALL_DIR@"
 lib_path_qemu   = r"@QEMU_INSTALL_DIR@"
 if os_info == "Linux":
 	lib_suffix = ".so"
@@ -15,7 +15,7 @@ else:
 	lib_suffix = ".dll"
 
 def systemc_demo():
-	tmp = skyeye(lib_path_skyeye, lib_suffix)
+	tmp = systemc(lib_path_systemc, lib_suffix)
 	tmp.test_init()
 	"""
 	# this is only a sample and can't try to your mach

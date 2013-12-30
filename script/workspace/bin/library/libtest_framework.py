@@ -53,6 +53,23 @@ class skyeye(common_framework):
 		self.libtest.test_mem_write.restype = ctypes.c_int
 		self.libtest.test_mem_read.restype = ctypes.c_int
 
+class systemc(common_framework):
+	def __init__(self, lib_path, libsuf):
+		common_framework.__init__(self)
+		lib_path = os.path.join(lib_path, "lib")
+		libcommon_path = os.path.join(lib_path, "libdml_common%s" % libsuf)
+		libjsonloader_path = os.path.join(lib_path, "libjson_loader%s" % libsuf)
+		libtest_path = os.path.join(lib_path, "libtest%s" % libsuf)
+		# libdml_commmon
+		self.libtest = ctypes.CDLL(libcommon_path, ctypes.RTLD_GLOBAL)
+		# libjsonloader
+		self.libtest = ctypes.CDLL(libjsonloader_path, ctypes.RTLD_GLOBAL)
+		# libtest
+		self.libtest = ctypes.CDLL(libtest_path, ctypes.RTLD_GLOBAL)
+		self.libtest.test_init.restype = ctypes.c_int
+		self.libtest.test_mem_write.restype = ctypes.c_int
+		self.libtest.test_mem_read.restype = ctypes.c_int
+
 class qemu(common_framework):
 	def __init__(self, lib_path, libsuf):
 		common_framework.__init__(self)
