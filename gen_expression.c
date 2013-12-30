@@ -68,6 +68,20 @@ void translate_binop_expr(tree_t *t) {
 	tree_t *node;
 
 	node = t->binary.left;
+	if(t->binary.type == LEFT_OP_TYPE) {
+		tree_t *shift = t->binary.right;
+		if(shift->common.type == INTEGER_TYPE && shift->int_cst.value >= 32) {
+			
+		D("(");
+		D("(unsigned long long)");
+		translate(node);
+		D(" %s ",t->binary.operat);
+		node = t->binary.right;
+		translate(node);
+		D(")");
+		return;
+	}		
+	}
 	D("(");
 	translate(node);
 	D(" %s ",t->binary.operat);
@@ -228,16 +242,13 @@ void translate_expr_brack_direct(tree_t *t) {
 				tmp = obj->parent;
 				ref_name = get_obj_ref(tmp);
 				D("%s", ref_name);
-				if(tmp->is_array) {
-						D("[_idx0]");
-				}
 				D(".%s", ref_ret.iface->name);
 				D("->%s", ref_ret.method);
 				D("(");
 				D("%s", ref_name);
-				if(tmp->is_array) {
-						D("[_idx0]");
-				}
+				//if(tmp->is_array) {
+				//		D("[_idx0]");
+				//}
 				//D(".obj", ref_ret.iface->name);
 				D(".obj");
 			} else {
