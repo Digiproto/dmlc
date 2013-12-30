@@ -3021,6 +3021,7 @@ statement
 	| RETURN ';' {
 		tree_t* node = (tree_t*)create_node("return", RETURN_TYPE, sizeof(struct tree_common), &@$);
 		node->common.print_node = print_return;
+		node->common.translate = translate_return;
 		$$ = node;
 	}
 	| ERROR ';' {
