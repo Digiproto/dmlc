@@ -348,7 +348,7 @@ static int get_int_size(const char* int_str) {
 		else
 			data = &int_str[3];
 		size = atoi(data);
-		if (size > 64)
+		if (size > 128)
 			error("unknown type: '%s'\n", int_str);
 	}
 

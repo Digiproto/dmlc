@@ -178,7 +178,7 @@ normal:
 		exit(-1);
 	}
 #ifndef RELEASE
-	//print_ast (ast);
+	print_ast (ast);
 	printf("Print the syntax tree ok!\n");
 #endif
 #if  1 || QEMU

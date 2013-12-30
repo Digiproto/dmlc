@@ -264,7 +264,7 @@ dml
 		tree_t* import_ast = NULL;
 		while(import_file_list[i] != NULL) {
 			import_ast = (tree_t*)get_ast(import_file_list[i]);
-			if(import_ast->common.child != NULL) {
+			if(import_ast && import_ast->common.child != NULL) {
 				create_node_list(node, import_ast->common.child);
 			}
 			i++;
