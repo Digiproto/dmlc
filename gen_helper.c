@@ -49,6 +49,7 @@ static int node_is_expression(tree_t *node) {
         case NEW_TYPE:
         case ARRAY_TYPE:
         case BIT_SLIC_EXPR_TYPE:
+        case RETURN_TYPE:
             ret = 1; 
             break;
         default:
