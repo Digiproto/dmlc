@@ -1640,6 +1640,9 @@ static void translate_cdecl3_brack(tree_t *t) {
 	D(")");
 }
 
+void translate_return(tree_t *t) {
+	D("return 0");
+}
 static void do_method_param_alias(tree_t *t, int ret) {
 	tree_t *node = t;
 	const char *name;
@@ -1652,6 +1655,7 @@ static void do_method_param_alias(tree_t *t, int ret) {
 	if(sym) {
 		if(!ret) {
 			dup = strdup(name);
+			printf("in %s\n", dup);
 			set_symbol_alias_name(sym, dup);	
 		} else if(ret == 1){
 			len = strlen(name) + 2;
@@ -1659,6 +1663,7 @@ static void do_method_param_alias(tree_t *t, int ret) {
 			dup[0] = '*';
 			dup[1] = '\0';
 			strcat(dup, name);	
+			printf("out %s, sym \n", dup);
 			set_symbol_alias_name(sym, dup);
 		} else if(ret == 2) {
 			/*only for set/get_attribute*/
@@ -1710,9 +1715,17 @@ static void gen_method_params(object_t *obj, tree_t *m){
 	D(")");
 }
 
-static void do_method_params_alias(object_t *obj, tree_t *m){
+void do_method_params_alias(object_t *obj, tree_t *m){
 	tree_t *params = m->method.params;
- 	
+	const char *name;
+	if(obj->is_array) {
+		name = obj->a_name;
+	} else {
+		name = obj->name;
+	}
+	if(!strcmp(name, "inten") && !strcmp(m->method.name, "read_access")) {
+		printf("IN obj %s, method %s\n", name, m->method.name);
+	}
 	if(params) {
 		if(params->params.in_params){
 			/*gen in_params*/
@@ -1722,6 +1735,9 @@ static void do_method_params_alias(object_t *obj, tree_t *m){
 			/*gen ret_params*/
 			cdecl_or_ident_list_params_alias(params->params.ret_params, 1);
 		} 
+	}
+	if(!strcmp(name, "inten") && !strcmp(m->method.name, "read_access")) {
+		printf("IN obj %s, method %s\n", name, m->method.name);
 	}
 }
 
