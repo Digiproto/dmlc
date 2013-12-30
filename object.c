@@ -578,10 +578,6 @@ static void create_objs(object_t *obj, type_t type) {
 	symbol_list_t *head = list;
 	object_type_t obj_type;
 	
-	if(table) {
-		check_undef_template(table);
-	}	
-	list = symbol_list_find_type(table, type);
 	obj_type = type2obj_type(type);
 	if (type == BANK_TYPE && list == NULL) {
 		list = fake_bank_list();
@@ -985,6 +981,8 @@ static void connect_realize(object_t *obj) {
 		obj->array_size = array_def->fix_array;
 		if(!obj->array_size) {
 			obj->array_size = array_def->high - array_def->low + 1;
+		} else {
+			obj->array_size = array_def->high;
 		}
 	}
 	struct list_head *p;
@@ -1177,7 +1175,7 @@ static void port_realize(object_t *obj) {
 
 	set_current_obj(obj);
 	add_object_templates(obj);
-	list_for_each(p, &obj->childs) {
+	list_for_each(p, &port->implements) {
 		i++;
 	}
 	port = (dml_port_t *)obj;
