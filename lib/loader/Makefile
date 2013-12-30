@@ -19,7 +19,23 @@ cfiles = $(wildcard *.c) $(wildcard bus/*.c)
 cppfiles = $(wildcard *.cpp) $(wildcard bus/*.cpp)
 bins := $(patsubst %.c,$(build_dir)/%.o,$(cfiles))
 bins := $(patsubst %.cpp,$(build_dir)/%.o,$(cppfiles)) $(bins)
+bins := $(filter-out $(build_dir)/test.o,$(bins))
 target = libjson_loader.$(suffix)
+
+special_cppfiles = test.cpp
+special_bins := $(patsubst %.cpp,$(build_dir)/%.o,$(special_cppfiles))
+CFLAGS := $(CFLAGS) -DTEST_DEBUG
+special_target = libtest.$(suffix)
+#special_target = test
+
+all: $(target) $(special_target)
+
+$(special_target): $(special_bins)
+	@echo "[LD] $@"
+#	@$(CPP) $^ $(CFLAGS) $(INCLUDES) $(LIBRARY_DIRS) $(LIBRARYS) \
+#		-ljson_loader -L. -Wl,-rpath=. -Wl,-rpath=../dml_common -o $@
+	@$(CPP) -shared $^ $(CFLAGS) $(INCLUDES) $(LIBRARY_DIRS) $(LIBRARYS) \
+		-ljson_loader -L. -Wl,-rpath=$(prefix)/lib -o $@
 
 $(target): $(bins)
 	@echo "[LD] $@"
@@ -51,11 +67,11 @@ install:
 	@echo "[INS] to $(prefix)/lib"
 	@mkdir -p $(prefix)/lib
 	@cp libjson_loader.$(suffix) $(prefix)/lib
+	@cp libtest.$(suffix) $(prefix)/lib
 
 distclean: clean
 	rm -rf build
-	rm -rf $(targets)
-	rm -rf lib*.$(suffix)
+	rm -rf $(target) $(special_target)
 
 clean:
 	rm -rf build/*
