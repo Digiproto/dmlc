@@ -733,6 +733,12 @@ paramspec_t* get_param_spec(tree_t* node, symtab_t table) {
 
 	if (node->paramspec.expr && (table->no_check == 0)) {
 		expr_t* expr = check_expr(node->paramspec.expr, table);
+		if (expr->no_defined) {
+			undef_var_insert(table, node->paramspec.expr);
+			value->type = PARAM_TYPE_NONE;
+			value->flag = PARAM_FLAG_NONE;
+			return spec;
+		}
 		spec->expr_node = node->paramspec.expr;
 		if (expr->is_undefined) {
 			value->type = PARAM_TYPE_UNDEF;
@@ -1262,7 +1268,8 @@ void parse_obj_if_else(tree_t* node, symtab_t table) {
 	 * with the following steps to parsing it*/
 	/* step 1: check the condition expression */
 	tree_t* cond_node = node->if_else.cond;
-	check_expr(cond_node, table);
+	expr_t* expr = check_expr(cond_node, table);
+	insert_no_defined_expr(table, node, expr);
 
 	/* step 2: goto the if block to parse expressions and symbols */
 	tree_t* if_node = node->if_else.if_block;
@@ -1307,6 +1314,10 @@ void parse_method(tree_t* node, symtab_t table) {
 	method_attr_t* attr = NULL;
 	if (symbol_defined(table, node->method.name)) {
 		symbol_t symbol = symbol_find(table, node->method.name, METHOD_TYPE);
+		if (symbol == NULL) {
+			error("name collision on '%s'\n", node->method.name);
+			return;
+		}
 		attr = symbol->attr;
 		//symtab_t method_table = attr->table;
 		attr->table = node->method.block->block.table;
@@ -1388,6 +1399,10 @@ void parse_constant(tree_t* node, symtab_t table) {
 
 	/*the constant symbol must be defined before used*/
 	attr->value = check_expr(node->assign.expr, table);
+	if (attr->value->no_defined) {
+		undef_var_insert(table, node);
+		return;
+	}
 	if (attr->value->is_const) {
 		symbol_insert(table, node->assign.decl->ident.str, CONSTANT_TYPE, attr);
 	} else {
@@ -1452,7 +1467,8 @@ void parse_expr(tree_t* node, symtab_t table) {
 	assert(table != NULL); assert(table != NULL);
 
 	tree_t* tmp = node;
-	check_expr(tmp, table);
+	expr_t* expr = check_expr(tmp, table);
+	insert_no_defined_expr(table, node, expr);
 
 	return;
 }
@@ -1481,7 +1497,8 @@ void parse_if_else(tree_t* node, symtab_t table) {
 
 	/* step 1: check the condition expression */
 	tree_t* cond = node->if_else.cond;
-	check_expr(cond, table);
+	expr_t* expr = check_expr(cond, table);
+	insert_no_defined_expr(table, node, expr);
 
 	/* step 2: goto the if block to parse elements
 	 * as if block has two style:
@@ -1554,7 +1571,8 @@ void parse_do_while(tree_t* node, symtab_t table) {
 	 **/
 	/* check the condition expression */
 	tree_t* cond = node->do_while.cond;
-	check_expr(cond, table);
+	expr_t* expr = check_expr(cond, table);
+	insert_no_defined_expr(table, node, expr);
 
 	/* goto the block table to parsing elements
 	 * and calculate expressions*/
@@ -1572,9 +1590,15 @@ void parse_do_while(tree_t* node, symtab_t table) {
 void parse_for(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
-	check_comma_expr(node->for_tree.init, table);
-	check_expr(node->for_tree.cond, table);
-	check_comma_expr(node->for_tree.update, table);
+	expr_t* expr_init = check_comma_expr(node->for_tree.init, table);
+	expr_t* expr_cond = check_expr(node->for_tree.cond, table);
+	expr_t* expr_update = check_comma_expr(node->for_tree.update, table);
+	if ((expr_init && expr_init->no_defined) ||
+		(expr_cond && expr_cond->no_defined) ||
+		(expr_update && expr_update->no_defined)) {
+		undef_var_insert(table, node);
+		return;
+	}
 
 	tree_t* block = node->for_tree.block;
 	if (block->common.type != BLOCK_TYPE) {
@@ -1591,7 +1615,8 @@ void parse_switch(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
 	tree_t* cond = node->switch_tree.cond;
-	check_expr(cond, table);
+	expr_t* expr = check_expr(cond, table);
+	insert_no_defined_expr(table, node, expr);
 
 	tree_t* block = node->switch_tree.block;
 	if (block->common.type != BLOCK_TYPE) {
@@ -1611,6 +1636,7 @@ void parse_delete(tree_t* node, symtab_t table) {
 	 * memory pointed by the result of evaluating expr */
 	tree_t* expr_node = node->delete_tree.expr;
 	expr_t* expr = check_expr(expr_node, table);
+	insert_no_defined_expr(table, node, expr);
 	if(expr->type->common.categ != POINTER_T)
 		error("delete expression not pointer\n");
 
@@ -1700,7 +1726,8 @@ void parse_after_call(tree_t* node, symtab_t table) {
 
 	/* parse after expression */
 	tree_t* cond = node->after_call.cond;
-	check_expr(cond, table);
+	expr_t* expr = check_expr(cond, table);
+	insert_no_defined_expr(table, node, expr);
 
 	/* parse call expression */
 	tree_t* call_expr = node->after_call.call_expr;
@@ -1718,7 +1745,8 @@ void parse_assert(tree_t* node, symtab_t table) {
 	/* In assert, we should only check the symbol is defined or not
 	 * and check the type is ok*/
 	tree_t* expr_node = node->assert_tree.expr;
-	check_expr(expr_node, table);
+	expr_t* expr = check_expr(expr_node, table);
+	insert_no_defined_expr(table, node, expr);
 
 	return;
 }
@@ -1739,7 +1767,7 @@ static void check_log_type(const char* str) {
 	return;
 }
 
-static void check_log_level(tree_t* node, symtab_t table) {
+static expr_t* check_log_level(tree_t* node, symtab_t table) {
 	if (node == NULL)
 		return;
 
@@ -1757,10 +1785,10 @@ static void check_log_level(tree_t* node, symtab_t table) {
 	else
 		error("invalid log level\n");
 
-	return;
+	return expr;
 }
 
-static void check_log_group(tree_t* node, symtab_t table) {
+static expr_t* check_log_group(tree_t* node, symtab_t table) {
 	assert(table != NULL);
 	if (node == NULL)
 		return;
@@ -1768,7 +1796,7 @@ static void check_log_group(tree_t* node, symtab_t table) {
 	tree_t* group = node;
 	expr_t* expr = check_expr(group, table);
 
-	return;
+	return expr;
 }
 
 extern int scanfstr(const char *str, char ***typelist);
@@ -1803,18 +1831,28 @@ void parse_log(tree_t* node, symtab_t table) {
 	 * if omitted, the default level is 1. The meaning
 	 * about 1 to 4, please refer to dml reference manual */
 	tree_t* level = node->log.level;
-	check_log_level(level, table);
+	expr_t* level_expr = check_log_level(level, table);
 
 	/* the groups must be declared using the loggroup
 	 * if omitted, the default value is 0 */
 	tree_t* group = node->log.group;
-	check_log_group(group, table);
+	expr_t* group_expr = check_log_group(group, table);
 
 	/* check the log format and the log args, that
 	 * like the printf's format, and args*/
 	tree_t* log_args = node->log.args;
-	parse_log_args(log_args, table);
+	expr_t* args_expr = parse_log_args(log_args, table);
 	parse_log_format(node->log.format, log_args);
+#if 0
+	if ((level_expr && level_expr->no_defined) ||
+		(group_expr && group_expr->no_defined) ||
+		(args_expr && args_expr->no_defined)) {
+		printf("level_expr: %d, group_expr: %d, args_expr: %d\n",
+		level_expr->no_defined, group_expr->no_defined, args_expr->no_defined);
+		undef_var_insert(table, node);
+		exit(-1);
+	}
+#endif
 
 	return;
 }
@@ -1828,17 +1866,18 @@ void parse_select(tree_t* node, symtab_t table) {
 	select_attr_t* attr = (select_attr_t*)gdml_zmalloc(sizeof(select_attr_t));
 	attr->ident = ident->ident.str;
 	attr->common.node = node;
-	symbol_insert(node->select.where_table, ident->ident.str, SELECT_TYPE, attr);
-
 	tree_t* in_expr = node->select.in_expr;
 	attr->in_expr = check_expr(in_expr, table);
+	insert_no_defined_expr(table, node, attr->in_expr);
 	attr->type = attr->in_expr->type->common.categ;
+	symbol_insert(node->select.where_table, ident->ident.str, SELECT_TYPE, attr);
 
 	tree_t* cond = node->select.cond;
 	/* as we insert the ident into where block, so
 	 * check the conditional expression and find
 	 * the symbol from where table*/
-	check_expr(cond, node->select.where_table);
+	expr_t* expr = check_expr(cond, node->select.where_table);
+	insert_no_defined_expr(table, node, expr);
 
 	/* goto the statement to parse elements
 	 * and calculate expressions */
@@ -1874,11 +1913,11 @@ void parse_foreach(tree_t* node, symtab_t table) {
 	attr->common.node = node;
 	attr->table = node->foreach.table;
 	node->common.attr = attr;
-	symbol_insert(node->foreach.table, ident->ident.str, FOREACH_TYPE, attr);
-
 	tree_t* in_expr = node->foreach.in_expr;
 	attr->expr = check_expr(in_expr, table);
 	attr->table = node->foreach.table;
+	insert_no_defined_expr(table, node, attr->expr);
+	symbol_insert(node->foreach.table, ident->ident.str, FOREACH_TYPE, attr);
 
 	symbol_t list = get_expression_sym(in_expr);
 	param_value_t *val = NULL;
@@ -1960,6 +1999,7 @@ void parse_case(tree_t* node, symtab_t table) {
 	 *		CASE expression ':' statement */
 	tree_t* expr_node = node->case_tree.expr;
 	expr_t* expr = check_expr(expr_node, table);
+	insert_no_defined_expr(table, node, expr);
 	if (!is_int_type(expr->type))
 		error("case label does not reduce to an integer constant\n");
 

@@ -481,22 +481,28 @@ static char* get_interface_name(const char* name) {
 	return new_name;
 }
 
-void parse_log_args(tree_t* node, symtab_t table) {
+expr_t* parse_log_args(tree_t* node, symtab_t table) {
 	if (node == NULL) {
-		return;
+		return NULL;
 	}
 	assert(table != NULL);
 
 	tree_t* arg_node = node;
 
-	check_expr(node, table);
+	expr_t* expr = check_expr(node, table);
+	if (expr->no_defined) {
+		return expr;
+	}
 
 	while ((arg_node->common.sibling) != NULL) {
 		arg_node = arg_node->common.sibling;
-		check_expr(arg_node, table);
+		expr = check_expr(arg_node, table);
+		if (expr->no_defined) {
+			return expr;
+		}
 	}
 
-	return;
+	return expr;
 }
 
 
@@ -811,9 +817,28 @@ cdecl_t* get_arith_type(cdecl_t* type1, cdecl_t* type2, cdecl_t* type) {
 			expr->type->common.size = sizeof(int) * 8; \
 		} while (0)
 
+#define check_no_defiend_expr(expr, node) \
+	do {	\
+		if (expr->no_defined) { \
+			expr->node = node; \
+			expr->no_defined = 1; \
+			return expr; \
+		} \
+	} while (0)
+
+#define check_kids_no_defiend(expr, node) \
+		do { \
+			if (expr->kids[0]->no_defined || expr->kids[1]->no_defined) { \
+				expr->no_defined = 1; \
+				expr->node = node; \
+				return expr; \
+			} \
+		}while(0)
+
 expr_t* check_logical_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL);
 	expr = check_binary_kids(node, table, expr);
+	check_kids_no_defiend(expr, node);
 	if (both_scalar_type(expr->kids[0]->type, expr->kids[1]->type)) {
 		expr = cal_const_value(expr);
 		if (expr->is_const) {
@@ -842,6 +867,7 @@ expr_t* check_logical_expr(tree_t* node, symtab_t table, expr_t* expr) {
 expr_t* check_bitwise_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 	expr = check_binary_kids(node, table, expr);
+	check_kids_no_defiend(expr, node);
 	expr->type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
 	cdecl_t* type1 = expr->kids[0]->type;
 	cdecl_t* type2 = expr->kids[1]->type;
@@ -874,6 +900,7 @@ expr_t* check_equality_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	cdecl_t* type2 = NULL;
 
 	expr = check_binary_kids(node, table, expr);
+	check_kids_no_defiend(expr, node);
 	type1 = expr->kids[0]->type;
 	type2 = expr->kids[1]->type;
 	type1 = (type1->common.categ == ARRAY_T) ? type1->common.bty : type1;
@@ -905,6 +932,7 @@ expr_t* check_equality_expr(tree_t* node, symtab_t table, expr_t* expr) {
 expr_t* check_relation_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 	expr = check_binary_kids(node, table, expr);
+	check_kids_no_defiend(expr, node);
 	expr->type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
 	expr->type->common.categ = INT_T;
 	expr->type->common.size = sizeof(int) * 8;
@@ -927,6 +955,7 @@ expr_t* check_relation_expr(tree_t* node, symtab_t table, expr_t* expr) {
 expr_t* check_shift_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 	expr = check_binary_kids(node, table, expr);
+	check_kids_no_defiend(expr, node);
 	cdecl_t* type1 = expr->kids[0]->type;
 	cdecl_t* type2 = expr->kids[1]->type;
 	if (both_int_type(type1, type2)) {
@@ -951,6 +980,7 @@ expr_t* check_shift_expr(tree_t* node, symtab_t table, expr_t* expr) {
 expr_t* check_add_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 	expr = check_binary_kids(node, table, expr);
+	check_kids_no_defiend(expr, node);
 	if (both_arith_type(expr->kids[0]->type, expr->kids[1]->type)) {
 		return cal_const_value(expr);
 	}
@@ -969,6 +999,7 @@ expr_t* check_add_expr(tree_t* node, symtab_t table, expr_t* expr) {
 expr_t* check_sub_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 	expr = check_binary_kids(node, table, expr);
+	check_kids_no_defiend(expr, node);
 	if (both_arith_type(expr->kids[0]->type, expr->kids[1]->type)) {
 		return cal_const_value(expr);
 	}
@@ -987,6 +1018,7 @@ expr_t* check_sub_expr(tree_t* node, symtab_t table, expr_t* expr) {
 expr_t* check_multiplicative_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 	expr = check_binary_kids(node, table, expr);
+	check_kids_no_defiend(expr, node);
 	if (both_arith_type(expr->kids[0]->type, expr->kids[1]->type)) {
 		return cal_const_value(expr);
 	}
@@ -1052,11 +1084,6 @@ static int can_assign(expr_t* l_expr, expr_t* r_expr) {
 	return 0;
 }
 
-void free_expr(expr_t* expr) {
-
-	return;
-}
-
 expr_t* check_assign_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 
@@ -1088,18 +1115,20 @@ expr_t* check_assign_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	else {
 		expr->kids[0] = check_expr(node->expr_assign.left, table);
 		expr->kids[1] = check_expr(node->expr_assign.right, table);
+		check_kids_no_defiend(expr, node);
 	}
+	check_no_defiend_expr(expr, node);
 
 	if (!can_modify(expr->kids[0])) {
 		error("lvalue required as left operand of assignment\n");
 	}
 	if (!can_assign(expr->kids[0], expr->kids[1])) {
+		printf("expr->kids[0] : type: %d, PARAMETER_TYPE: %d\n", expr->kids[0]->type->common.categ, PARAMETER_TYPE);
 		error("wrong assignment\n");
 	}
 	expr->type = expr->kids[0]->type;
 	expr->node = node;
 
-	free_expr(expr->kids[0]); free_expr(expr->kids[1]);
 	return expr;
 }
 
@@ -1145,6 +1174,7 @@ expr_t* check_binary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 			PERRORN("unkown type: %s", node, node->common.name);
 			break;
 	}
+	check_no_defiend_expr(expr, node);
 	expr->node = node;
 	return expr;
 }
@@ -1153,6 +1183,11 @@ expr_t* check_ternary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 
 	expr_t* cond_expr = check_expr(node->ternary.cond, table);
+	if (cond_expr->no_defined) {
+		expr->node = node;
+		expr->no_defined = 1;
+		return expr;
+	}
 	if (!is_scalar_type(cond_expr->type) &&
 		!is_no_type(cond_expr->type) &&
 		!is_parameter_type(cond_expr->type)) {
@@ -1161,6 +1196,11 @@ expr_t* check_ternary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 
 	expr_t* true_expr = check_expr(node->ternary.expr_true, table);
 	expr_t* false_expr = check_expr(node->ternary.expr_false, table);
+	if (true_expr->no_defined || false_expr->no_defined) {
+		expr->node = node;
+		expr->no_defined = 1;
+		return expr;
+	}
 	cdecl_t* type1 = true_expr->type;
 	cdecl_t* type2 = false_expr->type;
 
@@ -1176,6 +1216,9 @@ expr_t* check_cast_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	expr = check_expression(node->cast.expr, table, expr);
 
 	cdecl_t* type = parse_ctype_decl(node->cast.ctype, table);
+	if (expr->no_defined || type->common.no_decalare) {
+		expr->no_defined = 1;
+	}
 	expr->type = type;
 	expr->node = node;
 
@@ -1185,6 +1228,7 @@ expr_t* check_cast_expr(tree_t* node, symtab_t table, expr_t* expr) {
 expr_t* check_sizeof_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 	expr = check_expression(node->sizeof_tree.expr, table, expr);
+	check_no_defiend_expr(expr, node);
 	expr->type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
 	expr->type->common.categ = INT_T;
 	expr->type->common.size = sizeof(int) * 8;
@@ -1200,6 +1244,8 @@ expr_t* check_unary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 		case NEGATIVE_TYPE:
 		case CONVERT_TYPE:
 			expr->kids[0] = check_expr(node->unary.expr, table);
+			expr->no_defined = expr->kids[0]->no_defined;
+			check_no_defiend_expr(expr, node);
 			if (is_arith_type(expr->kids[0]->type)) {
 				expr = cal_const_value(expr);
 			}
@@ -1213,6 +1259,8 @@ expr_t* check_unary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 		case NON_OP_TYPE:
 		case BIT_NON_TYPE:
 			expr->kids[0] = check_expr(node->unary.expr, table);
+			expr->no_defined = expr->kids[0]->no_defined;
+			check_no_defiend_expr(expr, node);
 			if (is_int_type(expr->kids[0]->type)) {
 				expr = cal_const_value(expr);
 			}
@@ -1225,6 +1273,8 @@ expr_t* check_unary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 			break;
 		case ADDR_TYPE:
 			expr->kids[0] = check_expr(node->unary.expr, table);
+			expr->no_defined = expr->kids[0]->no_defined;
+			check_no_defiend_expr(expr, node);
 			if (expr->kids[0]->is_const) {
 				error("lvalue required as unary ‘&’ operand\n");
 			}
@@ -1234,6 +1284,8 @@ expr_t* check_unary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 			break;
 		case POINTER_TYPE:
 			expr->kids[0] = check_expr(node->unary.expr, table);
+			expr->no_defined = expr->kids[0]->no_defined;
+			check_no_defiend_expr(expr, node);
 			if (expr->kids[0]->type->common.categ != POINTER_T) {
 				error("invalid type argument of ‘unary *’\n");
 			}
@@ -1243,12 +1295,16 @@ expr_t* check_unary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 			break;
 		case DEFINED_TYPE:
 			expr->kids[0] = check_expr(node->unary.expr, table);
+			expr->no_defined = expr->kids[0]->no_defined;
+			check_no_defiend_expr(expr, node);
 			expr->type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
 			expr->type->common.categ = BOOL_T;
 			expr->type->common.size = sizeof(int) * 8;
 			break;
 		case EXPR_TO_STR_TYPE:
 			expr->kids[0] = check_expr(node->unary.expr, table);
+			expr->no_defined = expr->kids[0]->no_defined;
+			check_no_defiend_expr(expr, node);
 			if (expr->kids[0]->is_const) {
 				expr->type = expr->kids[0]->type;
 				if (expr->type->common.categ == INT_T) {
@@ -1269,6 +1325,8 @@ expr_t* check_unary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 		case PRE_INC_OP_TYPE:
 		case PRE_DEC_OP_TYPE:
 			expr->kids[0] = check_expr(node->unary.expr, table);
+			expr->no_defined = expr->kids[0]->no_defined;
+			check_no_defiend_expr(expr, node);
 			if (is_int_type(expr->kids[0]->type)) {
 				expr = cal_const_value(expr);
 			}
@@ -1283,6 +1341,8 @@ expr_t* check_unary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 		case AFT_INC_OP_TYPE:
 		case AFT_DEC_OP_TYPE:
 			expr->kids[0] = check_expr(node->unary.expr, table);
+			expr->no_defined = expr->kids[0]->no_defined;
+			check_no_defiend_expr(expr, node);
 			if ((is_int_type(expr->kids[0]->type) ||
 				is_array_type(expr->kids[0]->type) ||
 				is_parameter_type(expr->kids[0]->type))) {
@@ -1453,6 +1513,7 @@ expr_t* check_quote_expr(tree_t* node, symtab_t table, expr_t* expr) {
 		expr = check_expression(node->quote.ident, table, expr);
 	}
 
+	check_no_defiend_expr(expr, node);
 	return expr;
 }
 
@@ -1748,9 +1809,11 @@ expr_t* check_ident_expr(tree_t* node, symtab_t table, expr_t* expr) {
 			}
 		}
 		else {
-			int*a = NULL;
-			*a = 1000;
-			error("%s no undeclared in template\n", str);
+			if (table->pass_num == 0) {
+				expr->no_defined = 1;
+			} else {
+				error("%s no undeclared in template\n", str);
+			}
 		}
 	}
 
@@ -1802,7 +1865,6 @@ static int data_is_array(symbol_t symbol) {
 static int check_array_symbol(symtab_t table, symbol_t symbol) {
 	assert(table != NULL); assert(symbol != NULL);
 	void* attr = symbol->attr;
-	int *a = NULL;
 	switch (symbol->type) {
 		case REGISTER_TYPE:
 			object_is_array(attr, register_attr_t);
@@ -1833,7 +1895,6 @@ static int check_array_symbol(symtab_t table, symbol_t symbol) {
 				(((param_value_t*)attr)->type == PARAM_TYPE_LIST)) {
 				return 1;
 			}
-			fprintf(stderr, "symbol'%s' not array\n", symbol->name);
 			return 0;
 			break;
 		case PARAM_TYPE:
@@ -1983,6 +2044,9 @@ expr_t* check_refer(symtab_t table, reference_t* ref, expr_t* expr) {
 			}
 		}
 		else {
+			if (table->pass_num == 0) {
+				expr->no_defined = 1;
+			}
 			PERRORN("Undefined reference '%s'", expr->node, tmp->name);
 			break;
 		}
@@ -2017,6 +2081,9 @@ expr_t* check_refer(symtab_t table, reference_t* ref, expr_t* expr) {
 			return expr;
 		}
 		else if (ref_symbol == NULL) {
+			if (table->pass_num == 0) {
+				expr->no_defined = 1;
+			}
 			PERRORN("Undefined reference '%s' Line: %d", expr->node, tmp->next->name, __LINE__);
 			break;
 		}
@@ -2054,6 +2121,7 @@ expr_t* check_component_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	reference = get_reference(node->component.expr, reference, expr, table);
 	print_reference(reference);
 	expr = check_refer(table, reference, expr);
+	check_no_defiend_expr(expr, node);
 	expr->node = node;
 
 	return expr;
@@ -2063,6 +2131,8 @@ expr_t* check_sizeoftype_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 
 	cdecl_t* type = parse_typeoparg(node->sizeoftype.typeoparg, table);
+	expr->no_defined = type->common.no_decalare;
+	check_no_defiend_expr(expr, node);
 
 	if (record_type(type) == 0) {
 		PERRORN("sizeoftype not record type", node);
@@ -2083,7 +2153,7 @@ expr_t* check_new_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	return expr;
 }
 
-void check_func_param(tree_t* node, symtab_t table, signature_t* sig, int param_start) {
+expr_t* check_func_param(tree_t* node, symtab_t table, signature_t* sig, int param_start) {
 	assert(node != NULL); assert(table != NULL);
 	expr_t* expr = NULL;
 	vector_t* vect = sig->params;
@@ -2094,9 +2164,10 @@ void check_func_param(tree_t* node, symtab_t table, signature_t* sig, int param_
 	while (node) {
 		param = (param_t*)(vect->data[i]);
 		if ((sig->has_ellipse) && (i >= (argc - 1))) {
-			return;
+			return NULL;
 		}
 		expr = check_expr(node, table);
+		check_no_defiend_expr(expr, node);
 		if (both_scalar_type(param->ty, expr->type) ||
 				(both_array_type(param->ty, expr->type)) ||
 				(is_same_type(param->ty, expr->type)) ||
@@ -2111,7 +2182,7 @@ void check_func_param(tree_t* node, symtab_t table, signature_t* sig, int param_
 		}
 	}
 
-	return;
+	return expr;
 }
 
 extern object_t* get_current_obj();
@@ -2145,14 +2216,14 @@ expr_t* check_function_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	int argc = 0;
 	int param_start = 0;
 	int arg_num = 0;
-	if (func->type->common.categ == FUNCTION_T) {
+	if ((func->type) && func->type->common.categ == FUNCTION_T) {
 		sig = func->type->function.sig;
 		expr->type = func->type->common.bty;
 		if (sig)
 			argc = sig->params->len;
 		arg_num = get_param_num(node->expr_brack.expr_in_brack);
 	}
-	else if (func->type->common.categ == POINTER_T) {
+	else if ((func->type) && func->type->common.categ == POINTER_T) {
 		sig = func->type->common.bty->function.sig;
 		cdecl_t* bty = func->type->common.bty;
 		expr->type = bty->common.bty;
@@ -2194,6 +2265,7 @@ expr_t* check_function_expr(tree_t* node, symtab_t table, expr_t* expr) {
 			check_func_param(node->expr_brack.expr_in_brack, table, sig, param_start);
 	}
 
+	expr->node = node;
 	return expr;
 }
 
@@ -2236,6 +2308,11 @@ expr_t* check_bit_slic_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	expr = check_expression(node->bit_slic.expr, table, expr);
 	expr_t* e1 = check_expr(node->bit_slic.bit, table);
 	expr_t* e2 = node->bit_slic.bit_end ? check_expr(node->bit_slic.bit_end, table) : NULL;
+	if (expr->no_defined || e1->no_defined || (e2 && e2->no_defined)) {
+		expr->no_defined = 1;
+		expr->node = node;
+		return expr;
+	}
 	if ((e2 && !is_int_type(expr->type)) && !is_int_type(e1->type) &&
 			!is_no_type(expr->type) && !is_no_type(e1->type) &&
 			!is_parameter_type(expr->type) && !is_parameter_type(e1->type)) {
@@ -2338,22 +2415,27 @@ expr_t* check_expr(tree_t* node, symtab_t table) {
 cdecl_t* get_typeof_type(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 	expr_t* expr = check_expr(node->typeof_tree.expr, table);
+	expr->type->common.no_decalare = expr->no_defined;
 
 	return expr->type;
 }
 
-void check_comma_expr(tree_t* node, symtab_t table) {
+expr_t* check_comma_expr(tree_t* node, symtab_t table) {
 	if (node == NULL) {
-		return ;
+		return NULL;
 	}
 	assert(table != NULL);
 
 	tree_t* expr_node = node;
+	expr_t* expr = NULL;
 	while (node != NULL) {
-		check_expr(node, table);
+		expr = check_expr(node, table);
+		if (expr->no_defined) {
+			break;
+		}
 		node = node->common.sibling;
 	}
 	node = expr_node;
 
-	return ;
+	return expr;
 }

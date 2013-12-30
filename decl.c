@@ -100,6 +100,7 @@ void parse_local_decl(tree_t* node, symtab_t table) {
 
 	if (node->local_tree.expr) {
 		expr_t* expr = check_expr(node->local_tree.expr, table);
+		insert_no_defined_expr(table, node, expr);
 		cdecl_t* type = expr->type;
 		if (!both_scalar_type(decl, expr->type) &&
 				!(both_array_type(decl, expr->type)) &&
@@ -219,6 +220,10 @@ static void parse_bit_expr(tree_t* node, symtab_t table, bit_element_t* elem) {
 	/* In simic the bit style: a @ [end : start]*/
 	expr_t* start = check_expr(node->bitfields_dec.start, table);
 	expr_t* end = check_expr(node->bitfields_dec.end, table);
+	if (start->no_defined || end->no_defined) {
+		undef_var_insert(table, node);
+		return;
+	}
 	if (start->type->common.categ != INT_T || end->type->common.categ != INT_T) {
 		error("the bit filelds's start/end bit should be int\n");
 	}
@@ -493,6 +498,10 @@ static void parse_c_array(tree_t* node, symtab_t table, cdecl_t* type) {
 	drv->ctor = ARRAY_OF;
 	drv->len = check_expr(node->array.expr, table);
 	drv->next = type->common.drv;
+	if (((expr_t*)(drv->len))->no_defined) {
+		type->common.no_decalare = 1;
+		return;
+	}
 	type->common.drv = drv;
 
 	return;

@@ -84,7 +84,8 @@ typedef struct expr {
 	int is_undefined : 1;
 	int is_null : 1;
 	int is_obj : 1;
-	int op : 25;
+	int no_defined : 1;
+	int op : 24;
 	struct expr* kids[2];
 	value_t* val;
 	tree_t* node;
@@ -156,14 +157,10 @@ typedef struct reference {
 } reference_t;
 
 expr_t* check_expr(tree_t* node, symtab_t table);
-void check_comma_expr(tree_t* node, symtab_t table);
+expr_t* check_comma_expr(tree_t* node, symtab_t table);
 cdecl_t* get_typeof_type(tree_t* node, symtab_t table);
 
-expression_t* parse_expression(tree_t** node, symtab_t table);
-void parse_log_args(tree_t* node, symtab_t table);
-expression_t* get_ident_value(tree_t** node, symtab_t table,  expression_t* expr);
-expression_t* cal_binary_expr(tree_t** node, symtab_t table, expression_t* expr);
-extern expression_t* cal_expression(tree_t** node, symtab_t table, expression_t* expr);
+expr_t* parse_log_args(tree_t* node, symtab_t table);
 int get_typedef_type(symtab_t table, char* name);
 int charge_type(int type1, int type2);
 

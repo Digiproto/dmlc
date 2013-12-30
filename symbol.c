@@ -325,7 +325,7 @@ symbol_t default_symbol_find_notype(symtab_t symtab, const char *name)
 		return rt;
 	}
         tmp = tmp->parent;
-	if(tmp) {
+	if(tmp && tmp->type) {
 		return symbol_find_notype(tmp, name);
 	}
     }

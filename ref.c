@@ -262,8 +262,7 @@ static object_t* get_parameter_obj(symtab_t table, const char* name) {
                 }
         }
         else {
-		fprintf(stderr, "other expr node type '%s'\n", expr_node->common.name);
-		exit(-1);
+		return NULL;
         }
         return (object_t*)(obj_sym->attr);
 }
@@ -274,6 +273,8 @@ symtab_t get_obj_param_table(symtab_t table, symbol_t symbol) {
 	symtab_t ret_table = NULL;
 	if (obj) {
 		ret_table = obj->symtab;
+	} else {
+		ret_table = (void*)(0xFFFFFFFF);
 	}
 	return ret_table;
 }

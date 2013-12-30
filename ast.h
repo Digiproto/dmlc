@@ -189,6 +189,14 @@ void print_goto(tree_t* node, int pos);
 void print_case(tree_t* node, int pos);
 void print_undef_templates(symtab_t table);
 
+#define insert_no_defined_expr(table, node, expr) \
+	do { \
+		if (expr->no_defined) { \
+			undef_var_insert(table, node); \
+			return; \
+		} \
+	} while(0)
+
 //#define DEBUG_AST_TREE
 
 #ifdef DEBUG_AST_TREE

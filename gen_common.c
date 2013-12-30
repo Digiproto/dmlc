@@ -367,10 +367,9 @@ static int check_method_in_param(symbol_t sym, tree_t* call_expr, int in_line) {
 	int arg_num = (param_node == NULL) ? 0 : get_param_num(param_node);
 	if ((params == NULL) && (arg_num == 0)) {
 		ret = 0;
-	} else if (params->in_argc != arg_num) {
+	} else if ((params == NULL) || (params->in_argc != arg_num)) {
 		//error("wrong number of input arguments\n");
-		printf("params->in %d, arg %d\n", params->in_argc, arg_num);
-		PERRORN("wrong number of input arguments\n", param_node);
+		PERRORN("wrong number of input arguments or not mehtod '%s'", param_node, sym->name);
 		//ret = 1;
 	} else {
 		/* check the type of parameters */
