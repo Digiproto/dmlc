@@ -20,7 +20,7 @@ struct PortList {
 class DMLBus {
 public:
 	DMLBus(void) {portlist.clear();}
-	//~DMLBus(void) {portlist.clear();}
+	virtual ~DMLBus(void) {portlist.clear();}
 	virtual void connectDevice(DMLDevice *dev, uint64_t startAddr, uint32_t len) {
 	}
 	int readBus(short len, uint32_t addr, void* data) {

@@ -39,7 +39,7 @@ lib%.so: $(build_dir)/%.o
 
 $(build_dir)/%.o: %.c
 	@echo "[CC] $@"
-	@$(CC) -c      $< $(CFLAGS) $(INCLUDES) $(LIBRARY_DIRS) $(LIBRARYS) -o $@
+	@$(CC) -c      $< $(CFLAGS) $(INCLUDES) -o $@
 
 %: $(build_dir)/%.o
 	@echo "[LD] $@"

@@ -43,11 +43,11 @@ $(target): $(bins)
 
 $(build_dir)/%.o: %.cpp
 	@echo "[CPP] $@"
-	@$(CPP) -c      $< $(CFLAGS) $(INCLUDES) $(LIBRARY_DIRS) -o $@
+	@$(CPP) -c      $< $(CFLAGS) $(INCLUDES) -o $@
 
 $(build_dir)/%.o: %.c
 	@echo "[CC] $@"
-	@$(CC) -c      $< $(CFLAGS) $(INCLUDES) $(LIBRARY_DIRS) $(LIBRARYS) -o $@
+	@$(CC) -c      $< $(CFLAGS) $(INCLUDES) -o $@
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)

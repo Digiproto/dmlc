@@ -252,6 +252,14 @@ err_happend:
 	return -1;
 }
 
+/*
+ * "connect": {  // a connect
+ * 		"con_a": [  // a con_array
+ * 			[0, "dev", "port1"], // a con_idx
+ * 			[1, "dev", "port2"],
+ * 		]
+ * }
+ */
 static int parse_con(struct devargs *dev, struct json_object *connect,
 		const char *index_ident, int index)
 {
@@ -260,38 +268,89 @@ static int parse_con(struct devargs *dev, struct json_object *connect,
 	int con_num = dev->con_num;
 	char *tmp_str;
 
-	json_object_object_foreach(connect, con_dev, con) {
-		int len = json_object_array_length(con);
-		/* maybe have many con in a dev */
-		for(i = 0; i < len; i++) {
-			struct json_object *con_con = json_object_array_get_idx(con, i);
-			if(!con_con) {
+#define ERROR_PARSE_CON(info) \
+	do{\
+		fprintf(stderr, "%s connect %s, %d interface " \
+				"get a error con " info " from conf\n", dev->name, \
+				con, con_num); \
+		goto err_happend; \
+	}while(0)
+
+	/* maybe have many con in a dev */
+	json_object_object_foreach(connect, con, con_array) {
+		int array_len = json_object_array_length(con_array);
+		/* maybe have a array in a con */
+		for(i = 0; i < array_len; i++) {
+			struct json_object *con_idx = json_object_array_get_idx(con_array, i);
+			if(!con_idx) {
 				fprintf(stderr, "Get %s connect %s, %d interface "
-						"failed from conf\n", dev->name, con_dev, con_num);
-				//json_object_put(irq);
+						"failed from conf\n", dev->name, con, con_num);
 				goto err_happend;
 			}
 
+			/* allocate a new node on conlist */
 			conlist = g_renew(struct con_intf, conlist, con_num + 1);
-			/* setting con dev */
-			tmp_str = deal_str(con_dev, index_ident, index);
-			if(!tmp_str) {
-				fprintf(stderr, "%s connect %s, %d interface "
-						"get a error dev name from conf\n", dev->name,
-						con_dev, con_num);
-				goto err_happend;
-			}
-			conlist[con_num].dev = tmp_str;
 
-			/* setting con con */
-			tmp_str = deal_str(json_object_get_string(con_con), index_ident, index);
+			/* setting con name */
+			tmp_str = deal_str(con, index_ident, index);
 			if(!tmp_str) {
-				fprintf(stderr, "%s connect %s, %d interface "
-						"get a error dev con con from conf\n", dev->name,
-						con_dev, con_num);
-				goto err_happend;
+				ERROR_PARSE_CON("name");
 			}
 			conlist[con_num].con = tmp_str;
+
+			/* check a con_idx is array and check array length */
+			json_type type = json_object_get_type(con_idx);
+			if(type != json_type_array) {
+				ERROR_PARSE_CON("idx type (require array)");
+			}
+			int attr_len = json_object_array_length(con_idx);
+			if(!(attr_len == 2 || attr_len == 3)) {
+				ERROR_PARSE_CON("idx length (require 2 or 3)");
+			}
+
+			/* get con dev and port */
+			/* [0, "dev", "port"] */
+			/*      ^             */
+			struct json_object *target = json_object_array_get_idx(con_idx, 1);
+			tmp_str = deal_str(json_object_get_string(target), index_ident, index);
+			if(!tmp_str) {
+				ERROR_PARSE_CON("target dev");
+			}
+			conlist[con_num].dev = tmp_str;
+			if(attr_len == 3) {
+				/* [0, "dev", "port"] */
+				/*             ^      */
+				struct json_object *port = json_object_array_get_idx(con_idx, 2);
+				tmp_str = deal_str(json_object_get_string(port), index_ident, index);
+				if(!tmp_str) {
+					ERROR_PARSE_CON("target port");
+				}
+				conlist[con_num].port = tmp_str;
+			}else{
+				/* [0, "dev"] */
+				conlist[con_num].port = NULL;
+			}
+
+			/* get con index */
+			struct json_object *num = json_object_array_get_idx(con_idx, 0);
+			/* setting irq num */
+			type = json_object_get_type(num);
+			if(type == json_type_string) {
+				/* ["0", "dev", "port"] */
+				/*   ^                  */
+				tmp_str = deal_str(json_object_get_string(num), index_ident, index);
+				if(!tmp_str) {
+					ERROR_PARSE_CON("index");
+				}
+				conlist[con_num].index = strtol(tmp_str, NULL, 10);
+				g_free(tmp_str);
+			}else if(type == json_type_int) {
+				/* [0, "dev", "port"] */
+				/*  ^                 */
+				conlist[con_num].index = json_object_get_int(num);
+			}else{
+				ERROR_PARSE_CON("index type");
+			}
 			con_num++;
 		}
 		//json_object_put(con);
@@ -303,10 +362,124 @@ err_happend:
 	for(j = 0; j < con_num; j++) {
 		g_free(conlist[j].dev);
 		g_free(conlist[j].con);
+		g_free(conlist[j].port);
 	}
 	g_free(conlist);
 	return -1;
+#undef ERROR_PARSE_CON
 }
+
+/*
+ * "attribute": {  // a attribute
+ * 		"con_a": [  // a attr_array
+ * 			[0, "string", "abc"], // a attr_idx
+ * 			[1, "integer", "123"],
+ * 		]
+ * }
+ */
+static int parse_attr(struct devargs *dev, struct json_object *attribute,
+		const char *index_ident, int index)
+{
+	struct attr_intf *attrlist = dev->attrlist;
+	int i, j;
+	int attr_num = dev->attr_num;
+	char *tmp_str;
+
+#define ERROR_PARSE_ATTR(info) \
+	do{\
+		fprintf(stderr, "%s attribute %s, %d interface " \
+				"get a error attr " info " from conf\n", dev->name, \
+				attr, attr_num); \
+		goto err_happend; \
+	}while(0)
+
+	/* maybe have many attr in a dev */
+	json_object_object_foreach(attribute, attr, attr_array) {
+		int array_len = json_object_array_length(attr_array);
+		/* maybe have a array in a attr */
+		for(i = 0; i < array_len; i++) {
+			struct json_object *attr_idx = json_object_array_get_idx(attr_array, i);
+			if(!attr_idx) {
+				fprintf(stderr, "Get %s attribute %s, %d interface "
+						"failed from conf\n", dev->name, attr, attr_num);
+				goto err_happend;
+			}
+
+			/* allocate a new node on attrlist */
+			attrlist = g_renew(struct attr_intf, attrlist, attr_num + 1);
+
+			/* setting attr name */
+			tmp_str = deal_str(attr, index_ident, index);
+			if(!tmp_str) {
+				ERROR_PARSE_ATTR("name");
+			}
+			attrlist[attr_num].attr = tmp_str;
+
+			/* check a attr_idx is array and check array length */
+			json_type type = json_object_get_type(attr_idx);
+			if(type != json_type_array) {
+				ERROR_PARSE_ATTR("idx type (require array)");
+			}
+			int attr_len = json_object_array_length(attr_idx);
+			if(attr_len != 3) {
+				ERROR_PARSE_ATTR("idx length (require 3)");
+			}
+
+			/* get attr type */
+			/* [0, "type", "value"] */
+			/*      ^               */
+			struct json_object *attr_type = json_object_array_get_idx(attr_idx, 1);
+			tmp_str = deal_str(json_object_get_string(attr_type), index_ident, index);
+			if(!tmp_str) {
+				ERROR_PARSE_ATTR("type");
+			}
+			attrlist[attr_num].type = tmp_str;
+			/* [0, "type", "value"] */
+			/*              ^       */
+			struct json_object *value = json_object_array_get_idx(attr_idx, 2);
+			tmp_str = deal_str(json_object_get_string(value), index_ident, index);
+			if(!tmp_str) {
+				ERROR_PARSE_ATTR("value");
+			}
+			attrlist[attr_num].value = tmp_str;
+
+			/* setting attr index */
+			struct json_object *num = json_object_array_get_idx(attr_idx, 0);
+			type = json_object_get_type(num);
+			if(type == json_type_string) {
+				/* ["0", "type", "value"] */
+				/*   ^                    */
+				tmp_str = deal_str(json_object_get_string(num), index_ident, index);
+				if(!tmp_str) {
+					ERROR_PARSE_ATTR("index");
+				}
+				attrlist[attr_num].index = strtol(tmp_str, NULL, 10);
+				g_free(tmp_str);
+			}else if(type == json_type_int) {
+				/* [0, "type", "value"] */
+				/*  ^                   */
+				attrlist[attr_num].index = json_object_get_int(num);
+			}else{
+				ERROR_PARSE_ATTR("index type");
+			}
+			attr_num++;
+		}
+		//json_object_put(attr);
+	}
+	dev->attr_num = attr_num;
+	dev->attrlist = attrlist;
+	return 0;
+err_happend:
+	for(j = 0; j < attr_num; j++) {
+		g_free(attrlist[j].attr);
+		g_free(attrlist[j].type);
+		g_free(attrlist[j].value);
+	}
+	g_free(attrlist);
+	return -1;
+#undef ERROR_PARSE_ATTR
+}
+
 
 static int parse_dev(struct devargs **old_list, int n,
 		struct json_object *json_dev, const char *name,
@@ -343,7 +516,8 @@ static int parse_dev(struct devargs **old_list, int n,
 		list[n].has_addr = false;
 		list[n].irqlist = NULL;
 		list[n].conlist = NULL;
-		list[n].irq_num = list[n].con_num = 0;
+		list[n].attrlist = NULL;
+		list[n].attr_num = list[n].irq_num = list[n].con_num = 0;
 		dev = list + n;
 		err = 1;
 	}
@@ -413,6 +587,23 @@ static int parse_dev(struct devargs **old_list, int n,
 		}
 	}
 
+	PARSE_DEV_OBJ(attribute) {
+		ret = parse_attr(dev, attribute, index_ident, index);
+		if(ret < 0) {
+			PARSE_DEV_ERROR(attr);
+		}
+	}
+
+err_attr:
+	//json_object_put(attribute);
+	if(err < 0) {
+		for(i = 0; i < dev->con_num; i++) {
+			g_free(dev->conlist[i].con);
+			g_free(dev->conlist[i].dev);
+			g_free(dev->conlist[i].port);
+		}
+		g_free(dev->conlist);
+	}
 err_con:
 	//json_object_put(connect);
 	if(err < 0) {
@@ -604,14 +795,26 @@ static void look_devlist(struct devargs *list)
 
 		if(list[i].irq_num > 0) {
 			for(j = 0; j < list[i].irq_num; j++) {
-				printf("\tirq[%d]: dev: %s, num: %d\n", j, list[i].irqlist[j].dev,
+				printf("\tinterrupt[%d]: target: %s[%d]\n", j, list[i].irqlist[j].dev,
 						list[i].irqlist[j].num);
 			}
 		}
 		if(list[i].con_num > 0) {
 			for(j = 0; j < list[i].con_num; j++) {
-				printf("\tcon[%d]: dev: %s, con: %s\n", j, list[i].conlist[j].dev,
-						list[i].conlist[j].con);
+				printf("\tconnect[%d]: con: %s[%d] >>> target: %s[%s]\n", j,
+						list[i].conlist[j].con,
+						list[i].conlist[j].index,
+						list[i].conlist[j].dev,
+						list[i].conlist[j].port);
+			}
+		}
+		if(list[i].attr_num > 0) {
+			for(j = 0; j < list[i].attr_num; j++) {
+				printf("\tattribute[%d]: attr: %s[%d] value: %s{%s}\n", j,
+						list[i].attrlist[j].attr,
+						list[i].attrlist[j].index,
+						list[i].attrlist[j].value,
+						list[i].attrlist[j].type);
 			}
 		}
 		printf("===========================================\n");
@@ -636,8 +839,17 @@ static void free_devlist(struct devargs *list)
 			for(j = 0; j < list[i].con_num; j++) {
 				g_free(list[i].conlist[j].dev);
 				g_free(list[i].conlist[j].con);
+				g_free(list[i].conlist[j].port);
 			}
 			g_free(list[i].conlist);
+		}
+		if(list[i].attr_num > 0) {
+			for(j = 0; j < list[i].attr_num; j++) {
+				g_free(list[i].attrlist[j].attr);
+				g_free(list[i].attrlist[j].type);
+				g_free(list[i].attrlist[j].value);
+			}
+			g_free(list[i].attrlist);
 		}
 	}
 	g_free(list);
@@ -673,6 +885,16 @@ static int dev_dynamic_con(struct devargs *devlist, void *extra)
 	return 0;
 }
 
+static int dev_dynamic_attr(struct devargs *devlist, void *extra)
+{
+	int i, ret;
+	for(i = 0; devlist[i].name; i++) {
+		if((ret = device_attr(devlist + i, extra)) < 0)
+			return ret;
+	}
+	return 0;
+}
+
 static int dev_dynamic_load(struct devargs *devlist, void *extra)
 {
 	int ret;
@@ -683,6 +905,9 @@ static int dev_dynamic_load(struct devargs *devlist, void *extra)
 		return ret;
 	}
 	if((ret = dev_dynamic_irq(devlist, extra)) < 0) {
+		return ret;
+	}
+	if((ret = dev_dynamic_attr(devlist, extra)) < 0) {
 		return ret;
 	}
 	return 0;
