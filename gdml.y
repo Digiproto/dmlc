@@ -1406,8 +1406,7 @@ object_if_statement
 		tree_t* node =  (tree_t*)create_node("if_else", IF_ELSE_TYPE, sizeof(struct tree_if_else), &@$);
 		node->if_else.cond = $3;
 		//parse_expression(&($3), current_table);
-		symbol_insert(current_table, "obj_if", OBJ_IF_TYPE, node);
-		printf("cruent table num %d\n", current_table->table_num);
+		//symbol_insert(current_table, "obj_if", OBJ_IF_TYPE, node);
 		current_table = change_table(current_table, table_stack, &current_table_num, IF_ELSE_TYPE);
 		$<tree_type>$ = node;
 	}
