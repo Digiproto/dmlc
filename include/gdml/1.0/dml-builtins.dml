@@ -611,17 +611,19 @@ template register {
 			// Only one field
 			local typeof(field) val = 0;
 			call field.read_access() -> (val);
+			//inline field.read_access() -> (val);
 			fieldval = val;
 		    } else if ($bitsize == 8 || lsb <= field.msb && msb1 > field.lsb) {
 		local typeof(field) tmp;
 			call field.read_access() -> (tmp);
+			//inline field.read_access() -> (tmp);
 			fieldval[field.msb:field.lsb] = tmp;
 		    }
 		}
 	    } else {
 		// No explicit fields
-		//inline $read() -> (fieldval);
-			call $read() -> (fieldval);
+		inline $read() -> (fieldval);
+		//call $read() -> (fieldval);
 	    }
 	    value = fieldval[msb1 - 1 : lsb];
 	/*} else {
@@ -689,6 +691,8 @@ template register {
 					fieldval = val;
 					fieldval[msb1 - 1:lsb] = value;
 					call field.write_access(fieldval);
+					//inline field.write_access(fieldval);
+						
 			    } else {
 					local typeof(field) tmp = 0;
 					call field.get -> (tmp);
@@ -696,18 +700,21 @@ template register {
 					fieldval[msb1 - 1:lsb] = value;
 					tmp = fieldval[field.msb:field.lsb];
 					call field.write_access(tmp);
+					//inline field.write_access(tmp);
 			    }
 			} else {
 			    // Whole-field access
 			    if ($bitsize == field.bitsize) {
 				// Only one field
 					call field.write_access(value);
+					//inline field.write_access(value);
 			    } else {
 					local uint32 tmp = 0;
 					tmp = value << lsb;
 					tmp = tmp[field.msb:field.lsb];
 					//call field.write_access((value << lsb)[field.msb:field.lsb]);
 					call field.write_access(cast(tmp, typeof(field)));
+					//inline field.write_access(cast(tmp, typeof(field)));
 				}
 			}
 		    }
@@ -827,12 +834,14 @@ template field {
 
     method read_access() -> (typeof($this) value) default {
 		local typeof($this) tmp;
-        call $read -> (tmp);
-		value = tmp;
+        //call $read -> (tmp);
+        inline $read -> (tmp);
+	value = tmp;
     }
 
     method write_access(typeof($this) value) default {
-        call $write(value);
+        //call $write(value);
+        inline $write(value);
     }
 }
 
