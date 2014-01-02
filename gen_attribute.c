@@ -42,11 +42,11 @@ static void gen_attribute_set(object_t *obj, FILE *f) {
 	fprintf(f, "void *_, ");
 	fprintf(f, "conf_object_t *obj, attr_value_t *value, attr_value_t *_id)\n");
 	fprintf(f, "{\n");
-	fprintf(f, "\t%s_t *_dev = (%s_t)obj;\n", DEV->name, DEV->name);
+	fprintf(f, "\t%s_t *_dev = (%s_t *)obj;\n", DEV->name, DEV->name);
 	fprintf(f, "\tattr_value_t *tmp;\n");
 	if(obj->is_array) {
 		fprintf(f, "\tunsigned index = SIM_attr_integer(*_id);\n");
-		fprintf(f, "\ttmp = value.u.list.vector[%s];\n", "index","index");
+		fprintf(f, "\ttmp = &value->u.list.vector[%s];\n", "index","index");
 	} else {
 		fprintf(f, "\ttmp = value;\n");
 	}
@@ -56,7 +56,7 @@ static void gen_attribute_set(object_t *obj, FILE *f) {
 		fprintf(f, "\t_dev->%s", obj->name);
 	}
 	fprintf(f, " = ");
-	if(type == INT_T) {
+	if(type == INT_T || type == LONG_T) {
 		fprintf(f, "SIM_attr_integer(*tmp);\n");
 	} else if(type == BOOL_T){
 		fprintf(f, "SIM_attr_boolean(*tmp);\n");
@@ -65,6 +65,7 @@ static void gen_attribute_set(object_t *obj, FILE *f) {
 	} else if (type == STRING_T) {
 		fprintf(f, "SIM_attr_string(*tmp);\n");
 	}
+	fprintf(f, "\treturn 0;\n");
 	fprintf(f, "}\n");
 }
 
@@ -85,14 +86,14 @@ static void gen_attribute_get(object_t *obj, FILE *f) {
 	fprintf(f, "{\n");
 	fprintf(f, "\t%s_t *_dev = (%s_t *)obj;\n", DEV->name, DEV->name);
 	fprintf(f, "\tattr_value_t attr;\n");
-	fprintf(f, "\tmemset(&attr, 0, sizeof(attr))\n");
+	fprintf(f, "\tmemset(&attr, 0, sizeof(attr));\n");
 	if(!obj->is_array) {
 		fprintf(f, "\tattr_value_t tmp = SIM_make_attr_integer(_dev->%s);\n", name);
 	} else {
 		fprintf(f, "\tint i;\n");
 		fprintf(f, "\tattr_value_t tmp = SIM_alloc_attr_list(%d);\n", obj->array_size);
 		fprintf(f, "\tfor(i = 0;  i < %d; i++) {\n", obj->array_size); 
-		if(type == INT_T) {
+		if(type == INT_T || type == LONG_T) {
 			fprintf(f, "\t\tattr_value_t index = SIM_make_attr_integer(_dev->%s[%s]);\n", name, "i");
 		} else if(type == BOOL_T) {
 			fprintf(f, "\t\tattr_value_t index = SIM_make_attr_boolean(_dev->%s[%s]);\n", name, "i");
@@ -106,6 +107,7 @@ static void gen_attribute_get(object_t *obj, FILE *f) {
 	}
 	fprintf(f, "\tattr = tmp;\n");
 	fprintf(f, "\treturn attr;\n");
+	fprintf(f, "}\n");
 }
 
 static void gen_attribute_code(object_t *obj, FILE *f) {
