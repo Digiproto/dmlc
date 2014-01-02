@@ -26,7 +26,9 @@
 #include "platform.h"
 #include "gen_connect.h"
 #include "gen_implement.h"
-#include <gen_port.h>
+#include "gen_attribute.h"
+#include  "gen_port.h"
+#include "gen_property.h"
 extern object_t *DEV;
 
 static void gen_headerfile(device_t *dev, FILE *f) {
@@ -201,6 +203,7 @@ static void gen_device_props(device_t *dev, FILE *f)
 	const char *dev_name = dev->obj.name;
     fprintf (f, "\nstatic Property %s_props[] = {\
             \n\t", dev_name);
+    //gen_device_property(dev, f);
     fprintf (f, "\n\tDEFINE_PROP_END_OF_LIST()");
     fprintf (f, "\n};\n");
 }
@@ -267,6 +270,32 @@ static void gen_device_implement(device_t *dev, FILE *f) {
 		gen_device_implement_desc(dev, f);
 }
 
+static void gen_device_attribute_code(device_t *dev, FILE *f) {
+       struct list_head *p;
+       object_t *tmp;
+       int i = 0;
+	const char *name;
+
+       gen_device_attribute(dev, f);
+       fprintf(f, "\nconst struct AttributeDescription %s_attributes[] = {\n", dev->obj.name);
+       list_for_each(p, &dev->attributes) {
+               tmp = list_entry(p, object_t, entry);
+		if(tmp->is_array) {
+			name = tmp->a_name;
+		} else 	{
+			name = tmp->name;
+		}
+               fprintf(f, "\t[%d] = (struct AttributeDescription) {\n", i);
+               fprintf(f, "\t\t.name = \"%s\",\n", name);
+               fprintf(f, "\t\t.set = %s_set,\n", name);
+               fprintf(f, "\t\t.get = %s_get,\n", name);
+               fprintf(f, "\t},\n");
+               i++;
+       }
+       fprintf(f, "\t[%d] = {}\n", i);
+       fprintf(f, "};\n");
+}
+
 void gen_platform_device_module(device_t *dev, const char *out) {
 }
 
@@ -280,6 +309,7 @@ static void gen_device_class_init(device_t *dev, FILE *f)
 	gen_device_connect(dev, f);
 	gen_device_implement(dev, f);
 	gen_device_port_description(dev, f);
+	gen_device_attribute_code(dev, f);
 
     fprintf (f, "\nstatic void %s_class_init(ObjectClass *klass,void *data){", name);
 	F_HEAD;
@@ -292,7 +322,10 @@ static void gen_device_class_init(device_t *dev, FILE *f)
             \n\tdc->vmsd = &%s_vmstate; \
 			\n\tdc->connects = %s_connects;\
 			\n\tdc->ifaces = %s_ifaces; \
-			\n\tdc->ports  = %s_ports;", name, name, name, name, name, name, name, name);
+			\n\tdc->ports  = %s_ports; \
+			\n\tdc->attrs  = %s_attributes;", name, name, name, name, name, name, name, name, name);
+		
+		
 	F_END;
     fprintf (f, "\n}\n");
 }
