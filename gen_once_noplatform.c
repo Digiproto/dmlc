@@ -96,12 +96,13 @@ static void gen_bank_read_access(bank_t *b, reg_array_t *list, FILE *f){
 			fprintf(f,"\t\t\t\t\t\t\tif(v%d_offset >= 0x%x && v%d_offset < 0x%x)\n", param, reg->offset, param, reg->offset + reg->array_size * reg->interval); // temp
 			fprintf(f,"\t\t\t\t\t\t\t{\n");
 			fprintf(f,"\t\t\t\t\t\t\t\tint _idx0;\n");
-			fprintf(f,"\t\t\t\t\t\t\t\t_idx0 = (v%d_offset - 0x%x) / %d;\n", param, reg->offset, register_size);
-			fprintf(f,"\t\t\t\t\t\t\t\tif(((_idx0 >= 0) && (_idx0 < %d)) && ((v%d_offset - _idx0 * %d - 0x%x) == 0))\n", reg->array_size, param, register_size, reg->offset);
+			fprintf(f,"\t\t\t\t\t\t\t\t_idx0 = (v%d_offset - 0x%x) / %d;\n", param, reg->offset, reg->interval);
+			fprintf(f,"\t\t\t\t\t\t\t\tif(((_idx0 >= 0) && (_idx0 < %d)) && ((v%d_offset - _idx0 * %d - 0x%x) == 0))\n", reg->array_size, param, reg->interval, reg->offset);
 			fprintf(f,"\t\t\t\t\t\t\t\t{\n");
 			fprintf(f,"\t\t\t\t\t\t\t\t\tuint64 v%d_ret_value;\n", ret_index);
 			fprintf(f,"\t\t\t\t\t\t\t\t\tv%d_size2 = %d;\n", param, reg->size);
 			fprintf(f,"\t\t\t\t\t\t\t\t\tv%d_exec = _DML_M_%s__read_access(_dev, _idx0, memop, 31, 0, &v%d_ret_value);\n", exec_index, item->obj->qname, ret_index);
+			//fprintf(f,"\t\t\t\t\t\t\t\t\tprintf(\"-- %s: read %s[%%d] -> value 0x%%lx\\n\", _idx0, v%d_ret_value);\n", DEV->name, item->obj->a_name, ret_index);
 			fprintf(f,"\t\t\t\t\t\t\t\t\tif(v%d_exec){\n", exec_index);
 			fprintf(f,"\t\t\t\t\t\t\t\t\t\treturn 1;\n");
 			fprintf(f,"\t\t\t\t\t\t\t\t\t}\n");
@@ -145,6 +146,7 @@ static void gen_bank_read_access(bank_t *b, reg_array_t *list, FILE *f){
 		fprintf(f,"\t\t\t\t\t\t\t\t\t{\n");
 		add_object_method(t,"read_access");	
 		fprintf(f,"\t\t\t\t\t\t\t\t\t\tv%d_exec = _DML_M_%s__read_access(_dev, memop, v%d_msb, v%d_lsb, &v%d_ret_value);\n",exec_index,t->qname,local_index,local_index,ret_index);	
+		//fprintf(f,"\t\t\t\t\t\t\t\t\t\tprintf(\"-- %s: read %s -> value 0x%%lx\\n\", v%d_ret_value);\n", DEV->name, item->obj->a_name, ret_index);
 		fprintf(f,"\t\t\t\t\t\t\t\t\t\tif(v%d_exec)\n",exec_index);		
 		fprintf(f,"\t\t\t\t\t\t\t\t\t\t\treturn 1;\n");
 		
@@ -225,10 +227,11 @@ static void gen_bank_write_access(bank_t *b, reg_array_t *list, FILE *f){
 			fprintf(f,"\t\t\t\t\t\t\tif(v%d_offset >= 0x%x && v%d_offset < 0x%x)\n", param, reg->offset, param, reg->offset + reg->array_size * reg->interval); // temp
 			fprintf(f,"\t\t\t\t\t\t\t{\n");
 			fprintf(f,"\t\t\t\t\t\t\t\tint _idx0;\n");
-			fprintf(f,"\t\t\t\t\t\t\t\t_idx0 = (v%d_offset - 0x%x) / %d;\n", param, reg->offset, register_size);
-			fprintf(f,"\t\t\t\t\t\t\t\tif(((_idx0 >= 0) && (_idx0 < %d)) && ((v%d_offset - _idx0 * %d - 0x%x) == 0))\n", reg->array_size, param, register_size, reg->offset);
+			fprintf(f,"\t\t\t\t\t\t\t\t_idx0 = (v%d_offset - 0x%x) / %d;\n", param, reg->offset, reg->interval);
+			fprintf(f,"\t\t\t\t\t\t\t\tif(((_idx0 >= 0) && (_idx0 < %d)) && ((v%d_offset - _idx0 * %d - 0x%x) == 0))\n", reg->array_size, param, reg->interval, reg->offset);
 			fprintf(f,"\t\t\t\t\t\t\t\t{\n");
 			fprintf(f,"\t\t\t\t\t\t\t\tv%d_size2 = %d;\n", param, reg->size);
+			//fprintf(f,"\t\t\t\t\t\t\t\t\tprintf(\"-- %s: write %s[%%d] <- value 0x%%lx\\n\", _idx0, writevalue);\n", DEV->name, item->obj->a_name);
 			fprintf(f,"\t\t\t\t\t\t\t\t\tv%d_exec = _DML_M_%s__write_access(_dev, _idx0, memop, 31, 0, writevalue);\n", exec_index, item->obj->qname);
 			fprintf(f,"\t\t\t\t\t\t\t\t\tif(v%d_exec){\n", exec_index);
 			fprintf(f,"\t\t\t\t\t\t\t\t\t\treturn 1;\n");
@@ -270,6 +273,7 @@ static void gen_bank_write_access(bank_t *b, reg_array_t *list, FILE *f){
 		fprintf(f,"\t\t\t\t\t\t\t\t{\n");
 		ret_index = get_local_index();
 		add_object_method(t,"write_access");
+		//fprintf(f,"\t\t\t\t\t\t\t\t\tprintf(\"-- %s: write %s <- value 0x%%lx\\n\", writevalue);\n", DEV->name, item->obj->a_name);
 		fprintf(f,"\t\t\t\t\t\t\t\t\tv%d_exec = _DML_M_%s__write_access(_dev, memop, v%d_msb, v%d_lsb, writevalue);\n",exec_index,t->qname,local_index,local_index);	
 		fprintf(f,"\t\t\t\t\t\t\t\t\tif(v%d_exec)\n",exec_index);		
 		fprintf(f,"\t\t\t\t\t\t\t\t\t\treturn 1;\n");	
