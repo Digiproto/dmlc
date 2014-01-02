@@ -717,6 +717,22 @@ static int get_binopnode_constant(tree_t *t, type_t op, int *result) {
 	return ret;
 }
 
+static int get_base(tree_t *t, int *ret) {
+	tree_t *tmp;
+	
+	if(t->common.type == INTEGER_TYPE) {
+		*ret = -1;
+		return t->int_cst.value;
+	} else if(t->common.type == BINARY_TYPE){
+		tmp = t->binary.right;
+		tmp = tmp->binary.right;
+		*ret = tmp->int_cst.value;
+		tmp = t->binary.left;
+		return tmp->int_cst.value;
+	} 
+	return 0;
+}
+
 static int get_reg_offset(paramspec_t *t, int *interval) {
 	tree_t *node;
 	int offset = 0;
@@ -833,6 +849,13 @@ static void register_realize(object_t *obj) {
 			BE_DBG(GENERAL, "reg offset 0x%x\n", reg->offset);
 		}	
 	}
+	int ret = -1;
+	reg->offset = get_base(reg->obj.node->reg.offset, &ret);
+	if(ret != -1) {
+		reg->interval = ret;
+	} else {
+		reg->interval = 4;
+	}
 	list_for_each(p, &obj->childs) {
 		tmp = list_entry(p, object_t, entry);
 		field_realize(tmp);
@@ -873,7 +896,7 @@ static void bank_calculate_register_offset(object_t *obj) {
 			offset = reg->offset;
 		}
 		if(reg->is_array) {
-			size = reg->array_size * reg->size;
+			size = reg->array_size * reg->interval;
 		} else {
 			size = reg->size;
 		}
@@ -1608,10 +1631,12 @@ static void process_register_template(object_t *obj){
 	val->type = PARAM_TYPE_STRING;
 	val->u.string = strdup(obj->name);
 	symbol_insert(table, "_regname", PARAMETER_TYPE, val);
-	val = gdml_zmalloc(sizeof(*val));
-	val->type = PARAM_TYPE_INT;
-	val->u.integer = 0;
-	symbol_insert(table, "hard_reset_value", PARAMETER_TYPE, val);
+	if(!symbol_defined(table->sibling, "hard_reset_value")) {
+		val = gdml_zmalloc(sizeof(*val));
+		val->type = PARAM_TYPE_INT;
+		val->u.integer = 0;
+		symbol_insert(table, "hard_reset_value", PARAMETER_TYPE, val);
+	}
 
 	val = gdml_zmalloc(sizeof(*val));
 	val->type = PARAM_TYPE_INT;
