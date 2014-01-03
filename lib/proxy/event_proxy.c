@@ -54,10 +54,10 @@ static void* event_proxy_callback(void *obj)
 	return NULL;
 }
 
-static event_list_t* find_event(event_list_t *list, event_cb_t cb) {
+static event_list_t* find_event(event_list_t *list, event_cb_t cb, void *user_data) {
 	event_list_t *tmp = list;
 	for(tmp = tmp->next; tmp; tmp = tmp->next) {
-		if(tmp->cb == cb)
+		if(tmp->cb == cb && tmp->user_data == user_data)
 			return tmp;
 	}
 	return NULL;
@@ -77,11 +77,11 @@ static event_list_t* insert_event(event_list_t *list, conf_object_t *obj,
 	return event;
 }
 
-static void remove_event(event_list_t *list, event_cb_t cb) {
+static void remove_event(event_list_t *list, event_cb_t cb, void *user_data) {
 	event_list_t *tmp, *f;
 	for(tmp = list; tmp->next; tmp = tmp->next) {
 		f = tmp->next;
-		if(f->cb == cb) {
+		if(f->cb == cb && f->user_data == user_data) {
 			tmp->next = f->next;
 			free(f);
 			break;
@@ -93,15 +93,15 @@ static void proxy_post(conf_object_t *clock, conf_object_t *obj, int when, event
 	event_proxy_t *proxy = (event_proxy_t*) clock;
 	event_list_t *event = insert_event(&proxy->list, obj, cb, user_data);
 	event->sched = schedule_tmp_insert(proxy->group,
-			event_proxy_callback, event, SchedTmpOnce, when * 1000000);
+			event_proxy_callback, event, SchedTmpOnce, when);
 }
 
-static void proxy_cancel(conf_object_t *clock, event_cb_t cb) {
+static void proxy_cancel(conf_object_t *clock, event_cb_t cb, void *user_data) {
 	event_proxy_t *proxy = (event_proxy_t*) clock;
-	event_list_t *tmp = find_event(&proxy->list, cb);
+	event_list_t *tmp = find_event(&proxy->list, cb, user_data);
 	schedule_tmp_delete(tmp->sched);
 	schedule_tmp_destroy_sched(tmp->sched);
-	remove_event(&proxy->list, cb);
+	remove_event(&proxy->list, cb, user_data);
 }
 
 static pc_step_t proxy_count(conf_object_t *clock) {
@@ -111,13 +111,13 @@ static pc_step_t proxy_count(conf_object_t *clock) {
 
 void SIM_event_post(conf_object_t *obj, int when, int flags, event_cb_t cb, void *user_data) {
 	conf_object_t *clock = obj->clock;
-	proxy_post(clock, obj, when, cb, user_data);
+	proxy_post(clock, obj, when, cb, user_data + 1000);
 }
 
 void SIM_event_cancel(conf_object_t *obj, int flags, event_cb_t cb, void *user_data)
 {
 	conf_object_t *clock = obj->clock;
-	proxy_cancel(clock, cb);
+	proxy_cancel(clock, cb, user_data);
 }
 
 pc_step_t SIM_step_count(conf_object_t *obj) {

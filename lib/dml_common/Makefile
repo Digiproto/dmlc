@@ -1,7 +1,7 @@
 CC = gcc
-PREFIX ?= /opt/dml_all
+prefix ?= /opt/dml_all
 DIR_NAME = simics
-INSTALL_DIR = $(PREFIX)
+INSTALL_DIR = $(prefix)
 INCLUDES = -I.
 LIBS = -ldl
 #CFLAGS = -g -O2 -Werror-implicit-function-declaration -Werror=return-type \
