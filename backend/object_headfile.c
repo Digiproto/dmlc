@@ -53,6 +53,7 @@ static void gen_object_headfile(device_t *dev, FILE *f) {
     fprintf(f, "#include <%s/generic_transaction.h>\n", headfile_dir);
 	fprintf(f, "#include <%s/bank_access.h>\n", headfile_dir);
 	fprintf(f, "#include <%s/dev_iface.h>\n", headfile_dir);
+	fprintf(f, "#include <%s/event.h>\n", headfile_dir);
 #endif
     fprintf(f, "#include \"%s_struct.h\"\n", dev_name);
     fprintf(f, "\n");
