@@ -27,6 +27,7 @@
 #include <simics/core/object_class.h>
 #include <simics/core/object_iface.h>
 #include <simics/core/object_resource.h>
+#include <stdio.h>
 
 typedef struct irq_proxy {
 	conf_object_t             obj;
@@ -35,6 +36,49 @@ typedef struct irq_proxy {
 	int                       sig_no;
 }irq_proxy_t;
 
+// ************** cpu_irq *****************
+typedef void (*interrupt_fn)(conf_object_t *obj, int irq);
+typedef void (*interrupt_clear_fn)(conf_object_t *obj, int irq);
+
+extern interrupt_fn       dml_proxy_interrupt;
+extern interrupt_clear_fn dml_proxy_interrupt_clear;
+
+static void irq_proxy_cpu_irq(conf_object_t *obj, int irq) {
+	dml_proxy_interrupt(obj, irq);
+}
+
+static void irq_proxy_cpu_irq_clear(conf_object_t *obj, int irq) {
+	dml_proxy_interrupt_clear(obj, irq);
+}
+
+static const simple_interrupt_interface_t irq_proxy_cpu_irq_iface = {
+	.interrupt = irq_proxy_cpu_irq,
+	.interrupt_clear = irq_proxy_cpu_irq_clear,
+};
+
+static int cpu_irq_set(void *_, conf_object_t *obj, attr_value_t *val,  attr_value_t *_index) {
+	irq_proxy_t *proxy = (irq_proxy_t *)obj;
+	proxy->signal = (void*) &irq_proxy_cpu_irq_iface;
+	return No_exp;
+}
+
+static attr_value_t cpu_irq_get(void *_, conf_object_t *obj, attr_value_t *_index) {
+#if 0
+	irq_proxy_t *proxy = (irq_proxy_t *)obj;
+	attr_value_t attr;
+	if(proxy->sig_obj) {
+		attr = SIM_alloc_attr_list(2);
+		SIM_attr_list_set_item(&attr, 0, SIM_make_attr_integer(proxy->sig_no));
+		SIM_attr_list_set_item(&attr, 1, SIM_make_attr_obj(proxy->sig_obj));
+	}
+	return attr;
+#endif
+	attr_value_t attr;
+	return attr;
+}
+// ************** cpu_irq end *****************
+
+// ************** signal *****************
 static void irq_proxy_signal_raise(conf_object_t *obj) {
 	irq_proxy_t *proxy = (irq_proxy_t *)obj;
 	proxy->signal->interrupt(proxy->sig_obj, proxy->sig_no);
@@ -49,25 +93,6 @@ static const signal_interface_t irq_proxy_iface =  {
 	.signal_raise = irq_proxy_signal_raise,
 	.signal_lower = irq_proxy_signal_lower,
 };
-
-static conf_object_t* irq_proxy_new_instance(const char *objname) {
-	irq_proxy_t *proxy = (irq_proxy_t*) MM_ZALLOC(sizeof(*proxy));
-	SIM_object_register(&proxy->obj, objname);
-	return &proxy->obj;
-}
-
-#if 0
-static int sig_num_set(conf_object_t *obj, attr_value_t val) {
-	irq_proxy_t *proxy = (irq_proxy_t *)obj;
-	proxy->sig_no = (int) ((long) val);
-	return 0;
-}
-
-static attr_value_t sig_num_get(conf_object_t *obj) {
-	irq_proxy_t *proxy = (irq_proxy_t *)obj;
-	return (attr_value_t*) ((long) proxy->sig_no);
-}
-#endif
 
 static int signal_set(void *_, conf_object_t *obj, attr_value_t *val,  attr_value_t *_index) {
 	irq_proxy_t *proxy = (irq_proxy_t *)obj;
@@ -96,39 +121,27 @@ static attr_value_t signal_get(void *_, conf_object_t *obj, attr_value_t *_index
 	}
 	return attr;
 }
+// ************** signal end *****************
 
-
-#if 0
-static int signal_set(conf_object_t *obj, conf_object_t *peer,
-		const char *port, int idx)
-{
-	irq_proxy_t *proxy = (irq_proxy_t *)obj;
-	proxy->sig_obj = peer;
-	if(port) {
-		proxy->signal = SIM_get_port_interface(peer, "device_irq", port);
-	}else{
-		proxy->signal = SIM_get_interface(peer, "device_irq");
-	}
-	return 0;
+// ************** interrupt *****************
+static void interrupt(conf_object_t *obj, int irq) {
+	//printf("%s: irq %d\n", __func__, irq);
+	dml_proxy_interrupt(obj, irq);
 }
 
-static int signal_get(conf_object_t *obj, conf_object_t **peer,
-		char **port, int idx)
-{
-	return 0;
+static void interrupt_clear(conf_object_t *obj, int irq) {
+	//printf("%s: irq %d\n", __func__, irq);
+	dml_proxy_interrupt_clear(obj, irq);
 }
-#endif
+
+static const simple_interrupt_interface_t irq_proxy_simple_interrupt_iface = {
+	.interrupt = interrupt,
+	.interrupt_clear = interrupt_clear,
+};
+// ************** interrupt end *****************
 
 static const struct ConnectDescription irq_proxy_connects[] = {
 	[0] = {}
-#if 0
-	[0] = {
-		.name = "signal",
-		.set = signal_set,
-		.get = signal_get,
-	},
-	[1] = {}
-#endif
 };
 
 static const struct InterfaceDescription irq_proxy_ifaces[] =  {
@@ -136,7 +149,11 @@ static const struct InterfaceDescription irq_proxy_ifaces[] =  {
 		.name = "signal",
 		.iface = &irq_proxy_iface,
 	},
-	[1] = {}
+	[1] = (struct InterfaceDescription) {
+		.name = "simple_interrupt",
+		.iface = &irq_proxy_simple_interrupt_iface,
+	},
+	[2] = {}
 };
 
 static const struct AttributeDescription irq_proxy_attributes[] = {
@@ -145,15 +162,19 @@ static const struct AttributeDescription irq_proxy_attributes[] = {
 		.set = signal_set,
 		.get = signal_get,
 	},
-#if 0
-	[0] = (struct AttributeDescription) {
-		.name = "sig_num",
-		.set = sig_num_set,
-		.get = sig_num_get,
+	[1] = (struct AttributeDescription) {
+		.name = "cpu_irq",
+		.set = cpu_irq_set,
+		.get = cpu_irq_get,
 	},
-#endif
-	[1] = {}
+	[2] = {}
 };
+
+static conf_object_t* irq_proxy_new_instance(const char *objname) {
+	irq_proxy_t *proxy = (irq_proxy_t*) MM_ZALLOC(sizeof(*proxy));
+	SIM_object_register(&proxy->obj, objname);
+	return &proxy->obj;
+}
 
 static const class_resource_t irq_proxy_resource = {
 	.ifaces = irq_proxy_ifaces,

@@ -3,7 +3,7 @@ prefix ?= /opt/dml_all
 DIR_NAME = simics
 INSTALL_DIR = $(prefix)
 INCLUDES = -I.
-LIBS = -ldl
+LIBS = -ldl -lpthread
 #CFLAGS = -g -O2 -Werror-implicit-function-declaration -Werror=return-type \
 #		-Wmissing-field-initializers -Wuninitialized
 CFLAGS = -g -Wall -Werror

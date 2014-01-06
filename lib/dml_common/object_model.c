@@ -61,11 +61,13 @@ void SIM_object_register(conf_object_t *obj, const char *name) {
 	list_add_tail(&tmp->entry, &obj_list);
 }
 
+void event_proxy_init_local(void);
 conf_object_t* SIM_pre_conf_object(const char *obj_name, const char *cls_name) {
 	const conf_class_t *cls = NULL;
 
 	/* create a clock */
 	if(!clock) {
+		event_proxy_init_local();
 		cls = SIM_class_find(CLOCK_NAME);
 		if(cls) {
 			clock = SIM_new_object(cls, CLOCK_NAME);

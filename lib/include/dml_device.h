@@ -8,6 +8,7 @@
 #define __DML_DEVICE_H__
 
 typedef struct bank_access bank_access_t;
+typedef struct conf_object conf_object_t;
 
 class DMLDevice {
 public:

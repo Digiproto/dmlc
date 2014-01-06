@@ -59,8 +59,8 @@ int device_con(struct devargs *dev, void *extra)
 		attr_value_t attr;
 		if(con->port) {
 			attr = SIM_alloc_attr_list(2);
-			SIM_attr_list_set_item(&attr, 0, SIM_make_attr_string(con->port));
-			SIM_attr_list_set_item(&attr, 1, SIM_make_attr_obj(condev));
+			SIM_attr_list_set_item(&attr, 0, SIM_make_attr_obj(condev));
+			SIM_attr_list_set_item(&attr, 1, SIM_make_attr_string(con->port));
 		}else{
 			attr = SIM_make_attr_obj(condev);
 		}
@@ -81,7 +81,15 @@ int device_irq(struct devargs *dev, void *extra)
 	int i;
 
 	for(i = 0; i < dev->irq_num; i++) {
+		if(strcmp(dev->irqlist[i].dev, "cpu") == 0) {
+			ret = SIM_set_attr(obj, "cpu_irq", NULL, NULL);
+			continue;
+		}
 		conf_object_t *irqdev = (conf_object_t*) SIM_get_conf_object(dev->irqlist[i].dev);
+		if(!irqdev) {
+			fprintf(stderr, "can't find irq dev %s\n", dev->irqlist[i].dev);
+			return -1;
+		}
 		int irqnum = dev->irqlist[i].num;
 		attr_value_t attr = SIM_alloc_attr_list(2);
 		SIM_attr_list_set_item(&attr, 0, SIM_make_attr_integer(irqnum));

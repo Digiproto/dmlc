@@ -1,8 +1,8 @@
 CC = gcc
 AR = ar
 prefix ?= /opt/dml_all
-INCLUDES = -I$(prefix)/include
-LIBRARY_DIRS = -L$(prefix)/lib
+INCLUDES = -I/home/xuejinbao/liyijun/gdml_target/include
+LIBRARY_DIRS = -L/home/xuejinbao/liyijun/gdml_target/lib
 LIBRARYS = -ldml_common
 CFLAGS = -g -Wall
 build_dir = build
@@ -35,7 +35,7 @@ lib%.$(suffix): $(build_dir)/%.o
 
 $(build_dir)/%.o: %.c
 	@echo "[CC] $@"
-	@$(CC) -c      $< $(CFLAGS) $(INCLUDES) $(LIBRARY_DIRS) $(LIBRARYS) -o $@
+	@$(CC) -c      $< $(CFLAGS) $(INCLUDES) -o $@
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)

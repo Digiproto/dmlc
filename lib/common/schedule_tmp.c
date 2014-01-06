@@ -19,6 +19,16 @@
 #define zalloc(size) memset(malloc(size), 0, size)
 #define timecal(tc) (tc).tv_sec * 1000000 + (tc).tv_usec
 
+#if 0
+#define SCHEDULE_LOCK(arg) /*printf("#### lock line: %d\n", __LINE__);*/ pthread_mutex_lock(arg)
+#define SCHEDULE_UNLOCK(arg) /*printf("#### unlock line: %d\n", __LINE__);*/ pthread_mutex_unlock(arg)
+#else
+//#define SCHEDULE_LOCK(arg) printf("######## lock\n")
+#define SCHEDULE_LOCK(arg)
+//#define SCHEDULE_UNLOCK(arg) printf("######### unlock\n")
+#define SCHEDULE_UNLOCK(arg)
+#endif
+
 struct sched_group;
 struct schedule {
 	struct schedule    *next;
@@ -50,7 +60,7 @@ static void *schedule_main(void *args)
 	int spend;
 	long long new;
 
-	pthread_mutex_lock(&group->mutex);
+	SCHEDULE_LOCK(&group->mutex);
 
 	gettimeofday(&newtime, NULL);
 	new = timecal(newtime);
@@ -78,7 +88,7 @@ static void *schedule_main(void *args)
 			}
 		}
 	}
-	pthread_mutex_unlock(&group->mutex);
+	SCHEDULE_UNLOCK(&group->mutex);
 
 	return NULL;
 }
@@ -131,9 +141,9 @@ void schedule_tmp_update(schedule_t *sched,
 {
 	assert(sched);
 	sched_group_t *group = sched->belong;
-	pthread_mutex_lock(&group->mutex);
+	SCHEDULE_LOCK(&group->mutex);
 	__schedule_tmp_update(group, sched, cb, cb_args, mode, timeout);
-	pthread_mutex_unlock(&group->mutex);
+	SCHEDULE_UNLOCK(&group->mutex);
 }
 
 schedule_t* schedule_tmp_insert(sched_group_t *group, schedule_callback_t cb,
@@ -144,9 +154,9 @@ schedule_t* schedule_tmp_insert(sched_group_t *group, schedule_callback_t cb,
 	schedule_t *sched;
 	sched = zalloc(sizeof(*sched));
 
-	pthread_mutex_lock(&group->mutex);
+	SCHEDULE_LOCK(&group->mutex);
 	__schedule_tmp_update(group, sched, cb, cb_args, mode, timeout);
-	pthread_mutex_unlock(&group->mutex);
+	SCHEDULE_UNLOCK(&group->mutex);
 
 	return sched;
 }
@@ -159,7 +169,7 @@ int schedule_tmp_delete(schedule_t *sched)
 	sched_group_t *group = sched->belong;
 	schedule_t *node;
 
-	pthread_mutex_lock(&group->mutex);
+	SCHEDULE_LOCK(&group->mutex);
 	for(node = &group->list; node && node->next; node = node->next) {
 		if(node->next == sched) {
 			node->next = sched->next;
@@ -168,7 +178,7 @@ int schedule_tmp_delete(schedule_t *sched)
 			break;
 		}
 	}
-	pthread_mutex_unlock(&group->mutex);
+	SCHEDULE_UNLOCK(&group->mutex);
 
 	return 0;
 }
@@ -176,18 +186,18 @@ int schedule_tmp_delete(schedule_t *sched)
 void* schedule_tmp_get_return(schedule_t *sched)
 {
 	assert(sched);
-	pthread_mutex_lock(&sched->belong->mutex);
+	SCHEDULE_LOCK(&sched->belong->mutex);
 	void *ret = sched->ret;
-	pthread_mutex_unlock(&sched->belong->mutex);
+	SCHEDULE_UNLOCK(&sched->belong->mutex);
 	return ret;
 }
 
 int schedule_tmp_sched_count(schedule_t *sched)
 {
 	assert(sched);
-	pthread_mutex_lock(&sched->belong->mutex);
+	SCHEDULE_LOCK(&sched->belong->mutex);
 	int ret = sched->timeout - sched->overtime;
-	pthread_mutex_unlock(&sched->belong->mutex);
+	SCHEDULE_UNLOCK(&sched->belong->mutex);
 	if(ret >= 0) {
 		return ret;
 	}else{
@@ -199,9 +209,9 @@ schedule_status_t schedule_tmp_status_sched(schedule_t *sched)
 {
 	if(!sched)
 		return SchedTmpNull;
-	pthread_mutex_lock(&sched->belong->mutex);
+	SCHEDULE_LOCK(&sched->belong->mutex);
 	schedule_status_t status = sched->status;
-	pthread_mutex_unlock(&sched->belong->mutex);
+	SCHEDULE_UNLOCK(&sched->belong->mutex);
 	return status;
 }
 
@@ -215,7 +225,7 @@ void schedule_tmp_destroy_group(sched_group_t *group)
 {
 	schedule_t *node, *tmp;
 
-	pthread_mutex_lock(&group->mutex);
+	SCHEDULE_LOCK(&group->mutex);
 	node = &group->list;
 	while(node->next) {
 		tmp = node->next;
@@ -224,7 +234,7 @@ void schedule_tmp_destroy_group(sched_group_t *group)
 	}
 	thread_tmp_stop(group->thread);
 	thread_tmp_destroy(group->thread);
-	pthread_mutex_unlock(&group->mutex);
+	SCHEDULE_UNLOCK(&group->mutex);
 	pthread_mutex_destroy(&group->mutex);
 	free(group);
 }
