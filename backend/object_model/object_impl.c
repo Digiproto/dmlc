@@ -185,7 +185,7 @@ static void gen_device_destructor(device_t *dev, FILE *f) {
 	fprintf(f, "\t%s_t *_dev = (%s_t *)obj;\n", name, name);
 	fprintf(f, "\tUNUSED(_dev);\n");
 	fprintf(f, "\tbool exec = _DML_M_post_init(_dev);\n");
-	fprintf(f, "\tUNUSED(exec)\n");
+	fprintf(f, "\tUNUSED(exec);\n");
 	fprintf(f, "\treturn;\n");
 	fprintf(f, "}\n");
 
@@ -249,7 +249,7 @@ static void gen_device_resources(device_t *dev, FILE *f) {
 	fprintf(f, "\nstatic const class_resource_t %s_resources = {\n", name);
 	fprintf(f, "\t.ifaces = %s_ifaces,\n", name);
 	fprintf(f, "\t.connects = %s_connects,\n", name);
-	fprintf(f, "\t.attributes = %s_attributes,\n");
+	fprintf(f, "\t.attributes = %s_attributes,\n", name);
 	if(!list_empty(&dev->ports)) {
 		fprintf(f, "\t.ports = %s_ports,\n", name);
 	} else {
