@@ -25,5 +25,5 @@
 #define __GEN_ATTRIBUTE_H__  
 #include "gen_common.h"
 void gen_device_attribute(device_t *dev, FILE *f);
-
+void gen_device_attribute_description(device_t *dev, FILE *f);
 #endif /* __GEN_ATTRIBUTE_H__ */
