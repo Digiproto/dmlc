@@ -26,6 +26,9 @@
 #include "gen_method_protos.h"
 #include "gen_connect.h"
 #include "gen_implement.h"
+#include "gen_attribute.h"
+#include "gen_port.h"
+
 
 extern object_t *DEV;
 
@@ -182,6 +185,7 @@ static void gen_device_destructor(device_t *dev, FILE *f) {
 	fprintf(f, "\t%s_t *_dev = (%s_t *)obj;\n", name, name);
 	fprintf(f, "\tUNUSED(_dev);\n");
 	fprintf(f, "\tbool exec = _DML_M_post_init(_dev);\n");
+	fprintf(f, "\tUNUSED(exec)\n");
 	fprintf(f, "\treturn;\n");
 	fprintf(f, "}\n");
 
@@ -195,16 +199,21 @@ static void gen_device_connect(device_t *dev, FILE *f) {
     struct list_head *p;
     object_t *tmp;
     int i = 0;
+    const char *name;
 
     gen_device_connect_code(dev, f);
-
     fprintf(f, "\nstatic const struct ConnectDescription %s_connects[] = {\n", dev->obj.name);
     list_for_each(p, &dev->connects) {
         tmp = list_entry(p, object_t, entry);
+	if(tmp->is_array) {
+		name = tmp->a_name;
+	} else {
+		name = tmp->name;
+	}
         fprintf(f, "\t[%d] = (struct ConnectDescription) {\n", i);
-        fprintf(f, "\t\t.name = \"%s\",\n", tmp->name);
-        fprintf(f, "\t\t.set = %s_set,\n", tmp->name);
-        fprintf(f, "\t\t.get = %s_get,\n", tmp->name);
+        fprintf(f, "\t\t.name = \"%s\",\n", name);
+        fprintf(f, "\t\t.set = %s_set,\n", name);
+        fprintf(f, "\t\t.get = %s_get,\n", name);
         fprintf(f, "\t},\n");
         i++;
     }
@@ -235,9 +244,12 @@ static void gen_device_resources(device_t *dev, FILE *f) {
 
 	gen_device_connect(dev, f);	
 	gen_device_implement(dev, f);
+	gen_device_port_description(dev, f);
+	gen_device_attribute_description(dev, f);
 	fprintf(f, "\nstatic const class_resource_t %s_resources = {\n", name);
 	fprintf(f, "\t.ifaces = %s_ifaces,\n", name);
 	fprintf(f, "\t.connects = %s_connects,\n", name);
+	fprintf(f, "\t.attributes = %s_attributes,\n");
 	if(!list_empty(&dev->ports)) {
 		fprintf(f, "\t.ports = %s_ports,\n", name);
 	} else {
