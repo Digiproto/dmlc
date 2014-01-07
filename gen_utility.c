@@ -34,6 +34,7 @@ const char *simics_apis[] = {
 	"VT_old_time_post",
 	"VT_old_step_post",
 	"VT_old_time_clean",
+	"VT_old_step_clean",
 	NULL
 };
 
