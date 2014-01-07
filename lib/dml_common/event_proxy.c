@@ -35,12 +35,20 @@ static inline uint64_t get_now_usec() {
 	return now.tv_sec * 1000000 + now.tv_usec;
 }
 
+static pthread_mutex_t event_mutex = PTHREAD_MUTEX_INITIALIZER;
+static bool is_callback_mutex = false;
+
 static void* event_proxy_callback(void *obj)
 {
 	event_list_t *event = (event_list_t*) obj;
 	usleep(event->when);
-	if(event->cb)
+	pthread_mutex_lock(&event_mutex);
+	is_callback_mutex = true;
+	if(event->cb) {
 		event->cb(event->obj, event->user_data);
+	}
+	is_callback_mutex = false;
+	pthread_mutex_unlock(&event_mutex);
 	return NULL;
 }
 
@@ -57,12 +65,20 @@ static event_list_t* insert_event(event_list_t *list, conf_object_t *obj,
 		event_cb_t cb, void *user_data) {
 	event_list_t *event, *tmp;
 
+	if(pthread_mutex_trylock(&event_mutex)) {
+		if(is_callback_mutex == false)
+			pthread_mutex_lock(&event_mutex);
+	}
+	//printf("%s: lock\n", __func__);
 	if((event = find_event(list, cb, user_data)) == NULL) {
 		event = MM_ZALLOC(sizeof(*event));
 		for(tmp = list; tmp->next; tmp = tmp->next) {
 		}
 		tmp->next = event;
 	}
+	if(is_callback_mutex == false)
+		pthread_mutex_unlock(&event_mutex);
+	//printf("%s: unlock\n", __func__);
 
 	event->cb = cb;
 	event->obj = obj;
@@ -73,6 +89,11 @@ static event_list_t* insert_event(event_list_t *list, conf_object_t *obj,
 
 static void remove_event(event_list_t *list, event_cb_t cb, void *user_data) {
 	event_list_t *tmp, *f;
+	if(pthread_mutex_trylock(&event_mutex)) {
+		if(is_callback_mutex == false)
+			pthread_mutex_lock(&event_mutex);
+	}
+	//printf("%s: lock\n", __func__);
 	for(tmp = list; tmp->next; tmp = tmp->next) {
 		f = tmp->next;
 		if(f->cb == cb && f->user_data == user_data) {
@@ -83,6 +104,9 @@ static void remove_event(event_list_t *list, event_cb_t cb, void *user_data) {
 			break;
 		}
 	}
+	if(is_callback_mutex == false)
+		pthread_mutex_unlock(&event_mutex);
+	//printf("%s: unlock\n", __func__);
 }
 
 static void proxy_post(conf_object_t *clock, conf_object_t *obj, int when, event_cb_t cb, void *user_data) {
@@ -105,7 +129,7 @@ static pc_step_t proxy_count(conf_object_t *clock) {
 
 void SIM_event_post(conf_object_t *obj, int when, int flags, event_cb_t cb, void *user_data) {
 	conf_object_t *clock = obj->clock;
-	proxy_post(clock, obj, when + 1000, cb, user_data);
+	proxy_post(clock, obj, when, cb, user_data);
 }
 
 void SIM_event_cancel(conf_object_t *obj, int flags, event_cb_t cb, void *user_data)
