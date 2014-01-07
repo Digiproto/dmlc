@@ -1,11 +1,11 @@
 # Written by Michael.Kang(blackfin.kang@gmail.com)
 CC = gcc
 SYSTEMC4SKYEYE ?= no
-CFLAGS = -g -Wall -Werror -Wno-unused-value -Wno-unused-variable \
-		 -Wno-unused-function -Wno-switch -Wno-enum-compare \
-		 -Wno-unused-but-set-variable
-#CFLAGS = -g -O2 -Werror-implicit-function-declaration \
-#		-Wmissing-field-initializers -Wuninitialized
+#CFLAGS = -g -Wall -Werror -Wno-unused-value -Wno-unused-variable \
+#		 -Wno-unused-function -Wno-switch -Wno-enum-compare \
+#		 -Wno-unused-but-set-variable
+CFLAGS = -g -Werror-implicit-function-declaration \
+		-Wmissing-field-initializers
 INCLUDE = -I. -I./backend/
 BUILD_DIR = build
 #BUILD_DIRS_SKYEYE = $(patsubst %,$(BUILD_DIR)/skyeye/%,$(shell find backend -type d))

@@ -1,8 +1,8 @@
 CC = gcc
 AR = ar
 prefix ?= /opt/dml_all
-INCLUDES = -I/home/xuejinbao/liyijun/gdml_target/include
-LIBRARY_DIRS = -L/home/xuejinbao/liyijun/gdml_target/lib
+INCLUDES = -I$(prefix)/include
+LIBRARY_DIRS = -L$(prefix)/lib
 LIBRARYS = -ldml_common
 CFLAGS = -g -Wall
 build_dir = build
