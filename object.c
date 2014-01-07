@@ -701,10 +701,30 @@ static int get_binopnode_constant(tree_t *t, type_t op, int *result) {
 	tree_t *left, *right;
 	int ret = -1;
 
+	if(!t || (t->common.type == UNDEFINED_TYPE)
+		|| ((t->common.type != INTEGER_TYPE) && (t->common.type != BINARY_TYPE))) {
+		*result = -1;
+		ret = 2;
+		return ret;
+	}
 	left = t->binary.left;
 	right = t->binary.right;
+	if(t->common.type == INTEGER_TYPE) {
+		*result = t->int_cst.value;
+		ret = 2;
+		return ret;
+	}
+	if(left->common.type == INTEGER_TYPE && right->common.type == INTEGER_TYPE && t->binary.type == op) {
+		if(op == ADD_TYPE){
+			int tmp = left->int_cst.value + right->int_cst.value;
+			*result = tmp;
+			ret = 2;
+			return ret;
+		}
+	}
 	if(t->common.type != BINARY_TYPE || t->binary.type != op) {
 		*result = -1;
+		ret = 2;
 		return ret;
 	}
 	if(left->common.type == INTEGER_TYPE) {
@@ -715,22 +735,6 @@ static int get_binopnode_constant(tree_t *t, type_t op, int *result) {
 		ret = 1;
 	}
 	return ret;
-}
-
-static int get_base(tree_t *t, int *ret) {
-	tree_t *tmp;
-	
-	if(t->common.type == INTEGER_TYPE) {
-		*ret = -1;
-		return t->int_cst.value;
-	} else if(t->common.type == BINARY_TYPE){
-		tmp = t->binary.right;
-		tmp = tmp->binary.right;
-		*ret = tmp->int_cst.value;
-		tmp = t->binary.left;
-		return tmp->int_cst.value;
-	} 
-	return 0;
 }
 
 static int get_reg_offset(paramspec_t *t, int *interval) {
@@ -755,6 +759,8 @@ static int get_reg_offset(paramspec_t *t, int *interval) {
 			
 		} else if(!ret) {
 			tmp = node->binary.right;
+		} else if(ret == 2) {
+			return;
 		} else {
 			tmp = node->binary.left;
 		}
@@ -831,6 +837,16 @@ static void register_realize(object_t *obj) {
 	}
 	reg->offset = reg_attr->offset;
 	reg->is_undefined = 0;
+        int ret = -1;
+        param_value_t valuexxx;
+        memset(&valuexxx, 0, sizeof(valuexxx));
+        paramspec_t spec = {.expr_node = reg->obj.node->reg.offset, .value = &valuexxx};
+        reg->offset = get_reg_offset(&spec, &ret);
+        if(ret != -1) {
+                reg->interval = ret;
+        } else {
+                reg->interval = 4;
+        }
 	if(reg->offset == -1) {
 		/*search for parameter offset */
 		sym = symbol_find(obj->symtab, "offset", PARAMETER_TYPE);
@@ -849,13 +865,17 @@ static void register_realize(object_t *obj) {
 			BE_DBG(GENERAL, "reg offset 0x%x\n", reg->offset);
 		}	
 	}
+	/*
 	int ret = -1;
-	reg->offset = get_base(reg->obj.node->reg.offset, &ret);
+	param_value_t valuexxx = {.isconst = 0};
+	memset(&valuexxx, 0, sizeof(valuexxx));
+	paramspec_t spec = {.expr_node = reg->obj.node->reg.offset, .value = &valuexxx};
+	reg->offset = get_reg_offset(&spec, &ret);
 	if(ret != -1) {
 		reg->interval = ret;
 	} else {
 		reg->interval = 4;
-	}
+	}*/
 	list_for_each(p, &obj->childs) {
 		tmp = list_entry(p, object_t, entry);
 		field_realize(tmp);
