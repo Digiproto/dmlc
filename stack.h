@@ -29,14 +29,20 @@
 
 typedef struct stack_node stack_node_t;
 
+/**
+ * @brief : the element of stack
+ */
 struct stack_node {
-	symtab_t data;
-	stack_node_t* down;
+	symtab_t data; // pointer for table
+	stack_node_t* down; // the next element of stack
 };
 
+/**
+ * @brief : stack for symbol table relationship
+ */
 typedef struct stack {
-	stack_node_t* top;
-	int size;
+	stack_node_t* top; // the top pointer for stack
+	int size; // the size(number of table in stack) fo stack
 }stack_t;
 
 stack_t* initstack();

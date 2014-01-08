@@ -28,6 +28,11 @@
 #include "symbol-common.h"
 #include "ast.h"
 
+/**
+ * @brief initstack : create a stack and init it
+ *
+ * @return : pointer to stack
+ */
 stack_t* initstack() {
 	stack_t* ps = (stack_t*)gdml_zmalloc(sizeof(stack_t));
 	if (ps != NULL) {
@@ -38,6 +43,14 @@ stack_t* initstack() {
 	return ps;
 }
 
+/**
+ * @brief is_empty : charge stack is empty or not
+ *
+ * @param ps : the pointer for stack
+ *
+ * @return : 1 - empty
+ *			0 - not empty
+ */
 int is_empty(stack_t* ps) {
 	if ((ps->top == NULL) && (ps->size == 0)) {
 		return 1;
@@ -47,16 +60,38 @@ int is_empty(stack_t* ps) {
 	}
 }
 
+/**
+ * @brief get_stack_size : get the size of stack, the size is
+ * num of table in stack
+ *
+ * @param ps : pointer to stack
+ *
+ * @return : the size of stack
+ */
 int get_stack_size(stack_t* ps) {
 	return ps->size;
 }
 
+/**
+ * @brief get_top : get the topest element of stack
+ *
+ * @param ps: pointer to stack
+ *
+ * @return : pointer of the topest element of stack
+ */
 stack_node_t* get_top(stack_t* ps) {
 	return ps->top;
 }
 
+/**
+ * @brief push : push element to stack
+ *
+ * @param ps : pointer to stack
+ * @param item: element will be pushed into stack
+ *
+ * @return : the topest element of stack
+ */
 stack_node_t* push(stack_t* ps, symtab_t item) {
-	//printf("\n\npush table num: %d\n", item->table_num);
 	stack_node_t* node = (stack_node_t*)gdml_zmalloc(sizeof(stack_node_t));
 	node->data = item;
 	node->down = get_top(ps);
@@ -66,9 +101,15 @@ stack_node_t* push(stack_t* ps, symtab_t item) {
 	return node;
 }
 
+/**
+ * @brief pop : pop the topest element of stack
+ *
+ * @param ps : pointer of stack
+ *
+ * @return : the new topest element pointer
+ */
 symtab_t pop(stack_t* ps) {
 	stack_node_t* node = ps->top;
-	//printf("\n\npop table num: %d\n", ps->top->data->table_num);
 	if (is_empty(ps) != 1) {
 		ps->size--;
 		ps->top = ps->top->down;
@@ -77,6 +118,11 @@ symtab_t pop(stack_t* ps) {
 	return (node->data);
 }
 
+/**
+ * @brief stack_traverse : traverse all elements about stack
+ *
+ * @param ps : pointer of stack
+ */
 void stack_traverse(stack_t* ps) {
 	stack_node_t* node = ps->top;
 	int i = ps->size;
