@@ -159,6 +159,11 @@ void gen_implement_code(object_t *obj, FILE *f) {
     symbol_list_free(head);
 }
 
+/**
+ * @brief add_implement_method : add the methods in implement block into method list of implement
+ *
+ * @param obj : the object of implement
+ */
 void add_implement_method(object_t *obj) {
 	implement_t *imp = (implement_t *)obj;
 	symtab_t table = obj->symtab->sibling;
