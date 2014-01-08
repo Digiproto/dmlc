@@ -3,6 +3,12 @@
 #include "gen_port.h"
 #include "gen_event.h"
 
+/**
+ * @brief add_register_check_method : add some default methods of registers
+ * into mehod list of register
+ *
+ * @param obj : the object of register
+ */
 static void add_register_check_method(object_t *obj) {
 	struct list_head *p;
 	object_t *tmp;
@@ -12,10 +18,13 @@ static void add_register_check_method(object_t *obj) {
 		add_object_method(tmp, "read_access");
 		add_object_method(tmp, "write_access");
 	}	
-	
 }
 
-
+/**
+ * @brief add_pre_method : add some default methods of object to object method list
+ *
+ * @param dev : the object of device
+ */
 static void add_pre_method(device_t *dev) {
 	struct list_head *p;
 	object_t *tmp;
@@ -96,6 +105,11 @@ static void back_to_zero(device_t *dev) {
 	}
 }
 
+/**
+ * @brief after_check : free the mehod list of object after check finish
+ *
+ * @param dev : the object of device
+ */
 static void after_check(device_t *dev) {
 	struct list_head *p;
 	object_t *tmp;
@@ -111,6 +125,11 @@ static void after_check(device_t *dev) {
 	}
 }
 
+/**
+ * @brief device_check : check the declaration and expression of device block
+ *
+ * @param dev : the object of device
+ */
 void device_check(device_t *dev) {
 	add_pre_method(dev);
 	chk_dml_code(dev);

@@ -31,6 +31,11 @@
 #include "chk_object.h"
 extern int method_to_generate;
 
+/**
+ * @brief chk_object_method : check the method of one object
+ *
+ * @param obj : the object of dml
+ */
 static void chk_object_method(object_t *obj){
 	struct method_name *m;
 	struct list_head *p;
@@ -49,6 +54,12 @@ static void check_none_object(object_t* obj) {
 }
 
 static void chk_obj_generic_code(object_t *obj);
+
+/**
+ * @brief check_common_event : check the method of event object
+ *
+ * @param obj : the object of event
+ */
 static void check_common_event(object_t* obj) {
 	assert(obj != NULL);
 	struct list_head *p;
@@ -60,6 +71,11 @@ static void check_common_event(object_t* obj) {
 	return;
 }
 
+/**
+ * @brief check_bank_sepcial_obj : check the method of special objects of bank
+ *
+ * @param obj : the object of bank
+ */
 static void check_bank_sepcial_obj(object_t* obj) {
 	assert(obj != NULL);
 	bank_t*  bank = (bank_t*)obj;
@@ -85,24 +101,44 @@ static void check_bank_sepcial_obj(object_t* obj) {
 	return;
 }
 
+/**
+ * @brief check_register_special_object : check the special object of register
+ *
+ * @param obj : the object of register
+ */
 static void check_register_special_object(object_t* obj) {
 	assert(obj != NULL);
 	check_common_event(obj);
 	return;
 }
 
+/**
+ * @brief check_attribute_special_object : check the special object of attribute
+ *
+ * @param obj : the object of attribute
+ */
 static void check_attribute_special_object(object_t* obj) {
 	assert(obj != NULL);
 	check_common_event(obj);
 	return;
 }
 
+/**
+ * @brief check_connect_special_object : check the special object of connect
+ *
+ * @param obj : the object of connect
+ */
 static void check_connect_special_object(object_t* obj) {
 	assert(obj != NULL);
 	check_common_event(obj);
 	return;
 }
 
+/**
+ * @brief check_port_special_object : check the special object of port
+ *
+ * @param obj : the object of port
+ */
 static void check_port_special_object(object_t* obj) {
 	assert(obj != NULL);
 	struct list_head *p;
@@ -127,6 +163,11 @@ static void check_port_special_object(object_t* obj) {
 	return;
 }
 
+/**
+ * @brief check_group_special_obj : check the special object of group
+ *
+ * @param obj : the object of group
+ */
 static void check_group_special_obj(object_t* obj) {
 	assert(obj != NULL);
 	struct list_head* p;
@@ -154,6 +195,11 @@ static void (*check_obj_special[])(object_t* obj) = {
 	[Obj_Type_Group]    = check_group_special_obj
 };
 
+/**
+ * @brief check_obj_special_code : check some special object mehtod about one object
+ *
+ * @param obj : object of dml
+ */
 static void check_obj_special_code(object_t* obj) {
 		assert(obj != NULL);
 		check_obj_special[obj->encoding](obj);
@@ -161,6 +207,12 @@ static void check_obj_special_code(object_t* obj) {
 		return;
 }
 
+/**
+ * @brief chk_obj_generic_code : check the method of object and
+ * start to check the methods of its child
+ *
+ * @param obj : the object of dml
+ */
 static void chk_obj_generic_code(object_t *obj){
 	struct list_head *p;
 	object_t *t;
@@ -174,6 +226,11 @@ static void chk_obj_generic_code(object_t *obj){
 	check_obj_special_code(obj);
 }
 
+/**
+ * @brief chk_device_code : check the method of object based on the method list of object
+ *
+ * @param obj : the object of device
+ */
 static void chk_device_code(device_t *obj){
 	struct list_head *p;
 	object_t *t;
@@ -210,13 +267,17 @@ static void chk_device_code(device_t *obj){
 	}
 }
 
+/**
+ * @brief chk_dml_code : entry to check the method of device and other objects
+ *
+ * @param dev : the object of device
+ */
 void chk_dml_code(device_t *dev) {
 	int round = 0;
 
 	while(method_to_generate){
 		round++;
 		BE_DBG(GENERAL, "code generation round %d, method to generate %d\n",round, method_to_generate);
-		//printf("code generation round %d, method to generate %d\n",round, method_to_generate);
 		chk_device_code(dev);
 	}
 }
