@@ -60,6 +60,11 @@ void gen_device_event_code(device_t *dev, FILE *f) {
 	}
 }
 
+/**
+	* @brief add_event_method : add the defautl
+ *
+ * @param obj: the object of event
+ */
 void add_event_method(object_t *obj) {
 	add_object_method(obj, "callback");
 }
