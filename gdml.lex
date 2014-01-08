@@ -12,8 +12,6 @@ CM          ([^%]|%[^}])
 #include "types.h"
 #include "ast.h"
 #include "Parser.h"  
-//extern int lineno;
-//int column = 0;
 void count(yyscan_t scanner);
 /* the max length of include file name */
 #define MAX_HEAD_LEN 1024

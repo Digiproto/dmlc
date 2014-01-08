@@ -6,17 +6,12 @@
 #include "symbol.h"
 #include "stack.h"
 #include "ast.h"
-//#include "Parser.h"
 #include "gen_common.h"
 #include "gen_expression.h"
 #include "info_output.h"
 #define YYDEBUG 1
-//const char* dir = "/opt/virtutech/simics-4.0/simics-model-builder-4.0.16/amd64-linux/bin/dml/1.0/";
 
-//#define PARSE_DEBUG
 #ifdef PARSE_DEBUG
-//#define DBG debug_black
-//#define DBG(fmt, ...) do { fprintf(stderr, fmt, ## __VA_ARGS__); } while (0)
 #define DBG(fmt, ...) do { \
 		fprintf(stderr, \
 				"[Debug]file: %s\n" \
@@ -69,41 +64,44 @@ struct file_stack* filestack_top;
 %locations
 
 %union  {
-	int ival;
-	char* sval;
-	node_t* nodeval;
-	int itype;
-	tree_t* tree_type;
+	char* sval; // string type for bison return value
+	tree_t* tree_type; // tree type for bison return value
 	//enum tree_code code;
 	location_t location;
 }
 
 %{
 #include "Lexer.h"
-//extern int  yylex(YYSTYPE *yylval_param, yyscan_t yyscanner);
 extern tree_t* parse_auto_api(void);
 void yyerror(YYLTYPE* location, yyscan_t* scanner, tree_t** root_ptr, char *s);
 extern tree_t* parse_file(const char* name);
-extern int charge_standard_parameter(symtab_t table, parameter_attr_t* attr);
-extern void insert_auto_defaut_param(symtab_t table);
 extern void insert_array_index(object_attr_t* attr, symtab_t table);
-extern char* builtin_filename;
+/* the root table for source file */
 extern symtab_t root_table;
+/* a stack with chain for symbol table*/
 stack_t* table_stack;
+/* a global variable to store object type*/
 int object_spec_type = -1;
+/* a global variable to store object attribute*/
 object_attr_t* object_comm_attr = NULL;
+/* a global variable to store current table*/
 static symtab_t current_table = NULL;
-static symtab_t prefix_table = NULL;
+/* a global variable to calculate the table num,
+when create new table, it add 1, and then give the
+value to table */
 extern long int current_table_num;
+/* a global variable to stoer object tree node */
 tree_t* current_object_node = NULL;
 %}
 
 %token DML IDENTIFIER INTEGER_LITERAL FLOAT_LITERAL STRING_LITERAL SIZEOF
+/* the sign about operator */
 %token INC_OP DEC_OP LEFT_OP RIGHT_OP LE_OP GE_OP EQ_OP NE_OP
 %token AND_OP OR_OP MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN ADD_ASSIGN
 %token SUB_ASSIGN LEFT_ASSIGN RIGHT_ASSIGN AND_ASSIGN
 %token XOR_ASSIGN OR_ASSIGN TYPE_NAME REG_OFFSET
 
+/* the reserved words */
 %token TYPEDEF EXTERN STATIC AUTO REGISTER
 %token BOOL CHAR SHORT INT LONG SIGNED UNSIGNED FLOAT DOUBLE CONST VOLATILE VOID
 %token STRUCT UNION ENUM ELLIPSIS
@@ -111,6 +109,7 @@ tree_t* current_object_node = NULL;
 %token CASE DEFAULT IF ELSE SWITCH WHILE DO FOR GOTO CONTINUE BREAK RETURN
 %token METHOD_RETURN RANGE_SIGN
 
+/* the key words abou dml*/
 %token PARAMETER BANK FIELD DATA CONNECT INTERFACE ATTRIBUTE EVENT GROUP
 %token IN TEMPLATE HEADER FOOTER BODY LOGGROUP IMPORT SIZE LAYOUT BITFIELDS
 %token USING PORT PUBLIC PROTECTED PRIVATE STRICT THIS SELECT IS IMPLEMENT VECT WHERE
@@ -201,6 +200,9 @@ tree_t* current_object_node = NULL;
 %nonassoc IF
 %nonassoc ELSE
 
+/* Define the operator tokens and their precedences.
+   The value is an integer because, if used, it is the tree code
+   to use in the expression made from the operator.  */
 %right '=' RIGHT_ASSIGN LEFT_ASSIGN ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN DIV_ASSIGN MOD_ASSIGN AND_ASSIGN XOR_ASSIGN OR_ASSIGN
 %right '?' ':'
 %left OR_OP
@@ -222,15 +224,11 @@ begin_unit
 	: DML FLOAT_LITERAL';' dml {
 		dml_attr_t* attr = (dml_attr_t*)gdml_zmalloc(sizeof(dml_attr_t));
 		attr->version = $2;
-		//symbol_insert("dml", DML_TYPE, attr);
 
 		if(*root_ptr != NULL) {
-			/* something wrong */
-//			printf("root of ast already exists\n");
 			PERROR("(inner) root of ast already exists", @$);
 		}
 		*root_ptr = (tree_t*)create_node("dml", DML_TYPE, sizeof(struct tree_dml), &@$);
-		//printf("root_ptr: 0x%x, *root_ptr: 0x%x\n", root_ptr, *root_ptr);
 		(*root_ptr)->dml.version = $2;
 		(*root_ptr)->dml.common.print_node = print_dml;
 		if($4 != NULL)
@@ -240,16 +238,17 @@ begin_unit
 
 dml
 	: DEVICE objident ';' {
+		/* create root table, as device is topest level in simics */
 		root_table = symtab_create(DEVICE_TYPE);
 		current_table = root_table;
 		current_table->table_num = ++current_table_num;
 		set_root_table(root_table);
+		/* init table stack */
 		table_stack = initstack();
 		push(table_stack, current_table);
 		device_attr_t* attr = (device_attr_t*)malloc(sizeof(device_attr_t));
 		attr->name = $2->ident.str;
 		if (symbol_insert(root_table, $2->ident.str, DEVICE_TYPE, attr) == -1) {
-//			fprintf(stderr, "Line = %d, redefined, device %s\n", __LINE__, $2->ident.str);
 			PWARN("redefined device \"%s\"", @2, $2->ident.str);
 		}
 
@@ -259,8 +258,8 @@ dml
 		attr->common.node = node;
 		node->common.attr = attr;
 
-		/* parase the pre-import file */
 		int i = 0;
+		/* parse some pre-import files */
 		tree_t* import_ast = NULL;
 		while(import_file_list[i] != NULL) {
 			import_ast = (tree_t*)get_ast(import_file_list[i]);
@@ -360,6 +359,8 @@ device_statement
 
 object
 	: BANK maybe_objident istemplate {
+		/* in simics, bank can not have name, if like this, we will use "no_name_bank"
+		to sign it*/
 		const char* name = ($2 == NULL) ? strdup("no_name_bank") : $2->ident.str;
         object_attr_t* attr = create_object(current_table, "bank", name, BANK_TYPE,
                                             sizeof(struct tree_bank), sizeof(bank_attr_t), &@$);
@@ -3353,19 +3354,8 @@ ident
 #include <stdio.h>
 #include <stdlib.h>
 
-//extern int column;
-//int lineno  = 1;    /* number of current source line */
-
 void yyerror(YYLTYPE* location, yyscan_t* scanner, tree_t** root_ptr, char *s) {
 	fflush(stdout);
-//	if(location->file) {
-//		fprintf(stderr,"Syntax error on file: %s\n"
-//						"line #%d, column #%d\n"
-//						"reason: %s\n", location->file->name, location->first_line, location->first_column, s);
-//	}else{
-//		fprintf(stderr,"Syntax error on line #%d, column #%d: %s\n", location->first_line, location->first_column, s);
-//	}
-//	exit(1);
 	PERROR("%s (current word \"%s\")", *location, s, yyget_text(scanner));
 }
 
