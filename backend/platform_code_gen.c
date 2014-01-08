@@ -24,6 +24,12 @@
 #include "gen_method_protos.h"
 #include "gen_object.h"
 
+/**
+ * @brief gen_cfile : generate the c file about device
+ *
+ * @param dev : the object of device
+ * @param out: the output file for device
+ */
 void gen_cfile(device_t *dev, const char *out) {
 	const char *dev_name = dev->obj.name;
 	char tmp[1024];
@@ -57,7 +63,3 @@ void gen_cfile(device_t *dev, const char *out) {
 	}
 	gen_platform_device_module(dev, out);
 }
-
-
-
-
