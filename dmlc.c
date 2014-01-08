@@ -36,18 +36,6 @@
 #include "code_gen.h"
 #include "import.h"
 
-#define QEMU 0
-
-#if 0  /* libray directory has been moved to dmlc.h */
-#if QEMU
-const char *simics_dml_dir =
-	"/opt/simics-4.0/simics-model-builder-4.0.16/amd64-linux/bin/dml/1.0";
-#else
-const char *simics_dml_dir =
-	"/opt/virtutech/simics-4.0/simics-model-builder-4.0.16/amd64-linux/bin/dml/1.0";
-#endif
-#endif
-
 extern int yyparse (yyscan_t scanner, tree_t** root_ptr);
 
 /**
@@ -67,19 +55,23 @@ tree_t* get_ast (const char *filename)
 
 	yyscan_t scanner;
 	tree_t* root = NULL;
+	/* init flex */
 	yylex_init (&scanner);
+	/* call flex for lexical analysis */
 	yyrestart (file, scanner);
 	struct file_stack* tmp_stack;
-	tmp_stack = push_file_stack(filestack_top, filename);  // <<<<< push new file name
+	/* push new file into stack */
+	tmp_stack = push_file_stack(filestack_top, filename);
 	if(tmp_stack != NULL) {
 		filestack_top = tmp_stack;
+		/* call bision for parsing*/
 		yyparse (scanner, &root);
-		filestack_top = pop_file_stack(filestack_top);             // <<<<< pop top file name
+		/* pop top file name */
+		filestack_top = pop_file_stack(filestack_top);
 		yylex_destroy (scanner);
 	}
 
 	fclose (file);
-	//print_ast(root);
 	return root;
 }
 
@@ -141,35 +133,9 @@ int main (int argc, char *argv[])
 		fprintf (stderr, "Usage: %s source [-I library]\n", argv[0]);
 		return -1;
 	}
-#if 0
-	if (argc != 2) {
-		if(argc == 4) {
-			int i;
-			for(i = 1; i < argc; i++) {
-				if(strcmp(argv[i], "-L") == 0)
-					break;
-				else
-					file_num = i;
-			}
-			/* -L + library directory. */
-			if(i < (argc - 1)) {
-				if(access(argv[i + 1], F_OK)) {
-					perror(argv[i + 1]);
-					return -1;
-				}
-				extra_library_dir = argv[i + 1];
-				goto normal;
-			}
-		}
-		fprintf (stderr, "Usage: %s source [-L library]\n", argv[0]);
-		return -1;
-	}
-
-normal:
-#endif
 	set_import_dir(argv[0], argv[file_num], extra_library_dirs);
 
-	insert_pre_dml_struct();
+	//insert_pre_dml_struct();
 	/* main ast */
 	tree_t* ast = get_ast (argv[file_num]);
 	assert (ast != NULL);
@@ -181,16 +147,17 @@ normal:
 	print_ast (ast);
 	printf("Print the syntax tree ok!\n");
 #endif
-#if  1 || QEMU
 	gen_code (ast, "./output/");
 	printf("generate code ok!\n");
-#else
-	//generate_simics_code (ast, "./output/");
-#endif
 
 	return 0;
 }
 
+/**
+ * @brief inc_current_table_num : inc the current table number
+ *
+ * @return : the number of current table
+ */
 int inc_current_table_num() {
 	return current_table_num++;
 }

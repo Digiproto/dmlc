@@ -29,7 +29,7 @@
 #include "types.h"
 
  params_t* get_param_decl(tree_t* node, symtab_t table);
- void set_decl_type(decl_type_t* decl_type, type_t type);
+ //void set_decl_type(decl_type_t* decl_type, type_t type);
  void parse_local_decl(tree_t* node, symtab_t table);
 
 #endif /* __DECL_FUNC_H__ */
