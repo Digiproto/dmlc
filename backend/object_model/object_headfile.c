@@ -24,6 +24,12 @@
 #include "platform.h"
 #include "gen_struct.h"
 
+/**
+ * @brief gen_object_struct : generate a header file about device struct
+ *
+ * @param dev : the object of device
+ * @param f : header file about device struct
+ */
 void gen_object_struct(device_t *dev, FILE *f) {
     const char *dev_name = dev->obj.name;
     time_t timep;
