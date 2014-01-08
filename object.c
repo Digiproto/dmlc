@@ -37,6 +37,15 @@
 #include "expression.h"
 #include "gen_common.h"
 
+/**
+ * @brief asprintf : combine the string into one based on the format
+ *
+ * @param sptr : the pointer for the last value
+ * @param fmt : thr format of args
+ * @param ... : ellipse parameters
+ *
+ * @return : the number of characters printed
+ */
 static int asprintf(char **sptr, const char *fmt, ...) {
 	int retval, wanted;
 	va_list argv;
@@ -58,6 +67,15 @@ object_t *DEV;
 static const char tab[8][8] =
     { {""}, {"\t"}, {"\t\t"}, {"\t\t\t"}, {"\t\t\t\t"}, {"\t\t\t\t\t"} };
 
+/**
+ * @brief string_concat_with : combine two strings with connector
+ *
+ * @param s1 : the first string
+ * @param s2 : the second string
+ * @param connector : the connector to combine two strings
+ *
+ * @return : combined string
+ */
 static const char *string_concat_with(const char *s1,const char *s2,const char *connector ){
 	int len = strlen(s1) + strlen(s2) + 1 + strlen(connector);
 	char *d = gdml_zmalloc(len);
@@ -67,14 +85,35 @@ static const char *string_concat_with(const char *s1,const char *s2,const char *
 	return d;
 }
 
+/**
+ * @brief get_obj_qname : get object parent name
+ *
+ * @param obj : object struct
+ *
+ * @return : name of object parent
+ */
 const char *get_obj_qname(object_t *obj){
 	return obj->qname;
 }
 
+/**
+ * @brief get_obj_ref : get the object name of generating
+ *
+ * @param obj : the object to be generated
+ *
+ * @return : generating name of object
+ */
 const char *get_obj_ref(object_t *obj){
 	return obj->dotname;
 }
 
+/**
+ * @brief _get_arraydef : get the array definition struct of one object
+ *
+ * @param attr : the attribute of object
+ *
+ * @return : the arraydef struct of object
+ */
 static arraydef_attr_t *_get_arraydef(object_attr_t *attr) {
 	arraydef_attr_t *array_attr = NULL;
 
@@ -96,6 +135,11 @@ static arraydef_attr_t *_get_arraydef(object_attr_t *attr) {
 	return array_attr;
 }
 
+/**
+ * @brief process_object_names : process the object name for generating
+ *
+ * @param obj : the struct of object
+ */
 static void process_object_names(object_t *obj) {
 	/*
 	if(OBJ && (!strcmp(obj->obj_type,"register") || !strcmp(obj->obj_type,"field") || !strcmp(obj->obj_type, "interface"))){
@@ -168,6 +212,15 @@ static void process_object_names(object_t *obj) {
 	}
 }
 
+/**
+ * @brief object_symbol_find : find object type symbol
+ *
+ * @param table : table to start finding symbol
+ * @param name : name of symbol
+ * @param type : type of symbol
+ *
+ * @return : pointer to symbol
+ */
 static symbol_t object_symbol_find(symtab_t table, const char *name, type_t type) {
 	symbol_t sym = NULL;
 	object_t *obj;
@@ -199,6 +252,14 @@ static symbol_t object_symbol_find(symtab_t table, const char *name, type_t type
 
 }
 
+/**
+ * @brief object_symbol_find_notype : find object symbol without type
+ *
+ * @param table : table to start finding symbol
+ * @param name : name of symbol
+ *
+ * @return : pointer to symbol
+ */
 static symbol_t object_symbol_find_notype(symtab_t table, const char *name) {
 	symbol_t sym = NULL;
 	object_t *obj;
@@ -230,6 +291,13 @@ static symbol_t object_symbol_find_notype(symtab_t table, const char *name) {
 
 }
 
+/**
+ * @brief get_object_encoding : get the object type from object type name
+ *
+ * @param name : name of object type
+ *
+ * @return : object type
+ */
 static object_type_t get_object_encoding(const char *name) {
 	if(!strcmp(name, "device")) {
 		return Obj_Type_Device;
@@ -257,9 +325,19 @@ static object_type_t get_object_encoding(const char *name) {
 	return Obj_Type_None;
 }
 
-extern void check_reg_table(void);
 extern int inc_current_table_num();
 static void process_object_relationship(object_t *obj);
+
+/**
+ * @brief init_object : initialize the object struct
+ *
+ * @param obj : struct of object
+ * @param parent : parent of object
+ * @param name : nmae of object
+ * @param type : type of object
+ * @param node : syntax tree node about object
+ * @param table : table of object
+ */
 static void init_object(object_t *obj, object_t *parent, const char *name, const char *type, tree_t *node, symtab_t table) {	
 	int i;
 	device_t *dev = (device_t *)DEV;
@@ -298,6 +376,11 @@ static void init_object(object_t *obj, object_t *parent, const char *name, const
 	process_object_relationship(obj);
 }
 
+/**
+ * @brief process_object_relationship : relize the relationship between object and its parent
+ *
+ * @param obj : struct of object
+ */
 static void process_object_relationship(object_t *obj) {
 	device_t *dev = (device_t *)DEV;
 	struct list_head *list = NULL;
@@ -363,6 +446,14 @@ static void create_none_object(object_t *obj, symbol_t sym) {
 }
 
 static void create_objs(object_t *obj, type_t type);
+
+/**
+ * @brief create_dummy_field : create a dummy field
+ *
+ * @param obj : the parent object of filed
+ *
+ * @return : filed object
+ */
 static object_t *create_dummy_field(object_t *obj) {
 	static int index = 1;
 	char *name;
@@ -375,6 +466,12 @@ static object_t *create_dummy_field(object_t *obj) {
 	return &fld->obj;
 }
 
+/**
+ * @brief create_field_object : create field object
+ *
+ * @param obj : the parent object of field
+ * @param sym : symbol of field
+ */
 static void create_field_object(object_t *obj, symbol_t sym){
 	field_t *fld = gdml_zmalloc(sizeof(*fld));
 	field_attr_t *field_attr = (field_attr_t *)sym->attr;
@@ -382,6 +479,12 @@ static void create_field_object(object_t *obj, symbol_t sym){
 	create_objs(&fld->obj, DATA_TYPE);
 }
 
+/**
+ * @brief create_register_object : create register object
+ *
+ * @param obj : the parent object of register
+ * @param sym : symbol of register
+ */
 static void create_register_object(object_t *obj, symbol_t sym){
 	dml_register_t *reg = (dml_register_t *)gdml_zmalloc(sizeof(*reg));
 	register_attr_t *reg_attr = (register_attr_t *)(sym->attr);
@@ -394,6 +497,12 @@ static void create_register_object(object_t *obj, symbol_t sym){
 	//print_all_symbol(reg->obj.symtab);
 }
 
+/**
+ * @brief create_iface_object : create the interface object
+ *
+ * @param obj : the parent object of interface
+ * @param sym : symbol of interface
+ */
 static void create_iface_object(object_t *obj, symbol_t sym) {
 	interface_t *iface = (interface_t *)gdml_zmalloc(sizeof(*iface));
 	interface_attr_t *attr = (interface_attr_t *)sym->attr;
@@ -401,6 +510,12 @@ static void create_iface_object(object_t *obj, symbol_t sym) {
 	init_object(&iface->obj, obj, sym->name, "interface", attr->common.node, table);
 }
 
+/**
+ * @brief create_connect_object : create connect object
+ *
+ * @param obj : the object of connect
+ * @param sym : symbol of connect
+ */
 static void create_connect_object(object_t *obj, symbol_t sym) {
 	connect_t *con = (connect_t *)gdml_zmalloc(sizeof(*con));
 	connect_attr_t *attr = (connect_attr_t *)(sym->attr);
@@ -411,6 +526,12 @@ static void create_connect_object(object_t *obj, symbol_t sym) {
 	create_objs(&con->obj, EVENT_TYPE);
 }
 
+/**
+ * @brief create_attribute_object : create the attribute object
+ *
+ * @param obj : object of attribute
+ * @param sym : the symbol of attribute
+ */
 static void create_attribute_object(object_t *obj, symbol_t sym) {
 	attribute_t *att = (attribute_t *)gdml_zmalloc(sizeof(*att));
 	attribute_attr_t *attr = (attribute_attr_t *)(sym->attr);
@@ -420,6 +541,12 @@ static void create_attribute_object(object_t *obj, symbol_t sym) {
 	create_objs(&att->obj, EVENT_TYPE);
 }
 
+/**
+ * @brief create_implement_object : create implement object
+ *
+ * @param obj : the parent object of implement
+ * @param sym : symbol of implement
+ */
 static void create_implement_object(object_t *obj, symbol_t sym){
 	implement_t *impl = (implement_t *)gdml_zmalloc(sizeof (*impl));
 	implement_attr_t *attr = (implement_attr_t *)sym->attr;
@@ -427,11 +554,23 @@ static void create_implement_object(object_t *obj, symbol_t sym){
 	init_object(&impl->obj, obj, sym->name, "implement", attr->common.node, table);	
 }
 
+/**
+ * @brief create_data_object : create data object
+ *
+ * @param obj : the parent object of data
+ * @param sym : symbol of data
+ */
 static void create_data_object(object_t *obj, symbol_t sym) {
 	data_t *data = (data_t *)gdml_zmalloc(sizeof (*data));
 	init_object(&data->obj, obj, sym->name, "data", NULL, NULL );
 }
 
+/**
+ * @brief create_port_object : create port object
+ *
+ * @param obj : the parent object of port, often device
+ * @param sym : symbol of port
+ */
 static void create_port_object(object_t *obj, symbol_t sym) {
 	if(!obj || strcmp(obj->obj_type, "device")) {
 		BE_DBG(OBJ, "port should in top level\n");
@@ -451,6 +590,12 @@ static void create_port_object(object_t *obj, symbol_t sym) {
 	create_objs(&port->obj, ATTRIBUTE_TYPE);
 }
 
+/**
+ * @brief create_event_object : create event object
+ *
+ * @param obj : the parent object of event
+ * @param sym : symbol of event
+ */
 static void create_event_object(object_t *obj, symbol_t sym) {
 	if(!obj || strcmp(obj->obj_type, "device")) {
 		BE_DBG(OBJ, "event should in top level\n");
@@ -462,6 +607,12 @@ static void create_event_object(object_t *obj, symbol_t sym) {
 	create_objs(&event->obj, DATA_TYPE);
 }
 
+/**
+ * @brief create_group_object : create group object
+ *
+ * @param obj : the parent object of group
+ * @param sym : symbol of group
+ */
 static void create_group_object(object_t *obj, symbol_t sym) {
 	group_t *gp = (group_t *)gdml_zmalloc(sizeof(*gp));
 	group_attr_t *attr = (group_attr_t *)sym->attr;
@@ -480,6 +631,12 @@ static void create_group_object(object_t *obj, symbol_t sym) {
 	create_objs(&gp->obj, ATTRIBUTE_TYPE);
 }
 
+/**
+ * @brief create_bank_object : create bank object
+ *
+ * @param obj : the parent object of bank
+ * @param sym : the symbol of bank
+ */
 static void create_bank_object(object_t *obj, symbol_t sym){
 	bank_t *bank = gdml_zmalloc(sizeof(*bank));
 	INIT_LIST_HEAD(&bank->groups);
@@ -498,6 +655,12 @@ static void create_bank_object(object_t *obj, symbol_t sym){
 	//print_all_symbol(table);
 }
 
+/**
+ * @brief : array to store the pointer of function for creating object
+ *
+ * @param obj : parent object
+ * @param sym : symbol of child object
+ */
 static void (*create_func[])(object_t *obj, symbol_t sym) = {
 	[Obj_Type_None] = create_none_object,
 	[Obj_Type_Device] = create_none_object,
@@ -514,6 +677,13 @@ static void (*create_func[])(object_t *obj, symbol_t sym) = {
 	[Obj_Type_Group]    = create_group_object
 };
 
+/**
+ * @brief type2obj_type : switch symbol type to object type
+ *
+ * @param type : the type of object symbol
+ *
+ * @return  : type of object
+ */
 static object_type_t type2obj_type(type_t type) {
 	object_type_t ret;
 
@@ -557,6 +727,11 @@ static object_type_t type2obj_type(type_t type) {
 	return ret;
 }
 
+/**
+ * @brief fake_bank_list : create a fake bank list when one device have on bank
+ *
+ * @return : list of fake bank
+ */
 symbol_list_t* fake_bank_list() {
 	bank_attr_t* attr = (bank_attr_t*)gdml_zmalloc(sizeof(bank_attr_t));
 	attr->common.obj_type = BANK_TYPE;
@@ -570,6 +745,12 @@ symbol_list_t* fake_bank_list() {
 	return list;
 }
 
+/**
+ * @brief create_objs : create child object with type
+ *
+ * @param obj : parent object
+ * @param type : type of child object
+ */
 static void create_objs(object_t *obj, type_t type) {
 	symtab_t table = obj->symtab->sibling;
 	if (table)
@@ -591,6 +772,13 @@ static void create_objs(object_t *obj, type_t type) {
     symbol_list_free(head);
 }
 
+/**
+ * @brief create_device_object : create the object of device and its member
+ *
+ * @param sym : symbol of device
+ *
+ * @return : pointer to device object
+ */
 object_t *create_device_object(symbol_t sym){
 	int i = 0;
 	struct list_head *p;
@@ -618,10 +806,17 @@ object_t *create_device_object(symbol_t sym){
 	return obj;
 }
 
-device_t *create_device_tree(tree_t  *root){
+/**
+ * @brief create_device_tree : create the structure about one device,
+ * include its bank, register, field, attribute, connect and so on.
+ *
+ * @param root : the root of syntax tree
+ *
+ * @return : pointer to device object struct
+ */
+device_t *create_device_tree(tree_t *root){
 	object_t *obj;
 
-	//print_all_symbol(root_table);
 	symbol_list_t *dev_list = symbol_list_find_type(root_table, DEVICE_TYPE);
 	if(!dev_list || dev_list->next) {
 		printf("device not correct\n");
@@ -634,6 +829,13 @@ device_t *create_device_tree(tree_t  *root){
 }
 
 static void add_object_templates(object_t *obj);
+
+/**
+ * @brief create_template_name : switch template symbol into template struct of object
+ *
+ * @param obj : the object with template
+ * @param name : name of template
+ */
 void create_template_name(object_t *obj, const char *name) {
 	symbol_t sym;
 	template_attr_t *tem_attr;
@@ -654,6 +856,11 @@ void create_template_name(object_t *obj, const char *name) {
 }
 
 extern void set_current_obj(object_t* obj);
+/**
+ * @brief field_realize : realize the content of field
+ *
+ * @param obj : the object of field
+ */
 static void field_realize(object_t *obj) {
 	field_t *fld = (field_t *)obj;
 	tree_t *bitrange;
@@ -668,15 +875,10 @@ static void field_realize(object_t *obj) {
 		return;
 	} 
 
-	/* calculate the expression about parameters
-	 * that defined in the field block */
-	//parse_parameter(obj->symtab->sibling);
-	//process_object_templates(obj);
 	/* parse default parameters about registers
 	 * such as: size, offset, array*/
 	parse_field_attr(obj->node, obj->symtab->parent);
 	/* parse the elements that in filed table*/
-	//parse_field(obj->node, obj->symtab->sibling);
 	parse_field(obj->node, obj->symtab);
 	bitrange = obj->node->field.bitrange;	
 	if (bitrange) {
@@ -697,6 +899,16 @@ static void field_realize(object_t *obj) {
 	return;
 }
 
+/**
+ * @brief get_binopnode_constant : get the value from constant node
+ *
+ * @param t : syntax tree node
+ * @param op : the operator of calculate
+ * @param result : result of value
+ *
+ * @return : 0 = left node is constant value
+ *			1 = right node is constant value
+ */
 static int get_binopnode_constant(tree_t *t, type_t op, int *result) {
 	tree_t *left, *right;
 	int ret = -1;
@@ -737,6 +949,14 @@ static int get_binopnode_constant(tree_t *t, type_t op, int *result) {
 	return ret;
 }
 
+/**
+ * @brief get_reg_offset : get the offset of register
+ *
+ * @param t : the parameter spec of offset
+ * @param interval : the value of offset
+ *
+ * @return : offset of register
+ */
 static int get_reg_offset(paramspec_t *t, int *interval) {
 	tree_t *node;
 	int offset = 0;
@@ -773,6 +993,12 @@ static int get_reg_offset(paramspec_t *t, int *interval) {
 }
 
 static void event_realize(object_t *obj);
+
+/**
+ * @brief register_realize : realize the content of register
+ *
+ * @param obj : the object of register
+ */
 static void register_realize(object_t *obj) {
 	dml_register_t *reg  = (dml_register_t *)obj;
 	bank_t *bank = (bank_t *)obj->parent; 
@@ -788,6 +1014,7 @@ static void register_realize(object_t *obj) {
 	int depth;
 
 	set_current_obj(obj);
+	/* calculate the number of filed */
 	list_for_each(p, &obj->childs) {
 		i++;
 	}
@@ -887,6 +1114,11 @@ static void register_realize(object_t *obj) {
 	process_object_templates(obj);
 }
 
+/**
+ * @brief bank_calculate_register_offset : calculate the size about bank based on register offset
+ *
+ * @param obj : the object of bank
+ */
 static void bank_calculate_register_offset(object_t *obj) {
 	bank_t *bank = (bank_t *)obj;
 	dml_register_t *reg;
@@ -928,6 +1160,12 @@ static void bank_calculate_register_offset(object_t *obj) {
 
 static void attribute_realize(object_t *obj);
 static void implement_realize(object_t* obj);
+
+/**
+ * @brief bank_realize : realize the content of bank
+ *
+ * @param obj : the object struct about bank
+ */
 static void bank_realize(object_t *obj) {
 	bank_t *bank = (bank_t *)obj;
 	symbol_t sym;
@@ -942,6 +1180,7 @@ static void bank_realize(object_t *obj) {
 	param_value_t* value;
 
 	set_current_obj(obj);
+	/* calculate the number of register */
 	list_for_each(p, &obj->childs) {
 		i++;
 	}
@@ -949,6 +1188,7 @@ static void bank_realize(object_t *obj) {
 	bank->regs = (object_t **)tmp;
 	bank->reg_count = i;
 	i = 0;
+	/* insert the register object into array from list */
 	list_for_each(p, &obj->childs) {
 		tmp = list_entry(p, object_t, entry);
 		bank->regs[i] = tmp;
@@ -970,8 +1210,6 @@ static void bank_realize(object_t *obj) {
 		value = spec->value;
 		if(!value->is_const) {
 			reg_size = 4;
-			//PERROR("the register_size require a constant value",
-			//		spec->expr_node->common.location);
 		} else {
 			reg_size = value->u.integer;
 		}
@@ -1002,6 +1240,11 @@ static void bank_realize(object_t *obj) {
 	process_object_templates(obj);
 }
 
+/**
+ * @brief connect_realize : realize the content of connect
+ *
+ * @param obj : the object of connect
+ */
 static void connect_realize(object_t *obj) {
 	arraydef_attr_t *array_def;
 	tree_t *node;
@@ -1036,6 +1279,14 @@ static void connect_realize(object_t *obj) {
 	}
 }
 
+/**
+ * @brief get_allocate_type : get the allocate type with quotes of attribute
+ *
+ * @param alloc_type : the string of allocate type
+ * @param attr : the attribute of attribute
+ *
+ * @return : string of allocate type
+ */
 static const char* get_allocate_type(const char *alloc_type, attribute_t* attr) {
 	const char* type = NULL;
 
@@ -1079,6 +1330,13 @@ static const char* get_allocate_type(const char *alloc_type, attribute_t* attr) 
 	return type;
 }
 
+/**
+ * @brief get_configuration : get the configuration of attribute
+ *
+ * @param str : the string of configuration with quotes
+ *
+ * @return : string of configuration
+ */
 static const char* get_configuration(const char* str) {
 	if (str == NULL)
 		return NULL;
@@ -1099,6 +1357,14 @@ static const char* get_configuration(const char* str) {
 	return config;
 }
 
+/**
+ * @brief get_type : get the type of attribute
+ *
+ * @param str : string of type with quote
+ * @param attr : the attribute of attribute
+ *
+ * @return : string of type
+ */
 static const char* get_type(const char* str, attribute_t* attr) {
 	assert(str != NULL);
 	const char* type = NULL;
@@ -1128,8 +1394,16 @@ static const char* get_type(const char* str, attribute_t* attr) {
 }
 
 #define get_param_spec(attr, spec) \
-	attr = (parameter_attr_t *)sym->attr; \
-	spec = attr->param_spec;
+	do { \
+		attr = (parameter_attr_t *)sym->attr; \
+		spec = attr->param_spec; \
+	} while(0)
+
+/**
+ * @brief attribute_realize : realize the content of attribute
+ *
+ * @param obj : the object of attribute
+ */
 static void attribute_realize(object_t *obj) {
 	tree_t *node;
 	symbol_t sym;
@@ -1203,6 +1477,11 @@ static void attribute_realize(object_t *obj) {
 	return;
 }
 
+/**
+ * @brief implement_realize : realize the content of implement
+ *
+ * @param obj : the object of implement
+ */
 static void implement_realize(object_t* obj) {
 	set_current_obj(obj);
 	parse_implement(obj->node, obj->symtab->sibling);
@@ -1210,6 +1489,11 @@ static void implement_realize(object_t* obj) {
 	return;
 }
 
+/**
+ * @brief port_realize : realize the content of port
+ *
+ * @param obj : the object of port
+ */
 static void port_realize(object_t *obj) {
 	struct list_head *p;
 	object_t *tmp;
@@ -1252,6 +1536,11 @@ static void port_realize(object_t *obj) {
 	}
 }
 
+/**
+ * @brief event_realize :  realize the content of event
+ *
+ * @param obj : the object of event
+ */
 static void event_realize(object_t *obj) {
 	set_current_obj(obj);
 	parse_event(obj->node, obj->symtab->sibling);
@@ -1259,16 +1548,23 @@ static void event_realize(object_t *obj) {
 	process_object_names(obj);
 }
 
+/**
+ * @brief device_realize : realize the content of device and its child object
+ *
+ * @param dev : struct of device
+ */
 void device_realize(device_t *dev) {
 	struct list_head *p;
 	object_t *tmp;
 	int i = 0;
 
+	/* calculate the number of bank */
 	list_for_each(p, &dev->obj.childs) {
 		i++;
 	}
 	dev->banks = (object_t **)gdml_zmalloc(sizeof(tmp) * i);
 	i = 0;
+	/* insert the bank object into device array from list */
 	list_for_each(p, &dev->obj.childs) {
 		tmp = list_entry(p, object_t, entry);
 		if ((!strcmp(tmp->obj_type, "bank")) && (!strcmp(tmp->name, "__fake_bank"))) {
@@ -1319,6 +1615,12 @@ void device_realize(device_t *dev) {
 	process_object_templates(&dev->obj);
 }
 
+/**
+ * @brief print_object : print the object information
+ *
+ * @param obj : object will be printed
+ * @param tab_count : tab count
+ */
 void print_object(object_t *obj, int tab_count) {
 	const char *pos = (const char *)tab[tab_count];
 	BE_DBG(OBJ, "%sobject type %s, name %s, symtab %p, sibling %p, symtab parent %p\n", pos, obj->obj_type, obj->name, obj->symtab, obj->symtab->sibling, obj->symtab->parent);	
@@ -1331,6 +1633,11 @@ void print_object(object_t *obj, int tab_count) {
 	}
 }
 
+/**
+ * @brief print_device_tree : print the object of device and other object that in device
+ *
+ * @param dev : the struct of device object
+ */
 void print_device_tree(device_t *dev) {
 	int tab = 0;
 	object_t *tmp;
@@ -1347,35 +1654,11 @@ void print_device_tree(device_t *dev) {
 	}
 }
 
-int in_template = 0;
-static LIST_HEAD(templates); 
-
-static void add_template(template_def_t  *def){
-	struct list_head *p;
-	struct template_def *tp;
-	list_for_each(p,&templates){
-		tp = list_entry(p,struct template_def,entry);
-		if(!strcmp(tp->name, def->name)){
-			BE_DBG(TEMPLATE, "template %s redifinition,previous definition is here",def->name);
-			return;
-		}
-	}
-	list_add_tail(&templates,&def->entry);
-}
-
-static struct template_def *lookup_template(const char *name)
-{
-	struct list_head *p;
-	struct template_def *tp;
-	list_for_each(p, &templates){
-		tp = list_entry(p,struct template_def,entry);
-		if(!strcmp(tp->name, name)){
-			return tp;
-		}
-	}
-	return NULL;
-}
-
+/**
+ * @brief print_rely_temp : print the name of rely templates
+ *
+ * @param list: list of rely templates
+ */
 static void print_rely_temp(struct template_list* list) {
 	struct template_list* tmp = list;
 	int i = 0;
@@ -1385,6 +1668,15 @@ static void print_rely_temp(struct template_list* list) {
 	}
 }
 
+/**
+ * @brief add_temp_in_list : add new template into template list
+ *
+ * @param list : list of template
+ * @param new : new template will be added into list
+ *
+ * @return  1 - template has in list
+ *			0 - template add into list
+ */
 int add_temp_in_list(struct template_list* list, struct template_list* new) {
 	assert(list != NULL);
 	assert(new != NULL);
@@ -1396,10 +1688,6 @@ int add_temp_in_list(struct template_list* list, struct template_list* new) {
 	//print_rely_temp(list);
 	while (tmp) {
 		if (strcmp(tmp->name, new->name) == 0) {
-			fprintf(stderr, "error: template '%s' is confilct in template '%s' and '%s'\n",
-					new->name, tmp->src_name, new->src_name);
-			/* TODO: handle the error */
-			exit(-1);
 			return 1;
 		}
 		pre = tmp;
@@ -1411,6 +1699,14 @@ int add_temp_in_list(struct template_list* list, struct template_list* new) {
 }
 
 extern struct template_def *create_template_def(const char* name, struct template_list* rely_list);
+
+/**
+ * @brief add_rely_templates : add relied templates into rely list
+ *
+ * @param def : the origianl template
+ * @param templates :  the reled teplates
+ * @param rely_list : the list of storing relied templates
+ */
 static void add_rely_templates(struct template_def* def, struct template_table* templates, struct template_list* rely_list) {
 	assert(def != NULL);
 	if (templates == NULL) {
@@ -1442,6 +1738,14 @@ static void add_rely_templates(struct template_def* def, struct template_table* 
 	return;
 }
 
+/**
+ * @brief create_template_def : process the block of template and its rely templates
+ *
+ * @param name : name of template
+ * @param list : list of relied templates of one template
+ *
+ * @return : pointer to template struct
+ */
 struct template_def *create_template_def(const char* name, struct template_list* list){
 	assert(name != NULL);
 
@@ -1496,29 +1800,16 @@ struct template_def *create_template_def(const char* name, struct template_list*
 	return def;
 }
 
-/*
-struct template_def *create_template_def(tree_t *t){
-	if(in_template)
-		BE_DBG(TEMPLATE, "canot define template in template definition\n");
-	if(strcmp(OBJ->obj_type,"device"))
-		BE_DBG(TEMPLATE, "template definition must at top level\n");
-	struct template_def *temp = malloc(sizeof(*temp));
-	temp->name = t->common.name;
-	temp->node = t;
-	int i = 0;
-	struct list_head *p = &temp->entry; 
-	for(; i < 3; i++,p++){
-		INIT_LIST_HEAD(p);
-	}
-	add_template(temp);
-	return temp;
-}
-*/
-
 #define not_port_data_obj(obj) \
-	strcmp(obj->obj_type, "port") && \
-	strcmp(obj->obj_type, "data")
+		strcmp(obj->obj_type, "port") && \
+		strcmp(obj->obj_type, "data") \
 
+/**
+ * @brief obj_templates_list :  add all templates of object into list
+ *
+ * @param obj : the object struct
+ * @param name : the name of object type
+ */
 static void obj_templates_list(object_t* obj, const char* name) {
 	assert(obj != NULL);
 	assert(name != NULL);
@@ -1540,18 +1831,29 @@ static void obj_templates_list(object_t* obj, const char* name) {
 	return;
 }
 
+/**
+ * @brief add_default_template : add default template into object
+ *
+ * @param obj : the object struct
+ */
 static void add_default_template(object_t *obj){
 	symtab_t table;	
 
 	table = obj->symtab->sibling;
 	if(table) {
 		BE_DBG(OBJ, "add default template %s\n", obj->obj_type);
+		/* the port and data object do not have default template */
 		if (not_port_data_obj(obj))
 			add_template_to_table(table, obj->obj_type, 1);
 	}
 	obj_templates_list(obj, obj->obj_type);
 }
 
+/**
+ * @brief process_device_template : process the default parameters of device
+ *
+ * @param obj : the object of device
+ */
 static void process_device_template(object_t *obj){
 	symtab_t table = obj->symtab;
 	device_t *dev = (device_t *)obj;
@@ -1580,6 +1882,11 @@ static void process_device_template(object_t *obj){
 	symbol_insert(table, "dev", OBJECT_TYPE, obj);
 }
 
+/**
+ * @brief process_bank_template : process the default parameters about bank
+ *
+ * @param obj : the bank object
+ */
 static void process_bank_template(object_t *obj){
 	symtab_t table = obj->symtab;
 	bank_t *bank = (bank_t *)obj;
@@ -1627,6 +1934,11 @@ static void process_bank_template(object_t *obj){
 	symbol_insert(table, "unmapped_registers", PARAMETER_TYPE, val);
 }
 
+/**
+ * @brief process_register_template : process the default parameters about register
+ *
+ * @param obj : the object of register
+ */
 static void process_register_template(object_t *obj){
 	symtab_t table = obj->symtab;
 	dml_register_t *reg = (dml_register_t *)obj;
@@ -1673,6 +1985,11 @@ static void process_register_template(object_t *obj){
 	symbol_insert(table, "allocate", PARAMETER_TYPE, val);
 }
 
+/**
+ * @brief process_field_template : process the default parameters about field
+ *
+ * @param obj : the object of field
+ */
 static void process_field_template(object_t *obj){
 	symtab_t table = obj->symtab;
 	field_t *field = (field_t *)obj;
@@ -1704,12 +2021,16 @@ static void process_field_template(object_t *obj){
 	symbol_insert(table, "hard_reset_value", PARAMETER_TYPE, val);
 }
 
+/**
+ * @brief free_rely_temp_list : free the list of relied templates
+ *
+ * @param list : head of reliled templates
+ */
 static void free_rely_temp_list(struct template_list* list) {
 	struct template_list* tmp = list;
 	struct template_list* old = list;
 	while (tmp) {
 		tmp = tmp->next;
-		//printf("Free: src_name: %s, name: %s\n", old->src_name, old->name);
 		free((void*)(old->src_name));
 		free((void*)(old->name));
 		old = tmp;
@@ -1719,6 +2040,13 @@ static void free_rely_temp_list(struct template_list* list) {
 }
 
 /*process parameters including auto parameters */
+
+/**
+ * @brief process_object_template : process all templates of object
+ *
+ * @param obj : the object struct
+ * @param name : the name of template
+ */
 static void process_object_template(object_t *obj, struct template_name *name){
 	/*process parameters including auto parameters */
 	tree_t *node = name->node;
@@ -1738,6 +2066,11 @@ static void process_object_template(object_t *obj, struct template_name *name){
 	free_rely_temp_list(rely_temp_list);
 }
 
+/**
+ * @brief process_basic_template : process some common parameters about all object
+ *
+ * @param obj : the object struct
+ */
 static void process_basic_template(object_t *obj) {
 	/*hardcode object auto parameter in object symtab*/
 	symtab_t table = obj->symtab;
@@ -1775,6 +2108,12 @@ static void (*specific_temp_fn[])(object_t *obj) = {
 	[Obj_Type_Connect] = object_none_temp_fn,
 };
 
+/**
+ * @brief process_default_template : process the default template of object
+ * as the default template is added into object in system
+ *
+ * @param obj : the object struct
+ */
 static void process_default_template(object_t *obj) {
 	process_basic_template(obj);
 	specific_temp_fn[obj->encoding](obj);
@@ -1783,6 +2122,11 @@ static void process_default_template(object_t *obj) {
 	BE_DBG(TEMPLATE, "end .......");
 }
 
+/**
+ * @brief process_object_templates : process the teplates of object
+ *
+ * @param obj : the object struct
+ */
 void process_object_templates(object_t *obj){
 	struct template_name *name;
 	struct list_head *p;
@@ -1790,6 +2134,11 @@ void process_object_templates(object_t *obj){
 	process_default_template(obj);
 }
 
+/**
+ * @brief parse_rely_templates : entry to parse all relied templates of one object
+ *
+ * @param obj : the object struct
+ */
 static void parse_rely_templates(object_t* obj) {
 	assert(obj != NULL);
 	struct template_name *name;
@@ -1804,15 +2153,27 @@ static void parse_rely_templates(object_t* obj) {
 	return;
 }
 
+/**
+ * @brief add_object_templates : add default template into object and
+ * parse the block of templates in object
+ *
+ * @param obj : the object struct
+ */
 static void add_object_templates(object_t *obj){
 	add_default_template(obj);
 	parse_rely_templates(obj);
-	//process_object_templates(obj);
 }
 
 #include <unistd.h>
 int method_to_generate = 0;
 extern symbol_t get_symbol_from_templates(symtab_t table, const char* name, int type);
+
+/**
+ * @brief add_object_method : add method into object method list
+ *
+ * @param obj : object that contains method
+ * @param name : name of method
+ */
 void add_object_method(object_t *obj,const char *name){
 	struct method_name *m;
 	struct list_head *p;
@@ -1855,6 +2216,15 @@ void add_object_method(object_t *obj,const char *name){
 	list_add_tail(&m->entry, &obj->methods);
 }
 
+/**
+ * @brief object_method_generated :  check one method is generate or not
+ *
+ * @param obj : object that contains method
+ * @param m : the method
+ *
+ * @return : 1 - method is generated
+ *			0 - method is not generated
+ */
 int object_method_generated(object_t *obj, struct method_name *m){
 	struct list_head *p;
 	struct method_name *t;
@@ -1867,6 +2237,11 @@ int object_method_generated(object_t *obj, struct method_name *m){
 	return 0;
 }
 
+/**
+ * @brief add_object_generated_method :  add the generated method
+ *
+ * @param obj : object that have generated its method
+ */
 void add_object_generated_method(object_t *obj){
 	struct list_head *p;
 	int i = 0;
@@ -1879,6 +2254,14 @@ void add_object_generated_method(object_t *obj){
 	list_splice_init(&obj->methods, &obj->method_generated);
 }
 
+/**
+ * @brief find_index_obj : find object with index
+ *
+ * @param obj : object to be fined
+ * @param index : index of object
+ *
+ * @return :  object with index
+ */
 object_t *find_index_obj(object_t *obj, int index) {
 	object_t *ret = obj;
 
@@ -1892,6 +2275,11 @@ object_t *find_index_obj(object_t *obj, int index) {
 	return NULL;
 }
 
+/**
+ * @brief get_device_obj : get device object
+ *
+ * @return : object of device
+ */
 object_t* get_device_obj() {
 	return DEV;
 }
