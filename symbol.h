@@ -32,22 +32,19 @@
 #include "decl.h"
 #include "parameter_type.h"
 
+/**
+ * @brief : common part of symbol
+ */
 struct symbol_common {
    tree_t* node;
    int table_num;
 };
-
-typedef struct variable {
-    int type;
-    char *name;
-} variable_t;
 
 typedef struct dml_attr
 {
 	struct symbol_common common;
 	const char* version;
 } dml_attr_t;
-
 
 typedef struct bitorder_attr
 {
@@ -70,23 +67,19 @@ typedef struct template_attr
 	const char *desc;
 	symtab_t table;
 } template_attr_t;
+
 typedef struct loggroup_attr
 {
 	struct symbol_common common;
 } loggroup_attr_t;
 
-typedef struct typedef_attr
-{
-	const char* name;
-	decl_t* decl;
-	int base_type;
-} typedef_attr_t;
 typedef struct constant_attr
 {
 	const char *name;
 	struct symbol_common common;
 	expr_t *value;
 } constant_attr_t;
+
 typedef struct struct_attr
 {
     struct symbol_common common;
@@ -164,6 +157,9 @@ typedef struct label_attr {
 	symtab_t table;
 }label_attr_t;
 
+/**
+ * @brief : object common part
+ */
 struct object_common {
 	tree_t* node;
 	symtab_t table;
@@ -216,17 +212,6 @@ typedef struct bitfield_attr {
     symtab_t table;
 }bitfield_attr_t;
 
-typedef struct bifield_decl_attr{
-	char* var_name;
-	decl_t* decl;
-	expression_t* start_expr;
-	expression_t* end_expr;
-}bitfield_decl_attr_t;
-
-typedef struct register_array_attr
-{
-} register_array_attr_t;
-
 typedef struct bitrange_attr{
 	struct symbol_common common;
 	int is_fix;
@@ -241,20 +226,12 @@ typedef struct field_attr
 	int is_array;
 } field_attr_t;
 
-typedef struct data_attr
-{
-	const char *name;
-} data_attr_t;
 typedef struct connect_attr
 {
 	struct object_common common;
 	int is_array;
 	arraydef_attr_t* arraydef;
 } connect_attr_t;
-
-typedef struct connect_array_attr
-{
-} connect_array_attr_t;
 
 typedef struct interface_attr
 {
@@ -268,9 +245,6 @@ typedef struct attribute_attr
 	arraydef_attr_t* arraydef;
 	void* attr_obj;
 } attribute_attr_t;
-typedef struct attribute_array_attr
-{
-} attribute_array_attr_t;
 
 typedef struct event_attr
 {
@@ -283,10 +257,6 @@ typedef struct group_attr
 	int is_array;
 	arraydef_attr_t* arraydef;
 } group_attr_t;
-
-typedef struct group_array_attr
-{
-} group_array_attr_t;
 
 typedef struct port_attr
 {
@@ -315,43 +285,6 @@ typedef struct device_attr
 	tree_t* node;
 	symtab_t root_table;
 } device_attr_t;
-
-typedef struct layout_attr {
-    struct symbol_common common;
-	const char* name;
-    const char* desc;
-	decl_t* decl;
-    symtab_t table;
-} layout_attr_t;
-
-typedef struct ident_attr
-{
-	const char *name;
-} ident_attr_t;
-
-typedef struct const_str_attr
-{
-	const char *name;
-} const_str_attr_t;
-
-typedef struct func_param {
-	decl_t* decl;
-	int is_ellipsis;
-	struct func_param* next;
-}func_param_t;
-
-typedef struct fucntion {
-	const char* func_name;
-	decl_t* ret_decl;
-	func_param_t* param;
-	int argc;
-} function_t;
-
-typedef struct c_array {
-	const char* name;
-	decl_t* decl;
-	expression_t* expr;
-}c_array_t;
 
 typedef union object_attr {
 	struct object_common common;

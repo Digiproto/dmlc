@@ -42,7 +42,14 @@
 #define DBG(fmt, ...) do { } while (0)
 #endif
 
-//#define MAX_SYMBOLS 10000
+
+/**
+ * @brief str_hash : calculate the hash value of string
+ *
+ * @param str: pointer to string
+ *
+ * @return : hash value
+ */
 static int str_hash (const char *str)
 {
 	if (!*str)
@@ -54,14 +61,11 @@ static int str_hash (const char *str)
 		j = i;
 		while (j < len) {
 			s[i] += (int) str[j];
-			//printf("for s[%d]=%d, str[%d]=%d\n", i, s[i], j, str[j]);
 			j += 4;
 		}
-		//printf("s[%d]=%d\n", i, s[i]);
 	}
 	int hash_value = (s[0] % 10) * 1000 + (s[1] % 10) * 100
 		+ (s[2] % 10) * 10 + s[3] % 10;
-	//printf("hash of %s is %d\n", str, hash_value);
 	return hash_value;
 }
 
@@ -167,11 +171,6 @@ static symtab_t table_malloc(type_t type)
     assert(new_symtab != NULL);
     memset(new_symtab, 0x0, sizeof(struct symtab));
 	new_symtab->type = type;
-#if 0
-	if (type == TEMPLATE_TYPE) {
-		new_symtab->no_check = 1;
-	}
-#endif
     return new_symtab;
 }
 
@@ -198,6 +197,15 @@ static symbol_t symbol_new(const char *name, type_t type, void *attr)
     return new_undef;
 }
 
+/**
+ * @brief symbol_find_from_templates : find symbol with type from templates
+ *
+ * @param templates : templates of table
+ * @param name : name of symbol
+ * @param type : type of symbol
+ *
+ * @return : pointer to symbol
+ */
 symbol_t symbol_find_from_templates(struct template_table* templates, const char* name, type_t type) {
 	symbol_t rt;
 	symtab_t table;
@@ -250,6 +258,15 @@ symbol_t default_symbol_find(symtab_t symtab, const char* name, type_t type)
     return NULL;
 }
 
+/**
+ * @brief symbol_find : find symbol with type from table
+ *
+ * @param symtab : table that symbol start to find
+ * @param name : name of symbol
+ * @param type : type of symbol
+ *
+ * @return : finded symbol
+ */
 symbol_t symbol_find(symtab_t symtab, const char *name, type_t type) {
 	return symtab->cb(symtab, name, type);
 }
@@ -278,6 +295,14 @@ symbol_t symbol_find_curr(symtab_t symtab, const char *name, type_t type)
 	return rt;
 }
 
+/**
+ * @brief symbol_find_from_templates_notype : find symbol without type from templates' table
+ *
+ * @param templates : templates of object table
+ * @param name : symbol name
+ *
+ * @return : pointer to symbol
+ */
 symbol_t symbol_find_from_templates_notype(struct template_table* templates, const char* name) {
 	symbol_t rt = NULL;
 	symtab_t table = NULL;
@@ -332,6 +357,14 @@ symbol_t default_symbol_find_notype(symtab_t symtab, const char *name)
     return NULL;
 }
 
+/**
+ * @brief symbol_find_notype : find symbol without type from symbol table
+ *
+ * @param symtab : table that start to find symbol
+ * @param name : name of symbol
+ *
+ * @return : pointer of symbol
+ */
 symbol_t symbol_find_notype(symtab_t symtab, const char *name) {
 	return symtab->notype_cb(symtab, name);
 }
@@ -452,12 +485,25 @@ int symbol_insert(symtab_t symtab, const char* name, type_t type, void* attr)
 }
 
 #include "object.h"
+
+/**
+ * @brief symbol_set_value : set attribute about symbol
+ *
+ * @param sym : pointer to symbol
+ * @param attr : new attribute to assign symbol
+ */
 void symbol_set_value(symbol_t sym, void *attr) {
 	if(sym) {
 		sym->attr = attr;
 	}
 }
 
+/**
+ * @brief symbol_set_type : set the symbol type
+ *
+ * @param sym : pointer to symbol
+ * @param type : the type to assign symbol
+ */
 void symbol_set_type(symbol_t sym, type_t type) {
 	if(sym) {
 		sym->type = type;
@@ -482,6 +528,15 @@ symtab_t symtab_create(type_t type)
 	return table;
 }
 
+/**
+ * @brief symtab_create_with_cb : create table with finding method
+ *
+ * @param type : type of table
+ * @param cb : method of finding symbol with type
+ * @param notype_cb : method of finding symbol without type
+ *
+ * @return : pointer to symbol table
+ */
 symtab_t symtab_create_with_cb(type_t type, symbol_find_fn_t cb, symbol_find_notype_fn_t notype_cb)
 {
 	symtab_t table;
@@ -494,6 +549,12 @@ symtab_t symtab_create_with_cb(type_t type, symbol_find_fn_t cb, symbol_find_not
 	return table;
 }
 
+/**
+ * @brief sibling_table_free : free sibling of table
+ *
+ * @param symtab : the table of free sibling
+ * @param table_num : table number
+ */
 void sibling_table_free(symtab_t symtab, int table_num) {
 	symtab_t tmp = symtab;
 
@@ -509,6 +570,12 @@ void sibling_table_free(symtab_t symtab, int table_num) {
 	return;
 }
 
+/**
+ * @brief symtab_free : free symbol table
+ *
+ * @param symtab : the symbol table to be freed
+ * @param table_num : table number
+ */
 void symtab_free(symtab_t symtab, int table_num) {
 	if ((symtab->child->table_num) == table_num) {
 		free(symtab->child);
@@ -536,8 +603,6 @@ symtab_t symtab_insert_sibling(symtab_t symtab, symtab_t newtab)
     while(tmp->sibling != NULL) {
         tmp = tmp->sibling;
     }
-	//printf("In %s, line = %d, old sibling table_num: %d, young sibling table_num: %d\n",
-	//	__func__, __LINE__, tmp->table_num, newtab->table_num);
     tmp->sibling = newtab;
     newtab->parent = symtab->parent;
 	if ((newtab->no_check) == 0) {
@@ -550,6 +615,13 @@ symtab_t symtab_insert_sibling(symtab_t symtab, symtab_t newtab)
     return newtab;
 }
 
+/**
+ * @brief change_old_table : change old symbol table with new symbol table
+ *
+ * @param parent : parent of old table
+ * @param old : old symbol table
+ * @param new : new symbol table
+ */
 void change_old_table(symtab_t parent, symtab_t old, symtab_t new) {
 	assert(parent != NULL); assert(old != NULL); assert(new != NULL);
 	symtab_t* tmp = &(parent->child);
@@ -586,8 +658,6 @@ void change_old_table(symtab_t parent, symtab_t old, symtab_t new) {
  */
 symtab_t symtab_insert_child(symtab_t symtab, symtab_t newtab)
 {
-	//printf("In %s, line = %d, parent table_num: %d, child table_num: %d\n",
-	//		__func__, __LINE__, symtab->table_num, newtab->table_num);
     assert(symtab != NULL);
     assert(newtab != NULL);
     symtab_t tmp = symtab->child;
@@ -603,11 +673,25 @@ symtab_t symtab_insert_child(symtab_t symtab, symtab_t newtab)
     }
 }
 
+/**
+ * @brief : a static variable to store root table
+ */
 static symtab_t root_table;
+
+/**
+ * @brief set_root_table : assign root table with table
+ *
+ * @param table : symbol table
+ */
 void set_root_table(symtab_t table) {
 	root_table = table;
 }
 
+/**
+ * @brief get_root_table : get the root symbol table
+ *
+ * @return : pointer to root symbol table
+ */
 symtab_t get_root_table(void) {
 	return root_table;
 }
@@ -640,6 +724,11 @@ void get_all_symbol(symtab_t symtab, symbol_callback func_callback)
 }
 #endif
 
+/**
+ * @brief print_all_symbol : print all symbol that in symbol table
+ *
+ * @param table : symbol table with symbol
+ */
 void print_all_symbol(symtab_t table) {
 	printf("------------------start print-----------------------\n");
 	symbol_t symbol = table->list;
@@ -654,6 +743,16 @@ void print_all_symbol(symtab_t table) {
 	return ;
 }
 
+/**
+ * @brief symbol_list_match : create a list chain to store all symbol that
+ * match condition in symbol table
+ *
+ * @param tab : symbol table
+ * @param match : the function to match symbol
+ * @param arg : args about function
+ *
+ * @return : head of list
+ */
 static symbol_list_t *symbol_list_match(symtab_t tab, match_func_t match, void *arg) {
 	symbol_list_t *first = NULL;
 	symbol_list_t *cur = NULL;
@@ -685,6 +784,14 @@ static symbol_list_t *symbol_list_match(symtab_t tab, match_func_t match, void *
 	return first;
 }
 
+/**
+ * @brief list_join : add new symbol list to old list tail
+ *
+ * @param first : the old symbol list
+ * @param new : new symbol list
+ *
+ * @return : head of merged list
+ */
 static symbol_list_t* list_join(symbol_list_t *first, symbol_list_t *new) {
 	symbol_list_t *tmp;
 	symbol_list_t *next;
@@ -705,6 +812,17 @@ static symbol_list_t* list_join(symbol_list_t *first, symbol_list_t *new) {
 	return first;
 }
 
+/**
+ * @brief _symbol_list_find : crate list to store symbol that match condition symbol
+ *
+ * @param tab : symbol table
+ * @param match : function pointer for match function
+ * @param arg : args of match function
+ * @param depth: the depth of finding symbol, the 1, only find symbol in table self
+ * else find symbol from table and templates
+ *
+ * @return : head of merged list
+ */
 symbol_list_t *_symbol_list_find(symtab_t tab, match_func_t match, void *arg, int depth) {
 	symbol_list_t *first = NULL;
 	symbol_list_t *tmp = NULL;
@@ -732,6 +850,15 @@ symbol_list_t *_symbol_list_find(symtab_t tab, match_func_t match, void *arg, in
 	return first;
 }
 
+/**
+ * @brief match_type : check the symbol type is the same with args
+ *
+ * @param sym : pointer to symbol
+ * @param arg : type that for matching
+ *
+ * @return : 1 - same type
+ *			0 - no same type
+ */
 static int match_type(symbol_t sym, void *arg) {
 	type_t type = (type_t )arg;
 	if(sym->type == type) {
@@ -741,6 +868,15 @@ static int match_type(symbol_t sym, void *arg) {
 	}
 }
 
+/**
+ * @brief match_name : check symbol name is the same with args
+ *
+ * @param sym : pointer to symbol
+ * @param arg : pointer to name that matching
+ *
+ * @return : 1 - same name
+ *			0 - no same name
+ */
 static int match_name(symbol_t sym, void *arg) {
 	const char *name = arg;
 	
@@ -751,6 +887,15 @@ static int match_name(symbol_t sym, void *arg) {
 	}
 }
 
+/**
+ * @brief match_specific : check the type and name are same with args
+ *
+ * @param sym : pointer to symbol
+ * @param arg : args with name and type
+ *
+ * @return  : 1 - same type and name
+ *			0 - not same with type or name
+ */
 static int match_specific(symbol_t sym, void *arg) {
 	search_arg_t *sarg = arg;
 
@@ -760,34 +905,97 @@ static int match_specific(symbol_t sym, void *arg) {
 	return 0;
 }
 
+/**
+ * @brief symbol_list_find_type : create a list chain to store all symbols
+ * with same type from table and its templates
+ *
+ * @param tab : symbol table to find symbol
+ * @param type : type for finding symbol
+ *
+ * @return : head of list chain
+ */
 symbol_list_t *symbol_list_find_type(symtab_t tab, type_t type) {
 	return _symbol_list_find(tab, match_type, (void *) type, 2);
 }
 
+/**
+ * @brief symbol_list_find_name : create a list chain to store all symbols
+ * with same name from table and its templates.
+ *
+ * @param tab : symbol table to find symbol
+ * @param name : name for finding symbol
+ *
+ * @return  : head of list chain
+ */
 symbol_list_t *symbol_list_find_name(symtab_t tab, const char *name) {
 	return _symbol_list_find(tab, match_name, (void*)name, 2);
 }
 
+/**
+ * @brief symbol_list_find_full : create a list chain to store all symbols
+ * with same type and name from table and its templates. this thain always have only one element
+ *
+ * @param tab : symbol tale to find symbol
+ * @param name: name for finding
+ * @param type : type for finding
+ *
+ * @return  : head os list chain
+ */
 symbol_list_t *symbol_list_find_full(symtab_t tab, const char *name, type_t type) {
 	search_arg_t arg = {.name = name, .type = type};
 
 	return _symbol_list_find(tab, match_specific, (void *)&arg, 2);
 }
 
+/**
+ * @brief local_list_find_type : create a list chain to store all symbols
+ * with same type from table itself
+ *
+ * @param tab : symbol table to find symbol
+ * @param type : type for finding symbol
+ *
+ * @return : head of list chain
+ */
 symbol_list_t *local_list_find_type(symtab_t tab, type_t type) {
 	return _symbol_list_find(tab, match_type, (void *)type, 1);
 }
 
+/**
+ * @brief : local_list_find_name create a list chain to store all symbols
+ * with same name from table itself. this chain always only have
+ * one element
+ *
+ * @param tab : symbol table to find symbol
+ * @param name : name for finding symbol
+ *
+ * @return  : head of list chain
+ */
 symbol_list_t* local_list_find_name(symtab_t tab, const char* name) {
 	return _symbol_list_find(tab, match_name, (void*)name, 1);
 }
 
+/**
+ * @brief local_list_find_full: create a list chain to store all symbols
+ * with same type and name from table itself. this chain always have
+ * only one element
+ *
+ * @param tab : symbol tale to find symbol
+ * @param name: name for finding
+ * @param type : type for finding
+ *
+ * @return  : head os list chain
+ */
 symbol_list_t* local_list_find_full(symtab_t tab, const char* name, type_t type) {
 	search_arg_t arg = {.name = name, .type = type};
 
 	return _symbol_list_find(tab, match_specific, (void *)&arg, 1);
 }
 
+/**
+ * @brief symbol_list_free : free symbol list
+ *
+ * @param list : head of symbol list
+ */
 void symbol_list_free(symbol_list_t *list) {
 	symbol_list_t *tmp;
 	symbol_list_t *old;
@@ -875,6 +1083,12 @@ void sym_undef_free(symbol_t node)
     free(node);
 }
 
+/**
+ * @brief params_insert_table : insert method parameters into method table
+ *
+ * @param table : method table
+ * @param method_params : method parameters
+ */
 void params_insert_table(symtab_t table, method_params_t* method_params) {
 	assert(table != NULL);
 	if (method_params == NULL) {
@@ -908,20 +1122,36 @@ void params_insert_table(symtab_t table, method_params_t* method_params) {
 	return;
 }
 
+/**
+ * @brief change_table : change current table with new table, and push current table into table stack
+ *
+ * @param current_table : the current table in parsing
+ * @param table_stack : stack of table
+ * @param current_table_num : current table number
+ * @param type : new table type
+ *
+ * @return : pointer to new table
+ */
 symtab_t change_table(symtab_t current_table, stack_t* table_stack, long int* current_table_num, type_t type) {
 	assert(current_table != NULL);
 	assert(table_stack != NULL);
 
 	symtab_t table = symtab_create(type);
 	table->table_num = ++(*current_table_num);
-	//printf("LIne = %d, current_table num: %d, parent table: 0x%x--------------------\n",
-	//__LINE__, current_table->table_num, current_table->parent);
 	symtab_insert_child(current_table, table);
 	push(table_stack, current_table);
 
 	return table;
 }
 
+/**
+ * @brief undef_var_insert : insert undefined variable node into table.
+ * in simics, varibale and be used before defined, so we should insert
+ * the undefined variable into table for second checking.
+ *
+ * @param table : table of block
+ * @param node : tree node of undefined symbol
+ */
 void undef_var_insert(symtab_t table, tree_t* node) {
 	assert(table != NULL); assert(node != NULL);
 
@@ -942,6 +1172,15 @@ void undef_var_insert(symtab_t table, tree_t* node) {
 	return;
 }
 
+/**
+ * @brief symbol_defined : check symbol is defined in symbol table itself
+ *
+ * @param table : table that defined symbol
+ * @param name : name of symbol
+ *
+ * @return 1: symbol is defined in table
+ *			0: symbol is no defined in table
+ */
 int symbol_defined(symtab_t table, const char* name) {
     assert(table != NULL);
     assert(name != NULL);
@@ -954,6 +1193,15 @@ int symbol_defined(symtab_t table, const char* name) {
         return 0;
 }
 
+/**
+ * @brief defined_symbol : get the defined symbols in table
+ *
+ * @param table : table that defined symbol
+ * @param name : name of symbol
+ * @param type : type of symbol, if type is 0, find symbol without type
+ *
+ * @return : pointer to symbol
+ */
 symbol_t defined_symbol(symtab_t table, const char* name, type_t type) {
        assert(table != NULL); assert(name != NULL);
        symbol_t symbol = NULL;
