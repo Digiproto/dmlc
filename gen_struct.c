@@ -26,6 +26,12 @@ extern symtab_t root_table;
 static void gen_device_data_struct(object_t *obj, FILE *f) {
 }
 
+/**
+ * @brief gen_field_struct : generate the filed into struct
+ *
+ * @param obj : the object of filed
+ * @param f : header file of struct
+ */
 static void gen_field_struct(object_t *obj, FILE *f) {
     field_t *fld = (field_t *)obj;
     const char *type;
@@ -35,10 +41,22 @@ static void gen_field_struct(object_t *obj, FILE *f) {
     fprintf(f, "\t\t\t%s %s;\n", type, obj->name);
 }
 
+/**
+ * @brief gen_iface_struct : generate the interface into struct
+ *
+ * @param obj : the object of interface
+ * @param f : header file of struct
+ */
 static void gen_iface_struct(object_t *obj, FILE *f) {
     fprintf(f, "\t\tconst %s_interface_t *%s;\n", obj->name, obj->name);
 }
 
+/**
+ * @brief gen_connect_struct : generate the content of conncet struct
+ *
+ * @param obj : the object of connect
+ * @param f : header file of struct
+ */
 static void gen_connect_struct(object_t *obj, FILE *f) {
     connect_t *con = (connect_t *)obj;
     struct list_head *p;
@@ -58,6 +76,12 @@ static void gen_connect_struct(object_t *obj, FILE *f) {
 	}
 }
 
+/**
+ * @brief gen_attribute_struct : generate the content of attribute struct
+ *
+ * @param obj : the object of attribute
+ * @param f : header file of struct
+ */
 static void gen_attribute_struct(object_t *obj, FILE *f) {
 	attribute_t *attr = (attribute_t *)obj;	
 	
@@ -68,6 +92,12 @@ static void gen_attribute_struct(object_t *obj, FILE *f) {
 	}
 }
 
+/**
+ * @brief gen_device_attribute : generate the attribute struct
+ *
+ * @param dev : the device object
+ * @param f : header file of struct
+ */
 static void gen_device_attribute(device_t *dev, FILE *f) {
     struct list_head *p;
     object_t *obj;
@@ -78,6 +108,12 @@ static void gen_device_attribute(device_t *dev, FILE *f) {
     }
 }
 
+/**
+ * @brief gen_device_connect : generate the connect struct relied on device connect list
+ *
+ * @param dev : the device object
+ * @param f : heade file of struct
+ */
 static void gen_device_connect(device_t *dev, FILE *f) {
     struct list_head *p;
     object_t *obj;
@@ -88,10 +124,22 @@ static void gen_device_connect(device_t *dev, FILE *f) {
     }
 }
 
+/**
+ * @brief gen_device_notifier : generate the nodifier in struct
+ *
+ * @param dev : the device object
+ * @param f : header file of struct
+ */
 static void gen_device_notifier(device_t *dev, FILE *f) {
 	fprintf(f, "\tNotifier notifier;\n");
 }
 
+/**
+ * @brief gen_register_struct : generate the content of register
+ *
+ * @param obj : the object of register
+ * @param f : header file of struct
+ */
 static void gen_register_struct(object_t *obj, FILE *f) {
     object_t *fld;
     dml_register_t *reg = (dml_register_t *)obj;
@@ -131,6 +179,12 @@ static void gen_register_struct(object_t *obj, FILE *f) {
     }
 }
 
+/**
+ * @brief gen_bank_struct : generate the content of bank
+ *
+ * @param obj : the bank object
+ * @param f : header file of struct
+ */
 static void gen_bank_struct(object_t *obj, FILE *f) {
     object_t *reg;
     struct list_head *p;
@@ -148,6 +202,12 @@ static void gen_bank_struct(object_t *obj, FILE *f) {
 #endif
 }
 
+/**
+ * @brief gen_banks_struct : generate the bank struct relied bank list of device
+ *
+ * @param dev : the device object
+ * @param f : header file of struct
+ */
 static void gen_banks_struct(device_t *dev, FILE *f) {
     object_t *obj;
     struct list_head *p;
@@ -158,6 +218,12 @@ static void gen_banks_struct(device_t *dev, FILE *f) {
     }
 }
 
+/**
+ * @brief gen_bank_marco : generate the macro for bank size
+ *
+ * @param obj : the object of bank
+ * @param f : header file of struct
+ */
 static void gen_bank_marco(object_t *obj, FILE *f) {
     bank_t *bank = (bank_t *)obj;
     char *cap = to_upper(obj->name);
@@ -165,6 +231,12 @@ static void gen_bank_marco(object_t *obj, FILE *f) {
     free(cap);
 }
 
+/**
+ * @brief gen_banks_macro : entry to generate macro for every bank size based on bank list of device
+ *
+ * @param dev : the device object
+ * @param f : header file of struct
+ */
 static void gen_banks_macro(device_t *dev, FILE *f) {
     object_t *obj;
     struct list_head *p;
@@ -175,7 +247,12 @@ static void gen_banks_macro(device_t *dev, FILE *f) {
     }
 }
 
-
+/**
+ * @brief gen_device_loggroup : generate the loggroup struct
+ *
+ * @param dev : the device object
+ * @param f : header file of struct
+ */
 void gen_device_loggroup(device_t *dev, FILE *f) {
     symbol_list_t *list,*head;
 	const char *dev_name = dev->obj.name;
@@ -202,10 +279,22 @@ void gen_device_loggroup(device_t *dev, FILE *f) {
 	symbol_list_free(head);
 }
 
+/**
+ * @brief gen_device_macros : generate the macro about device
+ *
+ * @param dev : the device object
+ * @param f : header file of struct
+ */
 void gen_device_macros(device_t *dev, FILE *f) {
 	gen_banks_macro(dev, f);
 }
 
+/**
+ * @brief gen_device_struct : generate the content of device struct
+ *
+ * @param dev : the object of device
+ * @param f : file of struct header file
+ */
 void gen_device_struct(device_t *dev, FILE *f) {
 	gen_banks_struct(dev, f);
 	gen_device_connect(dev, f);
