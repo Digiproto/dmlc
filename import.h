@@ -32,6 +32,9 @@ const char *gdml_library_dir;
 #define DIR_MAX_LEN 1024
 #endif
 
+/**
+ * @brief : file stack to restore parsed source file
+ */
 struct file_stack
 {
 	char *name;

@@ -39,6 +39,9 @@
 #endif
 #endif
 
+/**
+ * @brief : pre-import files of simics
+ */
 const char *import_file_list[] = {
 	"dml-builtins.dml",
 	"simics/C.dml",
@@ -158,10 +161,20 @@ const char *import_file_list[] = {
 	NULL
 };
 
+/**
+ * @brief push_file_stack : store files name into stack
+ *
+ * @param top: the top about stack
+ * @param name : dml source file name
+ *
+ * @return : the topest pointer about stack
+ */
 struct file_stack* push_file_stack(struct file_stack* top, const char* name)
 {
 	assert(name != NULL);
 
+	/* charge file is in stack, if in, the file is compiled, no
+	 * need to parsed it */
 	if(top != NULL) {
 		/* file stack is not empty. */
 		struct file_stack* tmp = top->file_history;
@@ -195,6 +208,14 @@ struct file_stack* push_file_stack(struct file_stack* top, const char* name)
 	return new_stack;
 }
 
+/**
+ * @brief pop_file_stack : pop top file, but not free it as
+ * the error information will use file information
+ *
+ * @param top : the stach top
+ *
+ * @return : the topest point of stack after pop file
+ */
 struct file_stack* pop_file_stack(struct file_stack* top)
 {
 	assert(top != NULL);
@@ -213,6 +234,14 @@ int list_get_len(char **dir_list)
 	return 0;
 }
 
+/**
+ * @brief list_add_dir : add the import file path into two dimensional array
+ *
+ * @param dir_list : address of two dimensional array
+ * @param dir : new import file patch
+ *
+ * @return : address of two dimensional array
+ */
 char** list_add_dir(char **dir_list, const char *dir)
 {
 	char **tmp;
@@ -225,6 +254,16 @@ char** list_add_dir(char **dir_list, const char *dir)
 	return tmp;
 }
 
+/**
+ * @brief link_dir_filename : merge the filename with file path
+ *
+ * @param buf : buffer to store new merge file with path
+ * @param n :  length of file and path
+ * @param dir : the directory of file
+ * @param filename : file name
+ *
+ * @return : buffer about merge file with path
+ */
 int link_dir_filename(char* buf, size_t n, const char* dir, const char* filename)
 {
 	int rt;
@@ -240,6 +279,13 @@ int link_dir_filename(char* buf, size_t n, const char* dir, const char* filename
 	return 0;
 }
 
+/**
+ * @brief get_library_dir : get the directory of exe file
+ *
+ * @param dir_r : exe file of user inputing
+ *
+ * @return : exe file with absolute path
+ */
 static const char* get_library_dir(const char *dir_r)
 {
 	int len;
@@ -274,6 +320,13 @@ static const char* get_library_dir(const char *dir_r)
 	return gdml_library_dir;
 }
 
+/**
+ * @brief get_file_dir : get the directory of exe file
+ *
+ * @param filename : name of exe file
+ *
+ * @return : the directory of exe file
+ */
 static const char* get_file_dir(const char* filename) {
 	assert(filename != NULL);
 
@@ -288,6 +341,13 @@ static const char* get_file_dir(const char* filename) {
 	return strdup(dir);
 }
 
+/**
+ * @brief set_import_dir : set directory for finding default import file
+ *
+ * @param execname : the exe file name
+ * @param fullname : the source file name
+ * @param extradirs : the import directory of user add with '-I'
+ */
 void set_import_dir(const char* execname, const char* fullname, char** extradirs)
 {
 	const char  *library_dir = get_library_dir(execname);
