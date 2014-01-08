@@ -39,6 +39,12 @@ extern symtab_t root_table;
 int debugflags = 0x1f;
 device_t* device = NULL;
 
+/**
+ * @brief gen_code : entry to generate code
+ *
+ * @param root : the root of syntax tree
+ * @param name : directory to generate code
+ */
 void gen_code (tree_t * root, const char *name)
 {
 	symbol_list_t *list;
@@ -66,6 +72,11 @@ void gen_code (tree_t * root, const char *name)
 	gen_cfile(dev_obj, name);
 }
 
+/**
+ * @brief get_device : get the device object
+ *
+ * @return : object of device
+ */
 device_t* get_device() {
 	return device;
 }
