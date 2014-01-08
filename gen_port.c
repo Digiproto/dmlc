@@ -75,6 +75,12 @@ void gen_device_port_code(device_t *dev, FILE *f) {
 	}
 }
 
+/**
+ * @brief add_port_method : add the methods of implement int port block
+ * into implement method list
+ *
+ * @param obj : the object of port
+ */
 void add_port_method(object_t *obj) {
 	object_t *tmp;
 	dml_port_t *port;
