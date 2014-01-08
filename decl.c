@@ -36,6 +36,15 @@
 #include "object.h"
 
 static cdecl_t* parse_cdecl(tree_t* node, symtab_t table);
+/**
+ * @brief get_param_decl : parse the method parameters and
+ * get the type and variable name about parameters
+ *
+ * @param node : tree node of method parameter
+ * @param table : symbol table of method
+ *
+ * @return : pointer to struct about parameters information
+ */
 params_t* get_param_decl(tree_t* node, symtab_t table) {
 	assert(node != NULL);
 	if (node->common.type != CDECL_TYPE) {
@@ -59,6 +68,15 @@ params_t* get_param_decl(tree_t* node, symtab_t table) {
 }
 
 static cdecl_t* parse_cdecl(tree_t* node, symtab_t table);
+
+/**
+ * @brief parse_data_cdecl : parse data declaration and
+ * get the type and variable name about data, at last
+ * insert the variable into table
+ *
+ * @param node : tree node about data
+ * @param table : the table of block that contains data
+ */
 void parse_data_cdecl(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -73,6 +91,14 @@ void parse_data_cdecl(tree_t* node, symtab_t table) {
 
 extern int record_type(cdecl_t* type);
 static void insert_record_elems(cdecl_t* type);
+
+/**
+ * @brief parse_local_decl : parse local declaration and
+ * insert variable into table
+ *
+ * @param node : tree node about local
+ * @param table : table of block that contains local
+ */
 void parse_local_decl(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -82,6 +108,7 @@ void parse_local_decl(tree_t* node, symtab_t table) {
 		decl->common.is_static = 1;
 	}
 
+	/* local declaration have keyword "auto" or "local" */
 	if (node->local_tree.local_keyword) {
 		tree_t* keyword = node->local_tree.local_keyword;
 		char* keyword_name = (char*)(keyword->local_keyword.name);
@@ -119,6 +146,15 @@ void parse_local_decl(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief add_element : add the element about record type(struct, layout)
+ * into a list
+ *
+ * @param head : element list head
+ * @param new : new element about record type
+ *
+ * @return : head of element list
+ */
 static element_t* add_element(element_t* head, element_t* new) {
 	assert(new != NULL);
 	if (head == NULL) {
@@ -134,6 +170,13 @@ static element_t* add_element(element_t* head, element_t* new) {
 	return head;
 }
 
+/**
+ * @brief parse_undef_cdecl : parse the undefined variable for
+ * the second cheking time
+ *
+ * @param node : tree node about undefined variable
+ * @param table : table of block that contains undefined variable
+ */
 void parse_undef_cdecl(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -145,6 +188,14 @@ void parse_undef_cdecl(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_struct : parse struct definition, and its elements
+ *
+ * @param node : tree node about struct
+ * @param table : table of block that contains struct definition
+ *
+ * @return : pointer to declaration about struct
+ */
 static cdecl_t* parse_struct(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -156,6 +207,7 @@ static cdecl_t* parse_struct(tree_t* node, symtab_t table) {
 	cdecl_t* decl = NULL;
 	element_t* elem = NULL;
 	symtab_t struct_table = type->struc.table;
+	/* parse the elements about struct */
 	while(elem_node) {
 		elem = (element_t*)gdml_zmalloc(sizeof(element_t));
 		decl = parse_cdecl(elem_node, struct_table);
@@ -175,6 +227,14 @@ static cdecl_t* parse_struct(tree_t* node, symtab_t table) {
 	return type;
 }
 
+/**
+ * @brief parse_layout : parse layout definition and its elements
+ *
+ * @param node : tree node about layout
+ * @param table : table of block that contains layout
+ *
+ * @return : pointer to declaration about layout
+ */
 static cdecl_t* parse_layout(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -213,10 +273,17 @@ static cdecl_t* parse_layout(tree_t* node, symtab_t table) {
 	return type;
 }
 
+/**
+ * @brief parse_bit_expr : check the experssion about the
+ * start and end bit about bitfield
+ *
+ * @param node : tree node about bitfields element
+ * @param table : table of bitfield
+ * @param elem : element about bitfields
+ */
 static void parse_bit_expr(tree_t* node, symtab_t table, bit_element_t* elem) {
 	assert(node != NULL); assert(table != NULL); assert(elem != NULL);
 	cdecl_t* decl = elem->decl;
-	/* TODO: calculate the expression */
 	/* In simic the bit style: a @ [end : start]*/
 	expr_t* start = check_expr(node->bitfields_dec.start, table);
 	expr_t* end = check_expr(node->bitfields_dec.end, table);
@@ -238,6 +305,13 @@ static void parse_bit_expr(tree_t* node, symtab_t table, bit_element_t* elem) {
 	return;
 }
 
+/**
+ * @brief parse_undef_bit_elem : parse the undefined bitfileds element in
+ * second checking time
+ *
+ * @param node : tree node about undefined bitfileds element
+ * @param table : table of bitfield
+ */
 void parse_undef_bit_elem(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -258,6 +332,15 @@ void parse_undef_bit_elem(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_bit_element : parse bitfields element, and check
+ * the start and end bit about bitfield element
+ *
+ * @param node : tree node about bitfields element
+ * @param table : table of bitfields
+ *
+ * @return : pointer to struct about bitfields element information
+ */
 static bit_element_t* parse_bit_element(tree_t* node, symtab_t table) {
 	assert(table != NULL);
 	bit_element_t* elem = (bit_element_t*)gdml_zmalloc(sizeof(bit_element_t));
@@ -280,6 +363,14 @@ static bit_element_t* parse_bit_element(tree_t* node, symtab_t table) {
 	return elem;
 }
 
+/**
+ * @brief add_bit_element : add bitfields element into bitfields element list
+ *
+ * @param head : head of bitfield element list
+ * @param new : new element about bitfields
+ *
+ * @return : head of bitfields element list
+ */
 static bit_element_t* add_bit_element(bit_element_t* head, bit_element_t* new) {
 	assert(new != NULL);
 	if (head == NULL) {
@@ -295,6 +386,14 @@ static bit_element_t* add_bit_element(bit_element_t* head, bit_element_t* new) {
 	return head;
 }
 
+/**
+ * @brief parse_bitfields : parse dml bitfields record type, and its elements
+ *
+ * @param node : tree node about bitfields
+ * @param table : table of block that contains bitfields struct
+ *
+ * @return : pointer to the declaration about bitfields
+ */
 static cdecl_t* parse_bitfields(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -324,6 +423,14 @@ static cdecl_t* parse_bitfields(tree_t* node, symtab_t table) {
 	return type;
 }
 
+/**
+ * @brief parse_typeof : get the type of typeof
+ *
+ * @param node : tree node of typeof
+ * @param table : table of block that contains typeof
+ *
+ * @return : pointe to the type of typeof
+ */
 static cdecl_t* parse_typeof(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 	cdecl_t* type = get_typeof_type(node, table);
@@ -331,6 +438,13 @@ static cdecl_t* parse_typeof(tree_t* node, symtab_t table) {
 	return type;
 }
 
+/**
+ * @brief get_int_size : calculate size of int delcaration
+ *
+ * @param int_str : string of int declaration
+ *
+ * @return : size of int declaration
+ */
 static int get_int_size(const char* int_str) {
 	assert(int_str);
 	int size = 0;
@@ -355,6 +469,14 @@ static int get_int_size(const char* int_str) {
 	return size;
 }
 
+/**
+ * @brief parse_type_ident : get variable declaration type
+ *
+ * @param node : tree node about type
+ * @param table : table of block that contains the variable declaration
+ *
+ * @return : pointer the type struct
+ */
 static cdecl_t* parse_type_ident(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -432,6 +554,9 @@ static cdecl_t* parse_type_ident(tree_t* node, symtab_t table) {
 			}
 		}
 		else {
+			/* in simics, some type can be used before defined,
+			 * so it is not wrong when meet undefined indentifier
+			 * in first time, only sign it for second checking */
 			if (table->pass_num == 0) {
 				type->var_name = node->ident.str;
 				type->common.no_decalare = 1;
@@ -446,6 +571,14 @@ static cdecl_t* parse_type_ident(tree_t* node, symtab_t table) {
 	return type;
 }
 
+/**
+ * @brief parse_base_type : parse the base type of variable declaration
+ *
+ * @param node : tree node about declaration basetype
+ * @param table : table of block that contains variable declaration
+ *
+ * @return : pointer to basetype struct
+ */
 static cdecl_t* parse_base_type(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 	cdecl_t* type = NULL;
@@ -471,6 +604,14 @@ static cdecl_t* parse_base_type(tree_t* node, symtab_t table) {
 }
 
 static void parse_cdecl2(tree_t* node, symtab_t table, cdecl_t* type);
+
+/**
+ * @brief parse_point : parse the pointer variable declaration
+ *
+ * @param node : tree node about pointer declaration
+ * @param table : table of block that contains pointer declaration
+ * @param type : type of pointer declaration
+ */
 static void parse_point(tree_t* node, symtab_t table, cdecl_t* type) {
 	assert(node != NULL); assert(table != NULL); assert(type != NULL);
 
@@ -491,6 +632,14 @@ static void parse_point(tree_t* node, symtab_t table, cdecl_t* type) {
 }
 
 static void parse_cdecl3(tree_t* node, symtab_t table, cdecl_t* type);
+
+/**
+ * @brief parse_c_array : parse the array declaration about c language
+ *
+ * @param node : tree node about array declaration
+ * @param table : table of block that contains array declaration
+ * @param type : type of array
+ */
 static void parse_c_array(tree_t* node, symtab_t table, cdecl_t* type) {
 	assert(node != NULL); assert(table != NULL); assert(type != NULL);
 	parse_cdecl3(node->array.decl, table, type);
@@ -507,6 +656,12 @@ static void parse_c_array(tree_t* node, symtab_t table, cdecl_t* type) {
 	return;
 }
 
+/**
+ * @brief free_param : free the space about all function paramters
+ *
+ * @param data : pointer the two-dimensional array
+ * @param i : the start number of parameters that will be freed
+ */
 static void free_param(void** data, int i) {
 	assert(data != NULL);
 	while (i) {
@@ -515,6 +670,14 @@ static void free_param(void** data, int i) {
 	return;
 }
 
+/**
+ * @brief parse_function_param : parse paramaeters about function
+ *
+ * @param node : tree node about function parameters
+ * @param table : table of block that contains function
+ *
+ * @return : pointer to function information struct
+ */
 static signature_t* parse_function_param(tree_t* node, symtab_t table) {
 	assert(table != NULL);
 	if (node == NULL) return NULL;
@@ -563,6 +726,13 @@ static signature_t* parse_function_param(tree_t* node, symtab_t table) {
 	return sig;
 }
 
+/**
+ * @brief parse_function : parse function variable and its parameters
+ *
+ * @param node : tree node about function
+ * @param table : table of block that contains function
+ * @param type : function return type
+ */
 static void parse_function(tree_t* node, symtab_t table, cdecl_t* type) {
 	assert(node != NULL); assert(table != NULL); assert(type != NULL);
 	parse_cdecl3(node->cdecl_brack.cdecl, table, type);
@@ -582,6 +752,15 @@ static void parse_function(tree_t* node, symtab_t table, cdecl_t* type) {
 	return;
 }
 
+/**
+ * @brief is_c_keyword : charge content of tree node is
+ * keyword of c language or not
+ *
+ * @param node : tree node about charging
+ *
+ * @return : 1 - keyword of c language
+ *			0 - not keyword of c language
+ */
 static int is_c_keyword(tree_t* node) {
 	assert(node != NULL);
 	if (node->common.type == C_KEYWORD_TYPE)
@@ -590,6 +769,13 @@ static int is_c_keyword(tree_t* node) {
 		return 0;
 }
 
+/**
+ * @brief parse_ident : parse identifier of variable
+ *
+ * @param node : tree node about identifier
+ * @param table : table of block that contains identifier
+ * @param decl : type information about identifier
+ */
 static void parse_ident(tree_t* node, symtab_t table, cdecl_t* decl) {
 	assert(node != NULL); assert(table != NULL); assert(decl != NULL);
 	if (is_c_keyword(node) && (decl->common.is_typedef == 0)) {
@@ -602,6 +788,14 @@ static void parse_ident(tree_t* node, symtab_t table, cdecl_t* decl) {
 	return;
 }
 
+/**
+ * @brief parse_cdecl3 : parse the declaration about variable based on
+ * the grammar of dml language
+ *
+ * @param node : tree node about declaration
+ * @param table : table about declaration
+ * @param type : type information about declaration
+ */
 static void parse_cdecl3(tree_t* node, symtab_t table, cdecl_t* type) {
 	assert(table != NULL); assert(type != NULL);
 	if (node == NULL) return;
@@ -623,6 +817,14 @@ static void parse_cdecl3(tree_t* node, symtab_t table, cdecl_t* type) {
 	return;
 }
 
+/**
+ * @brief parse_cdecl2 : parse the declaration about variable base on
+ * the grammar of dml language
+ *
+ * @param node : tree node about variable declaration
+ * @param table : table about declaration
+ * @param type : type information about declaration
+ */
 static void parse_cdecl2(tree_t* node, symtab_t table, cdecl_t* type) {
 	assert(table != NULL); assert(type != NULL);
 	if (node == NULL) return;
@@ -644,6 +846,14 @@ static void parse_cdecl2(tree_t* node, symtab_t table, cdecl_t* type) {
 	return;
 }
 
+/**
+ * @brief qualify : contruct a qualified type
+ *
+ * @param qual : number of qualify
+ * @param type : type of variable declaration
+ *
+ * @return : type of qualify
+ */
 static cdecl_t* qualify(int qual, cdecl_t* type) {
 	assert(type != NULL);
 	if ((qual == 0) || (qual == type->common.qual))
@@ -661,6 +871,13 @@ static cdecl_t* qualify(int qual, cdecl_t* type) {
 	return ty;
 }
 
+/**
+ * @brief pointer_to : contruct a type pointer to type
+ *
+ * @param type : original type
+ *
+ * @return : type of pointer
+ */
 cdecl_t* pointer_to(cdecl_t* type) {
 	assert(type != NULL);
 	cdecl_t* ty = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
@@ -673,6 +890,13 @@ cdecl_t* pointer_to(cdecl_t* type) {
 	return ty;
 }
 
+/**
+ * @brief array_of : contruct an array type
+ *
+ * @param type : origianl type
+ *
+ * @return : type of array
+ */
 cdecl_t* array_of(cdecl_t* type) {
 	assert(type != NULL);
 	cdecl_t* ty = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
@@ -684,6 +908,14 @@ cdecl_t* array_of(cdecl_t* type) {
 	return ty;
 }
 
+/**
+ * @brief function_return : contruct a function type
+ *
+ * @param type : type information about function return
+ * @param sig : function information aobut function
+ *
+ * @return : type of function
+ */
 static cdecl_t* function_return(cdecl_t* type, signature_t* sig) {
 	assert(type != NULL);
 	cdecl_t* ty = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
@@ -697,6 +929,11 @@ static cdecl_t* function_return(cdecl_t* type, signature_t* sig) {
 	return ty;
 }
 
+/**
+ * @brief free_drv : free the space of type deriver
+ *
+ * @param head : head of deriver list
+ */
 static void free_drv(type_deriv_list_t* head) {
 	if (head == NULL) return;
 
@@ -710,6 +947,13 @@ static void free_drv(type_deriv_list_t* head) {
 	return;
 }
 
+/**
+ * @brief derive_type : contruct the derive of type declaration
+ *
+ * @param type : origianl type
+ *
+ * @return : new type of derive
+ */
 static cdecl_t* derive_type(cdecl_t* type) {
 	assert(type != NULL);
 	cdecl_t* ty = type;
@@ -738,6 +982,16 @@ static cdecl_t* derive_type(cdecl_t* type) {
 	return ty;
 }
 
+/**
+ * @brief parse_base : parse the declaration basetype base on
+ * dml language grammar
+ *
+ * @param node : node about basetype
+ * @param table : table about variable declaration
+ * @param is_const : var_name is defined const or not
+ *
+ * @return : pointer of basetype
+ */
 static cdecl_t* parse_base(tree_t* node, symtab_t table, int is_const) {
 	assert(node != NULL); assert(table != NULL);
 	/* parse the decal base type*/
@@ -749,6 +1003,15 @@ static cdecl_t* parse_base(tree_t* node, symtab_t table, int is_const) {
 	return type;
 }
 
+/**
+ * @brief parse_decl : parse variable identifier
+ *
+ * @param node : tree node about variable declaration
+ * @param table : table about variable declaration
+ * @param type : type of variable declaration
+ *
+ * @return : pointer to variable declaration
+ */
 static cdecl_t* parse_decl(tree_t* node, symtab_t table, cdecl_t* type) {
 	assert(table != NULL); assert(type != NULL);
 	if (node == NULL)
@@ -762,6 +1025,14 @@ static cdecl_t* parse_decl(tree_t* node, symtab_t table, cdecl_t* type) {
 	return ty;
 }
 
+/**
+ * @brief parse_cdecl : parse declaration of variable
+ *
+ * @param node : tree node about declaration
+ * @param table : table about variable declaration
+ *
+ * @return : pointer to variable struct
+ */
 static cdecl_t* parse_cdecl(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -779,6 +1050,12 @@ static cdecl_t* parse_cdecl(tree_t* node, symtab_t table) {
 	return type;
 }
 
+/**
+ * @brief parse_extern_cdecl_or_ident : parse the extern variable declaration
+ *
+ * @param node : tree node about extern variable declaration
+ * @param table : table about extern variable declaration
+ */
 void parse_extern_cdecl_or_ident(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 	cdecl_t* decl = parse_cdecl(node->cdecl.decl, table);
@@ -813,17 +1090,21 @@ void parse_extern_cdecl_or_ident(tree_t* node, symtab_t table) {
 	}
 	else {
 		if ((decl->var_name) && (decl->common.no_decalare == 0)) {
-				int rt = symbol_insert(table, decl->var_name, decl->common.categ, decl);
-				if (rt) {
-					//error("duplicate '%s'\n", decl->var_name);
-					return;
-				}
+				symbol_insert(table, decl->var_name, decl->common.categ, decl);
 		}
 	}
 
 	return;
 }
 
+/**
+ * @brief record_type : charge a type is record type or not
+ *
+ * @param type : type information
+ *
+ * @return : 1 - is record type
+ *			0 - not record type
+ */
 int record_type(cdecl_t* type) {
 	assert(type != NULL);
 	int is_record_type = 0;
@@ -840,6 +1121,11 @@ int record_type(cdecl_t* type) {
 	return is_record_type;
 }
 
+/**
+ * @brief insert_record_elems : insert elements of record type into record table
+ *
+ * @param type : type information about type
+ */
 static void insert_record_elems(cdecl_t* type) {
 	assert(type != NULL);
 	if (type->common.categ == STRUCT_T) {
@@ -880,6 +1166,12 @@ static void insert_record_elems(cdecl_t* type) {
 	return;
 }
 
+/**
+ * @brief parse_typedef_cdecl : parse the typedef declaration
+ *
+ * @param node : tree node about typedef
+ * @param table : table about typedef declaration
+ */
 void parse_typedef_cdecl(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 	//cdecl_t* type = parse_cdecl(node->cdecl.decl, table);
@@ -922,6 +1214,13 @@ void parse_typedef_cdecl(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_top_struct_cdecl : parse the top declaration about struct
+ *
+ * @param node : tree node about struct
+ * @param table : table about struct declaration
+ * @param attr : attribute about top struct
+ */
 void parse_top_struct_cdecl(tree_t* node, symtab_t table, void* attr) {
 	assert(node != NULL); assert(table != NULL); assert(attr != NULL);
 
@@ -932,6 +1231,13 @@ void parse_top_struct_cdecl(tree_t* node, symtab_t table, void* attr) {
 	return;
 }
 
+/**
+ * @brief parse_star : parse the star about variable declaration
+ *
+ * @param node : tree node about star declaration
+ * @param table : table about star declaration
+ * @param type : type of star declaration
+ */
 static void parse_star(tree_t* node, symtab_t table, cdecl_t* type) {
 	assert(node != NULL); assert(table != NULL); assert(type != NULL);
 	type_deriv_list_t* drv = (type_deriv_list_t*)gdml_zmalloc(sizeof(type_deriv_list_t));
@@ -949,6 +1255,14 @@ static void parse_star(tree_t* node, symtab_t table, cdecl_t* type) {
 }
 
 static void parse_ctype_decl_prt(tree_t* node, symtab_t table, cdecl_t* type);
+
+/**
+ * @brief parse_ctypedecl_arr : parse the array type of c language
+ *
+ * @param node : tree node about array type of c language
+ * @param table : table about type declaration
+ * @param type : array type information
+ */
 static void parse_ctypedecl_arr(tree_t* node, symtab_t table, cdecl_t* type) {
 	assert(node != NULL); assert(table != NULL); assert(type != NULL);
 	if (node->cdecl_brack.decl_list) {
@@ -958,6 +1272,13 @@ static void parse_ctypedecl_arr(tree_t* node, symtab_t table, cdecl_t* type) {
 	return;
 }
 
+/**
+ * @brief parse_ctype_decl_prt : parse the pointer of c language
+ *
+ * @param node : tree node about pointer type
+ * @param table : table about pointer type declaration
+ * @param type : type information
+ */
 static void parse_ctype_decl_prt(tree_t* node, symtab_t table, cdecl_t* type) {
 	assert(node != NULL); assert(table != NULL); assert(type != NULL);
 	if (node->ctypedecl_ptr.stars) {
@@ -971,6 +1292,14 @@ static void parse_ctype_decl_prt(tree_t* node, symtab_t table, cdecl_t* type) {
 	return;
 }
 
+/**
+ * @brief parse_ctype_decl : parse type of c language
+ *
+ * @param node : tree node about type of c language
+ * @param table : table about type declaration
+ *
+ * @return : type information struct
+ */
 cdecl_t* parse_ctype_decl(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 	cdecl_t* type = parse_base(node->ctypedecl.basetype, table, 0);
@@ -988,6 +1317,14 @@ cdecl_t* parse_ctype_decl(tree_t* node, symtab_t table) {
 	return type;
 }
 
+/**
+ * @brief parse_typeoparg : parse the args of sizeoftype
+ *
+ * @param node : tree node about args
+ * @param table : table about args
+ *
+ * @return : type about args
+ */
 cdecl_t* parse_typeoparg(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 	tree_t* tmp = node->typeoparg.ctypedecl;
