@@ -27,6 +27,13 @@
 #include "gen_utility.h"
 
 const char *headfile_dir = "simics";
+
+/**
+ * @brief gen_object_headfile : generate the content of project header file
+ *
+ * @param dev : the device object
+ * @param f : project head file
+ */
 static void gen_object_headfile(device_t *dev, FILE *f) {
     const char *dev_name = dev->obj.name;
     char *captical_name;
@@ -65,6 +72,12 @@ static void gen_object_headfile(device_t *dev, FILE *f) {
     free(captical_name);
 }
 
+/**
+ * @brief gen_headerfiles : generated the header file about project
+ *
+ * @param dev : the devcie object
+ * @param out_dir : the directory of header file
+ */
 void gen_headerfiles(device_t *dev, const char *out_dir) {
 	FILE *f;
 	char tmp[1024];	
