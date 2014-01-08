@@ -6,20 +6,6 @@
 #include "debug_color.h"
 #include "symbol-common.h"
 
-typedef struct node
-{
-	int type;
-	char *name;
-	struct node *sibling;
-	struct node *child;
-} node_t;
-
-typedef struct level
-{
-	int depth;
-
-} level_t;
-
 tree_t* get_ast (const char *filename);
 void* gdml_zmalloc(int size);
 char** get_templates(char** templates, tree_t* head, int num);

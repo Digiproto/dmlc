@@ -95,15 +95,10 @@ long long get_digits (char *str, int base)
 	}
 
 	if (endptr == str) {
-//		fprintf (stderr, "No digits were found\n");
-//		exit (EXIT_FAILURE);
 		error("No digits were found");
 	}
 
 	if (*endptr != '\0') {
-//		fprintf (stderr, "Further characters after number(%s : %s)\n", str,
-//				 endptr);
-//		exit (EXIT_FAILURE);
 		error("Further characters after number (%s, %s)", str, endptr);
 	}
 
@@ -125,8 +120,6 @@ long long strtoi (char *str)
 	int length = 0;
 
 	if (str == NULL) {
-//		fprintf (stderr, "The string changed to int is NULL\n");
-//		return -1;
 		error("the string changed to integer isn't exist");
 	}
 
@@ -171,6 +164,13 @@ static tree_t* find_tail (tree_t* head)
 	return it;
 }
 
+/**
+ * @brief find_head : find head of one tree node list
+ *
+ * @param list : tree node list
+ *
+ * @return : head of list
+ */
 static tree_t* find_head(tree_t* list) {
 	tree_t* node = list;
 	while (node->common.fore_sibling != NULL) {
@@ -203,7 +203,6 @@ tree_t* find_node (tree_t* node, int type)
 		return find_node (node->common.sibling, type);
 	}
 	else {
-//		printf ("Not find the node.\n");
 		PWARN("Not find the node (target: %s)", node->common.location, TYPENAME(type));
 		return NULL;
 	}
@@ -222,6 +221,11 @@ void add_child (tree_t* parent, tree_t* child)
 	parent->common.child = child;
 }
 
+/**
+ * @brief dummy_translate : dummy translate function, nothing to do
+ *
+ * @param node : tree node to be translated
+ */
 void dummy_translate(tree_t *node) {
 #ifndef RELEASE
 	printf("not correct, should call you own translate function, node name %s\n", node->common.name);
@@ -257,6 +261,14 @@ tree_t* create_node (const char *name, int type, int size, YYLTYPE* location)
 }
 
 extern void translate_string(tree_t *node);
+
+/**
+ * @brief create_string_node : create a tree node to store const string
+ *
+ * @param ptr : pointer to const string
+ *
+ * @return : pointer to tree node
+ */
 tree_t *create_string_node(const char *ptr) {
 	tree_t *tmp;
 
@@ -267,6 +279,16 @@ tree_t *create_string_node(const char *ptr) {
 	return tmp;
 }
 
+/**
+ * @brief check_object_place : check object place is right as object
+ * have its' level in dml
+ *
+ * @param table : table that contain object
+ * @param obj_type : object type
+ *
+ * @return : 0 : object in the right place
+ *			1: object not in the right place
+ */
 static int check_object_place(symtab_t table, int obj_type) {
 	assert(table != NULL);
 	int type = table->type;
@@ -301,6 +323,19 @@ static int check_object_place(symtab_t table, int obj_type) {
 	return ret;
 }
 
+/**
+ * @brief create_object : create a object to store it's attribute and location
+ *
+ * @param table : table that object exist
+ * @param node_name : node name of object
+ * @param symbol_name : symbol name of object
+ * @param type : type of object
+ * @param node_size : the size of object node
+ * @param attr_size : the size of object attribute
+ * @param location : location in source file of object
+ *
+ * @return : pointer to object attribute
+ */
 object_attr_t* create_object(symtab_t table, const char* node_name, const char* symbol_name, int type, int node_size, int attr_size, YYLTYPE* location) {
    assert(table != NULL);
    assert(node_name != NULL);
@@ -380,10 +415,21 @@ tree_t* c_keyword_node (const char* name, YYLTYPE* location) {
     return node;
 }
 
+/**
+ * @brief node_in_list : check tree node is in syntax tree or not.
+ *
+ * @param head : head of same level tree node
+ * @param new_node : new tree node
+ *
+ * @return : pointer to tree node
+ */
 static tree_t* node_in_list(tree_t* head, tree_t* new_node) {
    assert(head != NULL);
    assert(new_node != NULL);
 
+   /* as one object can be defiend many times, but they are the same object
+	* only have one tree node, so we should check object tree node is create
+	* or not when create object node*/
    tree_t* tmp = head;
    while (tmp != NULL) {
        if (tmp == new_node) {
@@ -445,6 +491,15 @@ int get_list_num (tree_t* root) {
 	return num;
 }
 
+/**
+ * @brief create_template_list : create a list to store templates
+ * that object contain
+ *
+ * @param head : head of templates list
+ * @param templates : new tree_t templates node that object contain
+ *
+ * @return : head of templates list
+ */
 tree_t* create_template_list(tree_t* head, tree_t* templates) {
     if ((head == NULL) && (templates != NULL)) {
         return templates;
@@ -459,9 +514,19 @@ tree_t* create_template_list(tree_t* head, tree_t* templates) {
     return head;
 }
 
+/**
+ * @brief get_obj_default_param : get the tree node of object default parameters
+ *
+ * @param head : the pre tree node of parameter
+ * @param new : new tree node of parameter
+ * @param name : parameter name
+ *
+ * @return : tree node of parameter
+ */
 tree_t* get_obj_default_param(tree_t* head, tree_t* new, const char* name) {
     /* In simics, although a register can defined many times
-     * but the size can defined only once */
+     * but parameters can be defined only once, include some
+	 * defautl parameters like size, offset, etc */
 	if (head == NULL && new != NULL) {
 		return new;
 	}
@@ -478,6 +543,14 @@ tree_t* get_obj_default_param(tree_t* head, tree_t* new, const char* name) {
     return head;
 }
 
+/**
+ * @brief get_obj_spec : get the obeject spec
+ *
+ * @param head : the head of spec list of object
+ * @param node : new object spec tree node
+ *
+ * @return : head of object spec list
+ */
 obj_spec_t* get_obj_spec(obj_spec_t* head, tree_t* node) {
     /* In simics, the same object can be defined several times,
      * but their parameters can be defined only one time*/
@@ -510,6 +583,13 @@ obj_spec_t* get_obj_spec(obj_spec_t* head, tree_t* node) {
     return tmp;
 }
 
+/**
+ * @brief get_obj_desc : get the decription about object
+ *
+ * @param spec : object spec about one object
+ *
+ * @return : pointer to the decription
+ */
 char* get_obj_desc(obj_spec_t* spec) {
 	if (spec == NULL) {
 		return NULL;
@@ -531,6 +611,14 @@ char* get_obj_desc(obj_spec_t* spec) {
 	return NULL;
 }
 
+/**
+ * @brief get_int_value : get interger value from int tree node
+ *
+ * @param node : tree node of interger
+ * @param table : table of block that contains integer tree node
+ *
+ * @return : int value of interger tree node
+ */
 int get_int_value(tree_t* node, symtab_t table) {
 	if (node == NULL) {
 		return -1;
@@ -554,6 +642,15 @@ int get_int_value(tree_t* node, symtab_t table) {
 	}
 }
 
+/**
+ * @brief get_range_arraydef : calculate the range array value
+ *
+ * @param node : tree node about range array
+ * @param table : table of block that contains array tree node
+ * @param array : struct to store array information
+ *
+ * @return : pointer to array struct
+ */
 arraydef_attr_t* get_range_arraydef(tree_t* node, symtab_t table, arraydef_attr_t* array) {
 	if (node == NULL) {
 		return NULL;
@@ -591,6 +688,15 @@ arraydef_attr_t* get_range_arraydef(tree_t* node, symtab_t table, arraydef_attr_
 }
 
 extern inline void set_obj_array();
+
+/**
+ * @brief get_arraydef : get the array node information
+ *
+ * @param node : tree node of array
+ * @param table : table of block that contain array tree node
+ *
+ * @return : pointer to array information
+ */
 arraydef_attr_t* get_arraydef(tree_t* node, symtab_t table) {
 	if (node == NULL) {
 		return NULL;
@@ -608,6 +714,13 @@ arraydef_attr_t* get_arraydef(tree_t* node, symtab_t table) {
 	return arraydef;
 };
 
+/**
+ * @brief get_obj_block_table : get table about object block
+ *
+ * @param spec : the obeject spec tree node
+ *
+ * @return : table of object block
+ */
 symtab_t get_obj_block_table(tree_t* spec) {
 	if (spec == NULL) {
 		return NULL;
@@ -621,6 +734,13 @@ symtab_t get_obj_block_table(tree_t* spec) {
 	}
 }
 
+/**
+ * @brief get_const_string : get the const string from tree node
+ *
+ * @param node : tree node of const string
+ *
+ * @return : pointer to const string
+ */
 char* get_const_string(tree_t* node) {
 	if (node == NULL) {
 		return NULL;
@@ -632,6 +752,13 @@ char* get_const_string(tree_t* node) {
 	return (char*)(node->string.pointer);
 }
 
+/**
+ * @brief get_param_num : calculate the number of method parameters
+ *
+ * @param node : head of list that contian method parameters
+ *
+ * @return : number of method parameters
+ */
 int get_param_num(tree_t* node) {
 	if (node == NULL) {
 		return 0;
@@ -648,6 +775,15 @@ int get_param_num(tree_t* node) {
 	return num;
 }
 
+/**
+ * @brief get_param_list : get arrary that contain all parameters information of method
+ *
+ * @param node : tree node of method parameters
+ * @param param_num : parameter number
+ * @param table : table of method
+ *
+ * @return : pointer of pointer array that store parameters information
+ */
 params_t** get_param_list(tree_t* node, int param_num, symtab_t table) {
 	if (node == NULL) {
 		return NULL;
@@ -656,7 +792,6 @@ params_t** get_param_list(tree_t* node, int param_num, symtab_t table) {
 	tree_t* tmp = node;
 	int i = 0;
 	while (tmp != NULL) {
-		/* FIXME: parsing the param */
 		list[i] = get_param_decl(tmp, table);
 		i++;
 		tmp = tmp->common.sibling;
@@ -664,6 +799,14 @@ params_t** get_param_list(tree_t* node, int param_num, symtab_t table) {
 	return list;
 }
 
+/**
+ * @brief get_method_params : get the parameters information about method
+ *
+ * @param node : node of method
+ * @param table : tabel of method
+ *
+ * @return : pointer to struct that store method parameters information
+ */
 method_params_t* get_method_params(tree_t* node, symtab_t table) {
 	if (node == NULL) {
 		return NULL;
@@ -682,31 +825,14 @@ method_params_t* get_method_params(tree_t* node, symtab_t table) {
 	return params;
 }
 
-#if 0
-paramspec_t* get_paramspec(tree_t* node, symtab_t table) {
-	if (node == NULL) {
-		return NULL;
-	}
-	paramspec_t* spec = (paramspec_t*)gdml_zmalloc(sizeof(paramspec_t));
-	spec->is_default = node->paramspec.is_default;
-	spec->is_auto = node->paramspec.is_auto;
-	if (node->paramspec.string) {
-		spec->str = get_const_string(node->paramspec.string);
-		spec->type = CONST_STRING_TYPE;
-	}
-	if (spec->is_auto) {
-		spec->type = NO_TYPE;
-	}
-	if (node->paramspec.expr) {
-		spec->expr = parse_expression(&(node->paramspec.expr), table);
-		spec->type = spec->expr->final_type;
-		DEBUG_AST("paramspec is expression expr type: %d\n", spec->type);
-	}
-
-	return spec;
-}
-#endif
-
+/**
+ * @brief get_param_spec : get the spec about parameter variable
+ *
+ * @param node : node of parameter
+ * @param table : tabel of block that contain parameter
+ *
+ * @return : pointer to struct that contain parameter information
+ */
 paramspec_t* get_param_spec(tree_t* node, symtab_t table) {
 	assert(table != NULL);
 	if (node == NULL) {
@@ -773,6 +899,14 @@ paramspec_t* get_param_spec(tree_t* node, symtab_t table) {
 	return spec;
 }
 
+/**
+ * @brief get_size : get the register size
+ *
+ * @param node : tree node of register size
+ * @param table: table of register
+ *
+ * @return : value to register size
+ */
 int get_size(tree_t* node, symtab_t table) {
 	if (node == NULL) {
 		return -1;
@@ -806,6 +940,14 @@ int get_size(tree_t* node, symtab_t table) {
 	return 0;
 }
 
+/**
+ * @brief get_offset : get register offset
+ *
+ * @param node : node of rigister offset
+ * @param table : table of register
+ *
+ * @return : value of register offset
+ */
 int get_offset(tree_t* node, symtab_t table) {
 	/* we do not need to check the offset as it will be
 	checked when the code generated*/
@@ -841,6 +983,11 @@ int get_offset(tree_t* node, symtab_t table) {
 }
 
 #include <unistd.h>
+/**
+ * @brief parse_undef_list : parse undefined tree node for second time
+ *
+ * @param table : table with undefined tree node
+ */
 void parse_undef_list(symtab_t table) {
 	assert(table != NULL);
 	undef_var_t* var = table->undef_list;
@@ -866,6 +1013,13 @@ void parse_undef_list(symtab_t table) {
 }
 
 static void insert_array_index_into_obj(tree_t *node, arraydef_attr_t* array, symtab_t table);
+
+/**
+ * @brief parse_register_attr : parse the attribute of register
+ *
+ * @param node : tree node of register
+ * @param table : table of block that contains register
+ */
 void parse_register_attr(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -885,6 +1039,12 @@ void parse_register_attr(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_bitrange : parse the bit range about array
+ *
+ * @param node : tree node of bitrange
+ * @param table : table of block that contains bitrange
+ */
 static void parse_bitrange(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -900,6 +1060,12 @@ static void parse_bitrange(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_field_attr : parse the attribute of field
+ *
+ * @param node : tree node of field
+ * @param table : table of block that contains field
+ */
 void parse_field_attr(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -913,6 +1079,12 @@ void parse_field_attr(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_connect_attr : parse attribute of connect
+ *
+ * @param node : tree node of connect
+ * @param table : table of block that contains field
+ */
 void parse_connect_attr(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -922,6 +1094,12 @@ void parse_connect_attr(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_attribute_attr : parse the  attribute of attribute
+ *
+ * @param node : tree node of attribute
+ * @param table : table of block that contains attribute
+ */
 void parse_attribute_attr(tree_t* node, symtab_t table) {
 	assert(node != NULL);
 	assert(table != NULL);
@@ -932,6 +1110,12 @@ void parse_attribute_attr(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_group_attr : parse attribute of group
+ *
+ * @param node : tree node of group
+ * @param table : table of block that contains group
+ */
 void parse_group_attr(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -941,6 +1125,12 @@ void parse_group_attr(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_port_attr : parse attribute of port
+ *
+ * @param node : tree node of port
+ * @param table : table of block that contains port
+ */
 void parse_port_attr(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -950,6 +1140,12 @@ void parse_port_attr(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_object : call object parsing function to parse object
+ *
+ * @param node : tree node about object
+ * @param table : table of block that contains object
+ */
 void parse_object(tree_t* node, symtab_t table) {
 	assert(table != NULL);
 	/* the symbols, parameters, constant, expressions that
@@ -966,6 +1162,12 @@ void parse_object(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_device : parse the block of device
+ *
+ * @param node : tree node of device
+ * @param table : table of device
+ */
 void parse_device(tree_t* node, symtab_t table) {
 	/* In device parsing, we only parse the symbols and
 	 * calculate the expressions that in device table,
@@ -982,6 +1184,12 @@ void parse_device(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_obj_spec : parse the spec of object
+ *
+ * @param spec : spec list head of object spec
+ * @param table : table of object
+ */
 void parse_obj_spec(obj_spec_t* spec, symtab_t table) {
 	assert(table != NULL);
 	if (spec == NULL) {
@@ -1007,6 +1215,12 @@ void parse_obj_spec(obj_spec_t* spec, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_bank : parse the block of bank
+ *
+ * @param node : tree node of bank
+ * @param table : table of bank
+ */
 void parse_bank(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -1017,6 +1231,11 @@ void parse_bank(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief new_int : create a type struct for int
+ *
+ * @return : pointer to int type struct
+ */
 static cdecl_t* new_int() {
 	cdecl_t* type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
 	type->common.categ = INT_T;
@@ -1024,7 +1243,13 @@ static cdecl_t* new_int() {
 
 	return type;
 }
+
 extern void insert_array_index(object_attr_t *attr, symtab_t table); 
+/**
+ * @brief insert_i_into_obj : insert 'i' into object table
+ *
+ * @param table : table of object
+ */
 static void  insert_i_into_obj(symtab_t table) {
 	assert(table != NULL);
 	cdecl_t* type = new_int();
@@ -1033,6 +1258,11 @@ static void  insert_i_into_obj(symtab_t table) {
 	return ;
 }
 
+/**
+ * @brief insert_index_into_obj : insert 'index' into object table
+ *
+ * @param table : table of object
+ */
 static void insert_index_into_obj(symtab_t table) {
 	assert(table != NULL);
 	cdecl_t* type = new_int();
@@ -1041,6 +1271,13 @@ static void insert_index_into_obj(symtab_t table) {
 	return;
 }
 
+/**
+ * @brief insert_array_index_into_obj : insert index of array into object table
+ *
+ * @param node : tree node of array
+ * @param array : array struct with array information
+ * @param table : table of object
+ */
 static void insert_array_index_into_obj(tree_t *node, arraydef_attr_t* array, symtab_t table) {
 	assert(array != NULL); assert(table != NULL);
 	if ((array->fix_array == 0) && (table->table_num != 0)) {
@@ -1056,6 +1293,12 @@ static void insert_array_index_into_obj(tree_t *node, arraydef_attr_t* array, sy
 	return;
 }
 
+/**
+ * @brief parse_register : parse the block of register
+ *
+ * @param node : tree node of register
+ * @param table : table of register
+ */
 void parse_register(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 	object_attr_t* attr = node->common.attr;
@@ -1066,6 +1309,12 @@ void parse_register(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_field : parse the block of field
+ *
+ * @param node : tree node of field
+ * @param table : table of field
+ */
 void parse_field(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -1075,6 +1324,12 @@ void parse_field(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_connect : parse the block of connect
+ *
+ * @param node : tree node of connect
+ * @param table : table of connect
+ */
 void parse_connect(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 	object_attr_t* attr = node->common.attr;
@@ -1088,6 +1343,12 @@ void parse_connect(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_interface : parse the block of interface
+ *
+ * @param node : tree node of interface
+ * @param table : table of interface
+ */
 void parse_interface(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -1097,6 +1358,12 @@ void parse_interface(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_attribute : parse the block of attribute
+ *
+ * @param node : tree node of attribute
+ * @param table : table of attribute
+ */
 void parse_attribute(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 	object_attr_t* attr = node->common.attr;
@@ -1110,6 +1377,12 @@ void parse_attribute(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_event : parse the block of event
+ *
+ * @param node : tree node of event
+ * @param table : table of event object
+ */
 void parse_event(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -1119,6 +1392,12 @@ void parse_event(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_group : parse the block of group
+ *
+ * @param node : tree node of group
+ * @param table : table of group
+ */
 void parse_group(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 	object_attr_t* attr = node->common.attr;
@@ -1132,6 +1411,12 @@ void parse_group(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_port : parse the block of port object
+ *
+ * @param node : tree node of port object
+ * @param table : table of port object
+ */
 void parse_port(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 	object_attr_t* attr = node->common.attr;
@@ -1145,6 +1430,12 @@ void parse_port(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_implement : parse the block of implement
+ *
+ * @param node : tree node of implement
+ * @param table : table of implement block
+ */
 void parse_implement(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -1154,6 +1445,12 @@ void parse_implement(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_unparsed_obj : parse the unparsed object
+ *
+ * @param node : tree node of object
+ * @param table : table of block that contains unparsed object
+ */
 void parse_unparsed_obj(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 	obj_spec_t* spec = NULL;
@@ -1191,6 +1488,12 @@ void parse_unparsed_obj(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_bitorder : parser the bitorder
+ *
+ * @param node : tree node of bitorder
+ * @param table : table of block that contains bitorder
+ */
 void parse_bitorder(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 	static int bitorder_num = 0;
@@ -1227,6 +1530,12 @@ void parse_bitorder(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_parameter : parse the parameter of dml
+ *
+ * @param node : tree node of parameter
+ * @param table : table of block that contains parameter
+ */
 void parse_parameter(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 	symbol_t symbol = defined_symbol(table, node->ident.str, 0);
@@ -1261,6 +1570,12 @@ void parse_parameter(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_obj_if_else : parse the if else of object
+ *
+ * @param node : tree node of if else
+ * @param table : table of object
+ */
 void parse_obj_if_else(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -1308,6 +1623,12 @@ void parse_obj_if_else(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_method : parse the method and its parameters
+ *
+ * @param node : tree node of method
+ * @param table : table of block that contains method
+ */
 void parse_method(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -1319,11 +1640,8 @@ void parse_method(tree_t* node, symtab_t table) {
 			return;
 		}
 		attr = symbol->attr;
-		//symtab_t method_table = attr->table;
 		attr->table = node->method.block->block.table;
 		params_insert_table(attr->table, attr->method_params);
-		//attr->table->sibling = method_table;
-		//error("duplicate definition of method '%s'\n", node->method.name);
 		return;
 	}
 
@@ -1342,6 +1660,11 @@ void parse_method(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_method_block : parse the block of method
+ *
+ * @param node : tree node of method
+ */
 void parse_method_block(tree_t* node) {
 	assert(node != NULL);
 	method_attr_t* attr = node->common.attr;
@@ -1354,7 +1677,7 @@ void parse_method_block(tree_t* node) {
 	element only once, so we should have on status bit to mark it*/
 	attr->is_parsed = 1;
 	table->no_check = 0;
-	DEBUG_AST("parse method '%s' block, table num: %d----------------------------------------\n", attr->name, table->table_num);
+	DEBUG_AST("parse method '%s' block, table num: %d\n", attr->name, table->table_num);
 
 	if (block->block.statement == NULL)
 		return;
@@ -1375,6 +1698,12 @@ void parse_method_block(tree_t* node) {
 	return;
 }
 
+/**
+ * @brief parse_loggroup : parse loggroup
+ *
+ * @param node : tree node of loggroup
+ * @param table : table of block that contains loggroup
+ */
 void parse_loggroup(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -1386,6 +1715,12 @@ void parse_loggroup(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_constant : parse the constant definition
+ *
+ * @param node : tree node of constant
+ * @param table : table of block that contains constant
+ */
 void parse_constant(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -1413,6 +1748,12 @@ void parse_constant(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_extern_decl : entry of parsing extern declaration
+ *
+ * @param node : tree node of extern declaration
+ * @param table : table of block that contains extern declaration, often device table
+ */
 void parse_extern_decl(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -1421,6 +1762,12 @@ void parse_extern_decl(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_typedef : entry of parsing typedef declaration
+ *
+ * @param node : tree node of typdef declaration
+ * @param table : table of block that contains typedef declaration, often device table
+ */
 void parse_typedef(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -1429,6 +1776,12 @@ void parse_typedef(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_struct_top : parse the struct definition
+ *
+ * @param node : tree node of struct
+ * @param table : table of block that contains struct declaration, often device table
+ */
 void parse_struct_top(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -1448,6 +1801,12 @@ void parse_struct_top(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_data : entry to parse data declaration
+ *
+ * @param node : tree node of data declaration
+ * @param table : table of block that contains data declaration
+ */
 void parse_data(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 	parse_data_cdecl(node, table);
@@ -1455,6 +1814,12 @@ void parse_data(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_local : entry to parse local declaration
+ *
+ * @param node : tree node of local declaration
+ * @param table : table of block that contains local declaration
+ */
 void parse_local(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -1463,6 +1828,12 @@ void parse_local(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_expr : entry to parse expression
+ *
+ * @param node : tree node of expression
+ * @param table : table of block that contains expression
+ */
 void parse_expr(tree_t* node, symtab_t table) {
 	assert(table != NULL); assert(table != NULL);
 
@@ -1473,6 +1844,11 @@ void parse_expr(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_compound_statement : parse the compound of statement
+ *
+ * @param node : tree node of statement
+ */
 static void parse_compound_statement(tree_t* node) {
 	assert(node != NULL);
 
@@ -1487,6 +1863,12 @@ static void parse_compound_statement(tree_t* node) {
 	return;
 }
 
+/**
+ * @brief parse_if_else : parse the if else of c language
+ *
+ * @param node : tree node of if else
+ * @param table : table of block that contains if else
+ */
 void parse_if_else(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -1559,6 +1941,12 @@ void parse_if_else(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_do_while : parst the do while or while do
+ *
+ * @param node : tree node of do while or while do
+ * @param table : table of block that contains do while or while do
+ */
 void parse_do_while(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 	/* as the do while or while grammar can be:
@@ -1587,6 +1975,12 @@ void parse_do_while(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_for : parse the for statement
+ *
+ * @param node : tree node of for statement
+ * @param table : table of block that contains for statement
+ */
 void parse_for(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -1611,6 +2005,12 @@ void parse_for(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_switch : parse the switch statement
+ *
+ * @param node : tree node of switch statement
+ * @param table : table of block that contains switch statement
+ */
 void parse_switch(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -1629,6 +2029,12 @@ void parse_switch(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_delete : parse the delete statement
+ *
+ * @param node : tree node of delete statement
+ * @param table : table of block that contains delete statement
+ */
 void parse_delete(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -1643,6 +2049,12 @@ void parse_delete(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_try_catch : parse the try catch statement
+ *
+ * @param node : tree node of try catch statement
+ * @param table : table of block that contains try catch statement
+ */
 void parse_try_catch(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -1669,6 +2081,14 @@ void parse_try_catch(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_call_inline_method : parse the call/inline statement
+ *
+ * @param table : table of block that contains call/inline statement
+ * @param call_expr : expression of call/inline
+ * @param ret_expr : return expression of call/inline
+ * @param inline_method : is inline or not
+ */
 static void parse_call_inline_method(symtab_t table, tree_t* call_expr, tree_t* ret_expr, int inline_method) {
 	assert(call_expr != NULL);
 	object_t *obj = NULL; tree_t* block = NULL;
@@ -1704,6 +2124,12 @@ static void parse_call_inline_method(symtab_t table, tree_t* call_expr, tree_t* 
 	return;
 }
 
+/**
+ * @brief parse_call : entry to parse call statement
+ *
+ * @param node : tree node of call statement
+ * @param table : table of block that contains call statement
+ */
 void parse_call(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 	parse_call_inline_method(table, node->call_inline.expr, node->call_inline.ret_args, 0);
@@ -1711,6 +2137,12 @@ void parse_call(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_inline : entry to parse inline  statement
+ *
+ * @param node : tree node of inline statement
+ * @param table : table of block that contains inline statement
+ */
 void parse_inline(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 	parse_call_inline_method(table, node->call_inline.expr, node->call_inline.ret_args, 1);
@@ -1718,6 +2150,12 @@ void parse_inline(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_after_call : parse the after call statement
+ *
+ * @param node : tree node of after call statement
+ * @param table : table of block that contains after call statement
+ */
 void parse_after_call(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -1738,6 +2176,12 @@ void parse_after_call(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_assert : parse the assert statement
+ *
+ * @param node : tree node of assert statement
+ * @param table : table of block that contains assert statement
+ */
 void parse_assert(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 	/* Grammar:
@@ -1751,6 +2195,11 @@ void parse_assert(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief check_log_type : check log type
+ *
+ * @param str : string of log type
+ */
 static void check_log_type(const char* str) {
 	const char* log_type[] =
 	{"\"info\"", "\"error\"", "\"undefined\"", "\"spec_violation\"", "\"unimplemented\"", NULL};
@@ -1767,9 +2216,17 @@ static void check_log_type(const char* str) {
 	return;
 }
 
+/**
+ * @brief check_log_level : check log level
+ *
+ * @param node : tree node of log level
+ * @param table : table of block that contains log statement
+ *
+ * @return : pointer to expression struct that contains log level information
+ */
 static expr_t* check_log_level(tree_t* node, symtab_t table) {
 	if (node == NULL)
-		return;
+		return NULL;
 
 	tree_t* level = node;
 	expr_t* expr = check_expr(level, table);
@@ -1777,7 +2234,7 @@ static expr_t* check_log_level(tree_t* node, symtab_t table) {
 		if (expr->is_const) {
 			int value = expr->val->int_v.value;
 			if ((value > 0) && (value < 5))
-				return;
+				return NULL;
 			else
 				error("out of log leve(1..4) : %d\n", value);
 		}
@@ -1788,10 +2245,18 @@ static expr_t* check_log_level(tree_t* node, symtab_t table) {
 	return expr;
 }
 
+/**
+ * @brief check_log_group : check log group
+ *
+ * @param node : tree node of log group
+ * @param table : table of block that contains log statement
+ *
+ * @return  : pointer to expression struct that contains log group information
+ */
 static expr_t* check_log_group(tree_t* node, symtab_t table) {
 	assert(table != NULL);
 	if (node == NULL)
-		return;
+		return NULL;
 
 	tree_t* group = node;
 	expr_t* expr = check_expr(group, table);
@@ -1800,6 +2265,13 @@ static expr_t* check_log_group(tree_t* node, symtab_t table) {
 }
 
 extern int scanfstr(const char *str, char ***typelist);
+
+/**
+ * @brief parse_log_format : parse the log format of output
+ *
+ * @param format : string of log outputting format
+ * @param args : args to be outputted
+ */
 static void parse_log_format(const char* format, tree_t* args) {
 	if ((format == NULL) || (args == NULL)) return;
 	char** typelist = NULL;
@@ -1815,6 +2287,12 @@ static void parse_log_format(const char* format, tree_t* args) {
 	return;
 }
 
+/**
+ * @brief parse_log : parse the log statement
+ *
+ * @param node : tree node of log statement
+ * @param table : table of block that contains log statement
+ */
 void parse_log(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 	/* Grammar:
@@ -1843,20 +2321,16 @@ void parse_log(tree_t* node, symtab_t table) {
 	tree_t* log_args = node->log.args;
 	expr_t* args_expr = parse_log_args(log_args, table);
 	parse_log_format(node->log.format, log_args);
-#if 0
-	if ((level_expr && level_expr->no_defined) ||
-		(group_expr && group_expr->no_defined) ||
-		(args_expr && args_expr->no_defined)) {
-		printf("level_expr: %d, group_expr: %d, args_expr: %d\n",
-		level_expr->no_defined, group_expr->no_defined, args_expr->no_defined);
-		undef_var_insert(table, node);
-		exit(-1);
-	}
-#endif
 
 	return;
 }
 
+/**
+ * @brief parse_select : parse the select statement
+ *
+ * @param node : tree node of select statement
+ * @param table : table of block that contains select statement
+ */
 void parse_select(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 	/* Grammar:
@@ -1900,6 +2374,12 @@ void parse_select(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_foreach : parse foreach statement
+ *
+ * @param node : tree node of foreach
+ * @param table : table of block that contains foreach statement
+ */
 void parse_foreach(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -1966,6 +2446,12 @@ void parse_foreach(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_label : parse the label statement
+ *
+ * @param node : statement of label statement
+ * @param table : table of block that contains label statement
+ */
 void parse_label(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -1993,6 +2479,12 @@ void parse_label(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_case : parse the case statement
+ *
+ * @param node : tree node of cas statement
+ * @param table : table of block that contains case statement
+ */
 void parse_case(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 	/* Grammar:
@@ -2014,6 +2506,12 @@ void parse_case(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_default : parse default statement
+ *
+ * @param node : tree node of default statement
+ * @param table : table of block that contains default statment
+ */
 void parse_default(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -2028,6 +2526,12 @@ void parse_default(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_goto : parse the statement of goto
+ *
+ * @param node : tree node of goto statement
+ * @param table : table of block that contains goto statement
+ */
 void parse_goto(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -2040,6 +2544,11 @@ void parse_goto(tree_t* node, symtab_t table) {
 	return;
 }
 
+/**
+ * @brief print_undef_templates : print the name of undefined templates of table
+ *
+ * @param table : table with undefined templates
+ */
 void print_undef_templates(symtab_t table) {
 	assert(table != NULL);
 	undef_template_t* undef = table->undef_temp;
@@ -2052,6 +2561,12 @@ void print_undef_templates(symtab_t table) {
 	return;
 }
 
+/**
+ * @brief parse_undef_temp_block : parse the block of undefined templates
+ *
+ * @param block : the block of undefined templates
+ * @param table : table of template
+ */
 static void parse_undef_temp_block(tree_t* block, symtab_t table) {
 	if (block == NULL || table->is_parsed == 1) {
 		return;
@@ -2074,6 +2589,12 @@ static void parse_undef_temp_block(tree_t* block, symtab_t table) {
 
 extern symbol_t get_symbol_from_root_table(const char* name, type_t type);
 extern void check_undef_template(symtab_t table);
+
+/**
+ * @brief parse_undef_template : parse undefined templates
+ *
+ * @param name : name of template
+ */
 void parse_undef_template(const char* name) {
 	assert(name != NULL);
 	symbol_t symbol = get_symbol_from_root_table(name, TEMPLATE_TYPE);
@@ -2087,6 +2608,11 @@ void parse_undef_template(const char* name) {
 	return;
 }
 
+/**
+ * @brief check_template_parsed : check one template is parsed or not
+ *
+ * @param name : name of templates
+ */
 void check_template_parsed(const char* name) {
 	assert(name != NULL);
 	symbol_t symbol = get_symbol_from_root_table(name, TEMPLATE_TYPE);
@@ -2099,16 +2625,18 @@ void check_template_parsed(const char* name) {
 	return;
 }
 
+/**
+ * @brief print_templates : print all templates name of one table
+ *
+ * @param table : table with templates
+ */
 void print_templates(symtab_t table) {
 	assert(table);
 	struct template_table* tmp = table->template_table;
-	//print_all_symbol(table);
 
 	int i = 0;
 	while ((tmp) != NULL) {
-		//print_all_symbol(tmp->table);
 		DEBUG_TEMPLATES("templates name(%d): %s, table_num: %d\n", i++, tmp->template_name, tmp->table->table_num);
-		printf("templates name(%d): %s, table_num: %d\n", i++, tmp->template_name, tmp->table->table_num);
 		if (tmp->table->template_table) {
 			print_templates(tmp->table);
 		}
@@ -2118,6 +2646,12 @@ void print_templates(symtab_t table) {
 	return;
 }
 
+/**
+ * @brief insert_undef_template : insert undefined template into table list of undefined templates
+ *
+ * @param table : table with undefined template
+ * @param name : name of undefined template
+ */
 static void insert_undef_template(symtab_t table, const char* name) {
 	assert(table != NULL); assert(name != NULL);
 	undef_template_t* new_undef = (undef_template_t*)gdml_zmalloc(sizeof(undef_template_t));
@@ -2136,6 +2670,14 @@ static void insert_undef_template(symtab_t table, const char* name) {
 }
 
 extern symtab_t root_table;
+
+/**
+ * @brief add_template_to_table : add template into table
+ *
+ * @param table : table with template
+ * @param template : name of template
+ * @param second_check : template is charge two times as one template can used before definition
+ */
 void add_template_to_table(symtab_t table, const char* template, int second_check) {
 	assert(table != NULL);
 	assert(template != NULL);
@@ -2152,7 +2694,6 @@ void add_template_to_table(symtab_t table, const char* template, int second_chec
 		DEBUG_AST("In %s, line = %d, trave templates: %s\n", __func__, __LINE__, template_name);
 		if (strcmp(template, template_name) == 0) {
 			return;
-//			exit(-1);
 		}
 		pre_temp_table = temp_table;
 		temp_table = temp_table->next;
@@ -2192,6 +2733,11 @@ void add_template_to_table(symtab_t table, const char* template, int second_chec
 	return;
 }
 
+/**
+ * @brief free_undef_templates : free the list of undefined templates
+ *
+ * @param table : table with undefined templates
+ */
 static void free_undef_templates(symtab_t table) {
 	assert(table != NULL);
 	undef_template_t* temp = table->undef_temp;
@@ -2206,6 +2752,11 @@ static void free_undef_templates(symtab_t table) {
 	return;
 }
 
+/**
+ * @brief check_undef_template : check one table have undefined templates
+ *
+ * @param table : table to be checked
+ */
 void check_undef_template(symtab_t table) {
 	assert(table != NULL);
 	if (table->undef_temp == NULL) {
@@ -2222,6 +2773,13 @@ void check_undef_template(symtab_t table) {
 	return;
 }
 
+/**
+ * @brief add_templates_to_table : entry to add templates into table
+ *
+ * @param table : table with object
+ * @param templates : two dimensional array with templates
+ * @param num : number of templates
+ */
 void add_templates_to_table(symtab_t table, char** templates, int num) {
 	assert(table);
 
@@ -2241,6 +2799,12 @@ void add_templates_to_table(symtab_t table, char** templates, int num) {
 	return;
 }
 
+/**
+ * @brief get_object_template_table : add table of templates into object table
+ *
+ * @param table : table of object
+ * @param node : node of object
+ */
 void get_object_template_table(symtab_t table, tree_t* node) {
 	DEBUG_AST("In %s, line = %d, node(%d): %s\n",
 			__FUNCTION__, __LINE__, node->common.type, node->common.name);
@@ -2269,9 +2833,6 @@ void get_object_template_table(symtab_t table, tree_t* node) {
 		case TEMPLATE_TYPE:
 			break;
 		default:
-//			fprintf(stderr, "unknown object type(%d) : %s",
-//					node->common.type, node->common.name);
-			/* FIXME handle the error */
 			PWARN("unknown object type (%s, %s)", node->common.location,
 					node->common.name, TYPENAME(node->common.type));
 			break;
@@ -2282,6 +2843,15 @@ void get_object_template_table(symtab_t table, tree_t* node) {
 	return;
 }
 
+/**
+ * @brief get_templates : get templates name from templates tree node
+ *
+ * @param templates : two dimensional array with templates name
+ * @param head : head of templates tree list
+ * @param num : number of templates
+ *
+ * @return  : two dimensional array with templates name
+ */
 char** get_templates(char** templates, tree_t* head, int num) {
 	if (head == NULL) {
 		return templates;
@@ -2299,8 +2869,6 @@ char** get_templates(char** templates, tree_t* head, int num) {
 			DEBUG_AST("identifier:  %s : %s\n", node->ident.str, templates[i - 1]);
 		}
 		else {
-//			fprintf(stderr, "The templates'type is(%d) : %s: %s\n",
-//					node->common.type, node->common.name, node->ident.str);
 			warning("the templates' type is %s (%s, %s)",
 					TYPENAME(node->common.type), node->common.name, node->ident.str);
 		}
@@ -2786,7 +3354,7 @@ void print_cast(tree_t* node, int pos) {
 void print_float_literal(tree_t* node, int pos) {
 	/* Grammar: FLOAT_LITERAL */
 	print_pos(pos);
-	printf("[%s : %s : %d-------------------------------]\n",
+	printf("[%s : %s : %d]\n",
 			node->common.name, node->float_cst.float_str, pos);
 
 	print_sibling(node, pos);
@@ -4861,27 +5429,3 @@ void print_ast (tree_t* root)
 
 	return;
 }
-
-void check_reg_table(void) {
-	symbol_t symbol = get_symbol_from_root_table("regs", 0);
-	object_attr_t* attr = symbol->attr;
-	symtab_t table = attr->common.table;
-	printf("regs table: %d, type: %d, BANK_TYPE: %d\n", table->table_num, symbol->type, BANK_TYPE);
-#if 0
-	symbol_t reg = symbol_find(table, "UartDR", REGISTER_TYPE);
-	object_attr_t* reg_attr = reg->attr;
-	symtab_t reg_table = reg_attr->common.table;
-	printf("reg_table: %d, parent: 0x%x\n",
-		reg_table->table_num, reg_table->parent);
-	printf("reg_table parent: %d\n", reg_table->parent->table_num);
-#endif
-
-	return;
-}
-
-
-
-
-
-
-
