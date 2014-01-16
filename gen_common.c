@@ -99,6 +99,12 @@ static void translate_c_ref(tree_t *t) {
 */
 
 static void translate_parameter(symbol_t sym);
+
+/**
+ * @brief translate_quote : translate the quote expression from dml to c languange
+ *
+ * @param t : syntax tree node of expression
+ */
 void translate_quote(tree_t *t) {
 	tree_t *node = t->quote.ident;
 	const char *name;
@@ -143,6 +149,11 @@ void translate_quote(tree_t *t) {
 	}
 }
 
+/**
+ * @brief translate_parameter : translate the paramter to c language
+ *
+ * @param sym : the symbol of parameter
+ */
 static void translate_parameter(symbol_t sym) {
 	param_type_t type;
 	param_value_t *val;
@@ -194,6 +205,11 @@ static void translate_parameter(symbol_t sym) {
 	}
 }
 
+/**
+ * @brief translate_ref_expr : translate the reference expression to language
+ *
+ * @param t : the syntax tree node of reference expression
+ */
 void translate_ref_expr(tree_t *t){
 	ref_info_t fi;
 	symbol_t sym;
@@ -243,6 +259,12 @@ void translate_ref_expr(tree_t *t){
 
 extern object_t *interface_obj;
 int in_method;
+
+/**
+ * @brief translate_brack_expr : translate the brack expression to c language
+ *
+ * @param t : syntax tree node of brack expression
+ */
 static void translate_brack_expr(tree_t *t){
 	tree_t *expr_list,*expr;
 	const char *name;
@@ -276,6 +298,12 @@ static void translate_brack_expr(tree_t *t){
 	}
 }
 
+/**
+ * @brief translate_expr_list : translate the expression list to c language
+ *
+ * @param expr : syntax tree node of expression list
+ * @param prefix: the prefix of expression list
+ */
 void translate_expr_list(tree_t *expr,const char *prefix){
 	tree_t *it = expr;
 
@@ -291,6 +319,14 @@ void translate_expr_list(tree_t *expr,const char *prefix){
 	}
 }
 
+/**
+ * @brief get_call_expr_info : get the symbol of call
+ *
+ * @param node : syntax tree node of call expression
+ * @param table : the table of block that contains call expression
+ *
+ * @return : symbol of call expression
+ */
 symbol_t  get_call_expr_info(tree_t *node, symtab_t table) {
 	symbol_t tmp;
 	tree_t *t;
@@ -306,6 +342,14 @@ symbol_t  get_call_expr_info(tree_t *node, symtab_t table) {
 	return tmp;
 }
 
+/**
+ * @brief get_call_expr_ref  : get the reference of call expression
+ *
+ * @param node : tree node of call/inline expression
+ * @param ref_ret : the list of reference
+ *
+ * @return : symbol of the last reference
+ */
 static symbol_t  get_call_expr_ref(tree_t *node, ref_ret_t *ref_ret) {
    symbol_t tmp;
    tree_t *t;
@@ -320,6 +364,17 @@ static symbol_t  get_call_expr_ref(tree_t *node, ref_ret_t *ref_ret) {
    return tmp;
 }
 
+/**
+ * @brief check_param_type : check the type of parameter is compatible
+ *
+ * @param node : syntax tree node of method parameters
+ * @param list : two dimensional array for method defined parameters
+ * @param args : the number of args
+ * @param in_line : sign of inline expression
+ *
+ * @return : 1 - type is not compatible
+ *			0 - type is compatible
+ */
 static int check_param_type(tree_t* node, params_t** list, int args, int in_line) {
 	int i = 0;
 	cdecl_t* type = 0;
@@ -328,7 +383,6 @@ static int check_param_type(tree_t* node, params_t** list, int args, int in_line
 
 	while (tmp != NULL) {
 		if ((list[i]->is_notype) && (in_line == 0)) {
-			//error(" no type for input/output parameter\n");
 			PERRORN("no type for input/output parameter\n", tmp);
 			return 0;
 		}
@@ -346,6 +400,13 @@ static int check_param_type(tree_t* node, params_t** list, int args, int in_line
 	return 0;
 }
 
+/**
+ * @brief get_method_param_node : get syntax tree node of method parameters
+ *
+ * @param node: syntax tree node of method parameters with brack
+ *
+ * @return : tree node of parameters
+ */
 static tree_t* get_method_param_node(tree_t* node) {
 	assert(node != NULL);
 	/* base on the grammar, if an expression have brack
@@ -356,6 +417,17 @@ static tree_t* get_method_param_node(tree_t* node) {
 		return NULL;
 }
 
+/**
+ * @brief check_method_in_param : check the type parameters is compatible with method defined
+ * in parameters type
+ *
+ * @param sym : symbol of method
+ * @param call_expr : the call/inline expression
+ * @param in_line : sign of inline expression
+ *
+ * @return : 0 - type is compatible
+ *			1 - type is not compatible
+ */
 static int check_method_in_param(symbol_t sym, tree_t* call_expr, int in_line) {
 	assert(sym != NULL); assert(call_expr != NULL);
 	method_attr_t* attr = sym->attr;
@@ -379,6 +451,16 @@ static int check_method_in_param(symbol_t sym, tree_t* call_expr, int in_line) {
 	return ret;
 }
 
+/**
+ * @brief check_method_out_param : check the type of return method parameters is compatible with defined
+ *
+ * @param sym : symbol of method
+ * @param ret_expr : the syntax tree node of return arguments
+ * @param in_line : sign of inline expression
+ *
+ * @return : 1 - type of arguments is not compatible
+ *			0 - type of arguments is compatible
+ */
 static int check_method_out_param(symbol_t sym, tree_t* ret_expr, int in_line) {
 	assert(sym != NULL);
 	method_attr_t* attr = sym->attr;
@@ -401,6 +483,17 @@ static int check_method_out_param(symbol_t sym, tree_t* ret_expr, int in_line) {
 	return ret;
 }
 
+/**
+ * @brief check_method_param : check the parameters of method
+ *
+ * @param sym : the symbol of method
+ * @param call_expr : the syntax tree node of call expression
+ * @param ret_expr : the return expression of method
+ * @param in_line : this method is in inline/call expression
+ *
+ * @return :  1 - the type parameters of call/inline is not compatible with method parameters type
+ *			0 - the type parameters of call/inline is compatible with method parameters type
+ */
 int check_method_param(symbol_t sym, tree_t* call_expr, tree_t* ret_expr, int in_line) {
 	assert(sym != NULL);
 	method_attr_t* attr = sym->attr;
@@ -415,6 +508,12 @@ int check_method_param(symbol_t sym, tree_t* call_expr, tree_t* ret_expr, int in
 	return ret_value;
 }
 
+/**
+ * @brief translate_call_common : translate the common part about call/inline method
+ *
+ * @param expr : syntax tree node of call/inline
+ * @param ret : the syntax tree node of return arguments
+ */
 static void translate_call_common(tree_t *expr, tree_t *ret){
 	//tree_t *expr = t->call_inline.expr;
 	//tree_t *ret = t->call_inline.ret_args;
@@ -515,6 +614,11 @@ static void translate_call_common(tree_t *expr, tree_t *ret){
 	exit_scope();
 }
 
+/**
+ * @brief translate_call : translate the call expression
+ *
+ * @param t : syntax tree node of call expression
+ */
 void translate_call(tree_t *t) {
 	tree_t *expr = t->call_inline.expr;
 	tree_t *ret = t->call_inline.ret_args;
@@ -522,6 +626,11 @@ void translate_call(tree_t *t) {
 	translate_call_common(expr, ret);
 }
 
+/**
+ * @brief translate_after_call : translate the after call expression
+ *
+ * @param t : syntax tree node of after_call expression
+ */
 void translate_after_call(tree_t *t) {
 	tree_t *node = t;
 	tree_t *call = node->after_call.call_expr;
@@ -533,7 +642,12 @@ void translate_after_call(tree_t *t) {
 static void bind_tmp_type(tree_t *node, tree_t *node2) {
 }
 
-
+/**
+ * @brief process_method_parameters : process the method parameters for generating
+ *
+ * @param m : the attribute of method
+ * @param alias: method parameters have aliases
+ */
 static void process_method_parameters(method_attr_t *m, int alias) {
 	int index = 0;
 	symbol_t sym;
@@ -584,6 +698,11 @@ static void process_method_parameters(method_attr_t *m, int alias) {
 	}
 }
 
+/**
+ * @brief get_expr_type : get the node type of expression
+ *
+ * @param t : syntax tree node of expression
+ */
 static void get_expr_type(tree_t *t) {
         if(t->common.type == CAST_TYPE) {
                 translate(t->cast.ctype);
@@ -595,6 +714,15 @@ static void get_expr_type(tree_t *t) {
 }
 
 static int node_has_type(tree_t *node);
+
+/**
+ * @brief process_inline_start : process the context before generating inline expression
+ *
+ * @param m : the mehtod of inline
+ * @param input : the input parameters of method
+ * @param output : the output parameters of method
+ * @param context : the context of current generating
+ */
 static void process_inline_start(method_attr_t *m, tree_t *input, tree_t *output, context_t *context) {
 	tree_t *mt = m->common.node;
 	tree_t *params = mt->method.params;
@@ -667,6 +795,11 @@ static void process_inline_start(method_attr_t *m, tree_t *input, tree_t *output
 	}
 }
 
+/**
+ * @brief translate_block : translate the content of block
+ *
+ * @param t : syntax tree node of block
+ */
 void translate_block(tree_t *t) {
 	tree_t *node;
 	YYLTYPE *l;
@@ -699,6 +832,11 @@ void translate_block(tree_t *t) {
 	exit_scope();
 }
  
+/**
+ * @brief translate_local : translate the local declaration
+ *
+ * @param t : syntax tree node of local declaration
+ */
 void translate_local(tree_t *t) {
 	tree_t *node;
 	cdecl_t *type;
@@ -736,6 +874,15 @@ static void translate_expr(tree_t *t) {
 	my_DBG("TODO\n");
 }
 
+/**
+ * @brief is_explicit : check the syntax tree node is explicit
+ *
+ * @param t : syntax tree node of checking
+ * @param boolean : the value of explicit
+ *
+ * @return : 1 - is explicit
+ *			0 - not explicit
+ */
 static int is_explicit(tree_t *t, int *boolean) {
 	tree_t *node = t;
 	int ret = 0;
@@ -767,6 +914,11 @@ static int is_explicit(tree_t *t, int *boolean) {
 	return ret;
 }
 
+/**
+ * @brief translate_if_else : translate the if else expression
+ *
+ * @param t : syntax tree node of if else
+ */
 void translate_if_else(tree_t *t) {
 	tree_t *node;
 	expression_t *expr = NULL;
@@ -862,6 +1014,11 @@ void translate_if_else(tree_t *t) {
 	}	
 }
 
+/**
+ * @brief translate_while : translate the while expression and its block
+ *
+ * @param t : syntax tree node of while expression
+ */
 void translate_while(tree_t *t) {
 	tree_t *node = t->do_while.cond;
 	POS;
@@ -874,6 +1031,11 @@ void translate_while(tree_t *t) {
 	translate(node);
 }
 
+/**
+ * @brief translate_comma_expr_opt : translate the comma expression
+ *
+ * @param t : syntax tree node of comma expression
+ */
 static void translate_comma_expr_opt(tree_t *t) {
 	tree_t *node = t;
 	while(node) {
@@ -885,6 +1047,11 @@ static void translate_comma_expr_opt(tree_t *t) {
 	}
 }
 
+/**
+ * @brief translate_for : translate the for expression and its block
+ *
+ * @param t : syntax tree node of for expression
+ */
 void translate_for(tree_t *t) {
 	tree_t *node;
 	symtab_t saved = NULL;
@@ -917,6 +1084,11 @@ void translate_for(tree_t *t) {
 	current_table = saved;
 }
 
+/**
+ * @brief translate_try_catch : translate the try catch expression
+ *
+ * @param t : syntax tree node of try catch
+ */
 static void translate_try_catch(tree_t *t) {
 	tree_t *node;
 	symbol_t sym;	
@@ -953,6 +1125,11 @@ static void translate_try_catch(tree_t *t) {
 	exit_scope();
 }
 
+/**
+ * @brief translate_throw : translate the throw expression
+ *
+ * @param t : syntax tree node of throw expression
+ */
 void translate_throw(tree_t *t) {
 	tree_t *node = t;
 	symbol_t sym;
@@ -986,6 +1163,11 @@ void translate_continue(tree_t *t) {
 	D("continue;");
 }
 
+/**
+ * @brief translate_switch : translate the switch expression
+ *
+ * @param t: syntax tree node of switch
+ */
 void translate_switch(tree_t *t) {
 	POS;
 	D("switch");
@@ -1011,6 +1193,13 @@ void translate_default(tree_t *t) {
 	D("default :");
 }
 
+/**
+ * @brief get_expression_sym : get symbol of expression
+ *
+ * @param node : syntax tree node of expression
+ *
+ * @return : symbol of expression
+ */
 symbol_t get_expression_sym(tree_t *node) {
 	symbol_t sym;
 	tree_t *tmp;
@@ -1033,6 +1222,11 @@ symbol_t get_expression_sym(tree_t *node) {
 	return NULL;
 }
 
+/**
+ * @brief translate_foreach : translate the foreach expression
+ *
+ * @param t : syntax tree node of foreach
+ */
 void translate_foreach(tree_t *t) {
 	tree_t *node;
 	const char *ident;
@@ -1144,6 +1338,11 @@ void translate_foreach(tree_t *t) {
 	current_table = saved; 
 }
 
+/**
+ * @brief process_inline_block : translate the block of inline method
+ *
+ * @param m : method of inline
+ */
 static void process_inline_block(method_attr_t *m) {
 	tree_t *method = m->common.node;
 	tree_t *block = method->method.block;
@@ -1152,6 +1351,13 @@ static void process_inline_block(method_attr_t *m) {
 	return;
 }
 
+/**
+ * @brief process_inline_end : process the context after generating inline expression
+ *
+ * @param m : the method of inline
+ * @param output : the output parameters of method
+ * @param context : the context of current generating
+ */
 static void process_inline_end(method_attr_t *m, tree_t *output, context_t *context) {
 	tree_t *mt = m->common.node;
 	tree_t *params = mt->method.params;
@@ -1179,6 +1385,11 @@ static void process_inline_end(method_attr_t *m, tree_t *output, context_t *cont
 	return;
 }
 
+/**
+ * @brief translate_inline : translate the in_line expression
+ *
+ * @param t : syntax tree node of inline
+ */
 void translate_inline(tree_t *t) {
 	tree_t *expr = t->call_inline.expr;
 	tree_t *ret = t->call_inline.ret_args;
@@ -1238,6 +1449,11 @@ void translate_inline(tree_t *t) {
 	return;
 }
 
+/**
+ * @brief translate_typeof : translate the typeof expression
+ *
+ * @param t : syntax tree node of typeof expression
+ */
 void translate_typeof(tree_t *t) {
 	tree_t *node = t;
 	tree_t *expr = node->typeof_tree.expr;
@@ -1280,6 +1496,11 @@ void translate_typeof(tree_t *t) {
 	}
 }
 
+/**
+ * @brief translate_cdecl : translate the c declaration
+ *
+ * @param t : the syntax tree node of cdeclaration
+ */
 void translate_cdecl(tree_t *t) {
 	if (t->cdecl.is_const) {
 		D("const ");
@@ -1296,6 +1517,11 @@ void translate_cdecl(tree_t *t) {
 	translate(t->cdecl.decl);
 }
 
+/**
+ * @brief translate_ctypedecl : translate the c type declaration
+ *
+ * @param t : syntax tree node of c type declaration
+ */
 void translate_ctypedecl(tree_t *t) {
         if (t->ctypedecl.const_opt) {
                 D("const ");
@@ -1312,6 +1538,11 @@ void translate_ctypedecl(tree_t *t) {
         translate(t->ctypedecl.ctypedecl_ptr);
 }
 
+/**
+ * @brief translate_ctypedecl_ptr : translate the pointer of c type declaration
+ *
+ * @param t : syntax tree node
+ */
 void translate_ctypedecl_ptr(tree_t *t) {
         if(t->ctypedecl_ptr.stars) {
                 translate(t->ctypedecl_ptr.stars);
@@ -1322,6 +1553,11 @@ void translate_ctypedecl_ptr(tree_t *t) {
         }
 }
 
+/**
+ * @brief translate_stars : translate the start
+ *
+ * @param t : syntax tree node of start
+ */
 void translate_stars(tree_t *t) {
         D("*");
         if(t->stars.is_const) {
@@ -1332,6 +1568,11 @@ void translate_stars(tree_t *t) {
         }
 }
 
+/**
+ * @brief print_basetype : generate the code of basetype
+ *
+ * @param node : tree node of basetype
+ */
 static void print_basetype(tree_t *node) {
 	const char *name;
 
@@ -1347,6 +1588,13 @@ static void print_basetype(tree_t *node) {
 	}
 }
 
+/**
+ * @brief get_basetype_type : get the string of basetype
+ *
+ * @param node : syntax tree node of basetype
+ *
+ * @return : string of basetype
+ */
 static const char *get_basetype_type(tree_t *node) {
 	const char *name = NULL;
 	
@@ -1363,6 +1611,13 @@ static const char *get_basetype_type(tree_t *node) {
 }
 
 static void print_cdecl2(tree_t *t, int ret);
+
+/**
+ * @brief print_cdecl1 : generate the code of the first style of c declaration
+ *
+ * @param t : syntax tree node of declaration
+ * @param ret : this c declaration is in method return parameter
+ */
 static void  print_cdecl1(tree_t *t, int ret) {
 	if(t->cdecl.is_const) {
 		D("const");
@@ -1376,6 +1631,14 @@ static void  print_cdecl1(tree_t *t, int ret) {
 		print_cdecl2(t->cdecl.decl, ret);
 }
 
+/**
+ * @brief node_has_type : check method parameters have type or not
+ *
+ * @param node : syntax tree node of method parameters
+ *
+ * @return : 1 - have type
+ *			0 - not have type
+ */
 static int node_has_type(tree_t *node) {
 	if(node->cdecl.basetype && node->cdecl.decl) {
 			return 1;
@@ -1385,6 +1648,14 @@ static int node_has_type(tree_t *node) {
 }
 
 static const char *get_cdecl2_name(tree_t *t);
+
+/**
+ * @brief get_cdecl_name : get the variable name of declaration
+ *
+ * @param node: syntax tree node of declaration
+ *
+ * @return : the variable name of declaration
+ */
 const char *get_cdecl_name(tree_t *node) {
 	if(!node->cdecl.decl && node->cdecl.basetype) {
 			return  get_basetype_type(node->cdecl.basetype);
@@ -1392,6 +1663,13 @@ const char *get_cdecl_name(tree_t *node) {
 	return get_cdecl2_name(node->cdecl.decl);
 }
 
+/**
+ * @brief get_type_info : get the type of declaration
+ *
+ * @param node : node of declaration
+ *
+ * @return  : string of type
+ */
 const char *get_type_info(tree_t *node) {
 	if(node->cdecl.is_const) {
 		my_DBG("TODO get type info:");
@@ -1399,6 +1677,14 @@ const char *get_type_info(tree_t *node) {
 	return get_basetype_type(node->cdecl.basetype);
 }
 
+/**
+ * @brief block_empty : check the method have block or not
+ *
+ * @param t : syntax tree node of method block
+ *
+ * @return : 1 - empty block
+ *			0 - not empty block
+ */
 int block_empty(tree_t *t) {
 	tree_t *node;
 	tree_t *it;
@@ -1475,6 +1761,11 @@ void translate_c_keyword(tree_t *t) {
 	D("%s", t->ident.str);
 }
 
+/**
+ * @brief translate_log : translate the log
+ *
+ * @param t : syntax tree node of log
+ */
 void translate_log(tree_t *t) {
 	tree_t *node = t;
 	const char *log_type;
@@ -1488,6 +1779,11 @@ void translate_log(tree_t *t) {
 	}
 }
 
+/**
+ * @brief translate_ident : translate the indentifier
+ *
+ * @param t : syntax tree node of identifier
+ */
 void translate_ident(tree_t *t) {
 	const char *name = t->ident.str;
 	const char *alias_name;
@@ -1538,6 +1834,12 @@ void translate_ident(tree_t *t) {
 	}
 }
 
+/**
+ * @brief translate_cdecl2 : translate the second style of c declaration, this name is
+ * based on dml language
+ *
+ * @param t : syntax tree node of c declaration
+ */
 void translate_cdecl2(tree_t *t) {
 	if(t->common.type == CDECL_TYPE) {
 		if(t->cdecl.is_const) {
@@ -1555,6 +1857,13 @@ void translate_cdecl2(tree_t *t) {
 }
 
 static void print_cdecl3(tree_t *node, int ret);
+
+/**
+ * @brief print_cdecl2 : generate the code of the second style of c declaration
+ *
+ * @param t : the syntax tree node of declaration
+ * @param ret : the c declaration is in method returning declaration
+ */
 static void print_cdecl2(tree_t *t, int ret) {
 	if(t->common.type == CDECL_TYPE) {
 		if(t->cdecl.is_const) {
@@ -1576,6 +1885,13 @@ static void print_cdecl2(tree_t *t, int ret) {
 
 static const char *get_cdecl3_name(tree_t *node);
 
+/**
+ * @brief get_cdecl2_name : get the variable name of the second style c declaration
+ *
+ * @param t : syntax tree node of declaration
+ *
+ * @return : variable name of declaration
+ */
 static const char *get_cdecl2_name(tree_t *t) {
 	if(t->common.type == CDECL_TYPE) {
 		return get_cdecl2_name(t->cdecl.decl);
@@ -1585,6 +1901,12 @@ static const char *get_cdecl2_name(tree_t *t) {
 	return NULL;
 }
 
+/**
+ * @brief print_cdecl3 : generate the code of the third style of c declaration
+ *
+ * @param t : the syntax tree node of declaration
+ * @param ret : the c declaration is in method returning declaration
+ */
 static void print_cdecl3(tree_t *t, int ret) {
 	if (t->common.type == IDENT_TYPE || t->common.type == DML_KEYWORD_TYPE) {
 		if(ret) {
@@ -1596,6 +1918,13 @@ static void print_cdecl3(tree_t *t, int ret) {
 	}
 }
 
+/**
+ * @brief get_cdecl3_name : get the variable name from the third style c declaration
+ *
+ * @param t : syntax tree node of declaration
+ *
+ * @return : variable name
+ */
 static const char *get_cdecl3_name(tree_t *t) {
 	if (t->common.type == IDENT_TYPE || t->common.type == DML_KEYWORD_TYPE) {
 		return t->ident.str;
@@ -1605,6 +1934,11 @@ static const char *get_cdecl3_name(tree_t *t) {
 	return NULL;
 }
 
+/**
+ * @brief translate_cdecl3_array : translate the array in the third c declaration
+ *
+ * @param t : syntax tree node of declaration
+ */
 void translate_cdecl3_array(tree_t *t) {
 	translate(t->array.decl);
 	D("[");
@@ -1612,6 +1946,11 @@ void translate_cdecl3_array(tree_t *t) {
 	D("]");
 }
 
+/**
+ * @brief translate_decl_list : translate the list of declaration
+ *
+ * @param t : syntax tree node of list declaration
+ */
 static void translate_decl_list(tree_t *t) {
 	tree_t *it = t;
 	if(!t) {
@@ -1630,6 +1969,12 @@ static void translate_decl_list(tree_t *t) {
 	}
 	no_alias = 0;
 }
+
+/**
+ * @brief translate_cdecl3_brack : translate the declaration in brack
+ *
+ * @param t : syntax tree node of declaration
+ */
 static void translate_cdecl3_brack(tree_t *t) {
 	if(t->cdecl_brack.cdecl){
 		translate(t->cdecl_brack.cdecl);
@@ -1642,6 +1987,13 @@ static void translate_cdecl3_brack(tree_t *t) {
 void translate_return(tree_t *t) {
 	D("return 0");
 }
+
+/**
+ * @brief do_method_param_alias : make the aliases for method parameter
+ *
+ * @param t : the syntax tree node of parameter
+ * @param ret : sign of return parameter
+ */
 static void do_method_param_alias(tree_t *t, int ret) {
 	tree_t *node = t;
 	const char *name;
@@ -1673,6 +2025,12 @@ static void do_method_param_alias(tree_t *t, int ret) {
 	}
 }
 
+/**
+ * @brief translate_cdecl_or_ident_list : generate the code of parameters of method
+ *
+ * @param t : the syntax tree node of method parameters
+ * @param ret : sign for return parameters
+ */
 static void translate_cdecl_or_ident_list(tree_t *t, int ret) {
 	tree_t *node = t;
 
@@ -1685,6 +2043,12 @@ static void translate_cdecl_or_ident_list(tree_t *t, int ret) {
 	}
 }
 
+/**
+ * @brief cdecl_or_ident_list_params_alias : make parameters aliases based on parameter list
+ *
+ * @param t : syntax tree node of method parameter
+ * @param ret : sign of return parameters
+ */
 void cdecl_or_ident_list_params_alias(tree_t *t, int ret) {
 	tree_t *node = t;
 
@@ -1694,6 +2058,12 @@ void cdecl_or_ident_list_params_alias(tree_t *t, int ret) {
 	}
 }
 
+/**
+ * @brief gen_method_params : generate the parameters about method
+ *
+ * @param obj : the object owning method
+ * @param m : syntax tree node of method
+ */
 static void gen_method_params(object_t *obj, tree_t *m){
 	tree_t *params = m->method.params;
  	
@@ -1712,6 +2082,12 @@ static void gen_method_params(object_t *obj, tree_t *m){
 	D(")");
 }
 
+/**
+ * @brief do_method_params_alias : entry to make aliases for method parameters
+ *
+ * @param obj : the object owning method
+ * @param m : syntax tree node of method
+ */
 void do_method_params_alias(object_t *obj, tree_t *m){
 	tree_t *params = m->method.params;
 	const char *name;
@@ -1732,6 +2108,12 @@ void do_method_params_alias(object_t *obj, tree_t *m){
 	}
 }
 
+/**
+ * @brief gen_method_entry : entry to generate method code
+ *
+ * @param obj : object owning method
+ * @param m : syntax tree node of method
+ */
 static void gen_method_entry(object_t *obj, tree_t *m) {
 	tree_t *block;
 	int has_return;
@@ -1762,6 +2144,12 @@ static void gen_method_entry(object_t *obj, tree_t *m) {
 	}
 }
 
+/**
+ * @brief do_block_logic : generate the logical code of method
+ *
+ * @param obj : object owning method
+ * @param m : syntax tree node of method
+ */
 void do_block_logic(object_t *obj, tree_t *m) {
 	tree_t *block;
 	symbol_t sym = NULL;
@@ -1801,6 +2189,11 @@ void do_block_logic(object_t *obj, tree_t *m) {
 	}
 }
 
+/**
+ * @brief gen_dummy_block : generate the code of method with empty method block
+ *
+ * @param block : syntax tree node of method block
+ */
 static void gen_dummy_block(tree_t *block) {
 		enter_scope();
 		gen_src_loc(&block->common.location);
@@ -1810,6 +2203,12 @@ static void gen_dummy_block(tree_t *block) {
 		new_line();
 }
 
+/**
+ * @brief gen_method_block : generate the code of method block
+ *
+ * @param obj : object of owning method
+ * @param m : syntax tree node of method
+ */
 static void gen_method_block(object_t *obj, tree_t *m){
 	tree_t *block = m->method.block;
 	symbol_t sym;
@@ -1845,6 +2244,11 @@ static void gen_method_block(object_t *obj, tree_t *m){
 	/*}\n*/
 }
 
+/**
+ * @brief gen_object_index : generate the index of object
+ *
+ * @param obj : the object to be generated
+ */
 static void gen_object_index(object_t *obj) {
 	int i; 
 	
@@ -1853,6 +2257,12 @@ static void gen_object_index(object_t *obj) {
 	}
 }
 
+/**
+ * @brief gen_dml_method_header : generate the header of method
+ *
+ * @param obj : the object owning method
+ * @param m : syntax tree node of method
+ */
 void gen_dml_method_header(object_t *obj, tree_t *m) {
 	method_attr_t *attr;
 
@@ -1880,6 +2290,14 @@ static void change_object(object_t *obj) {
 static void restore_object(object_t *obj) {
 }
 
+/**
+ * @brief context_switch_to : change the context with method
+ *
+ * @param context : the current context of generating code
+ * @param obj : the object of method owned
+ * @param to : the symbol table of method
+ * @param method_parent : the parent table of method
+ */
 static inline void context_switch_to(context_t *context, obj_ref_t *obj, symtab_t to, symtab_t method_parent) {
 	context->current = to;
 	context->saved = current_table;
@@ -1890,7 +2308,12 @@ static inline void context_switch_to(context_t *context, obj_ref_t *obj, symtab_
 	change_object(obj->obj);
 }
 
-
+/**
+ * @brief context_restore : restore the context of generating code
+ *
+ * @param context : the context of generating code
+ * @param old : the old symbol table
+ */
 static inline void context_restore(context_t *context, symtab_t *old) {
 	current_table = context->saved;
 	OBJ = context->obj;
@@ -1899,6 +2322,13 @@ static inline void context_restore(context_t *context, symtab_t *old) {
 	//restore_object(OBJ->obj);
 }
 
+/**
+ * @brief pre_gen_method : get some information about context from method
+ *
+ * @param obj : the object that has method
+ * @param method : syntax tree node of method
+ * @param context : the context of generating code
+ */
 void pre_gen_method(obj_ref_t *obj, tree_t *method, context_t *context) {
 	method_attr_t *attr;
 	symtab_t table;
@@ -1913,6 +2343,13 @@ void pre_gen_method(obj_ref_t *obj, tree_t *method, context_t *context) {
 	OBJ = obj;
 }
 
+/**
+ * @brief post_gen_method : do some post work after method generated
+ *
+ * @param obj : the object of owning method
+ * @param method : syntax tree node of method
+ * @param context : the context of generating code
+ */
 void post_gen_method(obj_ref_t *obj, tree_t *method, context_t *context) {
 	method_attr_t *attr;
 	symtab_t table;
@@ -1922,6 +2359,12 @@ void post_gen_method(obj_ref_t *obj, tree_t *method, context_t *context) {
 	context_restore(context, &table->parent);
 }
 
+/**
+ * @brief gen_object_info : generate the object information of method
+ *
+ * @param ref : the object of owning method
+ * @param m : the struct of method
+ */
 static void gen_object_info(obj_ref_t *ref, struct method_name *m) {
 	const char *name;
 	char buf[256];
@@ -1941,6 +2384,13 @@ static void gen_object_info(obj_ref_t *ref, struct method_name *m) {
 }
 
 extern void print_method (tree_t* node, int pos);
+
+/**
+ * @brief gen_dml_method : generate the code of method
+ *
+ * @param obj : the object of method
+ * @param m : the method struct
+ */
 void gen_dml_method(object_t *obj, struct method_name *m) {
 	tree_t *method = m->method;
 	context_t context;
