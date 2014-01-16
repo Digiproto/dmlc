@@ -165,6 +165,13 @@ static const struct bank_access_description event_proxy_bank_access[] = {
 	[0] = {}
 };
 
+/**
+ * @brief event_proxy_new_instance : create a new instance of event
+ *
+ * @param objname : new event name
+ *
+ * @return  : new object of event
+ */
 static conf_object_t* event_proxy_new_instance(const char *objname) {
 	event_proxy_t *proxy = (event_proxy_t*) MM_ZALLOC(sizeof(*proxy));
 	proxy->init_time = get_now_usec();
@@ -172,12 +179,18 @@ static conf_object_t* event_proxy_new_instance(const char *objname) {
 	return &proxy->obj;
 }
 
+/**
+ * @brief : initilize the struct of event class data
+ */
 static const class_data_t event_proxy_data = {
 	.new_instance = event_proxy_new_instance,
 	.resources = &event_proxy_resource,
 	.bank_access = event_proxy_bank_access,
 };
 
+/**
+ * @brief event_proxy_init_local : initilize the event class
+ */
 void event_proxy_init_local(void) {
 	static conf_class_t conf_class = {
 		.cls_name = "event_proxy",
