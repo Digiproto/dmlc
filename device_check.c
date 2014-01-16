@@ -59,6 +59,11 @@ static void init_list_head(object_t *obj) {
 	INIT_LIST_HEAD(&obj->method_generated);	
 }
 
+/**
+ * @brief init_obj : init all object lists in object
+ *
+ * @param obj : the object of lists
+ */
 static void init_obj(object_t *obj) {
 	struct list_head *p;
 	object_t *tmp;
@@ -70,6 +75,11 @@ static void init_obj(object_t *obj) {
 	}	
 }
 
+/**
+ * @brief back_to_zero : set all lists in device to initializing state
+ *
+ * @param dev : the object of device
+ */
 static void back_to_zero(device_t *dev) {
 	struct list_head *p;
 	object_t *tmp;
