@@ -23,6 +23,13 @@
 #include "gen_attribute.h"
 
 extern object_t *DEV;
+
+/**
+ * @brief gen_attribute_set : generate the code of set method in attribute object
+ *
+ * @param obj : the object of attribute
+ * @param f : file to be generated
+ */
 static void gen_attribute_set(object_t *obj, FILE *f) {
 	attribute_t *attr = (attribute_t *)obj;
 	int type = attr->alloc;
@@ -69,6 +76,12 @@ static void gen_attribute_set(object_t *obj, FILE *f) {
 	fprintf(f, "}\n");
 }
 
+/**
+ * @brief gen_attribute_get : generate the code of get method in attribute object
+ *
+ * @param obj : the object of attribute
+ * @param f : file to be generated
+ */
 static void gen_attribute_get(object_t *obj, FILE *f) {
 	attribute_t *attr = (attribute_t *)obj;
 	int type = attr->alloc;
@@ -110,6 +123,12 @@ static void gen_attribute_get(object_t *obj, FILE *f) {
 	fprintf(f, "}\n");
 }
 
+/**
+ * @brief gen_attribute_code : generate the code of attribute
+ *
+ * @param obj : the object of attribute
+ * @param f : file to be generated
+ */
 static void gen_attribute_code(object_t *obj, FILE *f) {
 	attribute_t *attr = (attribute_t *)obj;
 	const char *type = attr->alloc_type;
@@ -120,10 +139,16 @@ static void gen_attribute_code(object_t *obj, FILE *f) {
 	} else {
 		name = obj->name;
 	}
-	gen_attribute_set(obj, f);		
-	gen_attribute_get(obj, f);		
+	gen_attribute_set(obj, f);
+	gen_attribute_get(obj, f);
 }
 
+/**
+ * @brief gen_device_attribute : entry to generate the code of attribute
+ *
+ * @param dev : the object of device
+ * @param f : file to be generated
+ */
 void gen_device_attribute(device_t *dev, FILE *f) {
 	struct list_head *p;
 	object_t *obj;
@@ -145,6 +170,12 @@ void gen_device_attribute(device_t *dev, FILE *f) {
 	}*/
 }
 
+/**
+ * @brief gen_device_attribute_description : generate the information and struct of attributes
+ *
+ * @param dev : the object of device
+ * @param f : file to be generated
+ */
 void gen_device_attribute_description(device_t *dev, FILE *f) {
        struct list_head *p;
        object_t *tmp;
