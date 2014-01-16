@@ -4,6 +4,12 @@ extern object_t *OBJ;
 static symtab_t saved_table;
 extern symtab_t current_table;
 
+/**
+ * @brief pre_chk_method : make some work before check method
+ *
+ * @param obj : the object of containing method
+ * @param method : the method to be checked
+ */
 static void pre_chk_method(object_t *obj, tree_t *method) {
         method_attr_t *attr;
         symtab_t table;
@@ -16,6 +22,12 @@ static void pre_chk_method(object_t *obj, tree_t *method) {
         OBJ = obj;
 }
 
+/**
+ * @brief post_chk_method : restore the context after check method
+ *
+ * @param obj : the object of containing method
+ * @param method : the method to be checked
+ */
 static void post_chk_method(object_t *obj, tree_t *method) {
         method_attr_t *attr;
         symtab_t table;
@@ -26,6 +38,12 @@ static void post_chk_method(object_t *obj, tree_t *method) {
         OBJ = NULL;
 }
 
+/**
+ * @brief chk_dml_method : check the method of device
+ *
+ * @param obj : the object of device
+ * @param m : the method of device
+ */
 void chk_dml_method(object_t *obj, struct method_name *m) {
         tree_t *method = m->method;
 	if (method == NULL)
