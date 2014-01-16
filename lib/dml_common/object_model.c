@@ -35,6 +35,14 @@ typedef struct object_list {
 	conf_object_t *obj; 
 } obj_list_t;
 
+/**
+ * @brief SIM_new_object : realize the SIM_new_object method
+ *
+ * @param cls : class struct
+ * @param name : name of new object
+ *
+ * @return : new object struct
+ */
 static conf_object_t *SIM_new_object(const conf_class_t *cls, const char *name) {
 	conf_object_t *tmp = NULL;
 
@@ -50,6 +58,12 @@ static conf_object_t *SIM_new_object(const conf_class_t *cls, const char *name) 
 void VT_object_constructor(conf_object_t *obj, const char *name) {
 }
 
+/**
+ * @brief SIM_object_register : register an object to list
+ *
+ * @param obj : object to be registered
+ * @param name : name of object
+ */
 void SIM_object_register(conf_object_t *obj, const char *name) {
 	obj_list_t *tmp;
 	tmp = (obj_list_t*) MM_ZALLOC(sizeof(*tmp));
@@ -62,6 +76,15 @@ void SIM_object_register(conf_object_t *obj, const char *name) {
 }
 
 void event_proxy_init_local(void);
+
+/**
+ * @brief SIM_pre_conf_object : realize the SIM_pre_conf_object method
+ *
+ * @param obj_name : object name
+ * @param cls_name : class name
+ *
+ * @return : new object struct
+ */
 conf_object_t* SIM_pre_conf_object(const char *obj_name, const char *cls_name) {
 	const conf_class_t *cls = NULL;
 
@@ -85,6 +108,13 @@ conf_object_t* SIM_pre_conf_object(const char *obj_name, const char *cls_name) {
 	return NULL;
 }
 
+/**
+ * @brief SIM_get_conf_object : realize the SIM_get_conf_object method
+ *
+ * @param obj_name : object name
+ *
+ * @return : object of the name obj_name
+ */
 conf_object_t* SIM_get_conf_object(const char *obj_name) {
 	struct list_head *p;
 	obj_list_t *tmp;
@@ -98,6 +128,13 @@ conf_object_t* SIM_get_conf_object(const char *obj_name) {
 	return NULL;
 }
 
+/**
+ * @brief SIM_delete_object : realize the SIM_delete_object method
+ *
+ * @param obj: object to be freed
+ *
+ * @return : the result of delete object
+ */
 int SIM_delete_object(conf_object_t *obj) {
 	const class_data_t *cls_data;
 
@@ -108,6 +145,11 @@ int SIM_delete_object(conf_object_t *obj) {
 	return 0;
 }
 
+/**
+ * @brief SIM_finalize_object : realize the SIM_finalize_object method
+ *
+ * @param obj: the object to be finalize
+ */
 void SIM_finalize_object(conf_object_t *obj) {
 	const class_data_t *cls_data;
 
