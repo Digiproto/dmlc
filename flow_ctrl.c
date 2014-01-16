@@ -22,6 +22,16 @@
  */
 #include "flow_ctrl.h"
 static int block_has_node_type(tree_t *, type_t);
+
+/**
+ * @brief handle_inline_case : charge the inline block has the type node
+ *
+ * @param t : syntax tree node of inline
+ * @param type : the node of type to be finded
+ *
+ * @return  1 - have the type node
+ *			0 - not have the type node
+ */
 static int handle_inline_case(tree_t *t, type_t type) {
 
     tree_t *it = t;
@@ -47,6 +57,15 @@ static int handle_inline_case(tree_t *t, type_t type) {
 	return ret;
 }
 
+/**
+ * @brief handle_after_call_case : charge the after_call block have call/throw node
+ *
+ * @param t : syntax tree node of after_call
+ * @param type : type of call/throw
+ *
+ * @return : 1 - have call/throw node
+ *			0 - not have call/throw node
+ */
 static int handle_after_call_case(tree_t *t, type_t type) {
 	if(type == CALL_TYPE || type == THROW_TYPE) {
 		return 1;
@@ -54,6 +73,15 @@ static int handle_after_call_case(tree_t *t, type_t type) {
 	return 0;
 }
 
+/**
+ * @brief handle_try_catch : charge try catch block has one type node
+ *
+ * @param t : syntax tree node of try catch
+ * @param type : the type of node to be finded
+ *
+ * @return : 1 - have the node of type
+ *			0 - not have the node of type
+ */
 static int handle_try_catch(tree_t *t, type_t type) {
     int ret; 
 
@@ -75,6 +103,15 @@ static int handle_try_catch(tree_t *t, type_t type) {
 	return 0;
 }
 
+/**
+ * @brief block_has_node_type : charge the block has one type node or not
+ *
+ * @param t : syntax tree node of block
+ * @param node_type : type of node
+ *
+ * @return : 1 - has the node
+ *			0 - not have the node
+ */
 static int block_has_node_type(tree_t *t, type_t node_type) {
     tree_t *node;
     tree_t *it;
@@ -151,11 +188,27 @@ static int block_has_node_type(tree_t *t, type_t node_type) {
     return ret;
 }
 
+/**
+ * @brief method_has_exec : method have some call/throw expression
+ *
+ * @param m : syntax tree node of method
+ *
+ * @return : 1 - have call/throw
+ *			0 - node have call/throw expression
+ */
 int method_has_exec(tree_t *m) {
 	tree_t *block = m->method.block;
 	return block_has_node_type(block, CALL_TYPE) || block_has_node_type(block, THROW_TYPE);
 }
 
+/**
+ * @brief method_has_return : charge method has return value
+ *
+ * @param m : syntax tree node of method
+ *
+ * @return : 1 - have return value
+ *			0 - not have return value
+ */
 int method_has_return(tree_t *m) {
 	tree_t *block = m->method.block;
 	return block_has_node_type(block, RETURN_TYPE);
