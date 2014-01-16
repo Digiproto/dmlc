@@ -32,6 +32,11 @@
 #include "gen_debug.h"
 extern int method_to_generate;
 
+/**
+ * @brief gen_object_method : entry to generate method code of object
+ *
+ * @param obj : the object to be generated
+ */
 static void gen_object_method(object_t *obj){
 	struct method_name *m;
 	struct list_head *p;
@@ -43,6 +48,11 @@ static void gen_object_method(object_t *obj){
 	add_object_generated_method(obj);	
 } 
 
+/**
+ * @brief gen_obj_generic_code : entry to generate object code
+ *
+ * @param obj : the object to be generated
+ */
 static void gen_obj_generic_code(object_t *obj){
 	struct list_head *p;
 	object_t *t;
@@ -55,6 +65,11 @@ static void gen_obj_generic_code(object_t *obj){
 	}
 }
 
+/**
+ * @brief gen_device_code : generate the code of objects in device
+ *
+ * @param obj : the object of device
+ */
 static void gen_device_code(device_t *obj){
 	struct list_head *p;
 	object_t *t;
@@ -90,6 +105,12 @@ static void gen_device_code(device_t *obj){
 
 extern FILE *out;
 
+/**
+ * @brief gen_dml_code : generate other code of dml
+ *
+ * @param dev : the object of device
+ * @param f : c file to be generated
+ */
 void gen_dml_code(device_t *dev, FILE* f) {
 	int round = 0;
 
