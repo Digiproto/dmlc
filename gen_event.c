@@ -27,6 +27,12 @@ extern int method_to_generate;
 void gen_device_event_class(device_t *dev, FILE *f) {
 }
 
+/**
+ * @brief gen_event_code : generate the code of event object
+ *
+ * @param obj : the object of event
+ * @param f : file to be generated
+ */
 static void gen_event_code(object_t *obj, FILE *f) {
 	const char *evt = obj->name;
 	const char *dev = DEV->name;
@@ -50,6 +56,12 @@ static void gen_event_code(object_t *obj, FILE *f) {
 	add_object_method(obj, "callback");
 }
 
+/**
+ * @brief gen_device_event_code : generate the code of event object
+ *
+ * @param dev : the object of device
+ * @param f : c file to be generated
+ */
 void gen_device_event_code(device_t *dev, FILE *f) {
 	struct list_head *p;
 	object_t *tmp;
