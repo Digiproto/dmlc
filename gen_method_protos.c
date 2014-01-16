@@ -24,6 +24,12 @@
 #include "gen_implement.h"
 #include "gen_port.h"
 extern FILE *out;
+
+/**
+ * @brief gen_obj_method_protos : generate the prototype of method
+ *
+ * @param obj : the object of containing method
+ */
 void gen_obj_method_protos(object_t *obj) {
 	struct list_head *p;
 	struct method_name *mn;
@@ -48,6 +54,12 @@ void gen_obj_method_protos(object_t *obj) {
 	}
 }
 
+/**
+ * @brief gen_device_method_protos : generate all prototypes of methods in device
+ *
+ * @param dev : the object of device
+ * @param f : file to be generated
+ */
 void gen_device_method_protos(device_t *dev, FILE *f) {
 	out = f;
 	/*gen device specifi method protos*/
