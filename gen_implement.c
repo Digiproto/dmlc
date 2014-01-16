@@ -23,6 +23,13 @@
 #include "gen_implement.h"
 extern object_t *DEV;
 extern FILE *out; 
+
+/**
+ * @brief print_params_protoc : generate the prototype of method paramters
+ *
+ * @param params : syntax tree node of paramters
+ * @param f : file to be generated
+ */
 static void print_params_protoc(tree_t *params, FILE *f) {
 	const char *type;
 	const char *name;
@@ -45,6 +52,12 @@ static void print_params_protoc(tree_t *params, FILE *f) {
 	}
 }
 
+/**
+ * @brief print_params_in : generated the code of input pararameters
+ *
+ * @param params : sytax tree node of imput paramters
+ * @param f : file to be generated
+ */
 static void print_params_in(tree_t *params, FILE *f) {
 	const char *name;
 	tree_t *node;
@@ -65,6 +78,13 @@ static void print_params_in(tree_t *params, FILE *f) {
 	}
 }
 
+/**
+ * @brief gen_iface_method_header : generate the header of interface
+ *
+ * @param obj : the object of containing interface
+ * @param method : the syntax tree node of method
+ * @param f : file to be generated
+ */
 static void gen_iface_method_header(object_t *obj, tree_t *method, FILE *f) {
 	tree_t *params;
 	const char *ret;
@@ -82,7 +102,13 @@ static void gen_iface_method_header(object_t *obj, tree_t *method, FILE *f) {
 	fprintf(f, ")");
 }
 
-
+/**
+ * @brief gen_implement_method : generate the code of method in implement
+ *
+ * @param obj : the object of implement
+ * @param sym: symbol of method
+ * @param f : c file to be generated
+ */
 static void gen_implement_method(object_t *obj, symbol_t sym, FILE *f) {
 	implement_t *impl = (implement_t *)obj;
 	method_attr_t *attr = (method_attr_t *)sym->attr;
@@ -144,6 +170,12 @@ static void gen_implement_method(object_t *obj, symbol_t sym, FILE *f) {
 	add_object_method(obj, method->method.name);
 }
 
+/**
+ * @brief gen_implement_code : generate code about implement object
+ *
+ * @param obj : the object of implement
+ * @param f : c file to be generated
+ */
 void gen_implement_code(object_t *obj, FILE *f) {
 	implement_t *imp = (implement_t *)obj;
 	symtab_t table = obj->symtab->sibling;
@@ -181,6 +213,13 @@ void add_implement_method(object_t *obj) {
     symbol_list_free(head);
 }
 
+/**
+ * @brief gen_implement_method_header : generate the header of method
+ *
+ * @param obj : the object of containing method
+ * @param sym : the symbol of method
+ * @param f : file to be generated
+ */
 static void gen_implement_method_header(object_t *obj, symbol_t sym, FILE *f) {
 	tree_t *method;
 	method_attr_t *attr;
@@ -191,6 +230,12 @@ static void gen_implement_method_header(object_t *obj, symbol_t sym, FILE *f) {
 	fprintf(f, ";\n");
 }
 
+/**
+ * @brief gen_implement_header : generate the header of implement
+ *
+ * @param obj : the object of implement
+ * @param f : file to be generated
+ */
 void gen_implement_header(object_t *obj, FILE *f) {
 	implement_t *imp = (implement_t *)obj;
 	symtab_t table = obj->symtab->sibling;
@@ -206,6 +251,12 @@ void gen_implement_header(object_t *obj, FILE *f) {
     symbol_list_free(head);
 }
 
+/**
+ * @brief gen_iface : generate the interface of interface object
+ *
+ * @param obj : the object of interface
+ * @param f : file to be generated
+ */
 void gen_iface(object_t *obj, FILE *f) {
 	const char *name;
 	const char *qname;
@@ -231,6 +282,12 @@ void gen_iface(object_t *obj, FILE *f) {
     symbol_list_free(head);
 }
 
+/**
+ * @brief gen_device_iface_desc : generate the interface information
+ *
+ * @param dev : the object of interface
+ * @param f : file to be generated
+ */
 static void gen_device_iface_desc(device_t *dev, FILE *f) {
 	const char *dev_name = dev->obj.name;
 	struct list_head *p;
@@ -252,6 +309,12 @@ static void gen_device_iface_desc(device_t *dev, FILE *f) {
 	fprintf(f, "};\n");
 }
 
+/**
+ * @brief gen_device_implement_code : the entry to generate code about implement object
+ *
+ * @param dev : the object of device
+ * @param f : c file to be generated
+ */
 void gen_device_implement_code(device_t *dev, FILE *f) {
 	struct list_head *p;
 	object_t *tmp;
@@ -265,6 +328,12 @@ void gen_device_implement_code(device_t *dev, FILE *f) {
 	}
 }
 
+/**
+ * @brief gen_device_implement_desc : generate the code of implement
+ *
+ * @param dev : the object of device
+ * @param f : file to be generated
+ */
 void gen_device_implement_desc(device_t *dev, FILE *f) {
 	struct list_head *p;
 	object_t *tmp;
@@ -279,6 +348,12 @@ void gen_device_implement_desc(device_t *dev, FILE *f) {
 	gen_device_iface_desc(dev, f);
 }
 
+/**
+ * @brief gen_device_implement_header : entry to generate header of implement
+ *
+ * @param dev : the object of device
+ * @param f : file to be generated
+ */
 void gen_device_implement_header(device_t *dev, FILE *f) {
 	struct list_head *p;
 	object_t *tmp;
