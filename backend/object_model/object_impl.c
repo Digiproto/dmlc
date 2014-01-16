@@ -32,6 +32,12 @@
 
 extern object_t *DEV;
 
+/**
+ * @brief gen_headerfile : generate the note and include files in c file
+ *
+ * @param dev : the object of device
+ * @param f : c file to be generated
+ */
 static void gen_headerfile(device_t *dev, FILE *f) {
     const char *name = dev->obj.name;
     time_t timep;
@@ -49,10 +55,22 @@ static void gen_headerfile(device_t *dev, FILE *f) {
 	//fprintf(f, "");
 }
 
+/**
+ * @brief pre_gen_code : genetate some common part about c file
+ *
+ * @param dev : the device object
+ * @param f : c file to be generated
+ */
 void pre_gen_code(device_t *dev, FILE *f) {
 	gen_headerfile(dev, f);
 }
 
+/**
+ * @brief gen_bank_read_access : generate the read access function of bank
+ *
+ * @param obj : the object of bank
+ * @param f : c file to be generated
+ */
 static void gen_bank_read_access(object_t *obj, FILE *f) {
 	const char *name = obj->name;
 	const char *dev_name = DEV->name;
@@ -76,6 +94,12 @@ static void gen_bank_read_access(object_t *obj, FILE *f) {
 	fprintf(f, "}\n");
 }
 
+/**
+ * @brief gen_bank_write_access : generate the write access function of bank
+ *
+ * @param obj : object of bank
+ * @param f : c file to be generated
+ */
 static void gen_bank_write_access(object_t *obj, FILE *f) {
 	const char *name = obj->name;
 	const char *dev_name = DEV->name;
@@ -98,12 +122,24 @@ static void gen_bank_write_access(object_t *obj, FILE *f) {
 	fprintf(f, "}\n");
 }
 
+/**
+ * @brief gen_bank_access : generate the functions to access memory about bank
+ *
+ * @param obj : the object of bank
+ * @param f : c file to be generated
+ */
 static void gen_bank_access(object_t *obj, FILE *f) {
 	gen_bank_read_access(obj, f);
 	gen_bank_write_access(obj, f);
     add_object_method(obj, "access");
 }
 
+/**
+ * @brief gen_banks_mr : generate some function to operate memory about all banks
+
+ * @param dev : the object of device
+ * @param f : c file to be generated
+ */
 static void gen_banks_mr(device_t *dev, FILE *f) {
     int i = 0;
     object_t *obj;
@@ -114,6 +150,12 @@ static void gen_banks_mr(device_t *dev, FILE *f) {
     }
 }
 
+/**
+ * @brief gen_bank_access_iface : generate the struct of bank access
+ *
+ * @param obj : the object of bank
+ * @param f : file to be generated
+ */
 static void gen_bank_access_iface(object_t *obj, FILE *f) {
 	const char *name;
 
@@ -124,6 +166,12 @@ static void gen_bank_access_iface(object_t *obj, FILE *f) {
 	fprintf(f, "};\n");
 }
 
+/**
+ * @brief gen_bank_access_descriptor : generate the code of struct of all banks
+ *
+ * @param dev : the object of device
+ * @param f : file to be generated
+ */
 static void gen_bank_access_descriptor(device_t *dev, FILE *f) {
     int i = 0;
     object_t *obj = &dev->obj;
@@ -140,6 +188,12 @@ static void gen_bank_access_descriptor(device_t *dev, FILE *f) {
 	fprintf(f, "};\n");
 }
 
+/**
+ * @brief gen_bank_access_info : entry to generate the code of bank
+ *
+ * @param dev : the object of device
+ * @param f : file to be generated
+ */
 static void gen_bank_access_info(device_t *dev, FILE *f) {
     int i = 0;
     object_t *obj;
@@ -152,6 +206,12 @@ static void gen_bank_access_info(device_t *dev, FILE *f) {
 }
 
 
+/**
+ * @brief gen_mmio_setup : the entry to generate functions about bank
+ *
+ * @param dev : the object of device
+ * @param f : c file to be generated
+ */
 static void gen_mmio_setup(device_t *dev, FILE *f) {
     const char *dev_name = dev->obj.name;
     int i = 0;
@@ -160,6 +220,12 @@ static void gen_mmio_setup(device_t *dev, FILE *f) {
     gen_banks_mr(dev, f);
 }
 
+/**
+ * @brief gen_device_constructor : generate the constructor function of device
+ *
+ * @param dev : the object of device
+ * @param f : c file to be generated
+ */
 void gen_device_constructor(device_t *dev, FILE *f) {
     const char *dev_name = dev->obj.name;
     int index = get_local_index();
@@ -178,6 +244,12 @@ void gen_device_constructor(device_t *dev, FILE *f) {
 
 }
 
+/**
+ * @brief gen_device_destructor : generate the destructor function of device
+ *
+ * @param dev : the object of device
+ * @param f : c file to be generated
+ */
 static void gen_device_destructor(device_t *dev, FILE *f) {
 	const char *name = dev->obj.name;
 
@@ -195,6 +267,12 @@ static void gen_device_destructor(device_t *dev, FILE *f) {
 	fprintf(f, "}\n");
 }
 
+/**
+ * @brief gen_device_connect : generate the connect object of device
+ *
+ * @param dev: the object of device
+ * @param f : file to be generated
+ */
 static void gen_device_connect(device_t *dev, FILE *f) {
     struct list_head *p;
     object_t *tmp;
@@ -226,6 +304,12 @@ static void gen_device_module(device_t *dev, FILE *f) {
 	const char *name = dev->obj.name;
 }
 
+/**
+ * @brief gen_local_init : generate the initialize code for device
+ *
+ * @param dev : the object of device
+ * @param f : file to be generated
+ */
 static void gen_local_init(device_t *dev, FILE *f) {
 
 	fprintf(f, "\nvoid\n");
@@ -235,10 +319,22 @@ static void gen_local_init(device_t *dev, FILE *f) {
 }
 
 
+/**
+ * @brief gen_device_implement : entry to generate code of implement object
+ *
+ * @param dev : the object of device
+ * @param f : file to be generated
+ */
 static void gen_device_implement(device_t *dev, FILE *f) {
 	gen_device_implement_desc(dev, f);
 }
 
+/**
+ * @brief gen_device_resources : generate the resource of device
+ *
+ * @param dev : the object of device
+ * @param f : file to be generated
+ */
 static void gen_device_resources(device_t *dev, FILE *f) {
 	const char *name = dev->obj.name;
 
@@ -258,6 +354,12 @@ static void gen_device_resources(device_t *dev, FILE *f) {
 	fprintf(f, "};\n");
 }
 
+/**
+ * @brief gen_device_class_data : generate the class information of device
+ *
+ * @param dev : the object of device
+ * @param f : file to be generated
+ */
 static void gen_device_class_data(device_t *dev, FILE *f) {
 	const char *name = dev->obj.name;
 
@@ -273,6 +375,12 @@ static void gen_device_class_data(device_t *dev, FILE *f) {
 	fprintf(f, "};\n");
 }
 
+/**
+ * @brief gen_device_type_info : generate the type information of device
+ *
+ * @param dev : the object of device
+ * @param f : file to be generated
+ */
 void gen_device_type_info(device_t *dev, FILE *f) {
 	const char *name = dev->obj.name;
 
@@ -286,6 +394,12 @@ void gen_device_type_info(device_t *dev, FILE *f) {
 	fprintf(f, "}\n");
 }
 
+/**
+ * @brief gen_device_init : genetate some code of initializing device
+ *
+ * @param dev : the object of device
+ * @param f : c file to be generated
+ */
 void gen_device_init(device_t *dev, FILE *f) {
 
 	gen_device_constructor(dev, f);
@@ -293,6 +407,12 @@ void gen_device_init(device_t *dev, FILE *f) {
 	gen_mmio_setup(dev, f);
 }
 
+/**
+ * @brief gen_pre_delete : generate the code of delete device
+ *
+ * @param dev : the object of device
+ * @param f : file to be generated
+ */
 void gen_pre_delete(device_t *dev, FILE *f) {
 	const char *name;
 
@@ -303,6 +423,12 @@ void gen_pre_delete(device_t *dev, FILE *f) {
 	fprintf(f, "}\n");
 }
 
+/**
+ * @brief post_gen_code : generate the code free device
+ *
+ * @param dev : the object of device
+ * @param f : file to be generated
+ */
 void post_gen_code(device_t *dev, FILE *f) {
 	gen_pre_delete(dev, f);
 	gen_local_init(dev, f);
