@@ -22,6 +22,14 @@
  */
 #include "gen_helper.h"
 
+/**
+ * @brief is_block : check the syntax tree node is block or not
+ *
+ * @param node : syntax tree node
+ *
+ * @return : 1 - tree node is block
+ *			0 - not block tree node
+ */
 int is_block(tree_t *node) {
     if(node && node->common.type == BLOCK_TYPE) {
         return 1;
@@ -29,6 +37,14 @@ int is_block(tree_t *node) {
     return 0;
 }
 
+/**
+ * @brief node_is_expression : check the syntax tree node is expression or not
+ *
+ * @param node : syntax tree node to check
+ *
+ * @return : 1 - syntax tree node is expression
+ *			0 - syntax tree node is not expression
+ */
 static int node_is_expression(tree_t *node) {
     int ret = 0; 
 
@@ -58,6 +74,14 @@ static int node_is_expression(tree_t *node) {
     return ret; 
 }
 
+/**
+ * @brief is_if_statement : check tree node is if statement or not
+ *
+ * @param node : syntax tree node of checking
+ *
+ * @return : 1 - if else tree node
+ *			0 - not if else tree node
+ */
 static int is_if_statement(tree_t *node) {
     if(node && node->common.type == IF_ELSE_TYPE) {
         return 1;
@@ -70,10 +94,23 @@ int need_pos(tree_t *node) {
     return is_if_statement(node) || node_is_expression(node) || is_block(node);
 }
 
+/**
+ * @brief need_semicolon : check the node need semicolon after generated
+ *
+ * @param node : syntax tree node
+ *
+ * @return : 1 - need semicolon
+ *			0 - not need semicolon
+ */
 int need_semicolon(tree_t *node) {
     return node_is_expression(node);
 }
 
+/**
+ * @brief handle_one_statement : generate the block with only one statement
+ *
+ * @param node : syntax tree node of statement
+ */
 void handle_one_statement(tree_t *node) {
     gen_src_loc(&node->common.location);
     if(need_pos(node)) {
