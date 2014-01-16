@@ -22,6 +22,12 @@
  */
 #include "gen_expression.h" 
 static int expr_is_bit_slic(tree_t *t);
+
+/**
+ * @brief translate_assign : translate the assign expression
+ *
+ * @param t : the syntax tree node
+ */
 void translate_assign(tree_t *t) {
 	tree_t *node;
 
@@ -53,6 +59,11 @@ void translate_cond_expr(tree_t *t) {
 }
 */
 
+/**
+ * @brief translate_cast_expr : translate the cast expression
+ *
+ * @param t : syntax tree node of cast
+ */
 void translate_cast_expr(tree_t *t) {
         tree_t *node;
                 
@@ -64,6 +75,12 @@ void translate_cast_expr(tree_t *t) {
         translate(node);
         D(")");
 }
+
+/**
+ * @brief translate_binop_expr : translate the binary operation expression
+ *
+ * @param t : the syntax tree node of expression
+ */
 void translate_binop_expr(tree_t *t) {
 	tree_t *node;
 
@@ -90,6 +107,11 @@ void translate_binop_expr(tree_t *t) {
 	D(")");
 }
 
+/**
+ * @brief translate_bit_slic : translate bit slicing with many bits
+ *
+ * @param t : syntax tree node of bit slicing expression
+ */
 void translate_bit_slic(tree_t *t) {
 	tree_t *node;
 
@@ -127,6 +149,11 @@ static void translate_sizeof(tree_t *t) {
 	translate(node);
 } */
 
+/**
+ * @brief translate_unary_expr : translate the unary operation expression
+ *
+ * @param t : syntax tree node of expression
+ */
 void translate_unary_expr(tree_t *t) {
 	tree_t *node;
 
@@ -138,6 +165,11 @@ void translate_unary_expr(tree_t *t) {
 	translate(node);
 }
 
+/**
+ * @brief translate_pre_expr : translate the pre inc/reduce expression
+ *
+ * @param t : syntax tree node of expression
+ */
 void translate_pre_expr(tree_t *t) {
 	const char *op;
 
@@ -150,7 +182,11 @@ void translate_pre_expr(tree_t *t) {
 	translate(t->unary.expr);
 }
 
-
+/**
+ * @brief translate_post_expr : translate the post inc/reduce expression
+ *
+ * @param t : syntax tree node of expression
+ */
 void translate_post_expr(tree_t *t) {
 	const char *op;
 
@@ -223,6 +259,12 @@ static void translate_string(tree_t *t) {
 	D("\"%s\"",value);
 }
 */
+
+/**
+ * @brief translate_expr_brack_direct : translate the expression with brack
+ *
+ * @param t : syntax tree node of expression
+ */
 void translate_expr_brack_direct(tree_t *t) {
 	tree_t *node;
 	const char *name;
@@ -279,6 +321,14 @@ void translate_expr_brack_direct(tree_t *t) {
 	}
 }
 
+/**
+ * @brief expr_is_bit_slic : check the expression is bit slicing of not
+ *
+ * @param t : syntax tree node of expression
+ *
+ * @return : 1 - bit slicing expression
+ *			0 - not bit slicing expression
+ */
 static int expr_is_bit_slic(tree_t *t) {
 
 	if(t && t->common.type == BIT_SLIC_EXPR_TYPE) {
@@ -319,6 +369,11 @@ static void translate_float(tree_t *t) {
 	D("%s",node->float_cst.float_str);
 } */
 
+/**
+ * @brief translate_bit_slice2 : translate the bit slicing with only one bit
+ *
+ * @param t : syntax tree node of bit slicing
+ */
 void translate_bit_slice2(tree_t *t) {
 	tree_t *expr;
 	tree_t *index;
@@ -333,6 +388,11 @@ void translate_bit_slice2(tree_t *t) {
 	}
 }
 
+/**
+ * @brief translate_bit_slic_assign : translate the bit slicing assign expression
+ *
+ * @param t : syntax tree node
+ */
 void translate_bit_slic_assign(tree_t *t) {
 	tree_t *sexpr;
 	tree_t *eexpr = NULL;
@@ -368,6 +428,11 @@ void translate_bit_slic_assign(tree_t *t) {
 	D(")");
 }
 
+/**
+ * @brief translate_brack_expr : translate the expression in brackc
+ *
+ * @param t : syntax tree node of expression
+ */
 void translate_brack_expr(tree_t *t) {
 	tree_t *node = t;
 	tree_t *expr = node->expr_brack.expr_in_brack;
