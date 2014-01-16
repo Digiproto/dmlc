@@ -24,6 +24,14 @@
 #include "simics/core/object_class.h"
 #include "simics/core/object_model.h"
 
+/**
+ * @brief find_bank_access : find the bank access method with bank name
+ *
+ * @param array : array of banks
+ * @param name: name of finding bank
+ *
+ * @return : access method of bank
+ */
 static const bank_access_t *find_bank_access(const struct bank_access_description *array, const char *name) {
 	const struct bank_access_description *tmp;
 
@@ -35,6 +43,14 @@ static const bank_access_t *find_bank_access(const struct bank_access_descriptio
 	return NULL;
 }
 
+/**
+ * @brief SIM_find_bank_access : get the bank access method from device with bank name
+ *
+ * @param dev: the object of device
+ * @param name : name of bank
+ *
+ * @return : bank access method
+ */
 const bank_access_t *SIM_find_bank_access(conf_object_t *dev, const char *name) {
 	const conf_class_t *cls;
 	const class_data_t *cls_data;
@@ -46,6 +62,14 @@ const bank_access_t *SIM_find_bank_access(conf_object_t *dev, const char *name) 
 	return find_bank_access(p, name);
 }
 
+/**
+ * @brief get_bank_access : get the index bank access method from bank array in device
+ *
+ * @param array : array of banks
+ * @param index : the index of bank
+ *
+ * @return : bank access method
+ */
 static const bank_access_t *get_bank_access(const struct bank_access_description *array, int index) {
 	const struct bank_access_description *tmp;
 	int i = 0;
@@ -59,6 +83,14 @@ static const bank_access_t *get_bank_access(const struct bank_access_description
 	return NULL;
 }
 
+/**
+ * @brief SIM_get_bank_access : get the access method of the index bank of device
+ *
+ * @param dev : the object of device
+ * @param index : index of bank in device
+ *
+ * @return : bank access method
+ */
 const bank_access_t *SIM_get_bank_access(conf_object_t *dev, int index) {
 	const conf_class_t *cls;
 	const class_data_t *cls_data;
