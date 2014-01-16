@@ -54,6 +54,13 @@ static int out_bounds (char *buf)
 	return 0;
 }
 
+/**
+ * @brief debug_color : print bug information with color
+ *
+ * @param type : the type of color
+ * @param format : the format of bug information
+ * @param ... : other arguments of bug
+ */
 void debug_color (COLOR_TYPE type, char *format, ...)
 {
 	static char buf[MAX_LENGTH];
@@ -109,6 +116,14 @@ void debug_color (COLOR_TYPE type, char *format, ...)
 	}
 }
 
+/**
+ * @brief debug_cyan : print buf information with cyan
+ *
+ * @param format :  the format of print bug information
+ * @param ... : other arguments
+ *
+ * @return : 0 - return success
+ */
 int debug_cyan(char* format, ...) {
 	char buf[MAX_LENGTH];
 	memset (buf, '\0', MAX_LENGTH);
@@ -123,6 +138,14 @@ int debug_cyan(char* format, ...) {
 	return 0;
 }
 
+/**
+ * @brief debug_purple : print buf information with purple
+ *
+ * @param format :  the format of print bug information
+ * @param ... : other arguments
+ *
+ * @return : 0 - return success
+ */
 int debug_purple(char* format, ...) {
 	char buf[MAX_LENGTH];
 	memset (buf, '\0', MAX_LENGTH);
@@ -137,6 +160,14 @@ int debug_purple(char* format, ...) {
 	return 0;
 }
 
+/**
+ * @brief debug_light_red : print buf information with light_red color
+ *
+ * @param format :  the format of print bug information
+ * @param ... : other arguments
+ *
+ * @return : 0 - return success
+ */
 int debug_light_red(char* format, ...) {
 	char buf[MAX_LENGTH];
 	memset (buf, '\0', MAX_LENGTH);
@@ -151,6 +182,14 @@ int debug_light_red(char* format, ...) {
 	return 0;
 }
 
+/**
+ * @brief debug_blue: print buf information with blue color
+ *
+ * @param format :  the format of print bug information
+ * @param ... : other arguments
+ *
+ * @return : 0 - return success
+ */
 int debug_blue(char *format, ...)
 {
 	char buf[MAX_LENGTH];
@@ -166,6 +205,14 @@ int debug_blue(char *format, ...)
 	return 0;
 }
 
+/**
+ * @brief debug_green: print buf information with green color
+ *
+ * @param format :  the format of print bug information
+ * @param ... : other arguments
+ *
+ * @return : 0 - return success
+ */
 int debug_green(char* format, ...)
 {
 	char buf[MAX_LENGTH];
@@ -181,6 +228,14 @@ int debug_green(char* format, ...)
 	return 0;
 }
 
+/**
+ * @brief debug_red: print buf information with red color
+ *
+ * @param format :  the format of print bug information
+ * @param ... : other arguments
+ *
+ * @return : 0 - return success
+ */
 int debug_red(char *format, ...)
 {
 	char buf[MAX_LENGTH];
@@ -196,6 +251,14 @@ int debug_red(char *format, ...)
 	return 0;
 }
 
+/**
+ * @brief debug_proc: print buf information with light red color in proc
+ *
+ * @param format :  the format of print bug information
+ * @param ... : other arguments
+ *
+ * @return : 0 - return success
+ */
 int debug_proc (char *format, ...)
 {
 	char buf[MAX_LENGTH];
@@ -210,6 +273,14 @@ int debug_proc (char *format, ...)
 	return 0;
 }
 
+/**
+ * @brief debug_black: print buf information with light black color
+ *
+ * @param format :  the format of print bug information
+ * @param ... : other arguments
+ *
+ * @return : 0 - return success
+ */
 int debug_black (char *format, ...)
 {
 	char buf[MAX_LENGTH];
@@ -224,6 +295,14 @@ int debug_black (char *format, ...)
 	return 0;
 }
 
+/**
+ * @brief debug_brown: print buf information with brown black color
+ *
+ * @param format :  the format of print bug information
+ * @param ... : other arguments
+ *
+ * @return : 0 - return success
+ */
 int debug_brown(char* format, ...) {
 	char buf[MAX_LENGTH];
 	memset (buf, '\0', MAX_LENGTH);
