@@ -46,6 +46,16 @@ typedef struct class_list {
 } cls_list_t;
 #define BUF_SIZE 1024
 static char buf[BUF_SIZE];
+
+/**
+ * @brief load_class : load library to find class
+ *
+ * @param dir : the directory of library
+ * @param so : name of library
+ *
+ * @return : 0 - success to load library and find the class
+ *			 -1 - fail to load library and not find the class
+ */
 int load_class(const char *dir, const char *so) {
 	void *handle;
 	void (*pf)(void);
@@ -72,6 +82,13 @@ int load_class(const char *dir, const char *so) {
 	return 0;
 }
 
+/**
+ * @brief SIM_class_find : realize the function of SIM_class_find of simics platform
+ *
+ * @param cls : the struct of class
+ *
+ * @return : struct of finded class
+ */
 const conf_class_t *SIM_class_find(const char *cls) {
 	struct list_head *p;
 	cls_list_t *tmp;
@@ -91,6 +108,12 @@ try_again:
 	return NULL;	
 }
 
+/**
+ * @brief SIM_register_conf_class : realize of the function of SIM_register_conf_class
+ *
+ * @param name : name of class
+ * @param cls : the struct of class
+ */
 void SIM_register_conf_class(const char *name, const conf_class_t *cls) {
 	cls_list_t *tmp;
 
