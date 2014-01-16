@@ -30,6 +30,12 @@
 #include  "gen_port.h"
 extern object_t *DEV;
 
+/**
+ * @brief gen_headerfile : generate the neccessay code of device
+ *
+ * @param dev : the object of device
+ * @param f : file to be generated
+ */
 static void gen_headerfile(device_t *dev, FILE *f) {
     const char *name = dev->obj.name;
     time_t timep;
@@ -45,10 +51,22 @@ static void gen_headerfile(device_t *dev, FILE *f) {
     fprintf(f, "\n#include \"%s_protos.c\"\n", name);
 }
 
+/**
+ * @brief pre_gen_code : generate some neccessay code before generating code of device
+ *
+ * @param dev : the object of device
+ * @param f : file to be generated
+ */
 void pre_gen_code(device_t *dev, FILE *f) {
 	gen_headerfile(dev, f);
 }
 
+/**
+ * @brief gen_bank_read_access : generate the code of bank read access method
+ *
+ * @param obj : the object of bank
+ * @param f : file to be generated
+ */
 static void gen_bank_read_access(object_t *obj, FILE *f) {
 	const char *name = obj->name;
 	const char *dev_name = DEV->name;
@@ -79,6 +97,12 @@ static void gen_bank_read_access(object_t *obj, FILE *f) {
 	fprintf(f, "}\n");
 }
 
+/**
+ * @brief gen_bank_write_access : generate the code of bank write access method
+ *
+ * @param obj : the object of bank
+ * @param f : file to be generated
+ */
 static void gen_bank_write_access(object_t *obj, FILE *f) {
 	const char *name = obj->name;
 	const char *dev_name = DEV->name;
@@ -101,12 +125,24 @@ static void gen_bank_write_access(object_t *obj, FILE *f) {
 	fprintf(f, "}\n");
 }	
 
+/**
+ * @brief gen_bank_access : generate the code of bank access method
+ *
+ * @param obj : the object of bank
+ * @param f : file to be generated
+ */
 static void gen_bank_access(object_t *obj, FILE *f) {
 	gen_bank_read_access(obj, f);
 	gen_bank_write_access(obj, f);
 	add_object_method(obj, "access");
 }
 
+/**
+ * @brief gen_bank_mr : generate the code of memory operation in bank
+ *
+ * @param obj: the object of bank
+ * @param f : file to be generated
+ */
 static void gen_bank_mr(object_t *obj, FILE *f) {
 	bank_t *b = (bank_t *)obj;
 	const char *name = obj->name;
@@ -126,6 +162,12 @@ static void gen_bank_mr(object_t *obj, FILE *f) {
 				\n};\n", name, name, name, endianness, min_size, max_size);
 }
 
+/**
+ * @brief gen_banks_mr : entry to generate all code of bank
+ *
+ * @param dev : the object of device
+ * @param f : file to be generated
+ */
 static void gen_banks_mr(device_t *dev, FILE *f) {
 	int i = 0;
 	object_t *obj;
@@ -135,6 +177,12 @@ static void gen_banks_mr(device_t *dev, FILE *f) {
 	}
 }
 
+/**
+ * @brief gen_mmio_setup : generate the method of memory map and io operation
+ *
+ * @param dev : the object of device
+ * @param f : file to be generated
+ */
 static void gen_mmio_setup(device_t *dev, FILE *f) {
 	const char *dev_name = dev->obj.name;
 	int i = 0;
@@ -157,6 +205,12 @@ static void gen_mmio_setup(device_t *dev, FILE *f) {
 	fprintf(f, "}\n");
 }
 
+/**
+ * @brief gen_notifier_func : generate the notifier function in qemu
+ *
+ * @param dev : the object of device
+ * @param f : file to be generated
+ */
 static void gen_notifier_func(device_t *dev, FILE *f) {
 	const char *name = dev->obj.name;
 
@@ -168,12 +222,24 @@ static void gen_notifier_func(device_t *dev, FILE *f) {
 	fprintf(f, "}\n");
 }
 
+/**
+ * @brief gen_post_init : generate the code of post init method
+ *
+ * @param dev : the object of device
+ * @param f : file to be generated
+ */
 static void gen_post_init(device_t *dev, FILE *f) {
 	const char *name = dev->obj.name;
 
 	gen_notifier_func(dev, f);
 }
 
+/**
+ * @brief gen_device_init : generate the code of device init
+ *
+ * @param dev : the object of device
+ * @param f : file to be generated
+ */
 void gen_device_init(device_t *dev, FILE *f) {
 	const char *dev_name = dev->obj.name;
 	int index = get_local_index();
@@ -197,6 +263,12 @@ void gen_device_init(device_t *dev, FILE *f) {
 	fprintf(f, "}\n");
 }
 
+/**
+ * @brief gen_device_props : generate the property of device
+ *
+ * @param dev : the object of device
+ * @param f : file to be generated
+ */
 static void gen_device_props(device_t *dev, FILE *f)
 {
 	const char *dev_name = dev->obj.name;
@@ -207,6 +279,12 @@ static void gen_device_props(device_t *dev, FILE *f)
     fprintf (f, "\n};\n");
 }
 
+/**
+ * @brief gen_device_vmstate : generate the vmstate code of qemu
+ *
+ * @param dev: the object of device
+ * @param f : file to be generated
+ */
 static void gen_device_vmstate(device_t *dev, FILE *f)
 {
 	const char *dev_name = dev->obj.name;
@@ -225,6 +303,12 @@ static void gen_device_vmstate(device_t *dev, FILE *f)
     fprintf (f, "\n};\n");
 }
 
+/**
+ * @brief gen_dc_reset : generate the code of reset method
+ *
+ * @param dev : the object of device
+ * @param f : file to be generated
+ */
 static void gen_dc_reset(device_t *dev, FILE *f) {
 	const char *name = dev->obj.name;
 
@@ -237,6 +321,12 @@ static void gen_dc_reset(device_t *dev, FILE *f) {
 	fprintf(f, "}\n");
 }
 
+/**
+ * @brief gen_device_connect : generate the code and struct of connect object
+ *
+ * @param dev : the object of device
+ * @param f : file to be generated
+ */
 static void gen_device_connect(device_t *dev, FILE *f) {
 	struct list_head *p;
 	object_t *tmp;
@@ -265,6 +355,12 @@ static void gen_device_connect(device_t *dev, FILE *f) {
 
 }
 
+/**
+ * @brief gen_device_implement : entry to generate the implement object
+ *
+ * @param dev : the object of device
+ * @param f : file to be generated
+ */
 static void gen_device_implement(device_t *dev, FILE *f) {
 		gen_device_implement_desc(dev, f);
 }
@@ -272,6 +368,12 @@ static void gen_device_implement(device_t *dev, FILE *f) {
 void gen_platform_device_module(device_t *dev, const char *out) {
 }
 
+/**
+ * @brief gen_device_class_init : generate the init code about device
+ *
+ * @param dev : the object of device
+ * @param f : file to be generated
+ */
 static void gen_device_class_init(device_t *dev, FILE *f)
 {
     const char *name = dev->obj.name;
@@ -303,6 +405,12 @@ static void gen_device_class_init(device_t *dev, FILE *f)
     fprintf (f, "\n}\n");
 }
 
+/**
+ * @brief gen_device_type_info : generate the device info in qemu
+ *
+ * @param dev : the object of device
+ * @param f : file to be generated
+ */
 void gen_device_type_info(device_t * dev, FILE *f)
 {
     const char *dev_name = dev->obj.name;
