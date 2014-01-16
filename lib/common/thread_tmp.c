@@ -27,6 +27,13 @@ struct thread_tmp {
 	thread_tmp_status     status;
 };
 
+/**
+ * @brief thread_main_timer : make the thread run with sleeping
+ *
+ * @param args : the struct with thread
+ *
+ * @return : nothing to return
+ */
 static void* thread_main_timer(void* args) {
 	thread_tmp_t *thread = (thread_tmp_t*) args;
 	thread_tmp_mode mode;
@@ -69,6 +76,13 @@ static void* thread_main_timer(void* args) {
 	return NULL;
 }
 
+/**
+ * @brief thread_main_no_timer : make thread run with no time sleep
+ *
+ * @param args : the struct of thread
+ *
+ * @return : nothing to return
+ */
 static void* thread_main_no_timer(void* args) {
 	thread_tmp_t *thread = (thread_tmp_t*) args;
 	thread_tmp_callback_t cb;
@@ -88,6 +102,14 @@ static void* thread_main_no_timer(void* args) {
 	return NULL;
 }
 
+/**
+ * @brief thread_tmp_init : initialize thread
+ *
+ * @param mode : the mode to set thread
+ * @param ms : the time to set thread
+ *
+ * @return : thread struct
+ */
 thread_tmp_t* thread_tmp_init(thread_tmp_mode mode, unsigned int ms)
 {
 	thread_tmp_t* thread = zalloc(sizeof(*thread));
@@ -102,6 +124,16 @@ thread_tmp_t* thread_tmp_init(thread_tmp_mode mode, unsigned int ms)
 	return thread;
 }
 
+/**
+ * @brief thread_tmp_create : create a new thread
+ *
+ * @param thread : the thread struct
+ * @param cb : callback functin for thread
+ * @param cb_args : arguments of callback function
+ *
+ * @return : 0 - create thread succussful
+ *			-1 - create thread failed
+ */
 int thread_tmp_create(thread_tmp_t *thread, thread_tmp_callback_t cb, void *cb_args)
 {
 	int ret;
@@ -130,6 +162,13 @@ int thread_tmp_create(thread_tmp_t *thread, thread_tmp_callback_t cb, void *cb_a
 	return 0;
 }
 
+/**
+ * @brief thread_tmp_stop : stop one thread
+ *
+ * @param thread : the thread to be stopped
+ *
+ * @return : 0 - success in stopping
+ */
 int thread_tmp_stop(thread_tmp_t *thread)
 {
 	pthread_mutex_lock(&thread->mutex);
@@ -139,6 +178,14 @@ int thread_tmp_stop(thread_tmp_t *thread)
 	return 0;
 }
 
+/**
+ * @brief thread_tmp_destroy : destroy thread
+ *
+ * @param thread : the thread to be destroied
+ *
+ * @return : -1 - faield to destroy
+ *			0 - success in destroing
+ */
 int thread_tmp_destroy(thread_tmp_t *thread)
 {
 	if(!thread) {
@@ -151,6 +198,16 @@ int thread_tmp_destroy(thread_tmp_t *thread)
 	return 0;
 }
 
+/**
+ * @brief thread_tmp_chmod_timer : change the mode of thread
+ *
+ * @param thread : the thread to be changed
+ * @param mode : new mode of thread
+ * @param ms : new timer of thread
+ *
+ * @return : -1 - failed to change mode
+ *			0 - succuss to change mode
+ */
 int thread_tmp_chmod_timer(thread_tmp_t *thread, thread_tmp_mode mode, unsigned int ms)
 {
 	if(!thread) {
@@ -164,6 +221,13 @@ int thread_tmp_chmod_timer(thread_tmp_t *thread, thread_tmp_mode mode, unsigned 
 	return 0;
 }
 
+/**
+ * @brief thread_tmp_check_status : check the status of thread
+ *
+ * @param thread : the thread to be ckecked
+ *
+ * @return : the status of thread
+ */
 thread_tmp_status thread_tmp_check_status(thread_tmp_t *thread)
 {
 	thread_tmp_status s;
