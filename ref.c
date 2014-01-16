@@ -35,6 +35,14 @@ void ref_info_init(ref_info_t *fi) {
 	INIT_LIST_HEAD(ptr);
 }
 
+/**
+ * @brief new_node_info : create new node to store reference node information
+ *
+ * @param node : syntax tree node
+ * @param index : the index of reference symbol
+ *
+ * @return : new node information
+ */
 node_info_t  *new_node_info(tree_t *node, tree_t *index) {
 	node_info_t *n = (node_info_t *)gdml_zmalloc(sizeof(*n));
 	INIT_LIST_HEAD(&n->entry);
@@ -43,16 +51,32 @@ node_info_t  *new_node_info(tree_t *node, tree_t *index) {
 	return n;
 }
 
+/**
+ * @brief new_ref_info : create a space for reference information
+ *
+ * @return : pointer to reference information
+ */
 ref_info_t *new_ref_info(void) {
         ref_info_t *ref = (ref_info_t *)gdml_zmalloc(sizeof(*ref));
         ref_info_init(ref);
         return ref;
 }
 
+/**
+ * @brief add_node_info : add new reference information to list
+ *
+ * @param fi : the list of reference
+ * @param ni : new reference information
+ */
 void add_node_info(ref_info_t *fi, node_info_t *ni) {
 	list_add_tail(&ni->entry, &fi->list);
 }
 
+/**
+ * @brief ref_info_destroy : gree the list of reference information
+ *
+ * @param fi : the list of reference information
+ */
 void ref_info_destroy(ref_info_t *fi) {
 	struct list_head *p;
 	node_info_t *ni;
@@ -72,6 +96,11 @@ void ref_info_destroy(ref_info_t *fi) {
 	}
 }
 
+/**
+ * @brief ref_info_print : print the information of reference
+ *
+ * @param fi : the list of reference information
+ */
 void ref_info_print(ref_info_t *fi) {
 	struct list_head *p;
 	node_info_t *ni;
@@ -85,6 +114,12 @@ void ref_info_print(ref_info_t *fi) {
 
 }
 
+/**
+ * @brief collect_ref_info : collect the information of reference
+ *
+ * @param expr : the syntax tree node of reference expression
+ * @param fi : the list of reference
+ */
 void collect_ref_info(tree_t *expr, ref_info_t *fi){
         tree_t *node;
         node_info_t *ni;
@@ -119,10 +154,14 @@ void collect_ref_info(tree_t *expr, ref_info_t *fi){
 			add_node_info(fi, ni);
 	} else {
 		my_DBG("TODO: other type %d\n", type);
-		printf("TODO: other type %d\n", type);
 	}
 }
 
+/**
+ * @brief printf_ref : generate the reference code
+ *
+ * @param ref_ret: the list of reference
+ */
 void printf_ref(ref_ret_t *ref_ret){
 	tree_t *node;
 	struct list_head *p = NULL;
@@ -216,6 +255,15 @@ void printf_ref(ref_ret_t *ref_ret){
 extern object_t* get_device_obj();
 extern symtab_t get_symbol_table(symtab_t sym_tab, symbol_t symbol);
 extern symbol_t get_symbol_from_root_table(const char* name, type_t type);
+
+/**
+ * @brief get_bank_obj : get the object of bank
+ *
+ * @param table : table to find bank symbol
+ * @param name : name of bank
+ *
+ * @return : object of bank
+ */
 static object_t* get_bank_obj(symtab_t table, const char* name) {
 	object_t* obj = NULL;
 	symbol_t sym = NULL;
@@ -238,6 +286,14 @@ static object_t* get_bank_obj(symtab_t table, const char* name) {
 	return obj;
 }
 
+/**
+ * @brief get_parameter_obj : get the object of dml parameter
+ *
+ * @param table : table to start find parameter
+ * @param name : name of parameter
+ *
+ * @return : object of dml parameter
+ */
 static object_t* get_parameter_obj(symtab_t table, const char* name) {
 	assert(table != NULL); assert(name != NULL);
 	symbol_t symbol = symbol_find(table, name, PARAMETER_TYPE);
@@ -267,6 +323,14 @@ static object_t* get_parameter_obj(symtab_t table, const char* name) {
         return (object_t*)(obj_sym->attr);
 }
 
+/**
+ * @brief get_obj_param_table : get the table of method parameters
+ *
+ * @param table : table of method
+ * @param symbol : symbol of parameters
+ *
+ * @return : table of method parameters
+ */
 symtab_t get_obj_param_table(symtab_t table, symbol_t symbol) {
 	assert(table != NULL);  assert(symbol != NULL);
 	object_t* obj = get_parameter_obj(table, symbol->name);
@@ -280,6 +344,16 @@ symtab_t get_obj_param_table(symtab_t table, symbol_t symbol) {
 }
 
 extern symbol_t get_symbol_from_template(symtab_t table, const char* parent_name, const char* name);
+
+/**
+ * @brief get_other_type_obj : get the object of symbol without object type
+ *
+ * @param table : table to start find symbol
+ * @param parent_name : the symbol last level symbol name
+ * @param name : current symbol name
+ *
+ * @return : the object of symbol
+ */
 static object_t* get_other_type_obj(symtab_t table, const char* parent_name, const char* name) {
 	assert(table != NULL); assert(name != NULL);
 	object_t* obj = NULL;
@@ -330,6 +404,15 @@ static object_t* get_other_type_obj(symtab_t table, const char* parent_name, con
 	return obj;
 }
 
+/**
+ * @brief get_ref_sym : get the reference of expression
+ *
+ * @param t : syntax tree node of expression
+ * @param ret : the list of reference
+ * @param table : symtab of reference expression
+ *
+ * @return : symbol of the last reference of expression
+ */
 symbol_t get_ref_sym(tree_t *t, ref_ret_t *ret, symtab_t table){
 		ref_info_t *fi;
         tree_t *node;
