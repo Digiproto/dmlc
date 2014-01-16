@@ -43,6 +43,13 @@ static const char *get_output_fmt(int num) {
 	return fmt;
 } 
 
+/**
+ * @brief gen_bank_read_access : generated the code of bank read access method
+ *
+ * @param b : the object of bank
+ * @param list : the list of classified register array
+ * @param f : c file to be generated
+ */
 static void gen_bank_read_access(bank_t *b, reg_array_t *list, FILE *f){
 	int register_size = b->register_size;
 	int offset;
@@ -175,6 +182,13 @@ static void gen_bank_read_access(bank_t *b, reg_array_t *list, FILE *f){
 	fprintf(f,"}\n");
 }		
 
+/**
+ * @brief gen_bank_write_access : generate the code of bank write access method
+ *
+ * @param b : the object of bank
+ * @param list : the classified register array with list format
+ * @param f : c file to be generated
+ */
 static void gen_bank_write_access(bank_t *b, reg_array_t *list, FILE *f){
 	int register_size = b->register_size;
 	int offset;
@@ -296,6 +310,12 @@ static void gen_bank_write_access(bank_t *b, reg_array_t *list, FILE *f){
 	fprintf(f,"}\n");
 }
 
+/**
+ * @brief gen_hard_reset : generate the hard reset function of device
+ *
+ * @param dev : the object of device
+ * @param f : c file to be generated
+ */
 static void  gen_hard_reset(device_t *dev, FILE *f) {
     const char *name = dev->obj.name;
     int index = get_local_index();
@@ -309,6 +329,12 @@ static void  gen_hard_reset(device_t *dev, FILE *f) {
     fprintf(f, "}\n");
 }
 
+/**
+ * @brief gen_soft_reset : generate the soft reset function of device
+ *
+ * @param dev : the object of device
+ * @param f : c file to be generated
+ */
 static void  gen_soft_reset(device_t *dev, FILE *f) {
     const char *name = dev->obj.name;
     int index = get_local_index();
@@ -322,11 +348,22 @@ static void  gen_soft_reset(device_t *dev, FILE *f) {
     fprintf(f, "}\n");
 }
 
+/**
+ * @brief gen_device_reset : generate the reset function of device
+ *
+ * @param dev : the object of device
+ * @param f : c file to be generated
+ */
 static void gen_device_reset(device_t *dev, FILE *f) {
     gen_hard_reset(dev, f);
     gen_soft_reset(dev, f);
 }
 
+/**
+ * @brief new_reg_list : creat a list to store registers for sorting
+ *
+ * @return : the list of register
+ */
 static reg_array_t *new_reg_list(void) {
 	int i = 0;
 	reg_array_t *e;
@@ -340,6 +377,11 @@ static reg_array_t *new_reg_list(void) {
 	return list;
 }
 
+/**
+ * @brief reg_array_free : free the list of register
+ *
+ * @param list : head of register list
+ */
 static void reg_array_free(reg_array_t *list) {
 	reg_array_t *e;
 	reg_item_t *item;
@@ -364,6 +406,15 @@ static void reg_array_free(reg_array_t *list) {
 	list_count = LIST_SZ;
 }
 
+/**
+ * @brief find_slot : get the index of array that classify register
+ *
+ * @param list : the classify register list
+ * @param base : the base of array register
+ * @param size : the size of array register
+ *
+ * @return : the index of array register in the classify register array
+ */
 static int find_slot(reg_array_t *list, int base,  int size) {
 	int i = 1;
 	reg_array_t *e;
@@ -397,6 +448,13 @@ static int find_slot(reg_array_t *list, int base,  int size) {
 	return i;
 }
 
+/**
+ * @brief reg_list_insert : insert the register into classify register array
+ *
+ * @param list : the classify register array with list format
+ * @param i : the index of classify register array
+ * @param obj : the object of register
+ */
 static void reg_list_insert(reg_array_t *list, int i, object_t *obj) {
 	reg_item_t *item = gdml_zmalloc(sizeof(*item));
 
@@ -408,6 +466,13 @@ static void reg_list_insert(reg_array_t *list, int i, object_t *obj) {
 	list_add_tail(&item->entry, &list[i].list);
 }
 
+/**
+ * @brief sort_register_array : classify the register into one without array and one with array
+ *
+ * @param b: the object of bank
+ *
+ * @return : the classified array about register
+ */
 static reg_array_t *sort_register_array(bank_t *b) {
 	struct list_head *p;
 	object_t *obj;
@@ -432,6 +497,12 @@ static reg_array_t *sort_register_array(bank_t *b) {
 	return list;
 }
 
+/**
+ * @brief gen_code_once_noplatform : genenrate the code without relationship with platform
+ *
+ * @param dev : the object of device
+ * @param f : c file to be generated
+ */
 void gen_code_once_noplatform(device_t *dev, FILE *f){
 	bank_t *b;
 	struct list_head *p;
