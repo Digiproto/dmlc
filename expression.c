@@ -40,10 +40,21 @@
  * use the function so frequently that I add this marco.
  * by eJim Lee 2013-11-30 */
 extern obj_ref_t *OBJ;
+
+/**
+ * @brief get_current_obj : get current object
+ *
+ * @return : pointer to object
+ */
 inline static object_t* get_current_obj() {
 	return OBJ->obj;
 }
 
+/**
+ * @brief set_current_obj : set the value about current object
+ *
+ * @param obj : the object to be assigned to current object
+ */
 void set_current_obj(object_t* obj) {
 	if (OBJ == NULL) {
 		OBJ = (obj_ref_t*)gdml_zmalloc(sizeof(obj_ref_t));
@@ -51,16 +62,28 @@ void set_current_obj(object_t* obj) {
 	OBJ->obj = obj;
 }
 
+/**
+ * @brief set_obj_array : set the object is an array
+ */
 void set_obj_array() {
 	object_t* obj = get_current_obj();
 	obj->is_array = 1;
 	return;
 }
 
+/**
+ * @brief get_symbol_from_root_table : get symbol from root table
+ *
+ * @param name : symbol name will be get
+ * @param type : type of symbol
+ *
+ * @return : pointer of symbol
+ */
 symbol_t get_symbol_from_root_table(const char* name, type_t type) {
 	assert(name != NULL);
 	symtab_t root_table = get_root_table();
 	symbol_t symbol = NULL;
+	/*when the type is 0, will find symbol without type */
 	if (type == 0) {
 		symbol = symbol_find_notype(root_table, name);
 	}
@@ -71,6 +94,11 @@ symbol_t get_symbol_from_root_table(const char* name, type_t type) {
 	return symbol;
 }
 
+/**
+ * @brief get_device : get symbol from banks
+ *
+ * @return : pointer to symbol
+ */
 extern device_t* get_device();
 symbol_t get_symbol_from_banks(const char* name) {
 	assert(name != NULL);
@@ -89,6 +117,17 @@ symbol_t get_symbol_from_banks(const char* name) {
 }
 
 static int check_dml_obj_refer(tree_t* node, symtab_t table);
+
+/**
+ * @brief get_bit_slic_ref : get the reference of bit slicing
+ *
+ * @param node : tree node about bit slicing
+ * @param ref : reference struct
+ * @param expr : expressions information
+ * @param table : table about bit slicing
+ *
+ * @return : reference about bit slicing
+ */
 reference_t*  get_bit_slic_ref(tree_t* node, reference_t* ref, expr_t* expr, symtab_t table) {
 	assert(node != NULL); assert(ref != NULL);
 	assert(expr != NULL); assert(table != NULL);
@@ -126,6 +165,16 @@ reference_t*  get_bit_slic_ref(tree_t* node, reference_t* ref, expr_t* expr, sym
 	return ref;
 }
 
+/**
+ * @brief get_reference : get reference about expreesion
+ *
+ * @param node : node about reference
+ * @param ref : pointer to reference information struct
+ * @param expr : expression information
+ * @param table : table about reference expression
+ *
+ * @return : reference about expression
+ */
 reference_t* get_reference(tree_t* node, reference_t* ref, expr_t* expr, symtab_t table) {
 	assert(node != NULL); assert(ref != NULL);
 	assert(expr != NULL); assert(table != NULL);
@@ -184,6 +233,11 @@ reference_t* get_reference(tree_t* node, reference_t* ref, expr_t* expr, symtab_
 	return new;
 }
 
+/**
+ * @brief print_reference : print the reference name
+ *
+ * @param ref : pointer to reference
+ */
 void print_reference(reference_t* ref) {
 	assert(ref != NULL);
 
@@ -199,6 +253,13 @@ void print_reference(reference_t* ref) {
 	return;
 }
 
+/**
+ * @brief get_tempalte_table : get table about template
+ *
+ * @param name : template name
+ *
+ * @return : pointer to template table
+ */
 static symtab_t get_tempalte_table(const char* name) {
 	assert(name != NULL);
 	symbol_t symbol = get_symbol_from_root_table(name, TEMPLATE_TYPE);
@@ -209,13 +270,21 @@ static symtab_t get_tempalte_table(const char* name) {
 		attr = symbol->attr;
 		return attr->table;
 	} else {
-		fprintf(stderr, "Can not find temmplate '%s'\n", name);
-		exit(-1);
+		error("Can not find temmplate '%s'\n", name);
 	}
 	return NULL;
 }
 
 extern symtab_t get_obj_param_table(symtab_t table, symbol_t symbol);
+
+/**
+ * @brief get_default_symbol_tale : get table about something default symbol of simics
+ *
+ * @param table : table about using symbol
+ * @param symbol : pointer of symbol
+ *
+ * @return : table about default symbol
+ */
 symtab_t get_default_symbol_tale(symtab_t table, symbol_t symbol) {
 	assert(symbol != NULL);
 	symtab_t ret_table = NULL;
@@ -247,6 +316,13 @@ symtab_t get_default_symbol_tale(symtab_t table, symbol_t symbol) {
 	return ret_table;
 }
 
+/**
+ * @brief get_object_table : get table of object
+ *
+ * @param symbol : symbol about object
+ *
+ * @return : table of object
+ */
 symtab_t get_object_table(symbol_t symbol) {
 	assert(symbol != NULL);
 	object_t* obj = symbol->attr;
@@ -254,6 +330,13 @@ symtab_t get_object_table(symbol_t symbol) {
 	return obj->symtab;
 }
 
+/**
+ * @brief get_record_table : get table of record type
+ *
+ * @param type : record type
+ *
+ * @return : table of record
+ */
 #define get_record_table(type) \
 		do { \
 			switch (type->common.categ) { \
@@ -269,6 +352,13 @@ symtab_t get_object_table(symbol_t symbol) {
 			} \
 		} while(0)
 
+/**
+ * @brief get_data_table : get table about data
+ *
+ * @param symbol : symbol of data
+ *
+ * @return : table of data
+ */
 symtab_t get_data_table(symbol_t symbol) {
 	assert(symbol != NULL);
 	cdecl_t* type = symbol->attr;
@@ -305,6 +395,13 @@ symtab_t get_data_table(symbol_t symbol) {
 	return table ;
 }
 
+/**
+ * @brief get_point_table : get table about pointer type
+ *
+ * @param symbol : symbol about pointer variable
+ *
+ * @return : tabel of pointer type
+ */
 static symtab_t get_point_table(symbol_t symbol) {
 	assert(symbol != NULL);
 	symtab_t table = NULL;
@@ -313,13 +410,19 @@ static symtab_t get_point_table(symbol_t symbol) {
 	if (record_type(type)) {
 		get_record_table(type);
 	} else {
-		fprintf(stderr, "other pointer type: %d\n", type->common.categ);
-		exit(-1);
+		table = (void*)0XFFFFFFFF;
 	}
 
 	return table;
 }
 
+/**
+ * @brief get_array_table : get table about array type
+ *
+ * @param symbol : symbol of array
+ *
+ * @return : table about array type
+ */
 static symtab_t get_array_table(symbol_t symbol) {
 	assert(symbol != NULL);
 	symtab_t table = NULL;
@@ -338,13 +441,18 @@ static symtab_t get_array_table(symbol_t symbol) {
 		get_record_table(type);
 	}
 	else {
-		fprintf(stderr, "other array type: %d\n", type->common.categ);
-		exit(-1);
+		table = (void*)0XFFFFFFFF;
 	}
 	return table;
 }
 
-
+/**
+ * @brief get_typedef_table : get table of typedef type
+ *
+ * @param symbol : symbol about typedef
+ *
+ * @return : table of typedef symbol
+ */
 static symtab_t get_typedef_table(symbol_t symbol) {
 	assert(symbol != NULL);
 	symtab_t table = NULL;
@@ -358,6 +466,14 @@ static symtab_t get_typedef_table(symbol_t symbol) {
 	return table;
 }
 
+/**
+ * @brief get_select_table : get table about select variable
+ *
+ * @param sym_tab : table of block that used the select symbol
+ * @param symbol : symbol about select variable
+ *
+ * @return : table about select symbol
+ */
 static symtab_t get_select_table(symtab_t sym_tab, symbol_t symbol) {
 	assert(symbol != NULL);
 	symtab_t table = NULL;
@@ -365,13 +481,21 @@ static symtab_t get_select_table(symtab_t sym_tab, symbol_t symbol) {
 	if (!strcmp(symbol->name, "bank") && (attr->type == PARAMETER_TYPE)) {
 		table = get_default_symbol_tale(sym_tab, symbol);
 	} else {
-		printf("othe select : %s\n", symbol->name);
-		exit(-1);
+		table = (void*)0XFFFFFFFF;
 	}
 	return table;
 }
 
 extern symtab_t get_symbol_table(symtab_t sym_tab, symbol_t symbol);
+
+/**
+ * @brief get_param_table : get table about method parameter
+ *
+ * @param sym_tab : table of method
+ * @param symbol : symbol about method parameter
+ *
+ * @return : table of method parameter
+ */
 static symtab_t get_param_table(symtab_t sym_tab, symbol_t symbol) {
 	assert(symbol != NULL);
 	symtab_t table = NULL;
@@ -402,13 +526,20 @@ static symtab_t get_param_table(symtab_t sym_tab, symbol_t symbol) {
 	return table;
 }
 
+/**
+ * @brief get_symbol_table : get table about symbol
+ *
+ * @param sym_tab : table of block that use symbol
+ * @param symbol : symbol of being used
+ *
+ * @return : table about symbol
+ */
 symtab_t get_symbol_table(symtab_t sym_tab, symbol_t symbol) {
 	assert(symbol != NULL);
 
 	symtab_t table = NULL;
 	void* attr = symbol->attr;
 
-	int *a = NULL;
 	switch(symbol->type) {
 		case TEMPLATE_TYPE:
 			table = ((template_attr_t*)attr)->table;
@@ -471,6 +602,13 @@ symtab_t get_symbol_table(symtab_t sym_tab, symbol_t symbol) {
 	return table;
 }
 
+/**
+ * @brief get_interface_name : get defined interface name about dml interface
+ *
+ * @param name : name of dml interface
+ *
+ * @return : name of defined interface name
+ */
 static char* get_interface_name(const char* name) {
 	assert(name != NULL);
 	int name_len = strlen(name) + strlen("_interface_t") + 1;
@@ -481,6 +619,14 @@ static char* get_interface_name(const char* name) {
 	return new_name;
 }
 
+/**
+ * @brief parse_log_args : check log args expression about dml
+ *
+ * @param node : node about log args
+ * @param table : table of block that uses log
+ *
+ * @return : expression information about log args
+ */
 expr_t* parse_log_args(tree_t* node, symtab_t table) {
 	if (node == NULL) {
 		return NULL;
@@ -505,14 +651,27 @@ expr_t* parse_log_args(tree_t* node, symtab_t table) {
 	return expr;
 }
 
-
-/* get the type's unqualified version */
+/**
+ * @brief unqual : get the unqualified type of quality
+ *
+ * @param type : type of quality
+ *
+ * @return : unqualified type of quality
+ */
 cdecl_t* unqual(cdecl_t* type) {
 	if (type->common.qual)
 		type = type->common.bty;
 	return type;
 }
 
+/**
+ * @brief adjust : adjust expression type
+ *
+ * @param expr : expression to be checked
+ * @param rvalue : the expression is right element of calculation
+ *
+ * @return : expression information
+ */
 expr_t* adjust(expr_t* expr, int rvalue) {
 	assert(expr != NULL);
 	if (rvalue) {
@@ -533,6 +692,14 @@ expr_t* adjust(expr_t* expr, int rvalue) {
 	return expr;
 }
 
+/**
+ * @brief can_modify : check one expression can be modify or not
+ *
+ * @param expr : expression information
+ *
+ * @return : 1 - can be modified
+ *			0 - can not be modified
+ */
 static int can_modify(expr_t* expr) {
 	assert(expr != NULL);
 
@@ -545,26 +712,42 @@ static int can_modify(expr_t* expr) {
 	return 1;
 }
 
+/**
+ * @brief cal_muti_const_value : calculate the constant value about muti-operation
+ *
+ * @param expr : expression about muti-operation
+ * @param op : muti-operator
+ *
+ * @return : the value and type about expression
+ */
 #define cal_muti_const_value(expr, op) \
 		do { \
 			if (both_int_type(expr->kids[0]->type, expr->kids[1]->type)) { \
 				expr->type->common.categ = (expr->kids[0]->type->common.categ > expr->kids[1]->type->common.categ) ? expr->kids[0]->type->common.categ : expr->kids[1]->type->common.categ; \
-				expr->val->int_v.value =expr->kids[0]->val->int_v.value op expr->kids[1]->val->int_v.value; \
+				expr->val->int_v.value = ((expr->kids[0]->val->int_v.value) op (expr->kids[1]->val->int_v.value)); \
 			} \
 			else if (is_int_type(expr->kids[0]->type) && is_double_type(expr->kids[1]->type)) { \
 				expr->type->common.categ = DOUBLE_T; \
-				expr->val->d = expr->kids[0]->val->int_v.value op expr->kids[1]->val->d; \
+				expr->val->d = ((expr->kids[0]->val->int_v.value) op (expr->kids[1]->val->d)); \
 			} \
 			else if (is_double_type(expr->kids[0]->type) && is_int_type(expr->kids[1]->type)) { \
 				expr->type->common.categ = DOUBLE_T; \
-				expr->val->d = expr->kids[0]->val->d op expr->kids[1]->val->int_v.value;  \
+				expr->val->d = ((expr->kids[0]->val->d) op (expr->kids[1]->val->int_v.value));  \
 			} \
 			else { \
 				expr->type->common.categ = DOUBLE_T; \
-				expr->val->d = expr->kids[0]->val->d op expr->kids[1]->val->d; \
+				expr->val->d = ((expr->kids[0]->val->d) op (expr->kids[1]->val->d)); \
 			} \
 		} while (0)
 
+/**
+ * @brief cal_int_const : calculate the constant value about expression with int type
+ *
+ * @param expr : the expression to be calculated
+ * @param op : the operator about expression
+ *
+ * @return : value and type about expression
+ */
 #define cal_int_const(expr, op) \
 	do { \
 		if ((is_double_type(expr->kids[0]->type)) || is_double_type(expr->kids[1]->type)) { \
@@ -577,6 +760,14 @@ static int can_modify(expr_t* expr) {
 		} \
 	} while(0)
 
+/**
+ * @brief cal_unary : calculate the constant value about unary operation
+ *
+ * @param expr : expression to be calculated
+ * @param op : operator about unary
+ *
+ * @return : value and type about expression
+ */
 #define cal_unary(expr, op) \
 	do { \
 		if (is_double_type(expr->kids[0]->type)) { \
@@ -589,6 +780,14 @@ static int can_modify(expr_t* expr) {
 		} \
 	} while(0)
 
+/**
+ * @brief cal_unary_int : calculate the constant value about int unary operation
+ *
+ * @param expr : expression to be calculated
+ * @param op : unary operator
+ *
+ * @return : value and type about expression
+ */
 #define cal_unary_int(expr, op) \
 	do { \
 		if (is_double_type(expr->kids[0]->type)) { \
@@ -601,6 +800,13 @@ static int can_modify(expr_t* expr) {
 		} \
 	} while (0)
 
+/**
+ * @brief cal_const_value : calculate the constant value about expression
+ *
+ * @param expr : expression to be calculated
+ *
+ * @return : the type and value about expression
+ */
 expr_t* cal_const_value(expr_t* expr) {
 	assert(expr != NULL);
 	/* binary operation */
@@ -739,6 +945,15 @@ expr_t* cal_const_value(expr_t* expr) {
 	return expr;
 }
 
+/**
+ * @brief check_binary_kids : check right and left kids about binary operation
+ *
+ * @param node : tree node about binary operation
+ * @param table : table of block that contains binary operation
+ * @param expr : pointer to expression information struct
+ *
+ * @return : pointer to expression information struct
+ */
 expr_t* check_binary_kids(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 	if (node->common.type == BINARY_TYPE) {
@@ -756,53 +971,13 @@ expr_t* check_binary_kids(tree_t* node, symtab_t table, expr_t* expr) {
 	return expr;
 }
 
-cdecl_t* get_arith_type(cdecl_t* type1, cdecl_t* type2, cdecl_t* type) {
-	assert(type1 != NULL); assert(type2 != NULL);
-	if (type1->common.categ == LONG_T || type2->common.categ == LONG_T) {
-		type->common.categ = LONG_T;
-		type->common.size = sizeof(long) * 8;
-		return type;
-	}
-
-	if (type1->common.categ == DOUBLE_T || type2->common.categ == DOUBLE_T) {
-		type->common.categ = DOUBLE_T;
-		type->common.size = sizeof(double) * 8;
-		return type;
-	}
-
-	if (type1->common.categ == FLOAT_T || type2->common.categ == FLOAT_T) {
-		type->common.categ = FLOAT_T;
-		type->common.size = sizeof(float) * 8;
-		return type;
-	}
-
-	if ((type1->common.categ >= BOOL_T) && (type1->common.categ < INT_T)) {
-		type->common.categ = INT_T;
-		type->common.size = sizeof(int) * 8;
-	}
-	if ((type2->common.categ >= BOOL_T) && (type2->common.categ < INT_T)) {
-		type->common.categ = INT_T;
-		type->common.size = sizeof(int) * 8;
-	}
-
-	if (type1->common.categ == type2->common.categ) {
-		type->common.categ = type1->common.categ;
-		type->common.size = type1->common.size;
-	}
-
-	if (type1->common.categ >= type2->common.categ)  {
-		type = type1;
-		return type;
-	}
-
-	if (type2->common.size > type1->common.size) {
-		type = type2;
-		return type;
-	}
-
-	return type;
-}
-
+/**
+ * @brief expr_to_int : modified the expression to be int
+ *
+ * @param expr : expression will be modified
+ *
+ * @return : expression information
+ */
 #define expr_to_int(expr) \
 		do { \
 			if (expr->is_const) { \
@@ -817,6 +992,14 @@ cdecl_t* get_arith_type(cdecl_t* type1, cdecl_t* type2, cdecl_t* type) {
 			expr->type->common.size = sizeof(int) * 8; \
 		} while (0)
 
+/**
+ * @brief check_no_defiend_expr : check expression has undefined variable
+ *
+ * @param expr : expression to be checked
+ * @param node : tree node about expression
+ *
+ * @return : expression information
+ */
 #define check_no_defiend_expr(expr, node) \
 	do {	\
 		if (expr->no_defined) { \
@@ -826,6 +1009,14 @@ cdecl_t* get_arith_type(cdecl_t* type1, cdecl_t* type2, cdecl_t* type) {
 		} \
 	} while (0)
 
+/**
+ * @brief check_kids_no_defiend : check right and left kids of expression have  undefined variable
+ *
+ * @param expr : expression to be checked
+ * @param node : tree node about expression
+ *
+ * @return : expression information
+ */
 #define check_kids_no_defiend(expr, node) \
 		do { \
 			if (expr->kids[0]->no_defined || expr->kids[1]->no_defined) { \
@@ -835,6 +1026,15 @@ cdecl_t* get_arith_type(cdecl_t* type1, cdecl_t* type2, cdecl_t* type) {
 			} \
 		}while(0)
 
+/**
+ * @brief check_logical_expr : check logical operation expression
+ *
+ * @param node : tree node about logical expression
+ * @param table : table about block that contains expression
+ * @param expr : expression struct to store expression information
+ *
+ * @return : expression struct
+ */
 expr_t* check_logical_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL);
 	expr = check_binary_kids(node, table, expr);
@@ -864,6 +1064,15 @@ expr_t* check_logical_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	return expr;
 }
 
+/**
+ * @brief check_bitwise_expr : check bitwise expression
+ *
+ * @param node : tree node about bitwise expression
+ * @param table : table of block that contains expression
+ * @param expr : expression struct to store expression information
+ *
+ * @return : pointer to expression struct
+ */
 expr_t* check_bitwise_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 	expr = check_binary_kids(node, table, expr);
@@ -894,6 +1103,15 @@ expr_t* check_bitwise_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	return expr;
 }
 
+/**
+ * @brief check_equality_expr : check equality expression
+ *
+ * @param node : tree node about expression
+ * @param table : table of block that contains expression
+ * @param expr : expression struct that contains expression
+ *
+ * @return : pointer to expression struct
+ */
 expr_t* check_equality_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 	cdecl_t* type1 = NULL;
@@ -929,6 +1147,15 @@ expr_t* check_equality_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	return expr;
 }
 
+/**
+ * @brief check_relation_expr : check relation expression
+ *
+ * @param node : tree node about expression
+ * @param table : table of block that contains expression
+ * @param expr : expression struct to store expression information
+ *
+ * @return : pointer to expression struct
+ */
 expr_t* check_relation_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 	expr = check_binary_kids(node, table, expr);
@@ -952,6 +1179,15 @@ expr_t* check_relation_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	return expr;
 }
 
+/**
+ * @brief check_shift_expr: check shift expression
+ *
+ * @param node : tree node about expression
+ * @param table : table of block that contains expression
+ * @param expr : expression struct to store expression information
+ *
+ * @return : pointer to expression struct
+ */
 expr_t* check_shift_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 	expr = check_binary_kids(node, table, expr);
@@ -977,6 +1213,15 @@ expr_t* check_shift_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	return expr;
 }
 
+/**
+ * @brief check_add_expr: check add expression
+ *
+ * @param node : tree node about expression
+ * @param table : table of block that contains expression
+ * @param expr : expression struct to store expression information
+ *
+ * @return : pointer to expression struct
+ */
 expr_t* check_add_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 	expr = check_binary_kids(node, table, expr);
@@ -996,6 +1241,15 @@ expr_t* check_add_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	return expr;
 }
 
+/**
+ * @brief check_sub_expr: check sub expression
+ *
+ * @param node : tree node about expression
+ * @param table : table of block that contains expression
+ * @param expr : expression struct to store expression information
+ *
+ * @return : pointer to expression struct
+ */
 expr_t* check_sub_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 	expr = check_binary_kids(node, table, expr);
@@ -1015,6 +1269,15 @@ expr_t* check_sub_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	return expr;
 }
 
+/**
+ * @brief check_multiplicative_expr: check mutiplicative expression
+ *
+ * @param node : tree node about expression
+ * @param table : table of block that contains expression
+ * @param expr : expression struct to store expression information
+ *
+ * @return : pointer to expression struct
+ */
 expr_t* check_multiplicative_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 	expr = check_binary_kids(node, table, expr);
@@ -1035,6 +1298,16 @@ expr_t* check_multiplicative_expr(tree_t* node, symtab_t table, expr_t* expr) {
 }
 
 static int array_type_compatible(cdecl_t* type1, cdecl_t* type2);
+
+/**
+ * @brief two_type_compatible :check two type can be compatible
+ *
+ * @param type1 : the first type to be checked
+ * @param type2 : the second type to be checked
+ *
+ * @return : 1 - two type can be compatible
+ *			0 - two type can not be compatible
+ */
 static int two_type_compatible(cdecl_t* type1, cdecl_t* type2) {
 	assert(type1 != NULL); assert(type2 != NULL);
 	if (type1->common.categ == type2->common.categ)
@@ -1045,7 +1318,6 @@ static int two_type_compatible(cdecl_t* type1, cdecl_t* type2) {
 		return 1;
 	if ((is_ptr_type(type1) && is_int_type(type2)) ||
 		(is_ptr_type(type2) && is_int_type(type1))) {
-		//warning("conversion between pointer and integer without a cast");
 		return 1;
 	}
 	if (is_no_type(type1) || is_no_type(type2))
@@ -1056,6 +1328,15 @@ static int two_type_compatible(cdecl_t* type1, cdecl_t* type2) {
 	return 0;
 }
 
+/**
+ * @brief array_type_compatible : check array type can be compatible with other type
+ *
+ * @param type1 : the first type to be checked
+ * @param type2 : the second type to be checked
+ *
+ * @return : 1 - can be compatible
+ *			0 - can not be compatible
+ */
 static int array_type_compatible(cdecl_t* type1, cdecl_t* type2) {
 	assert(type1 != NULL); assert(type2 != NULL);
 	cdecl_t* tmp_type1 = NULL;
@@ -1065,6 +1346,15 @@ static int array_type_compatible(cdecl_t* type1, cdecl_t* type2) {
 	return two_type_compatible(tmp_type1, tmp_type2);
 }
 
+/**
+ * @brief can_assign : check assignment expression can be assigned
+ *
+ * @param l_expr : left expression of assignment
+ * @param r_expr : right expression of assignment
+ *
+ * @return : 1 - can be assigned
+ *			0 - can not be assigned
+ */
 static int can_assign(expr_t* l_expr, expr_t* r_expr) {
 	assert(l_expr != NULL); assert(r_expr != NULL);
 	cdecl_t* l_type = unqual(l_expr->type);
@@ -1080,10 +1370,18 @@ static int can_assign(expr_t* l_expr, expr_t* r_expr) {
 		return two_type_compatible(l_type, r_type);
 	}
 
-
 	return 0;
 }
 
+/**
+ * @brief check_assign_expr : check assignment expression
+ *
+ * @param node : tree node about assign expression
+ * @param table : table of block that contains expression
+ * @param expr : expression struct about expression information
+ *
+ * @return : pointer to expression struct
+ */
 expr_t* check_assign_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 
@@ -1123,7 +1421,6 @@ expr_t* check_assign_expr(tree_t* node, symtab_t table, expr_t* expr) {
 		error("lvalue required as left operand of assignment\n");
 	}
 	if (!can_assign(expr->kids[0], expr->kids[1])) {
-		printf("expr->kids[0] : type: %d, PARAMETER_TYPE: %d\n", expr->kids[0]->type->common.categ, PARAMETER_TYPE);
 		error("wrong assignment\n");
 	}
 	expr->type = expr->kids[0]->type;
@@ -1132,6 +1429,15 @@ expr_t* check_assign_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	return expr;
 }
 
+/**
+ * @brief check_binary_expr : check binary expression
+ *
+ * @param node : tree node about expression
+ * @param table : table of block that contains expression
+ * @param expr : expression struct about expression information
+ *
+ * @return : pointer to expression struct
+ */
 expr_t* check_binary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL);
 	expr->op = node->binary.type;
@@ -1179,6 +1485,15 @@ expr_t* check_binary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	return expr;
 }
 
+/**
+ * @brief check_ternary_expr: check ternary expression
+ *
+ * @param node : tree node about expression
+ * @param table : table of block that contains expression
+ * @param expr : expression struct about expression information
+ *
+ * @return : pointer to expression struct
+ */
 expr_t* check_ternary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 
@@ -1211,6 +1526,15 @@ expr_t* check_ternary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 }
 
 static expr_t* check_expression(tree_t* node, symtab_t table, expr_t* expr);
+/**
+ * @brief check_cast_expr: check cast expression
+ *
+ * @param node : tree node about expression
+ * @param table : table of block that contains expression
+ * @param expr : expression struct about expression information
+ *
+ * @return : pointer to expression struct
+ */
 expr_t* check_cast_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 	expr = check_expression(node->cast.expr, table, expr);
@@ -1225,6 +1549,15 @@ expr_t* check_cast_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	return expr;
 }
 
+/**
+ * @brief check_sizeof_expr: check sizeof expression
+ *
+ * @param node : tree node about expression
+ * @param table : table of block that contains expression
+ * @param expr : expression struct about expression information
+ *
+ * @return : pointer to expression struct
+ */
 expr_t* check_sizeof_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 	expr = check_expression(node->sizeof_tree.expr, table, expr);
@@ -1237,6 +1570,15 @@ expr_t* check_sizeof_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	return expr;
 }
 
+/**
+ * @brief check_unary_expr: check unary expression
+ *
+ * @param node : tree node about expression
+ * @param table : table of block that contains expression
+ * @param expr : expression struct about expression information
+ *
+ * @return : pointer to expression struct
+ */
 expr_t* check_unary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 	expr->op = node->unary.type;
@@ -1360,6 +1702,15 @@ expr_t* check_unary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	return expr;
 }
 
+/**
+ * @brief check_unary_expr: check expression with constant value
+ *
+ * @param node : tree node about expression
+ * @param table : table of block that contains expression
+ * @param expr : expression struct about expression information
+ *
+ * @return : pointer to expression struct
+ */
 expr_t* check_const_expr(tree_t* node, expr_t* expr) {
 	assert(node != NULL); assert(expr != NULL);
 	value_t* value = (value_t*)gdml_zmalloc(sizeof(value_t));
@@ -1409,6 +1760,13 @@ expr_t* check_const_expr(tree_t* node, expr_t* expr) {
 	return expr;
 }
 
+/**
+ * @brief dml_obj_type : check symbol is object or not
+ *
+ * @param symbol : symbol to be checked
+ *
+ * @return : object type or 0 for not object type
+ */
 static int dml_obj_type(symbol_t symbol) {
     assert(symbol != NULL);
 
@@ -1441,6 +1799,14 @@ static int dml_obj_type(symbol_t symbol) {
     return refer_type;
 }
 
+/**
+ * @brief find_dml_obj : find object from table
+ *
+ * @param table : table to find symbol
+ * @param name : object name
+ *
+ * @return : object type
+ */
 static int find_dml_obj(symtab_t table, const char* name) {
 	assert(table != NULL); assert(name != NULL);
 	symbol_t symbol = symbol_find_notype(table, name);
@@ -1474,6 +1840,15 @@ static int find_dml_obj(symtab_t table, const char* name) {
 	return obj_type;
 }
 
+/**
+ * @brief check_dml_obj_refer : check reference is object or not
+ *
+ * @param node : tree node about reference
+ * @param table : table of block that use object reference
+ *
+ * @return : 1 - reference is object
+ *			0 - reference is not object
+ */
 static int check_dml_obj_refer(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
@@ -1490,6 +1865,15 @@ static int check_dml_obj_refer(tree_t* node, symtab_t table) {
 
 }
 
+/**
+ * @brief check_quote_expr: check quote expression
+ *
+ * @param node : tree node about expression
+ * @param table : table of block that contains expression
+ * @param expr : expression struct about expression information
+ *
+ * @return : pointer to expression struct
+ */
 expr_t* check_quote_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 	tree_t* ident = node->quote.ident;
@@ -1517,6 +1901,14 @@ expr_t* check_quote_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	return expr;
 }
 
+/**
+ * @brief check_parameter_type : check the type of parameter
+ *
+ * @param symbol : symbol of parameter
+ * @param expr : expression struct to store parameter value and type
+ *
+ * @return : pointer to expression
+ */
 static cdecl_t* check_parameter_type(symbol_t symbol, expr_t* expr) {
 	assert(symbol != NULL);
 	cdecl_t* type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
@@ -1587,6 +1979,14 @@ static cdecl_t* check_parameter_type(symbol_t symbol, expr_t* expr) {
 	return type;
 }
 
+/**
+ * @brief check_constant_type : check the type of constant
+ *
+ * @param symbol : symbol of constant
+ * @param expr : expression struct to store parameter value and type
+ *
+ * @return : pointer to expression struct
+ */
 static cdecl_t* check_constant_type(symbol_t symbol, expr_t* expr) {
 	assert(symbol != NULL); assert(expr != NULL);
 	constant_attr_t* attr = (constant_attr_t*)(symbol->attr);
@@ -1601,18 +2001,40 @@ static cdecl_t* check_constant_type(symbol_t symbol, expr_t* expr) {
 	return type;
 }
 
+/**
+ * @brief check_method_param_type : check type of method parameters
+ *
+ * @param table : table of method
+ * @param symbol : symbol of method parameter
+ *
+ * @return : pointer to declarantion struct about method parameter
+ */
 static cdecl_t* check_method_param_type(symtab_t table, symbol_t symbol) {
 	assert(table != NULL); assert(symbol != NULL);
 	params_t* param = (params_t*)(symbol->attr);
 	return param->decl;
 }
 
+/**
+ * @brief check_foreach_type : check the type of foreach
+ *
+ * @param symbol : symbol of foreach
+ *
+ * @return : pointer to foreach symbol type
+ */
 static cdecl_t* check_foreach_type(symbol_t symbol, expr_t* expr) {
 	assert(symbol != NULL); assert(expr != NULL);
 	foreach_attr_t* attr = (foreach_attr_t*)(symbol->attr);
 	return attr->expr->type;
 }
 
+/**
+ * @brief check_register_type : check the type of register
+ *
+ * @param symbol : symbol of register
+ *
+ * @return : pointer to register type
+ */
 static cdecl_t* check_register_type(symbol_t symbol, expr_t* expr) {
 	assert(symbol != NULL); assert(expr != NULL);
 	register_attr_t* attr = symbol->attr;
@@ -1623,6 +2045,14 @@ static cdecl_t* check_register_type(symbol_t symbol, expr_t* expr) {
 	return type;
 }
 
+/**
+ * @brief check_attribute_type : check the type about attribute
+ *
+ * @param symbol : symbol of attribute
+ * @param expr : expression struct that contains attribute expression information
+ *
+ * @return : pointer to type of attribute
+ */
 static cdecl_t* check_attribute_type(symbol_t symbol, expr_t* expr) {
 	assert(symbol != NULL); assert(expr != NULL);
 	attribute_attr_t* attr = (attribute_attr_t*)(symbol->attr);
@@ -1662,6 +2092,16 @@ static cdecl_t* check_attribute_type(symbol_t symbol, expr_t* expr) {
 }
 
 static cdecl_t* get_common_type(symtab_t table, symbol_t symbol, expr_t* expr);
+
+/**
+ * @brief get_obj_type : get the type of obejct
+ *
+ * @param symbol : symbol of object
+ * @param table : table of object
+ * @param expr : expression struct to store expression calculating information
+ *
+ * @return : pointer to type of object
+ */
 static cdecl_t* get_obj_type(symbol_t symbol, symtab_t table, expr_t* expr) {
 	assert(symbol != NULL); assert(table != NULL); assert(expr != NULL);
 
@@ -1685,6 +2125,15 @@ static cdecl_t* get_obj_type(symbol_t symbol, symtab_t table, expr_t* expr) {
 	return type;
 }
 
+/**
+ * @brief get_common_type : get type of symbol
+ *
+ * @param table : table of block that uses symbol
+ * @param symbol: symbol to be gotten type
+ * @param expr : expression struct to store expression calculating information
+ *
+ * @return : type of symbol
+ */
 static cdecl_t* get_common_type(symtab_t table, symbol_t symbol, expr_t* expr) {
 	assert(table != NULL); assert(symbol != NULL);
 
@@ -1759,6 +2208,15 @@ static cdecl_t* get_common_type(symtab_t table, symbol_t symbol, expr_t* expr) {
 	return type;
 }
 
+/**
+ * @brief check_ident_expr : check the expression of identifier
+ *
+ * @param node : tree node about identifier expression
+ * @param table : table of block that uses identifier expression
+ * @param expr : expression struct to store identifier expression information
+ *
+ * @return : pointer ot expression struct
+ */
 expr_t* check_ident_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 	symbol_t symbol = symbol_find_notype(table, node->ident.str);
@@ -1821,6 +2279,15 @@ expr_t* check_ident_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	return expr;
 }
 
+/**
+ * @brief object_is_array : marc for checking object is array or not
+ *
+ * @param attr : the attribute of object
+ * @param type : type of object
+ *
+ * @return : 1 - object is array
+ *			0 - object is not array
+ */
 #define object_is_array(attr, type) \
 	do { \
 		if (((type*)attr)->is_array) { \
@@ -1830,6 +2297,14 @@ expr_t* check_ident_expr(tree_t* node, symtab_t table, expr_t* expr) {
 		} \
 	} while (0)
 
+/**
+ * @brief object_array : check object is array or not
+ *
+ * @param symbol : symbol of object
+ *
+ * @return : 1 - object is array
+ *			0 - object is not array
+ */
 static int object_array(symbol_t symbol) {
         assert(symbol != NULL);
         object_t* obj = symbol->attr;
@@ -1849,6 +2324,14 @@ static int object_array(symbol_t symbol) {
         return 0;
 }
 
+/**
+ * @brief data_is_array : check data is array or not
+ *
+ * @param symbol : symbol of data
+ *
+ * @return : 1 - data is array
+ *			0 - data is not array
+ */
 static int data_is_array(symbol_t symbol) {
 	assert(symbol != NULL);
 	int ret_value = 0;
@@ -1862,6 +2345,15 @@ static int data_is_array(symbol_t symbol) {
 	return ret_value;
 }
 
+/**
+ * @brief check_array_symbol : check symbol is array or not
+ *
+ * @param table : table of block that uses symbol
+ * @param symbol : symbol of checking
+ *
+ * @return 1 - symbol is array
+ *			0 - symbol is not array
+ */
 static int check_array_symbol(symtab_t table, symbol_t symbol) {
 	assert(table != NULL); assert(symbol != NULL);
 	void* attr = symbol->attr;
@@ -1914,6 +2406,14 @@ static int check_array_symbol(symtab_t table, symbol_t symbol) {
 	return 0;
 }
 
+/**
+ * @brief get_symbol_table_from_template : get symbol table from templates of table
+ *
+ * @param table : table with templates
+ * @param name : name of symbol
+ *
+ * @return : table of symbol
+ */
 static symtab_t get_symbol_table_from_template(symtab_t table, const char* name) {
 	assert(table != NULL); assert(name != NULL);
 	check_undef_template(table);
@@ -1940,6 +2440,15 @@ static symtab_t get_symbol_table_from_template(symtab_t table, const char* name)
 	return ref_table;
 }
 
+/**
+ * @brief get_symbol_from_templates : get symbol from templates of table
+ *
+ * @param table : table with templates
+ * @param name : name of symbol
+ * @param type : type of symbol
+ *
+ * @return : pointer to symbol
+ */
 symbol_t get_symbol_from_templates(symtab_t table, const char* name, int type) {
 	assert(table != NULL); assert(name != NULL);
 	symtab_t ref_table = NULL;
@@ -1961,6 +2470,15 @@ symbol_t get_symbol_from_templates(symtab_t table, const char* name, int type) {
 	return sym;
 }
 
+/**
+ * @brief get_symbol_from_template : get symbol of reference from templates of table
+ *
+ * @param table : table with templates
+ * @param parent_name : the topper level symbol of reference symbol
+ * @param name : symbol of reference
+ *
+ * @return  : symbol of reference
+ */
 symbol_t get_symbol_from_template(symtab_t table, const char* parent_name, const char* name) {
 	assert(table != NULL); assert(parent_name != NULL); assert(name != NULL);
 	if (table->table_num == 0)
@@ -2003,6 +2521,14 @@ symbol_t get_symbol_from_template(symtab_t table, const char* parent_name, const
 	return child_sym;
 }
 
+/**
+ * @brief is_param_connect : check a symbol is connect type
+ *
+ * @param symbol : symbol to be checked
+ *
+ * @return : 1 - connect type
+ *			0 - not connect type
+ */
 static int is_param_connect(symbol_t symbol) {
 	assert(symbol != NULL);
 	int ret = 0;
@@ -2012,7 +2538,15 @@ static int is_param_connect(symbol_t symbol) {
 	return ret;
 }
 
-extern void check_reg_table(void);
+/**
+ * @brief check_refer : check reference of expression
+ *
+ * @param table : table of block that contains reference
+ * @param ref : struct contains reference
+ * @param expr : expression struct that store the expression information
+ *
+ * @return : pointer to expression struct
+ */
 expr_t* check_refer(symtab_t table, reference_t* ref, expr_t* expr) {
 	assert(table != NULL); assert(ref != NULL); assert(expr != NULL);
 
@@ -2109,6 +2643,15 @@ expr_t* check_refer(symtab_t table, reference_t* ref, expr_t* expr) {
 	return expr;
 }
 
+/**
+ * @brief check_component_expr : check expression with component(-> or .)
+ *
+ * @param node : tree node about expression
+ * @param table : table of block that contains expression
+ * @param expr : expression struct contains expression information
+ *
+ * @return : pointer to expression struct
+ */
 expr_t* check_component_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 	expr->type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
@@ -2127,6 +2670,15 @@ expr_t* check_component_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	return expr;
 }
 
+/**
+ * @brief check_sizeoftype_expr : check sizeoftype expression
+ *
+ * @param node : tree node about expression
+ * @param table : table of block that contains expression
+ * @param expr : expression struct contains expression information
+ *
+ * @return : pointer to expression struct
+ */
 expr_t* check_sizeoftype_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 
@@ -2145,14 +2697,35 @@ expr_t* check_sizeoftype_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	return expr;
 }
 
+/**
+ * @brief check_new_expr : check new expression
+ *
+ * @param node : tree node about expression
+ * @param table : table of block that contains expression
+ * @param expr : expression struct contains expression information
+ *
+ * @return : pointer to expression struct
+ */
 expr_t* check_new_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
-	PERRORN("Pay attention: not implement the new expression", node);
+	cdecl_t* type  = parse_ctype_decl(node->new_tree.type, table);
+	PERRORN("Pay attention: not check the new expression with testcase", node);
 
+	expr->type = type;
 	expr->node = node;
 	return expr;
 }
 
+/**
+ * @brief check_func_param : check function parameters
+ *
+ * @param node : tree node of function parameters
+ * @param table : table of block that uses function
+ * @param sig : function struct that store function information
+ * @param param_start : the start of function parameters
+ *
+ * @return : pointer to expression struct about function
+ */
 expr_t* check_func_param(tree_t* node, symtab_t table, signature_t* sig, int param_start) {
 	assert(node != NULL); assert(table != NULL);
 	expr_t* expr = NULL;
@@ -2186,6 +2759,15 @@ expr_t* check_func_param(tree_t* node, symtab_t table, signature_t* sig, int par
 }
 
 extern object_t* get_current_obj();
+
+/**
+ * @brief first_param_is_obj : check the first parameter of function is object
+ *
+ * @param sig : function struct that store function information
+ *
+ * @return : 1 - first parameter is object
+ *			0 - firset parameter is not object
+ */
 static int first_param_is_obj(signature_t* sig) {
 	if (sig == NULL)
 		return 0;
@@ -2206,6 +2788,15 @@ static int first_param_is_obj(signature_t* sig) {
 	return 0;
 }
 
+/**
+ * @brief check_function_expr : check the function expression
+ *
+ * @param node : tree node about function
+ * @param table : table of block that uses function
+ * @param expr : expression struct to store expression information
+ *
+ * @return : pointer to expression struct
+ */
 expr_t* check_function_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 	expr_t* func = check_expr(node->expr_brack.expr, table);
@@ -2269,6 +2860,15 @@ expr_t* check_function_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	return expr;
 }
 
+/**
+ * @brief check_brack_expr : check expression with brack
+ *
+ * @param node : tree node about expression with brack
+ * @param table : table of block that contains expression
+ * @param expr : expression struct to store expression information
+ *
+ * @return : pointer to expression struct
+ */
 expr_t* check_brack_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 
@@ -2286,6 +2886,15 @@ expr_t* check_brack_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	return expr;
 }
 
+/**
+ * @brief check_array_expr : check array expression
+ *
+ * @param node : tree node about array expression
+ * @param table : table of block that contains expression
+ * @param expr : expression struct to store expression information
+ *
+ * @return : pointer to expression struct
+ */
 expr_t* check_array_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 	cdecl_t* type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
@@ -2297,6 +2906,15 @@ expr_t* check_array_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	return expr;
 }
 
+/**
+ * @brief check_bit_slic_expr : check bit slicing expression
+ *
+ * @param node : tree node about bit slicing
+ * @param table : table of block that contains expression
+ * @param expr : expression struct to store expression information
+ *
+ * @return : pointer to expression struct
+ */
 expr_t* check_bit_slic_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 
@@ -2337,6 +2955,15 @@ expr_t* check_bit_slic_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	return expr;
 }
 
+/**
+ * @brief check_expression : check all category expression
+ *
+ * @param node : tree node about expression
+ * @param table : table of block that contains expression
+ * @param expr : expression struct to store expression information
+ *
+ * @return : pointer to expression struct
+ */
 expr_t* check_expression(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 	switch (node->common.type) {
@@ -2398,12 +3025,19 @@ expr_t* check_expression(tree_t* node, symtab_t table, expr_t* expr) {
 		default:
 			error("there may be other type expression: %s\n", node->common.name);
 			/* FIXME: Pay attention: The exit function is only for debugging */
-//			exit(-1);
 			break;
 	}
 	return expr;
 }
 
+/**
+ * @brief check_expr : the entry to check expression
+ *
+ * @param node : tree node about expression
+ * @param table : table of block that contains expression
+ *
+ * @return : pointer to expression struct
+ */
 expr_t* check_expr(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 	expr_t* expr = (expr_t*)gdml_zmalloc(sizeof(expr_t));
@@ -2412,6 +3046,14 @@ expr_t* check_expr(tree_t* node, symtab_t table) {
 	return expr;
 }
 
+/**
+ * @brief get_typeof_type : get the type of typeof expression
+ *
+ * @param node : tree node about typeof expression
+ * @param table : table of block that contains typeof expression
+ *
+ * @return : the type of typeof expression
+ */
 cdecl_t* get_typeof_type(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 	expr_t* expr = check_expr(node->typeof_tree.expr, table);
@@ -2420,6 +3062,14 @@ cdecl_t* get_typeof_type(tree_t* node, symtab_t table) {
 	return expr->type;
 }
 
+/**
+ * @brief check_comma_expr : check the comma expression
+ *
+ * @param node : tree node about comma expression
+ * @param table : table of block that contains expression
+ *
+ * @return : pointer to expression struct
+ */
 expr_t* check_comma_expr(tree_t* node, symtab_t table) {
 	if (node == NULL) {
 		return NULL;
