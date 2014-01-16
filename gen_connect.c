@@ -22,6 +22,13 @@
  */
 #include "gen_connect.h"
 extern object_t *DEV;
+
+/**
+ * @brief gen_connect_set : generate the set method of connect object
+ *
+ * @param obj : the object of connect
+ * @param f : file to be generated
+ */
 static void gen_connect_set(object_t *obj, FILE *f) {
 	connect_t *con = (connect_t *)obj;
 	const char *name = obj->name;
@@ -116,6 +123,12 @@ static void gen_connect_set(object_t *obj, FILE *f) {
 	fprintf(f, "}\n");
 }
 
+/**
+ * @brief gen_connect_get : generate the get method code of connect object
+ *
+ * @param obj : the object of connect
+ * @param f : file to be generated
+ */
 static void gen_connect_get(object_t *obj, FILE *f) {
 	const char *name = obj->name;
 	const char *dev_name = DEV->name;
@@ -167,11 +180,23 @@ static void gen_connect_get(object_t *obj, FILE *f) {
 	fprintf(f, "}\n");
 }
 
+/**
+ * @brief gen_connect_code : generate the code of connect object
+ *
+ * @param obj : the object of connect
+ * @param f : file to be generated
+ */
 static void gen_connect_code(object_t *obj, FILE *f) {
 	gen_connect_set(obj, f);
 	gen_connect_get(obj, f);
 }
 
+/**
+ * @brief gen_device_connect_code : entry to gnenerate connect object
+ *
+ * @param dev : the object of device
+ * @param f : file to be generated
+ */
 void gen_device_connect_code(device_t *dev, FILE *f) {
 	struct list_head *p;
 	object_t *obj;
