@@ -1,5 +1,11 @@
 #include "gen_port.h"
 
+/**
+ * @brief gen_port_description : generate the code of port struct
+ *
+ * @param obj : the object of port
+ * @param f : file to be generated
+ */
 static void gen_port_description(object_t *obj, FILE *f) {
 	dml_port_t *port = (dml_port_t *)obj;
 	int  i = 0;
@@ -17,6 +23,12 @@ static void gen_port_description(object_t *obj, FILE *f) {
 	fprintf(f, "};\n");
 }
 
+/**
+ * @brief gen_device_port : generate an array of port for device
+ *
+ * @param dev : the object of device
+ * @param f : file to be generated
+ */
 void gen_device_port(device_t  *dev, FILE *f) {
 	struct list_head *p;
 	object_t *tmp;
@@ -35,6 +47,12 @@ void gen_device_port(device_t  *dev, FILE *f) {
 	fprintf(f, "};\n");
 }
 
+/**
+ * @brief gen_port_implement_code : generate the code of implement in port object
+ *
+ * @param obj : the object of port
+ * @param f : c file to be generated
+ */
 static void gen_port_implement_code(object_t *obj, FILE *f) {
 	dml_port_t *port = (dml_port_t *)obj;
 	int i = 0;
@@ -44,6 +62,12 @@ static void gen_port_implement_code(object_t *obj, FILE *f) {
 	}
 }
 
+/**
+ * @brief gen_port_implement_iface : generate the code of interface in port object
+ *
+ * @param obj : the object of port
+ * @param f : c file to be generated
+ */
 void gen_port_implement_iface(object_t *obj, FILE *f) {
 	dml_port_t *port = (dml_port_t *)obj;
 	int i = 0;
@@ -53,6 +77,12 @@ void gen_port_implement_iface(object_t *obj, FILE *f) {
 	}
 }
 
+/**
+ * @brief gen_port_implement_header : generated the header of implement in port object
+ *
+ * @param obj : the object of port
+ * @param f : c file to be generated
+ */
 static void gen_port_implement_header(object_t *obj, FILE *f) {
 	dml_port_t *port = (dml_port_t *)obj;
 	int i = 0;
@@ -62,6 +92,12 @@ static void gen_port_implement_header(object_t *obj, FILE *f) {
 	}
 }
 
+/**
+ * @brief gen_device_port_code : entry to generate port code about port
+ *
+ * @param dev : the object of device
+ * @param f : c file to be generated
+ */
 void gen_device_port_code(device_t *dev, FILE *f) {
 	struct list_head *p;
 	object_t *tmp;
@@ -92,6 +128,12 @@ void add_port_method(object_t *obj) {
 	}
 }
 
+/**
+ * @brief gen_device_port_description : entry to generate the code of port
+ *
+ * @param dev : the object of device
+ * @param f : file to be  generated
+ */
 void gen_device_port_description(device_t *dev, FILE *f) {
 	struct list_head *p;
 	object_t *tmp;
@@ -103,6 +145,12 @@ void gen_device_port_description(device_t *dev, FILE *f) {
 	gen_device_port(dev, f);
 }
 
+/**
+ * @brief gen_device_port_header : generate the header of port object
+ *
+ * @param dev : the object of device
+ * @param f : file to be generated
+ */
 void gen_device_port_header(device_t *dev, FILE *f) {
 	struct list_head *p;
 	object_t *tmp;
