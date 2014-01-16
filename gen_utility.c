@@ -110,6 +110,13 @@ int get_tmp_index(void) {
 	    return tmp_index++;
 }
 
+/**
+ * @brief get_symbol_alias : get the aliases of symbol
+ *
+ * @param sym : the symbol of aliases
+ *
+ * @return : the aliases of symbol
+ */
 const char *get_symbol_alias(symbol_t sym) {
     int i;
     int ret;
@@ -128,6 +135,13 @@ const char *get_symbol_alias(symbol_t sym) {
     return sym->alias_name;
 }
 
+/**
+ * @brief set_symbol_alias : set aliases of symbol
+ *
+ * @param sym : symbol to be set aliases
+ * @param type : type of symbol
+ * @param index : the index of current symbol
+ */
 void set_symbol_alias(symbol_t sym,int type,int index) {
     char tmp[TMP_SIZE];
     int len;
@@ -157,6 +171,11 @@ void set_symbol_alias(symbol_t sym,int type,int index) {
     }
 }
 
+/**
+ * @brief set_symbol_ret_alias : set the aliases of returning parameters
+ *
+ * @param sym : symbol of returning parameters
+ */
 void set_symbol_ret_alias(symbol_t sym) {
     int index;
     int ret;
@@ -174,13 +193,23 @@ void set_symbol_ret_alias(symbol_t sym) {
     }
 }
 
-/*name must dynamically alloced */
+/**
+ * @brief set_symbol_alias_name :  set the aliases of symbol
+ *
+ * @param sym : symbol to be set aliases
+ * @param name : the aliases of symbol
+ */
 void set_symbol_alias_name(symbol_t sym, char *name) {
     if(!sym->alias_name) {
         sym->alias_name = name;
     }
 }
 
+/**
+ * @brief set_exit_symbol_alias : set aliases of exit symbol
+ *
+ * @param sym : symbol to exit
+ */
 void set_exit_symbol_alias(symbol_t sym){
     int index;
     int ret;
@@ -200,6 +229,11 @@ void set_exit_symbol_alias(symbol_t sym){
     }
 }
 
+/**
+ * @brief set_throw_symbol_alias : set aliases of throw symbol
+ *
+ * @param sym : symbol of throw
+ */
 void set_throw_symbol_alias(symbol_t sym){
     int index;
     int ret;
@@ -219,6 +253,11 @@ void set_throw_symbol_alias(symbol_t sym){
     }
 }
 
+/**
+ * @brief set_label_symbol_alias : set aliases of label
+ *
+ * @param sym : symbol of label
+ */
 void set_label_symbol_alias(symbol_t sym){
     int index;
     int ret;
@@ -238,6 +277,13 @@ void set_label_symbol_alias(symbol_t sym){
     }
 }
 
+/**
+ * @brief to_upper : to capital the letter
+ *
+ * @param src : the source string
+ *
+ * @return : the string of capital
+ */
 char *to_upper(const char *src) {
     int len = strlen(src);
     char *dst = gdml_zmalloc(len + 1);
@@ -305,6 +351,14 @@ int adjust_size(int size) {
     return size;
 }
 
+/**
+ * @brief is_simics_api : check the string is simics api
+ *
+ * @param name : name of checking
+ *
+ * @return : 1 - simics api
+ *			0 - not simics api
+ */
 int is_simics_api(const char *name) {
 	const char *tmp;
 	int i = 0;

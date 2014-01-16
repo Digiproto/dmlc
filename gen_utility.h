@@ -85,6 +85,12 @@ static void new_line(void) {
     D("\n");
 }
 
+/**
+ * @brief translate : call the translate function of syntax tree node
+ * to generate code
+ *
+ * @param node: syntax tree node
+ */
 static void translate(tree_t *node) {
     if(node->common.translate) {
         node->common.translate(node);
@@ -97,6 +103,12 @@ const char *bits2str(int bits);
 int adjust_size(int size);
 int is_simics_api(const char *name);
 #ifdef GEN_LOC
+
+/**
+ * @brief gen_src_loc : generate the location of dml srouce file
+ *
+ * @param l : the location informationc
+ */
 static void gen_src_loc(YYLTYPE *l) {
     if(l) {
         POS;
