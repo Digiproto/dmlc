@@ -51,6 +51,146 @@ inline static object_t* get_current_obj() {
 }
 
 /**
+ * @brief common_decl_copy : copy the type of identifier to tree node
+ *
+ * @param dest : the type of tree node
+ * @param src : the type of identifier
+ *
+ * @return : type of tree node
+ */
+static cdecl_t* common_decl_copy(cdecl_t* dest, cdecl_t* src) {
+	assert(dest != NULL); assert(src != NULL);
+	dest->common.categ = src->common.categ;
+	dest->common.qual = src->common.qual;
+	dest->common.is_extern = src->common.is_extern;
+	dest->common.is_typedef = src->common.is_typedef;
+	dest->common.is_static = src->common.is_static;
+	dest->common.is_local = src->common.is_local;
+	dest->common.no_decalare = src->common.no_decalare;
+	dest->common.size = src->common.size;
+	dest->common.bty = src->common.bty;
+	dest->common.drv = src->common.drv;
+	dest->typedef_name = src->typedef_name;
+	dest->var_name = src->var_name;
+	return dest;
+}
+
+/**
+ * @brief struct_decl_copy : copy the struct type to another place
+ *
+ * @param dest : destination to store identifier type
+ * @param src : type of identifier
+ *
+ * @return : destination to store struct identifier type
+ */
+static cdecl_t* struct_decl_copy(cdecl_t* dest, cdecl_t* src) {
+	assert(dest != NULL); assert(src != NULL);
+	dest = common_decl_copy(dest, src);
+	dest->struc.is_defined = src->struc.is_defined;
+	dest->struc.id = src->struc.id;
+	dest->struc.elem = src->struc.elem;
+	dest->struc.table = src->struc.table;
+
+	return dest;
+}
+
+/**
+ * @brief layout_decl_copy : copy the layout type to another place
+ *
+ * @param dest : destination to store identifier type
+ * @param src : type of identifier
+ *
+ * @return : destination to store layout identifier type
+ */
+static cdecl_t* layout_decl_copy(cdecl_t* dest, cdecl_t* src) {
+	assert(dest != NULL); assert(src != NULL);
+	dest = common_decl_copy(dest, src);
+	dest->layout.is_defined = src->layout.is_defined;
+	dest->layout.id = src->layout.id;
+	dest->layout.bitorder = src->layout.bitorder;
+	dest->layout.elem = src->layout.elem;
+	dest->layout.table = src->layout.table;
+
+	return dest;
+}
+
+/**
+ * @brief bitfields_decl_copy : copy the bitfields type to another place
+ *
+ * @param dest : destination to store bitfields identifier type
+ * @param src : type of bitfields identifier
+ *
+ * @return : destination to store bitfields identifier type
+ */
+static cdecl_t* bitfields_decl_copy(cdecl_t* dest, cdecl_t* src) {
+	assert(dest != NULL); assert(src != NULL);
+	dest = common_decl_copy(dest, src);
+	dest->bitfields.is_defined = src->bitfields.is_defined;
+	dest->bitfields.bit_size = src->bitfields.bit_size;
+	dest->bitfields.id = src->bitfields.id;
+	dest->bitfields.elem = src->bitfields.elem;
+	dest->bitfields.table = src->bitfields.table;
+
+	return dest;
+}
+
+/**
+ * @brief function_decl_copy : copy the function type to another place
+ *
+ * @param dest : destination to store function identifier type
+ * @param src : type of function identifier
+ *
+ * @return : destination to store function identifier type
+ */
+static cdecl_t* function_decl_copy(cdecl_t* dest, cdecl_t* src) {
+	assert(dest != NULL); assert(src != NULL);
+	dest = common_decl_copy(dest, src);
+	dest->function.sig = src->function.sig;
+
+	return dest;
+}
+
+/**
+ * @brief cdecl_copy : copy the identifier type to tree node
+ *
+ * @param dest : the destination to copy type
+ * @param src : the source of copying type
+ *
+ * @return : the destination of copying type
+ */
+static cdecl_t* cdecl_copy(cdecl_t* dest, cdecl_t* src) {
+	assert(dest != NULL && src != NULL);
+	if (src->common.categ == STRUCT_T) {
+		dest = struct_decl_copy(dest, src);
+	} else if (src->common.categ == LAYOUT_T) {
+		dest = layout_decl_copy(dest, src);
+	} else if (src->common.categ == BITFIELDS_T) {
+		dest = bitfields_decl_copy(dest, src);
+	} else if (src->common.categ == FUNCTION_T){
+		dest = function_decl_copy(dest, src);
+	} else {
+		dest = common_decl_copy(dest, src);
+	}
+	return dest;
+}
+
+/**
+ * @brief expression_type_copy : copy the identifier type to epression
+ *
+ * @param dest : the destination to copy type
+ * @param src : the source of copying type
+ *
+ * @return : the destination of copying type
+ */
+cdecl_t* expression_type_copy(void* dest, cdecl_t* src) {
+	assert(src != NULL);
+	dest = gdml_zmalloc(sizeof(cdecl_t));
+	dest = cdecl_copy(dest, src);
+
+	return dest;
+}
+
+/**
  * @brief set_current_obj : set the value about current object
  *
  * @param obj : the object to be assigned to current object
@@ -1424,6 +1564,7 @@ expr_t* check_assign_expr(tree_t* node, symtab_t table, expr_t* expr) {
 		error("wrong assignment\n");
 	}
 	expr->type = expr->kids[0]->type;
+	node->expr_assign.ty = expression_type_copy(node->expr_assign.ty, expr->type);
 	expr->node = node;
 
 	return expr;
@@ -1545,6 +1686,7 @@ expr_t* check_cast_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	}
 	expr->type = type;
 	expr->node = node;
+	node->cast.ty = expression_type_copy(node->cast.ty, expr->type);
 
 	return expr;
 }
@@ -1566,6 +1708,7 @@ expr_t* check_sizeof_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	expr->type->common.categ = INT_T;
 	expr->type->common.size = sizeof(int) * 8;
 	expr->node = node;
+	node->sizeof_tree.ty = expression_type_copy(node->sizeof_tree.ty, expr->type);
 
 	return expr;
 }
@@ -1730,6 +1873,7 @@ expr_t* check_const_expr(tree_t* node, expr_t* expr) {
 			else {
 				value->int_v.value = node->int_cst.value;
 			}
+			node->int_cst.ty = expression_type_copy(node->int_cst.ty, expr->type);
 			break;
 		case FLOAT_TYPE:
 			expr->type->common.categ = DOUBLE_T;
@@ -1737,6 +1881,7 @@ expr_t* check_const_expr(tree_t* node, expr_t* expr) {
 			expr->val = value;
 			expr->is_const = 1;
 			value->d = node->float_cst.value;
+			node->float_cst.ty = expression_type_copy(node->float_cst.ty, expr->type);
 			break;
 		case CONST_STRING_TYPE:
 			expr->type->common.categ = STRING_T;
@@ -1744,6 +1889,7 @@ expr_t* check_const_expr(tree_t* node, expr_t* expr) {
 			expr->val = value;
 			expr->is_const = 1;
 			value->p = strdup(node->string.pointer);
+			node->string.ty = expression_type_copy(node->string.ty, expr->type);
 			break;
 		case UNDEFINED_TYPE:
 			expr->is_const = 0;
@@ -1898,6 +2044,7 @@ expr_t* check_quote_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	}
 
 	check_no_defiend_expr(expr, node);
+	node->quote.ty = expression_type_copy(node->quote.ty, expr->type);
 	return expr;
 }
 
@@ -2276,6 +2423,7 @@ expr_t* check_ident_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	}
 
 	expr->node = node;
+	node->ident.ty = expression_type_copy(node->ident.ty, expr->type);
 	return expr;
 }
 
@@ -2666,6 +2814,7 @@ expr_t* check_component_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	expr = check_refer(table, reference, expr);
 	check_no_defiend_expr(expr, node);
 	expr->node = node;
+	node->component.ty = expression_type_copy(node->component.ty, expr->type);
 
 	return expr;
 }
@@ -2693,6 +2842,7 @@ expr_t* check_sizeoftype_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	expr->type->common.categ = INT_T;
 	expr->type->common.size = sizeof(int) * 8;
 	expr->node = node;
+	node->sizeoftype.ty = expression_type_copy(node->sizeoftype.ty, expr->type);
 
 	return expr;
 }
@@ -2713,6 +2863,7 @@ expr_t* check_new_expr(tree_t* node, symtab_t table, expr_t* expr) {
 
 	expr->type = type;
 	expr->node = node;
+	node->new_tree.ty = expression_type_copy(node->new_tree.ty, expr->type);
 	return expr;
 }
 
@@ -2952,6 +3103,7 @@ expr_t* check_bit_slic_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	DEBUG_EXPR("check bit slic, expr type: %d, type bty: 0x%p\n",
 		expr->type->common.categ, expr->type->common.bty);
 	expr->node = node;
+	node->bit_slic.ty = expression_type_copy(node->bit_slic.ty, expr->type);
 	return expr;
 }
 

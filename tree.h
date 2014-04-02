@@ -98,6 +98,7 @@ struct tree_string
   struct tree_common common;
   int length;
   const char *pointer;
+  void* ty;
 };
 
 
@@ -275,6 +276,7 @@ struct tree_ident {
 	const char* str;
 	int len;
 	type_t type;
+	void* ty;
 };
 
 /**
@@ -416,6 +418,7 @@ struct tree_bit_slic {
 	tree_t* bit;				// the start expr about bit
 	tree_t* bit_end;			// the end expr about bit
 	tree_t* endian;				// the bitorder about bit
+	void* ty;
 };
 
 /**
@@ -671,6 +674,7 @@ struct tree_expr_assign {
 	operator_type_t type;
 	tree_t* left;				// the left expression about assignment
 	tree_t* right;				// the right expression about assignment
+	void* ty;
 };
 
 /**
@@ -681,6 +685,7 @@ struct tree_new {
 	struct tree_common common;
 	tree_t* type;
 	tree_t* count;
+	void* ty;
 };
 
 /**
@@ -692,6 +697,7 @@ struct tree_unary {
 	char* operat;
 	operator_type_t type;
 	tree_t* expr;
+	void* ty;
 };
 
 /**
@@ -724,7 +730,7 @@ struct tree_cast {
 	struct tree_common common;
 	tree_t* expr;
 	tree_t* ctype;
-	void* decl;
+	void* ty;
 };
 
 /**
@@ -734,6 +740,7 @@ struct tree_cast {
 struct tree_sizeof {
 	struct tree_common common;
 	tree_t* expr;
+	void* ty;
 };
 
 /**
@@ -743,6 +750,7 @@ struct tree_sizeof {
 struct tree_sizeoftype {
 	struct tree_common common;
 	tree_t* typeoparg;
+	void* ty;
 };
 
 /**
@@ -791,6 +799,7 @@ struct tree_expr_brack {
 	struct tree_common common;
 	tree_t* expr;				// the expression out brackets
 	tree_t* expr_in_brack;		// expression in brackets
+	void* ty;
 };
 
 /**
@@ -803,6 +812,7 @@ struct tree_int_cst {
 										// attention: some parameter's value is int64
 	int out_64bit;						// pay attention: some parameter's value is out of int64
 										// we should store it with string;
+	void* ty;
 };
 
 /**
@@ -812,6 +822,7 @@ struct tree_float_cst {
 	struct tree_common common;
 	const char* float_str;				// the int value formed with string
 	double value;					// the int value that tanslate from string,
+	void* ty;
 };
 
 /**
@@ -821,6 +832,7 @@ struct tree_float_cst {
 struct tree_quote {
 	struct tree_common common;
 	tree_t* ident;
+	void* ty;
 };
 
 /**
@@ -832,6 +844,7 @@ struct tree_component {
 	operator_type_t type;
 	tree_t* expr;				// expression about component
 	tree_t* ident;				// indentifier about component
+	void* ty;
 };
 
 /**
