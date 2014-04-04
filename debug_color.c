@@ -116,6 +116,32 @@ void debug_color (COLOR_TYPE type, char *format, ...)
 	}
 }
 
+
+void dump_src_code(const char *fname, int line) {
+#define CMD_BUF 256
+	char command[CMD_BUF];
+	snprintf(command, CMD_BUF, "sed -ne '%dp' %s", line, fname);
+	system(command);
+#undef CMD_BUF
+}
+
+void pretty_indication(int space, int size, char indictor) {
+	int i = 0;
+	char fmt[128];   
+
+	while(i < space) {
+    	printf(" ");
+        i++;
+	}
+    i = 0;
+	while(i < size) {
+		printf("%c", indictor);
+		i++;
+	}
+	printf("\n");
+}
+
+
 /**
  * @brief debug_cyan : print buf information with cyan
  *

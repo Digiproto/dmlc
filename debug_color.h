@@ -72,6 +72,9 @@ int debug_brown(char* format, ...);
 int debug_cyan(char* format, ...);
 int debug_purple(char* format, ...);
 int debug_light_red(char* format, ...);
+void dump_src_code(const char *fname, int line);
+void pretty_indication(int space, int size, char indictor);
+
 
 //#define DEBUG_CODE_COLOR
 
