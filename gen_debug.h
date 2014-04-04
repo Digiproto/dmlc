@@ -40,7 +40,7 @@ enum {
 extern int debugflags;
 #define BE_DBG(what, fmt, ...) do { \
 	if(debugflags & DBGBIT(what)) \
-		fprintf(stderr, "backend: " fmt, ## __VA_ARGS__); \
+		fprintf(stdout, "backend: " fmt, ## __VA_ARGS__); \
 	} while(0) 
 #else 
 #define BE_DBG(what, fmt, ...) do {} while(0)
