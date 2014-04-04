@@ -51,6 +51,7 @@ struct indentifier {
 
 typedef void (*translate_t)(tree_t *t);
 typedef void (*parse_t)(tree_t* ident, symtab_t table);
+struct cdecl;
 /**
  * @brief : the common part about tree node
  */
@@ -67,6 +68,7 @@ struct tree_common
 	void* attr;
 	int type;
 	const char* name;
+	struct cdecl *cdecl;
 	YYLTYPE location;
 };
 

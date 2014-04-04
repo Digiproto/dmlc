@@ -241,6 +241,7 @@
 	/* dictionary */ \
 	fn(DICTIONARY_TYPE) \
 	fn(BITFIELDS_ELEM_TYPE) \
+	fn(OBJECT_IF) \
 	/* nil */ \
 	fn(NIL_TYPE)
 
