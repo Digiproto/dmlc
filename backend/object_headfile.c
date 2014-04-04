@@ -25,6 +25,7 @@
 #include "object_headfile.h"
 #include "gen_struct.h"
 #include "gen_utility.h"
+#include "gen_header.h"
 
 const char *headfile_dir = "simics";
 
@@ -62,6 +63,7 @@ static void gen_object_headfile(device_t *dev, FILE *f) {
 	fprintf(f, "#include <%s/dev_iface.h>\n", headfile_dir);
 	fprintf(f, "#include <%s/event.h>\n", headfile_dir);
 #endif
+	gen_device_header(dev, f);
     fprintf(f, "#include \"%s_struct.h\"\n", dev_name);
     fprintf(f, "\n");
     gen_device_loggroup(dev, f);
