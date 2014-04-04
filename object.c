@@ -1,6 +1,6 @@
 /*
- * object.c: 
- *
+	 * object.c: 
+	 *
  * Copyright (C) 2013 alloc <alloc.young@gmail.com>
  * Skyeye Develop Group, for help please send mail to
  * <skyeye-developer@lists.gro.clinux.org>
@@ -36,6 +36,8 @@
 #include "info_output.h"
 #include "expression.h"
 #include "gen_common.h"
+#include "table_utility.h"
+#include "node.h"
 
 /**
  * @brief asprintf : combine the string into one based on the format
@@ -562,7 +564,8 @@ static void create_implement_object(object_t *obj, symbol_t sym){
  */
 static void create_data_object(object_t *obj, symbol_t sym) {
 	data_t *data = (data_t *)gdml_zmalloc(sizeof (*data));
-	init_object(&data->obj, obj, sym->name, "data", NULL, NULL );
+	cdecl_t *type = (cdecl_t *)sym->attr;
+	init_object(&data->obj, obj, sym->name, "data", type->node, NULL );
 }
 
 /**
@@ -755,10 +758,11 @@ static void create_objs(object_t *obj, type_t type) {
 	symtab_t table = obj->symtab->sibling;
 	if (table)
 		check_undef_template(table);
-	symbol_list_t *list = symbol_list_find_type(table, type);
+	symbol_list_t *list = NULL;
 	symbol_list_t *head = list;
 	object_type_t obj_type;
-	
+
+	list = symbol_list_find_type(table, type);
 	obj_type = type2obj_type(type);
 	if (type == BANK_TYPE && list == NULL) {
 		list = fake_bank_list();
@@ -772,8 +776,132 @@ static void create_objs(object_t *obj, type_t type) {
     symbol_list_free(head);
 }
 
-/**
- * @brief create_device_object : create the object of device and its member
+
+typedef struct create_obj_args {
+	object_t *obj;
+	object_type_t type;
+} obj_arg_t;
+
+static void create_objx(symbol_t sym, void *data) {
+	obj_arg_t *arg = (obj_arg_t *)data;
+	object_t *obj = arg->obj;;                      
+	object_type_t obj_type = arg->type;
+
+	create_func[obj_type](obj, sym);
+}
+
+/*
+static void create_objs(object_t *obj, type_t type) {
+	symtab_t table = obj->symtab->sibling;
+	object_type_t obj_type;
+
+	obj_type = type2obj_type(type);
+	obj_arg_t args = {.obj = obj, .type = obj_type};
+	table_visit(table, type, create_objx, (void *)&args);
+}
+*/
+
+typedef struct create_node_args {
+	device_t *dev;
+	type_t type;
+} node_args_t;
+
+typedef enum toplevel_type {
+	TOPLEVEL_NONE,
+	TOPLEVEL_HEADER,
+	TOPLEVEL_FOOTER,
+	TOPLEVEL_LOGGROUP,
+	TOPLEVEL_STRUCT,
+	TOPLEVEL_EXTERN,
+	TOPLEVEL_TYPEDEF,
+	TOPLEVEL_EXTERN_TYPEDEF
+} toplevel_type_t;
+
+void toplevel_create_none(device_t *dev, symbol_t sym) {
+	printf("toplevel: please use your self implementation\n"); 
+	return;
+}
+
+void toplevel_create_header(device_t *dev, symbol_t sym) {
+	node_entry_t *tmp = (node_entry_t *)create_node_entry(sym);
+	list_add_tail(&tmp->entry, &dev->headers);              
+	return; 
+}
+
+void toplevel_create_footer(device_t *dev, symbol_t sym) {
+	node_entry_t *tmp = create_node_entry(sym);
+	list_add_tail(&tmp->entry, &dev->footers);
+}
+
+
+void toplevel_create_loggroup(device_t *dev, symbol_t sym) {
+	node_entry_t *tmp = create_node_entry(sym);
+	list_add_tail(&tmp->entry, &dev->loggroups);
+}
+
+void toplevel_create_struct(device_t *dev, symbol_t sym) {
+	node_entry_t *tmp = create_node_entry(sym);
+	list_add_tail(&tmp->entry, &dev->struct_defs);
+}
+
+void (*toplevel_func[])(device_t *dev, symbol_t sym) = {
+	[TOPLEVEL_NONE] = toplevel_create_none,
+	[TOPLEVEL_HEADER] = toplevel_create_header,
+	[TOPLEVEL_FOOTER] = toplevel_create_footer,
+	[TOPLEVEL_LOGGROUP] = toplevel_create_loggroup,
+	[TOPLEVEL_STRUCT] = toplevel_create_struct,
+	[TOPLEVEL_EXTERN ... TOPLEVEL_EXTERN_TYPEDEF] = toplevel_create_none
+};
+
+static toplevel_type_t get_toplevel(type_t type) {
+	toplevel_type_t top_type;
+
+	switch(type) {
+		case HEADER_TYPE:
+			top_type = TOPLEVEL_HEADER;
+			break;
+		case FOOTER_TYPE:
+			top_type = TOPLEVEL_FOOTER;
+		   	break;
+		case STRUCT_TYPE:
+		    top_type = TOPLEVEL_STRUCT;
+		   	break;
+		case TYPEDEF_TYPE:
+		   	top_type = TOPLEVEL_TYPEDEF;
+		   	break;
+		case LOGGROUP_TYPE:
+		   	top_type = TOPLEVEL_LOGGROUP;
+		   	break;
+		default:
+		   	top_type = TOPLEVEL_NONE;
+	}
+	return top_type;
+}
+
+
+static void create_misc_node(symbol_t sym, void *data) {
+	node_args_t *args = (node_args_t *)data;
+	toplevel_type_t toplevel;
+
+	toplevel = get_toplevel(args->type);
+	toplevel_func[toplevel](args->dev, sym);
+}
+
+static void create_dev_node_type(device_t *dev, type_t type) {
+	symtab_t table = root_table;
+
+	node_args_t args = {.dev = dev, .type = type};
+	table_visit(table, type, create_misc_node, (void *)&args);
+}
+
+static void create_device_misc(device_t *dev) {
+	create_dev_node_type(dev, HEADER_TYPE);
+	create_dev_node_type(dev, FOOTER_TYPE);
+	create_dev_node_type(dev, STRUCT_TYPE);
+}
+
+ 
+/* @brief create_device_object : create the object of device and its member
  *
  * @param sym : symbol of device
  *
@@ -791,7 +919,7 @@ object_t *create_device_object(symbol_t sym){
 	BE_DBG(OBJ, "device %s found\n",sym->name);
 	init_object(&dev->obj, NULL, sym->name, "device", dev_attr->common.node, root_table);
 	p = &dev->constants;
-	for(i = 0; i < 5; i++, p++) {
+	for(i = 0; i < 9; i++, p++) {
 		INIT_LIST_HEAD(p);
 	}
 	obj = &dev->obj;
@@ -1613,6 +1741,11 @@ void device_realize(device_t *dev) {
 		event_realize(tmp);
 	}
 	process_object_templates(&dev->obj);
+	create_device_misc(dev);
+}
+
+void print_data(object_t *data, int table_count) {
+    BE_DBG(OBJ, "data name %s\n",data->name );
 }
 
 /**
@@ -1631,6 +1764,11 @@ void print_object(object_t *obj, int tab_count) {
 		tmp = list_entry(p, object_t, entry);
 		print_object(tmp, tab_count + 1);
 	}
+   	list_for_each(p, &obj->data) {
+	   	tmp = list_entry(p, object_t, entry);
+	   	print_data(tmp, tab_count);
+    }
+
 }
 
 /**
@@ -1932,6 +2070,11 @@ static void process_bank_template(object_t *obj){
 	}
 
 	symbol_insert(table, "unmapped_registers", PARAMETER_TYPE, val);
+	val = gdml_zmalloc(sizeof(*val));
+	val->type = PARAM_TYPE_LIST;
+	val->u.list.size = 0;
+	symbol_insert(table, "numbered_registers", PARAMETER_TYPE, val);
+
 }
 
 /**

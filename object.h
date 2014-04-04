@@ -95,6 +95,11 @@ typedef struct device {
     struct list_head implements;
     //struct list_head events;
 	struct list_head ports;
+   	struct list_head headers;
+   	struct list_head footers;
+   	struct list_head struct_defs;
+   	struct list_head loggroups;
+
 	int bank_count;
 	object_t **banks;
 }device_t;
