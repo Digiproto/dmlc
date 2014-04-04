@@ -31,6 +31,8 @@
 #include "gen_object.h"
 #include "gen_debug.h"
 extern int method_to_generate;
+static void gen_obj_generic_code(object_t *obj);
+
 
 /**
  * @brief gen_object_method : entry to generate method code of object
@@ -48,6 +50,95 @@ static void gen_object_method(object_t *obj){
 	add_object_generated_method(obj);	
 } 
 
+static void gen_none_objs(object_t *obj) {
+}
+
+static void gen_event_objs(object_t *obj) {
+	struct list_head *p;
+	object_t *t;
+
+	list_for_each(p, &obj->events) {
+		t = list_entry(p, object_t, entry);
+		gen_obj_generic_code(t);
+	}
+}
+
+static void gen_bank_objs(object_t *obj) {
+	bank_t *bank = (bank_t *)obj;
+	struct list_head *p;
+	object_t *t;
+
+	gen_event_objs(obj);
+	list_for_each(p, &bank->attributes) {
+		t = list_entry(p, object_t, entry);
+		gen_obj_generic_code(t);
+	}
+	list_for_each(p, &bank->implements) {
+		t = list_entry(p, object_t, entry);
+		gen_obj_generic_code(t);
+	}
+	list_for_each(p, &bank->groups) {
+		t = list_entry(p, object_t, entry);
+		gen_obj_generic_code(t);
+	}
+}
+
+static void gen_register_objs(object_t *obj) {
+	gen_event_objs(obj);
+}
+
+static void gen_attribute_objs(object_t *obj) {
+	gen_event_objs(obj);
+}
+
+static void gen_connect_objs(object_t *obj) {
+	gen_event_objs(obj);
+}
+
+static void gen_port_objs(object_t *obj) {
+	struct list_head *p;
+	object_t *t;
+	dml_port_t *port = (dml_port_t *)obj;
+
+	gen_event_objs(obj);
+	list_for_each(p, &port->connects) {
+		t = list_entry(p, object_t, entry);
+		gen_obj_generic_code(t);
+	}
+	list_for_each(p, &port->attributes) {
+		t = list_entry(p, object_t, entry);
+		gen_obj_generic_code(t);
+	}
+	list_for_each(p, &port->implements) {
+		t = list_entry(p, object_t, entry);
+		gen_obj_generic_code(t);
+	}
+}
+
+static void gen_group_objs(object_t *obj) {
+	struct list_head *p;
+	object_t *tmp;
+
+	list_for_each(p, &obj->events) {
+   		tmp = list_entry(p, object_t, entry);
+    	gen_obj_generic_code(tmp);
+	}
+}
+
+static void (*gen_obj_others[])(object_t *obj) = {
+	[Obj_Type_None] = gen_none_objs,
+	[Obj_Type_Device] = gen_none_objs,
+	[Obj_Type_Bank] = gen_bank_objs,
+	[Obj_Type_Register] = gen_register_objs,
+	[Obj_Type_Field]   = gen_none_objs,
+	[Obj_Type_Attribute] = gen_attribute_objs,
+	[Obj_Type_Connect] = gen_connect_objs,
+	[Obj_Type_Port]    = gen_port_objs,
+	[Obj_Type_Implement ... Obj_Type_Event] = gen_none_objs,
+	[Obj_Type_Group] = gen_group_objs
+};
+ 
+
 /**
  * @brief gen_obj_generic_code : entry to generate object code
  *
@@ -63,6 +154,8 @@ static void gen_obj_generic_code(object_t *obj){
 		t = list_entry(p, object_t, entry);
 		gen_obj_generic_code(t);
 	}
+	gen_obj_others[obj->encoding](obj);
+
 }
 
 /**
@@ -101,6 +194,12 @@ static void gen_device_code(device_t *obj){
 			gen_obj_generic_code(port->impls[i]);
 		}
 	}
+	/* generate attribute code */
+	list_for_each(p, &dev->attributes) {
+		t = list_entry(p, object_t , entry);
+		gen_obj_generic_code(t);
+	}
+
 }
 
 extern FILE *out;
