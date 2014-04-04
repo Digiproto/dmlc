@@ -135,6 +135,7 @@ typedef struct cdecl {
 	};
 	/* the original type name of typedef */
 	const char* typedef_name;
+	tree_t *node;
 	/* variable identifier */
 	const char* var_name;
 } cdecl_t;

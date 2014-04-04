@@ -84,8 +84,8 @@ void parse_data_cdecl(tree_t* node, symtab_t table) {
 
 	if (symbol_defined(table, decl->var_name))
 		error("name collision on '%s'\n", decl->var_name);
+	decl->node = node;
 	symbol_insert(table, decl->var_name, DATA_TYPE, decl);
-
 	return;
 }
 
