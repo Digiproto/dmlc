@@ -23,8 +23,29 @@
 #include "gen_struct.h"
 extern symtab_t root_table;
 
-static void gen_device_data_struct(object_t *obj, FILE *f) {
+static void gen_data_struct(object_t *obj, FILE *f) {
+	object_t *parent = obj->parent;
+	tree_t *node = obj->node;
+	const char *name;
+	const char *type;
+
+	name = get_cdecl_name(node);
+	type = get_type_info(node);
+	fprintf(f, "%s %s;\n", type, name);     
 }
+
+static void gen_device_data_struct(device_t *dev, FILE *f) {
+	struct list_head *p;
+	object_t *tmp;
+
+	list_for_each(p, &dev->obj.data) {
+		tmp = list_entry(p, object_t, entry);
+		printf("add \n");
+		fprintf(f, "\t");
+		gen_data_struct(tmp, f);
+	}
+}
+
 
 /**
  * @brief gen_field_struct : generate the filed into struct
@@ -302,4 +323,5 @@ void gen_device_struct(device_t *dev, FILE *f) {
 #if backend == 1
 	gen_device_notifier(dev, f);
 #endif
+	gen_device_data_struct(dev, f);
 }

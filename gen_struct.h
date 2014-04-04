@@ -23,8 +23,7 @@
 
 #ifndef __GEN_STRUCT_H__ 
 #define __GEN_STRUCT_H__  
-#include "object.h"
-#include "gen_utility.h"
+#include "gen_common.h"
 
 void gen_device_macros(device_t *dev, FILE *f);
 void gen_device_struct(device_t *dev, FILE *f);
