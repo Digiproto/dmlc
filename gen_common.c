@@ -1371,6 +1371,8 @@ static void process_inline_end(method_attr_t *m, tree_t *output, context_t *cont
 	node2 = output;
 	while(node && node2) {
 		 current_table = context->saved;
+		 gen_src_loc(&node2->common.location);
+		 POS;
 		 translate(node2);
 		 current_table = context->current;
 		 D(" = ");
@@ -1811,7 +1813,7 @@ void translate_ident(tree_t *t) {
 	} else {
 		type = (cdecl_t *)sym->attr;
 		if(type->common.categ == STRUCT_T){
-			D("struct %s\n", sym->name);
+			D("%s\n", sym->name);
 			return;
 		}
 	}
