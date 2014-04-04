@@ -36,7 +36,7 @@ static int handle_inline_case(tree_t *t, type_t type) {
 
     tree_t *it = t;
     tree_t *tmp;
-    symbol_t sym; 
+    symbol_t sym = NULL; 
     int ret = 0; 
    	ref_ret_t ref_ret;
 
