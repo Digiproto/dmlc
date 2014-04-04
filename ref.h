@@ -42,9 +42,9 @@ typedef struct node_info {
 }node_info_t;
 
 typedef struct index_info {
-	int indexs;
+	int nums;
 	struct list_head list;
-} index_info_t;
+} index_list_t;
 
 typedef struct ref_ret {
         int is_obj;
@@ -53,17 +53,26 @@ typedef struct ref_ret {
         const char *method;
 		ref_info_t *ref;
 		tree_t *index;
-		index_info_t a_index;
+		index_list_t indexs;
 		symbol_t sym;
 } ref_ret_t;
 
+
+static inline void init_index_list(index_list_t *indexs) {
+	indexs->nums = 0;
+	INIT_LIST_HEAD(&indexs->list);
+}
+
+
 static inline void init_ref_ret(ref_ret_t *fr) {
-		fr->is_obj = 0;
-		fr->con = NULL;
-		fr->iface = NULL;
-		fr->method = NULL;
-		fr->ref = NULL;
-		fr->index = NULL;
+	fr->is_obj = 0;
+	fr->con = NULL;
+	fr->iface = NULL;
+	fr->method = NULL;
+	fr->ref = NULL;
+	fr->index = NULL;
+	fr->sym = NULL;
+	init_index_list(&fr->indexs);
 }
 
 void ref_info_init(ref_info_t *info);
