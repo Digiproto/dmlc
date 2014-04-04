@@ -1153,8 +1153,8 @@ void parse_object(tree_t* node, symtab_t table) {
 	tree_t* tmp = node;
 	while (tmp) {
 		if ((tmp->common.parse) && (tmp->common.parsed == 0)) {
-			tmp->common.parsed = 1;
 			tmp->common.parse(tmp, table);
+			tmp->common.parsed = 1;
 		}
 		tmp = tmp->common.sibling;
 	}
@@ -1798,6 +1798,31 @@ void parse_struct_top(tree_t* node, symtab_t table) {
 	/* parse the struct elements, and insert them into table*/
 	parse_top_struct_cdecl(node, table, attr);
 
+	return;
+}
+
+void parse_header_node(tree_t *node, symtab_t table) {
+	static count = 0;
+	char name[32];
+
+
+	snprintf(name, sizeof(name), "%s%d", "header", count);
+	count++;
+
+	symbol_insert(table, name, HEADER_TYPE, node);
+	//printf("header inserted count %d, name %s\n", count, name);
+	return;
+}
+
+void parse_footer_node(tree_t *node, symtab_t table) {
+	static count = 0;
+	char name[32];
+
+	snprintf(name, sizeof(name), "%s%d", "footer", count);
+	count++;
+
+	symbol_insert(table, name, FOOTER_TYPE, node);
+	//printf("footer inserted name %s\n", name);
 	return;
 }
 

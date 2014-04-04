@@ -86,6 +86,9 @@ void parse_undef_templates(symtab_t table);
 void check_template_parsed(const char* name);
 void parse_undef_template(const char* name);
 void parse_unparsed_obj(tree_t* node, symtab_t table);
+void parse_header_node(tree_t *node, symtab_t table);
+void parse_footer_node(tree_t *node, symtab_t table);
+
 
 void print_dml(tree_t* node, int pos);
 void print_device(tree_t* node, int pos);
