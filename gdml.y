@@ -36,6 +36,12 @@
 struct file_stack* filestack_top;
 
 #define YYLTYPE_IS_DECLARED 1
+#define BISON_VERSION_HIGH
+#ifdef  BISON_VERSION_HIGH
+#define YY_TYPEDEF_YY_SCANNER_T
+typedef void* yyscan_t;
+#endif
+
 
 #define YYLLOC_DEFAULT(Current, Rhs, N)                                \
 	do{                                                                \
@@ -1186,6 +1192,7 @@ toplevel
 		node->common.print_node = print_header;
 		/* TODO: should analyze the content of head */
 		//node->head.head = $1;
+		node->common.parse = parse_header_node;
 		$$ = node;
 	}
 	| FOOTER BODY {
@@ -1195,6 +1202,7 @@ toplevel
 		node->common.print_node = print_footer;
 		/* TODO: should analyze the content of foot */
 		//node->head.head = $1;
+		node->common.parse = parse_footer_node;
 		$$ = node;
 	}
 	;
