@@ -21,13 +21,29 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 #include "gen_header.h"
+
+int simics_include_dir(const char *dir) {
+	const char *simics_include_str = "#include <simics";	
+	char *ret;
+
+	ret = strstr(dir, simics_include_str);
+	if(ret) {
+		return 1;
+	}
+	return 0;
+}
+
 extern FILE *out;
 static void gen_header(node_entry_t *nodex, FILE *f) {
 	symbol_t sym = nodex->sym;
 	tree_t *node = sym->attr;
+	int ret;
+
+	if((ret = simics_include_dir(node->head.str)));
+		return;
 	out = f;
 	gen_src_loc(&node->common.location);
-	fprintf(f, "\n%s", node->head.str);
+	fprintf(f, "%s", node->head.str);
 }
 
 void gen_device_header(device_t *dev, FILE *f) {
