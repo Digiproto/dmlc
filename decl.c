@@ -558,6 +558,7 @@ static cdecl_t* parse_type_ident(tree_t* node, symtab_t table) {
 			 * so it is not wrong when meet undefined indentifier
 			 * in first time, only sign it for second checking */
 			if (table->pass_num == 0) {
+				printf("table pass num %d, symbol %s, nodeclare\n", table->pass_num, node->ident.str);
 				type->var_name = node->ident.str;
 				type->common.no_decalare = 1;
 				DEBUG_DECL("unknown symbol: %s\n", type->var_name);
