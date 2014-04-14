@@ -47,24 +47,15 @@ device_t* device = NULL;
  */
 void gen_code (tree_t * root, const char *name)
 {
-	symbol_list_t *list;
-	symbol_t sym;
-	device_attr_t *dev;
 	device_t *dev_obj;
 
 	my_DBG("welcome to code generation backend\n");
-	list = symbol_list_find_type(root_table, DEVICE_TYPE); 
-	if(!list || list->next) {
-		BE_DBG(OBJ, "device not right\n");
-		exit(-1);
-	}
-	sym = list->sym;	
-	symbol_list_free(list);
-	dev = (device_attr_t *)sym->attr;
 	device = dev_obj = create_device_tree(root);
 	print_device_tree(dev_obj);
 	device_realize(dev_obj);
 	print_device_tree(dev_obj);
+
+	printf("---------------------------------------check begine-------------------------\n");
 	device_check(dev_obj);
 	printf("---------------------------------------check finished-------------------------\n");
 	//exit(-1);
