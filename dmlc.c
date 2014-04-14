@@ -143,6 +143,7 @@ int main (int argc, char *argv[])
 		fprintf(stderr, "a module should have device\n");
 		exit(-1);
 	}
+//#define PRINT_AST 1
 #ifdef PRINT_AST
 	print_ast (ast);
 	printf("Print the syntax tree ok!\n");
