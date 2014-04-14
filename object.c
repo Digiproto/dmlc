@@ -1956,8 +1956,9 @@ static void obj_templates_list(object_t* obj, const char* name) {
 
 	if (not_port_data_obj(obj)) {
 		create_template_name(obj, obj->obj_type);
+	} else {
+		return;
 	}
-	create_template_name(obj, obj->obj_type);
 	if (table) {
 		templates = table->template_table;
 		while (templates) {
