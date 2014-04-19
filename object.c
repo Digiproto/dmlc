@@ -1431,7 +1431,7 @@ static int get_reg_offset(paramspec_t *t, int *interval, symtab_t table) {
 		} else if(!ret) {
 			tmp = node->binary.right;
 		} else if(ret == 2) {
-			return;
+			return offset;
 		} else {
 			tmp = node->binary.left;
 		}
