@@ -29,6 +29,7 @@
 #include "ast.h"
 #include "object.h"
 #include "gen_utility.h"
+#include "type_info.h"
 
 typedef struct ref_info {
 	struct list_head list;
@@ -55,8 +56,9 @@ typedef struct ref_ret {
 		tree_t *index;
 		index_list_t indexs;
 		symbol_t sym;
+		tree_t *node;
+		type_info_t *type_info;
 } ref_ret_t;
-
 
 static inline void init_index_list(index_list_t *indexs) {
 	indexs->nums = 0;
@@ -72,6 +74,7 @@ static inline void init_ref_ret(ref_ret_t *fr) {
 	fr->ref = NULL;
 	fr->index = NULL;
 	fr->sym = NULL;
+	fr->type_info = NULL;
 	init_index_list(&fr->indexs);
 }
 

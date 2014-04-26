@@ -27,6 +27,7 @@
 #include "gen_debug.h"
 #include "info_output.h"
 #include "gen_common.h"
+#include "node_type.h"
 
 extern obj_ref_t *OBJ;
 extern symtab_t current_table;
@@ -113,6 +114,42 @@ void ref_info_print(ref_info_t *fi) {
 	}
 }
 
+static void translate_layout(type_info_t *type) {
+
+	const char *endian;
+	if(!strcmp(type->u.layout.endian, "\"big-endian\"")) {
+		endian = "be";
+	} else {
+		endian = "le";
+	}
+	D("(");
+	D("dml_load_%s_s32((", endian);
+	translate(type->u.layout.expr);
+	D(").data + %d)", type->u.layout.offset );
+	D(")");
+}
+
+static void translate_bitfield(type_info_t *type) {
+	tree_t *s;
+	tree_t *e;
+	tree_t *node;
+
+	s = type->u.bt.start;
+	e = type->u.bt.end;
+	node = type->u.bt.expr;
+	/* copy from bitslic */
+	D("(");
+	translate(node);
+	D(" >> ");
+	translate(e);
+	D(" & ");
+	D("MASK1(");
+	translate(s);
+	D(" - ");
+	translate(e);
+	D(")");
+	D(")");
+}
 /**
  * @brief collect_ref_info : collect the information of reference
  *
@@ -176,7 +213,29 @@ void printf_ref(ref_ret_t *ref_ret){
 	const char *alias = NULL;
 	char *tmp_str = NULL;
 	object_t *con = NULL;
+	symtab_t table = current_table;
+	ref_ret->type_info = NULL;
 
+	check_expr_type(ref_ret->node, table, &ref_ret->type_info);
+
+	if((ref_ret->type_info) && (ref_ret->type_info->kind & (TYPE_LAYOUT | TYPE_BITFIELD))) {
+		/* translate layout and bitfield*/
+		enum type_info kind = ref_ret->type_info->kind;
+		tree_t *node = ref_ret->node;
+		//fprintf(stderr, "exit, type kind %d,file %s, line %d\n", kind,node->common.location.file->name, node->common.location.first_line );
+		//exit(-1);
+		switch(kind) {
+			case TYPE_LAYOUT:
+				translate_layout(ref_ret->type_info);
+				break;
+			case TYPE_BITFIELD:
+				translate_bitfield(ref_ret->type_info);
+				break;
+			default:
+				fprintf(stderr, "other kind %d\n", kind);
+		}
+		return;
+	}
 	if(ref_ret->con) {
 		con = ref_ret->con;
 	}
@@ -212,13 +271,13 @@ void printf_ref(ref_ret_t *ref_ret){
 					alias = get_obj_ref(obj);
 					if(obj->is_array) {
 						int len = 0;
-						tmp_str = strrchr(alias, '[');	
+						tmp_str = strrchr(alias, '[');
 						if(tmp_str) {
 							len = tmp_str - alias;
 						}
 						tmp_str = gdml_zmalloc(len + 1);
 						memcpy(tmp_str, alias, len);
-						tmp_str[len] = '\0';	
+						tmp_str[len] = '\0';
 						alias = tmp_str;
 					}
 				} else {
@@ -438,6 +497,11 @@ symbol_t get_ref_sym(tree_t *t, ref_ret_t *ret, symtab_t table){
 	} else {
 		symtab = table;
 	}
+
+	ret->node = t;
+
+	//check_expr_type(t, symtab, &ret->type_info);
+
 	/*collect ref info*/
 	fi = new_ref_info();
 	collect_ref_info(t, fi);
