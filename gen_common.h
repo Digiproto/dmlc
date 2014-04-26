@@ -30,7 +30,9 @@
 #include "gen_utility.h"
 #include "gen_helper.h"
 #include "flow_ctrl.h"
-
+#include "obj_ref.h"
+#include "expression.h"
+/*
 typedef struct obj_context {
 	object_t *obj;
 	tree_t *ref;
@@ -43,7 +45,7 @@ typedef struct context_table {
         symtab_t method_parent;
 		obj_ref_t *obj;
 } context_t;
-
+*/
 void gen_dml_method(object_t *obj, struct method_name *m);
 const char *get_cdecl_name(tree_t *node);
 const char *get_type_info(tree_t *node);
