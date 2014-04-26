@@ -55,7 +55,7 @@ void tabcount_set(int num);
 void tabcount_add(int num);
 void tabcount_sub(int num);
 int  get_tab_count(void);
-//#define GEN_LOC 1
+#define GEN_LOC 1
 #define D(fmt,...) fprintf(out, fmt,  ## __VA_ARGS__)
 #define POS_n(n) fprintf(out, "%s", get_tabstr_n(n))
 #define POS do {			\
