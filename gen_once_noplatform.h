@@ -21,8 +21,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef __GEN_NOPLATFOEM_H__ 
-#define __GEN_NOPLATFORM_H__  
+#ifndef __GEN_NOPLATFORM_H__
+#define __GEN_NOPLATFORM_H__
 
 #include "object.h"
 #include "gen_utility.h"
