@@ -27,6 +27,7 @@
 #include "tree.h"
 #include "debug_color.h"
 #include "decl.h"
+#include "obj_ref.h"
 
 typedef struct const_expr {
     int is_undefined;
@@ -121,6 +122,10 @@ typedef struct expr {
 
 #define is_parameter_type(type) (type->common.categ == PARAMETER_TYPE)
 
+#define is_type_aggregate(type) (type->common.categ == STRUCT_T || type->common.categ == LAYOUT_T || type->common.categ == BITFIELDS_T)
+
+#define is_type_object(type) (type->common.categ == OBJECT_T)
+
 #define new_int_type(expr) \
 	do { \
 		expr->type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t)); \
@@ -159,12 +164,40 @@ typedef struct reference {
 expr_t* check_expr(tree_t* node, symtab_t table);
 expr_t* check_comma_expr(tree_t* node, symtab_t table);
 cdecl_t* get_typeof_type(tree_t* node, symtab_t table);
+//void check_node_type(tree_t *node, symtab_t table);
+//void check_expr_type(tree_t *node, symtab_t table);
 
 expr_t* parse_log_args(tree_t* node, symtab_t table);
 int get_typedef_type(symtab_t table, char* name);
 int charge_type(int type1, int type2);
+symbol_t get_symbol_from_banks(const char* name);
+cdecl_t* check_parameter_type(symbol_t symbol, expr_t* expr);
+cdecl_t* check_constant_type(symbol_t symbol, expr_t* expr);
+cdecl_t* check_foreach_type(symbol_t symbol, expr_t* expr);
+/* it's a temporary proposal.
+ * use the function so frequently that I add this marco.
+ * by eJim Lee 2013-11-30 */
+extern obj_ref_t *OBJ;
+
+/**
+ * @brief get_current_obj : get current object
+ *
+ * @return : pointer to object
+ */
+
+static inline object_t* get_current_obj() {
+	return OBJ->obj;
+}
 
 //#define DEBUG_EXPRESSION
+//#define ENABLE_EXPR_TRACE
+#ifdef ENABLE_EXPR_TRACE
+#define EXPR_TRACE(fmt, ...) do {\
+			fprintf(stderr, fmt, ## __VA_ARGS__);\
+		} while(0)
+#else
+#define EXPR_TRACE(fmt, ...) do {} while(0)
+#endif
 
 #ifdef DEBUG_EXPRESSION
 #define DEBUG_TEMPLATE_SYMBOL debug_green

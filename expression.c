@@ -5,7 +5,6 @@
  * Skyeye Develop Group, for help please send mail to
  * <skyeye-developer@lists.gro.clinux.org>
  *
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -25,7 +24,7 @@
 #include <assert.h>
 #include <string.h>
 #include <unistd.h>
-
+#include "expression.h"
 #include "symbol.h"
 #include "tree.h"
 #include "types.h"
@@ -35,20 +34,6 @@
 #include "gen_common.h"
 #include "info_output.h"
 #include "chk_common.h"
-
-/* it's a temporary proposal.
- * use the function so frequently that I add this marco.
- * by eJim Lee 2013-11-30 */
-extern obj_ref_t *OBJ;
-
-/**
- * @brief get_current_obj : get current object
- *
- * @return : pointer to object
- */
-inline static object_t* get_current_obj() {
-	return OBJ->obj;
-}
 
 /**
  * @brief common_decl_copy : copy the type of identifier to tree node
@@ -1364,7 +1349,10 @@ expr_t* check_shift_expr(tree_t* node, symtab_t table, expr_t* expr) {
  */
 expr_t* check_add_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
+	EXPR_TRACE("check add expr\n");
+	EXPR_TRACE("check binary kids\n");
 	expr = check_binary_kids(node, table, expr);
+	EXPR_TRACE("check binary kids end\n");
 	check_kids_no_defiend(expr, node);
 	if (both_arith_type(expr->kids[0]->type, expr->kids[1]->type)) {
 		return cal_const_value(expr);
@@ -1527,6 +1515,7 @@ expr_t* check_assign_expr(tree_t* node, symtab_t table, expr_t* expr) {
 
 	expr->op = node->expr_assign.type;
 	if (node->expr_assign.type != EXPR_ASSIGN_TYPE) {
+		EXPR_TRACE("in op= expr\n");
 		switch(node->expr_assign.type) {
 			case ADD_ASSIGN_TYPE:
 				expr = check_add_expr(node, table, expr);
@@ -1549,17 +1538,21 @@ expr_t* check_assign_expr(tree_t* node, symtab_t table, expr_t* expr) {
 				expr = check_shift_expr(node, table, expr);
 				break;
 		}
+		EXPR_TRACE("end in op = expr\n");
 	}
 	else {
+		EXPR_TRACE("check direct assignment\n");
 		expr->kids[0] = check_expr(node->expr_assign.left, table);
 		expr->kids[1] = check_expr(node->expr_assign.right, table);
 		check_kids_no_defiend(expr, node);
 	}
 	check_no_defiend_expr(expr, node);
 
+	EXPR_TRACE("check modifiable\n");
 	if (!can_modify(expr->kids[0])) {
 		error("lvalue required as left operand of assignment\n");
 	}
+	EXPR_TRACE("check type compatiable\n");
 	if (!can_assign(expr->kids[0], expr->kids[1])) {
 		error("wrong assignment\n");
 	}
@@ -1582,6 +1575,7 @@ expr_t* check_assign_expr(tree_t* node, symtab_t table, expr_t* expr) {
 expr_t* check_binary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL);
 	expr->op = node->binary.type;
+	EXPR_TRACE("check binary op %s\n", TYPENAME(node->binary.type));
 	switch(node->binary.type) {
 		case OR_OP_TYPE:
 		case AND_OP_TYPE:
@@ -1623,6 +1617,7 @@ expr_t* check_binary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	}
 	check_no_defiend_expr(expr, node);
 	expr->node = node;
+	EXPR_TRACE("end check binary op %s\n", TYPENAME(node->binary.type));
 	return expr;
 }
 
@@ -1638,6 +1633,7 @@ expr_t* check_binary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 expr_t* check_ternary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 
+	EXPR_TRACE("check ternary expr\n");
 	expr_t* cond_expr = check_expr(node->ternary.cond, table);
 	if (cond_expr->no_defined) {
 		expr->node = node;
@@ -1678,6 +1674,7 @@ static expr_t* check_expression(tree_t* node, symtab_t table, expr_t* expr);
  */
 expr_t* check_cast_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
+	EXPR_TRACE("check cast expr\n");
 	expr = check_expression(node->cast.expr, table, expr);
 
 	cdecl_t* type = parse_ctype_decl(node->cast.ctype, table);
@@ -1702,6 +1699,7 @@ expr_t* check_cast_expr(tree_t* node, symtab_t table, expr_t* expr) {
  */
 expr_t* check_sizeof_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
+	EXPR_TRACE("check sizeof\n");
 	expr = check_expression(node->sizeof_tree.expr, table, expr);
 	check_no_defiend_expr(expr, node);
 	expr->type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
@@ -1725,6 +1723,7 @@ expr_t* check_sizeof_expr(tree_t* node, symtab_t table, expr_t* expr) {
 expr_t* check_unary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 	expr->op = node->unary.type;
+	EXPR_TRACE("check unary expr op %s \n", TYPENAME(node->unary.type));
 	switch(node->unary.type) {
 		case NEGATIVE_TYPE:
 		case CONVERT_TYPE:
@@ -1841,6 +1840,7 @@ expr_t* check_unary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 			PERRORN("other unary type: %s(%d)", node, node->common.name, node->unary.type);
 	}
 
+	EXPR_TRACE("end check unary expr op %s \n", TYPENAME(node->unary.type));
 	expr->node = node;
 	return expr;
 }
@@ -1860,6 +1860,7 @@ expr_t* check_const_expr(tree_t* node, expr_t* expr) {
 	cdecl_t* type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
 	expr->is_const = 1;
 	expr->type = type;
+	EXPR_TRACE("check const expr op %s\n", TYPENAME(node->common.type));
 	switch (node->common.type) {
 		case INTEGER_TYPE:
 			expr->type->common.categ = INT_T;
@@ -1902,6 +1903,7 @@ expr_t* check_const_expr(tree_t* node, expr_t* expr) {
 			break;
 	}
 
+	EXPR_TRACE("end check const expr op %s\n", TYPENAME(node->common.type));
 	expr->node = node;
 	return expr;
 }
@@ -1934,8 +1936,8 @@ static int dml_obj_type(symbol_t symbol) {
         case DATA_TYPE:
         case METHOD_TYPE:
         case PARAMETER_TYPE:
-	case OBJECT_TYPE:
-	case PARAM_TYPE:
+		case OBJECT_TYPE:
+		case PARAM_TYPE:
             refer_type = type;
             break;
         default:
@@ -2001,6 +2003,7 @@ static int check_dml_obj_refer(tree_t* node, symtab_t table) {
 	int obj_type = 0;
 	char* refer_name = (char*)(node->ident.str);
 	if (strcmp(refer_name, "this") == 0) {
+		//fprintf(stderr, "compare this true\n");
 		obj_type = 1;
 	}
 	else {
@@ -2024,6 +2027,7 @@ expr_t* check_quote_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 	tree_t* ident = node->quote.ident;
 
+	EXPR_TRACE("check quote expr \n");
     /*to reference something in the DML object structure
      * the reference must be prefixed by '$' character*/
 	int is_obj = check_dml_obj_refer(ident, table);
@@ -2045,6 +2049,7 @@ expr_t* check_quote_expr(tree_t* node, symtab_t table, expr_t* expr) {
 
 	check_no_defiend_expr(expr, node);
 	node->quote.ty = expression_type_copy(node->quote.ty, expr->type);
+	EXPR_TRACE("end check quote expr \n");
 	return expr;
 }
 
@@ -2056,7 +2061,7 @@ expr_t* check_quote_expr(tree_t* node, symtab_t table, expr_t* expr) {
  *
  * @return : pointer to expression
  */
-static cdecl_t* check_parameter_type(symbol_t symbol, expr_t* expr) {
+cdecl_t* check_parameter_type(symbol_t symbol, expr_t* expr) {
 	assert(symbol != NULL);
 	cdecl_t* type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
 	expr->val = (value_t*)gdml_zmalloc(sizeof(value_t));
@@ -2134,7 +2139,7 @@ static cdecl_t* check_parameter_type(symbol_t symbol, expr_t* expr) {
  *
  * @return : pointer to expression struct
  */
-static cdecl_t* check_constant_type(symbol_t symbol, expr_t* expr) {
+cdecl_t* check_constant_type(symbol_t symbol, expr_t* expr) {
 	assert(symbol != NULL); assert(expr != NULL);
 	constant_attr_t* attr = (constant_attr_t*)(symbol->attr);
 	cdecl_t* type = attr->value->type;
@@ -2169,7 +2174,8 @@ static cdecl_t* check_method_param_type(symtab_t table, symbol_t symbol) {
  *
  * @return : pointer to foreach symbol type
  */
-static cdecl_t* check_foreach_type(symbol_t symbol, expr_t* expr) {
+
+cdecl_t* check_foreach_type(symbol_t symbol, expr_t* expr) {
 	assert(symbol != NULL); assert(expr != NULL);
 	foreach_attr_t* attr = (foreach_attr_t*)(symbol->attr);
 	return attr->expr->type;
@@ -2366,15 +2372,28 @@ static cdecl_t* get_common_type(symtab_t table, symbol_t symbol, expr_t* expr) {
  */
 expr_t* check_ident_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
+	EXPR_TRACE("check ident expr\n");
+	const char* str = node->ident.str;
+
+	if (strcmp(str, "this") == 0) {
+			cdecl_t *type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
+			type->common.categ = INT_T;
+			expr->type = type;
+			expr->node = node;
+			node->ident.ty = expression_type_copy(node->ident.ty, expr->type);
+			//fprintf(stderr, "this ~~~~~~~~~~\n");
+			return expr;
+	}
 	symbol_t symbol = symbol_find_notype(table, node->ident.str);
 	if (symbol == NULL) {
 		symtab_t root_table = get_root_table();
 		symbol = symbol_find_notype(root_table, node->ident.str);
+		EXPR_TRACE("in root table symbol %p=n", symbol);
 		if (!symbol)
 			symbol = get_symbol_from_banks(node->ident.str);
 	}
 	if (symbol != NULL) {
-		DEBUG_EXPR("symbol name: %s, type: %d\n", symbol->name, symbol->type);
+		//fprintf(stderr, "symbol name: %s, type: %d, table %d\n", symbol->name, symbol->type, table->table_num);
 		if (is_common_type(symbol->type)) {
 			expr->type = symbol->attr;
 		}
@@ -2383,6 +2402,7 @@ expr_t* check_ident_expr(tree_t* node, symtab_t table, expr_t* expr) {
 		}
 	}
 	else {
+		//fprintf(stderr, "special case\n");
 		const char* str = node->ident.str;
 		cdecl_t* type = NULL;
 		if ((strcmp(str, "false") == 0) || (strcmp(str, "true") == 0)) {
@@ -2400,11 +2420,13 @@ expr_t* check_ident_expr(tree_t* node, symtab_t table, expr_t* expr) {
 			expr->is_const = 1;
 			expr->is_null = 1;
 		}
+		/*
 		else if (strcmp(str, "this") == 0) {
 			type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
 			type->common.categ = INT_T;
 			expr->type = type;
-		}
+			fprintf(stderr, "this ~~~~~~~~~~\n");
+		} */
 		else if (strcmp(str, "i") == 0) {
 			object_t* obj = get_current_obj();
 			if (obj && obj->is_array) {
@@ -2424,6 +2446,7 @@ expr_t* check_ident_expr(tree_t* node, symtab_t table, expr_t* expr) {
 
 	expr->node = node;
 	node->ident.ty = expression_type_copy(node->ident.ty, expr->type);
+	EXPR_TRACE("end check ident expr\n");
 	return expr;
 }
 
@@ -2802,6 +2825,7 @@ expr_t* check_refer(symtab_t table, reference_t* ref, expr_t* expr) {
  */
 expr_t* check_component_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
+	EXPR_TRACE("check component expr \n");
 	expr->type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
 	reference_t* reference = (reference_t*)gdml_zmalloc(sizeof(reference_t));
 	if (node->component.type == COMPONENT_POINTER_TYPE) {
@@ -2815,9 +2839,10 @@ expr_t* check_component_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	check_no_defiend_expr(expr, node);
 	expr->node = node;
 	node->component.ty = expression_type_copy(node->component.ty, expr->type);
-
+	EXPR_TRACE("end check component expr \n");
 	return expr;
 }
+
 
 /**
  * @brief check_sizeoftype_expr : check sizeoftype expression
@@ -2831,6 +2856,7 @@ expr_t* check_component_expr(tree_t* node, symtab_t table, expr_t* expr) {
 expr_t* check_sizeoftype_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 
+	EXPR_TRACE("check sizeof expr\n");
 	cdecl_t* type = parse_typeoparg(node->sizeoftype.typeoparg, table);
 	expr->no_defined = type->common.no_decalare;
 	check_no_defiend_expr(expr, node);
@@ -2844,6 +2870,7 @@ expr_t* check_sizeoftype_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	expr->node = node;
 	node->sizeoftype.ty = expression_type_copy(node->sizeoftype.ty, expr->type);
 
+	EXPR_TRACE("end check sizeof expr\n");
 	return expr;
 }
 
@@ -2858,12 +2885,14 @@ expr_t* check_sizeoftype_expr(tree_t* node, symtab_t table, expr_t* expr) {
  */
 expr_t* check_new_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
+	EXPR_TRACE("check new expr\n");
 	cdecl_t* type  = parse_ctype_decl(node->new_tree.type, table);
 	PERRORN("Pay attention: not check the new expression with testcase", node);
 
 	expr->type = type;
 	expr->node = node;
 	node->new_tree.ty = expression_type_copy(node->new_tree.ty, expr->type);
+	EXPR_TRACE("end check new expr\n");
 	return expr;
 }
 
@@ -3023,6 +3052,7 @@ expr_t* check_function_expr(tree_t* node, symtab_t table, expr_t* expr) {
 expr_t* check_brack_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 
+	EXPR_TRACE("check function apply\n");
 	/* in simics, it support cast like this (void**)(a)
 	 * if one expreesion like expression (expression_list),
 	 * it will be function call or method call*/
@@ -3034,6 +3064,7 @@ expr_t* check_brack_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	} /* (expression) */
 
 	expr->node = node;
+	EXPR_TRACE("end check function apply\n");
 	return expr;
 }
 
@@ -3048,11 +3079,13 @@ expr_t* check_brack_expr(tree_t* node, symtab_t table, expr_t* expr) {
  */
 expr_t* check_array_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
+	EXPR_TRACE("check array expr\n");
 	cdecl_t* type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
 	type->common.categ = NO_TYPE;
-	type = array_of(type);
+	type = array_of(type, 0);
 	expr->type = type;
 
+	EXPR_TRACE("end check array expr\n");
 	expr->node = node;
 	return expr;
 }
@@ -3069,6 +3102,7 @@ expr_t* check_array_expr(tree_t* node, symtab_t table, expr_t* expr) {
 expr_t* check_bit_slic_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 
+	EXPR_TRACE("check bit slic\n");
 	/* Bit Slicing Expressions : expr[e1:e2, bitorder]
 	 *							 expr[e1, bitorder]
 	 * expr is of integer type
@@ -3099,11 +3133,12 @@ expr_t* check_bit_slic_expr(tree_t* node, symtab_t table, expr_t* expr) {
 			PERRORN("unknow bitorde: %s", node, str);
 		}
 	}
-
 	DEBUG_EXPR("check bit slic, expr type: %d, type bty: 0x%p\n",
 		expr->type->common.categ, expr->type->common.bty);
 	expr->node = node;
 	node->bit_slic.ty = expression_type_copy(node->bit_slic.ty, expr->type);
+
+	EXPR_TRACE("end check bit slic\n");
 	return expr;
 }
 
@@ -3118,6 +3153,10 @@ expr_t* check_bit_slic_expr(tree_t* node, symtab_t table, expr_t* expr) {
  */
 expr_t* check_expression(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
+
+	EXPR_TRACE("in expression dispatch: node type %s, file %s, line %d\n", TYPENAME(node->common.type),
+																			node->common.location.file->name,
+																			node->common.location.first_line);
 	switch (node->common.type) {
 		case EXPR_ASSIGN_TYPE:
 			expr = check_assign_expr(node, table, expr);
@@ -3179,8 +3218,10 @@ expr_t* check_expression(tree_t* node, symtab_t table, expr_t* expr) {
 			/* FIXME: Pay attention: The exit function is only for debugging */
 			break;
 	}
+	EXPR_TRACE("end expression dispatch: node type %s\n", TYPENAME(node->common.type));
 	return expr;
 }
+
 
 /**
  * @brief check_expr : the entry to check expression
@@ -3198,6 +3239,8 @@ expr_t* check_expr(tree_t* node, symtab_t table) {
 	return expr;
 }
 
+
+
 /**
  * @brief get_typeof_type : get the type of typeof expression
  *
@@ -3210,7 +3253,7 @@ cdecl_t* get_typeof_type(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 	expr_t* expr = check_expr(node->typeof_tree.expr, table);
 	expr->type->common.no_decalare = expr->no_defined;
-
+	tree_t *t = node->typeof_tree.expr;
 	return expr->type;
 }
 
