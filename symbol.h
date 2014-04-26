@@ -25,13 +25,14 @@
 * @date 2012-12-24
 */
 
-#ifndef	SYMBOL_H
-#define	SYMBOL_H
+#ifndef	__SYMBOL_H__
+#define	__SYMBOL_H__
 #include "tree.h"
-#include "expression.h"
+//#include "expression.h"
 #include "decl.h"
 #include "parameter_type.h"
-
+struct expr;
+struct cdecl;
 /**
  * @brief : common part of symbol
  */
@@ -77,14 +78,14 @@ typedef struct constant_attr
 {
 	const char *name;
 	struct symbol_common common;
-	expr_t *value;
+	struct expr *value;
 } constant_attr_t;
 
 typedef struct struct_attr
 {
     struct symbol_common common;
     const char* name;
-	cdecl_t* decl;
+	struct cdecl* decl;
     symtab_t table;
 } struct_attr_t;
 
@@ -103,7 +104,7 @@ typedef struct parameter_attr
 
 typedef struct params {
 	int is_notype;
-	cdecl_t* decl;
+	struct cdecl* decl;
 	const char* var_name;
 }params_t;
 
@@ -141,13 +142,13 @@ typedef struct select_attr {
 	struct symbol_common common;
 	const char* ident;
 	int type;
-	expr_t* in_expr;
+	struct expr* in_expr;
 }select_attr_t;
 
 typedef struct foreach_attr {
 	struct symbol_common common;
 	const char* ident;
-	expr_t* expr;
+	struct expr* expr;
 	symtab_t table;
 }foreach_attr_t;
 
@@ -215,8 +216,8 @@ typedef struct bitfield_attr {
 typedef struct bitrange_attr{
 	struct symbol_common common;
 	int is_fix;
-	expr_t* expr;
-	expr_t* expr_end;
+	struct expr* expr;
+	struct expr* expr_end;
 }bitrange_attr_t;
 
 typedef struct field_attr
@@ -306,11 +307,24 @@ void undef_var_insert(symtab_t table, tree_t* name);
 void print_all_symbol(symtab_t symtab);
 
 //#define DEBUG_SYMBOLS
+//#define ENABLE_TABLE_TRACE
+#ifdef ENABLE_TABLE_TRACE
+#define TABLE_TRACE(fmt, ...) do { \
+	fprintf(stderr, fmt, ##__VA_ARGS__); \
+	} while(0)
+#else
+#define TABLE_TRACE(fmt, ...) do {\
+	} while(0)
+#endif
+
 
 #ifdef DEBUG_SYMBOLS
 #define DEBUG_TOP_LEVEL debug_proc
 #define DEBUG_OTHER_LEVEL debug_blue
 #define DEBUG_SYMBOL printf
+#define DBG_TABLE_TRACE(fmt, ...) do { \
+	fprintf(stderr, fmt, ##__VA_ARGS__);
+	while(0)
 #else
 #define DEBUG_TOP_LEVEL
 #define DEBUG_OTHER_LEVEL

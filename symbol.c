@@ -126,7 +126,7 @@ symbol_t _symbol_find(symbol_t* symbol_table, const char* name, type_t type) {
     symbol_t symbol = symbol_table[str_hash(name)];
 	if (symbol) {
 		/* hash conflict */
-		while ((symbol != NULL) && 
+		while ((symbol != NULL) &&
 				((strcmp(symbol->name, name) != 0) || (symbol->type != type))) {
 			symbol = symbol->next;
 		}
@@ -165,12 +165,15 @@ symbol_t _symbol_find_notype(symbol_t* symbol_table, const char* name) {
  *
  * @return return the table pointer.
  */
-static symtab_t table_malloc(type_t type)
+static symtab_t table_new(type_t type)
 {
+	static int table_count = 0;
+
 	symtab_t new_symtab = (symtab_t) gdml_zmalloc(sizeof(struct symtab));
     assert(new_symtab != NULL);
     memset(new_symtab, 0x0, sizeof(struct symtab));
 	new_symtab->type = type;
+	new_symtab->table_num = table_count++;
     return new_symtab;
 }
 
@@ -239,19 +242,20 @@ symbol_t default_symbol_find(symtab_t symtab, const char* name, type_t type)
     symtab_t tmp = symtab;
     symbol_t rt;
     if(tmp != NULL) {
-		DEBUG_SYMBOL("before search self table %s\n", name);
+		TABLE_TRACE("try to search symbol %s table %p, table num %d\n", name, tmp, tmp->table_num);
 		rt = _symbol_find(tmp->table, name, type);
 		if(rt) {
+			TABLE_TRACE("symbol %s found in table %p, num %d\n", name, tmp, tmp->table_num);
 		    return rt;
 		}
-		DEBUG_SYMBOL("try to search template %s\n", name);
+		TABLE_TRACE("try to search template %s\n", name);
 		rt = symbol_find_from_templates(tmp->template_table, name, type);
 		if (rt) {
 			return rt;
 		}
 		tmp = tmp->parent;
 		if(tmp) {
-			DEBUG_SYMBOL("goto parent table: %d: %s\n", tmp->table_num, name);
+			TABLE_TRACE("goto parent table: %d to find %s\n", tmp->table_num, name);
 			return symbol_find(tmp, name, type);
 		}
     }
@@ -340,17 +344,22 @@ symbol_t default_symbol_find_notype(symtab_t symtab, const char *name)
     symtab_t tmp = symtab;
     symbol_t rt;
     if(tmp != NULL) {
+		TABLE_TRACE("[notype]: try to find symbol %s, in %p, table_num %d\n", name, tmp, tmp->table_num);
         rt = _symbol_find_notype(tmp->table, name);
         if(rt) {
+			TABLE_TRACE("[notype]: symbol %s found in table %p, num %d\n", name, tmp, tmp->table_num);
             return rt;
         }
 	check_undef_template(tmp);
+	TABLE_TRACE("[notype]: try to find symbol in templates\n");
 	rt = symbol_find_from_templates_notype(tmp->template_table, name);
 	if (rt) {
+		TABLE_TRACE("[notype]: symbol %s found in template\n", name);
 		return rt;
 	}
-        tmp = tmp->parent;
+    tmp = tmp->parent;
 	if(tmp && tmp->type) {
+		TABLE_TRACE("[notype]: goto to parent %p, table num %d to find  symbol %s\n", tmp, tmp->table_num, name);
 		return symbol_find_notype(tmp, name);
 	}
     }
@@ -520,7 +529,7 @@ symtab_t symtab_create(type_t type)
 {
 	symtab_t table;
 
-    table = table_malloc(type);
+    table = table_new(type);
 	if(table) {
 		table->cb = default_symbol_find;
 		table->notype_cb = default_symbol_find_notype;
@@ -541,7 +550,7 @@ symtab_t symtab_create_with_cb(type_t type, symbol_find_fn_t cb, symbol_find_not
 {
 	symtab_t table;
 
-    table = table_malloc(type);
+    table = table_new(type);
 	if(table) {
 		table->cb = cb;
 		table->notype_cb = notype_cb;
@@ -808,7 +817,7 @@ static symbol_list_t* list_join(symbol_list_t *first, symbol_list_t *new) {
 		return first;
 	} else if(new) {
 		return new;
-	} 
+	}
 	return first;
 }
 
@@ -843,7 +852,7 @@ symbol_list_t *_symbol_list_find(symtab_t tab, match_func_t match, void *arg, in
 		//tmp = symbol_list_match(table, match, arg);
 		tmp = _symbol_list_find(table, match, arg, depth+1);
 		if(tmp) {
-			first = list_join(first, tmp);	
+			first = list_join(first, tmp);
 		}
 		tmpl = tmpl->next;
 	}
@@ -879,7 +888,7 @@ static int match_type(symbol_t sym, void *arg) {
  */
 static int match_name(symbol_t sym, void *arg) {
 	const char *name = arg;
-	
+
 	if(!strcmp(sym->name, name)) {
 		return 1;
 	} else {
@@ -1004,7 +1013,7 @@ void symbol_list_free(symbol_list_t *list) {
 	while(tmp) {
 		old = tmp;
 		tmp = tmp->next;
-		free(old);		
+		free(old);
 	}
 }
 
@@ -1132,12 +1141,11 @@ void params_insert_table(symtab_t table, method_params_t* method_params) {
  *
  * @return : pointer to new table
  */
-symtab_t change_table(symtab_t current_table, stack_t* table_stack, long int* current_table_num, type_t type) {
+symtab_t change_table(symtab_t current_table, stack_t* table_stack, type_t type) {
 	assert(current_table != NULL);
 	assert(table_stack != NULL);
 
 	symtab_t table = symtab_create(type);
-	table->table_num = ++(*current_table_num);
 	symtab_insert_child(current_table, table);
 	push(table_stack, current_table);
 
