@@ -1,6 +1,6 @@
 #include <assert.h>
 #include "chk_common.h"
-extern object_t *OBJ;
+extern obj_ref_t *OBJ;
 static symtab_t saved_table;
 extern symtab_t current_table;
 
@@ -19,7 +19,7 @@ static void pre_chk_method(object_t *obj, tree_t *method) {
         saved_table = table->parent;
         table->parent = obj->symtab;
         current_table = table;
-        OBJ = obj;
+        OBJ->obj = obj;
 }
 
 /**
