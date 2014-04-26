@@ -279,6 +279,8 @@ static const char *type_name[] = {
 	fn(LAYOUT_T) \
 	fn(TYPEDEF_T) \
 	fn(FUNCTION_T) \
+	fn(BITSLIC_T) \
+	fn(OBJECT_T) \
 	fn(INTERFACE_T)
 
 enum data_type {
