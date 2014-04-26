@@ -30,10 +30,12 @@ void translate_expr_brack_direct(tree_t *t);
 void translate_assign(tree_t *t);
 void translate_bit_slic(tree_t *t);
 void translate_bit_slice2(tree_t *t);
-void translate_bit_slic_assign(tree_t *t);
+//void translate_bit_slic_assign(tree_t *t);
 void translate_brack_expr(tree_t *t);
 void translate_unary_expr(tree_t *t);
 void translate_pre_expr(tree_t *t);
 void translate_post_expr(tree_t *t);
 void translate_cast_expr(tree_t *t);
+void translate_layout(tree_t *t);
+void translate_bitfields(tree_t *t);
 #endif /* __GEN_EXPRESSION_H__ */
