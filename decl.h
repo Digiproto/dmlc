@@ -82,8 +82,9 @@ struct type_layout {
 typedef struct bit_elem {
 	struct cdecl* decl; // declaration about bit element
 	struct bit_elem* next; // the next element
-	int start; // the element start space
-	int end; // element end space
+	tree_t *start; // the element start space
+	tree_t *end; // element end space
+	const char *name;
 	int size; // size of element
 } bit_element_t;;
 
@@ -121,6 +122,11 @@ typedef struct function_type
     signature_t* sig;
 } function_type_t;
 
+typedef struct type_object {
+	TYPE_COMMON;
+	void *obj;
+} type_object_t;
+
 /**
  * @brief : definition for variable declaration
  */
@@ -132,6 +138,7 @@ typedef struct cdecl {
 		struct type_layout layout;
 		struct type_bitfields bitfields;
 		struct function_type function;
+		struct type_object object;
 	};
 	/* the original type name of typedef */
 	const char* typedef_name;
@@ -143,7 +150,7 @@ typedef struct cdecl {
 typedef struct type_deriv_list {
     int ctor;
     union {
-        void* len;
+        int len;
         int qual;
         signature_t* sig;
     };
@@ -171,7 +178,7 @@ void parse_top_struct_cdecl(tree_t* node, symtab_t table, void* attr);
 
 int record_type(cdecl_t* type);
 cdecl_t* pointer_to(cdecl_t* type);
-cdecl_t* array_of(cdecl_t* type);
+cdecl_t* array_of(cdecl_t* type, int len);
 cdecl_t* parse_ctype_decl(tree_t* node, symtab_t table);
 cdecl_t* parse_typeoparg(tree_t* node, symtab_t table);
 

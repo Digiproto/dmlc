@@ -85,6 +85,7 @@ void parse_data_cdecl(tree_t* node, symtab_t table) {
 	if (symbol_defined(table, decl->var_name))
 		error("name collision on '%s'\n", decl->var_name);
 	decl->node = node;
+	node->common.cdecl = decl;
 	symbol_insert(table, decl->var_name, DATA_TYPE, decl);
 	return;
 }
@@ -207,6 +208,7 @@ static cdecl_t* parse_struct(tree_t* node, symtab_t table) {
 	cdecl_t* decl = NULL;
 	element_t* elem = NULL;
 	symtab_t struct_table = type->struc.table;
+	int size = 0;
 	/* parse the elements about struct */
 	while(elem_node) {
 		elem = (element_t*)gdml_zmalloc(sizeof(element_t));
@@ -253,6 +255,7 @@ static cdecl_t* parse_layout(tree_t* node, symtab_t table) {
 	cdecl_t* decl = NULL;
 	element_t* elem = NULL;
 	symtab_t layout_table = type->layout.table;
+	int size = 0;
 	/* parse the element about layout */
 	while (elem_node) {
 		elem = (element_t*)gdml_zmalloc(sizeof(element_t));
@@ -265,11 +268,12 @@ static cdecl_t* parse_layout(tree_t* node, symtab_t table) {
 		}
 		else {
 			elem->decl = decl;
+			size += decl->common.size;
 			type->layout.elem = add_element(type->layout.elem, elem);
 		}
 		elem_node = elem_node->common.sibling;
 	}
-
+	type->common.size = size;
 	return type;
 }
 
@@ -285,6 +289,7 @@ static void parse_bit_expr(tree_t* node, symtab_t table, bit_element_t* elem) {
 	assert(node != NULL); assert(table != NULL); assert(elem != NULL);
 	cdecl_t* decl = elem->decl;
 	/* In simic the bit style: a @ [end : start]*/
+	/*
 	expr_t* start = check_expr(node->bitfields_dec.start, table);
 	expr_t* end = check_expr(node->bitfields_dec.end, table);
 	if (start->no_defined || end->no_defined) {
@@ -301,7 +306,10 @@ static void parse_bit_expr(tree_t* node, symtab_t table, bit_element_t* elem) {
 	} else {
 		error("the bitfiled '%s' should be constant\n", decl->var_name);
 	}
-
+	*/
+	elem->start = node->bitfields_dec.start;
+	elem->end = node->bitfields_dec.end;
+	elem->name = decl->var_name;
 	return;
 }
 
@@ -558,7 +566,7 @@ static cdecl_t* parse_type_ident(tree_t* node, symtab_t table) {
 			 * so it is not wrong when meet undefined indentifier
 			 * in first time, only sign it for second checking */
 			if (table->pass_num == 0) {
-				printf("table pass num %d, symbol %s, nodeclare\n", table->pass_num, node->ident.str);
+				//printf("table pass num %d, symbol %s, nodeclare\n", table->pass_num, node->ident.str);
 				type->var_name = node->ident.str;
 				type->common.no_decalare = 1;
 				DEBUG_DECL("unknown symbol: %s\n", type->var_name);
@@ -646,14 +654,23 @@ static void parse_c_array(tree_t* node, symtab_t table, cdecl_t* type) {
 	parse_cdecl3(node->array.decl, table, type);
 	type_deriv_list_t* drv = (type_deriv_list_t*)gdml_zmalloc(sizeof(type_deriv_list_t));
 	drv->ctor = ARRAY_OF;
-	drv->len = check_expr(node->array.expr, table);
 	drv->next = type->common.drv;
+	expr_t *e;
+	e = check_expr(node->array.expr, table);
+	if(!e->is_const) {
+		PERRORN("error, array size must be constant len\n", node->array.expr);
+		exit(-1);
+	} else {
+		drv->len = e->val->int_v.value;
+	}
+	/*
 	if (((expr_t*)(drv->len))->no_defined) {
 		type->common.no_decalare = 1;
 		return;
-	}
-	type->common.drv = drv;
+	}*/
 
+	drv->next = type->common.drv;
+	type->common.drv = drv;
 	return;
 }
 
@@ -898,12 +915,13 @@ cdecl_t* pointer_to(cdecl_t* type) {
  *
  * @return : type of array
  */
-cdecl_t* array_of(cdecl_t* type) {
+cdecl_t* array_of(cdecl_t* type, int len) {
 	assert(type != NULL);
 	cdecl_t* ty = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
 	ty->common.categ = ARRAY_T;
 	ty->common.qual = 0;
 	ty->common.bty = type;
+	ty->common.size = len * type->common.size;
 	ty->var_name = type->var_name;
 
 	return ty;
@@ -971,7 +989,7 @@ static cdecl_t* derive_type(cdecl_t* type) {
 		else if (drv->ctor == ARRAY_OF) {
 			if (type->common.categ == FUNCTION_T)
 				return NULL;
-			ty = array_of(ty);
+			ty = array_of(ty, drv->len);
 		}
 		else {
 			if (ty->common.categ == ARRAY_T || ty->common.categ == FUNCTION_T)
@@ -998,6 +1016,7 @@ static cdecl_t* parse_base(tree_t* node, symtab_t table, int is_const) {
 	/* parse the decal base type*/
 	tree_t* base = node;
 	cdecl_t* type = parse_base_type(base, table);
+	node->common.cdecl = type;
 	if (is_const)
 		type->common.qual |= CONST_QUAL;
 
