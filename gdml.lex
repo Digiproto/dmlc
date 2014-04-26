@@ -7,15 +7,14 @@ FS          (f|F|l|L)
 INTS          ([Uu](L|l|LL|ll)?|(L|l|LL|ll)[Uu]?)
 CM          ([^%]|%[^}])
 
-%{  
+%top{
 #include <stdio.h>  
 #include "types.h"
 #include "ast.h"
 #include "Parser.h"  
 void count(yyscan_t scanner);
-/* the max length of include file name */
 #define MAX_HEAD_LEN 1024
-%}  
+}
 
 %{
 #define YY_USER_ACTION yylloc->first_line = yylloc->last_line = yylineno;         \
@@ -35,7 +34,7 @@ void count(yyscan_t scanner);
 %x COMMENT
 %x BODYMODE
 
-%%  
+%%
 "/*"					{ BEGIN(COMMENT);}
 <COMMENT>"*/"			{ BEGIN(INITIAL);}
 <COMMENT>([^*]|\n)+|.	{ /* ignore. */}
