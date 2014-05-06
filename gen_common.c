@@ -908,9 +908,16 @@ static int is_explicit(tree_t *t, int *boolean) {
 						*boolean = val->u.integer;
 						ret = 1;
 					}
-				}
 			}
 		}
+	} else if(node->common.type == BINARY_TYPE && node->binary.type == EQ_OP_TYPE) {
+		expr_t *expr;
+		expr = check_expr(node, current_table);
+		if(expr->is_const) {
+			*boolean = !!expr->val->int_v.value;
+			ret = 1;
+		}
+	}
 	return ret;
 }
 
