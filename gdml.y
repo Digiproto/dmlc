@@ -2019,6 +2019,7 @@ typeident
 	| CHAR {
 		tree_t* node = (tree_t*)c_keyword_node("char", &@$);
 		node->ident.type = CHAR_TYPE;
+		node->common.translate = translate_c_keyword;
 		//node->common.translate = translate_char;
 		$$ = node;
 	}
