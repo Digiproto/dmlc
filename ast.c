@@ -228,7 +228,10 @@ void add_child (tree_t* parent, tree_t* child)
  */
 void dummy_translate(tree_t *node) {
 #ifndef RELEASE
-	printf("not correct, should call you own translate function, node name %s\n", node->common.name);
+	printf("not correct, should call you own translate function, node name %s, file %s, line %d\n", node->common.name,
+																									node->common.location.file->name,
+																									node->common.location.first_line
+																									);
 #endif
 }
 static int node_num = 0;
@@ -952,22 +955,23 @@ int get_offset(tree_t* node, symtab_t table) {
 	/* we do not need to check the offset as it will be
 	checked when the code generated*/
 	if (node == NULL) {
-		return 0;
+		return -1;
 	}
+
 	if (node->common.type == INTEGER_TYPE) {
 		int offset = node->int_cst.value;
 		return offset;
 	}
 	else if (node->common.type == UNDEFINED_TYPE) {
-		return 0;
+		return -1;
 	}
 	else {
 		expr_t* expr = check_expr(node, table);
-
+		/*
 		if (expr->is_const == 0) {
 			return 4;
-		}
-		if (expr->type->common.categ == INT_T) {
+		}*/
+		if (expr->is_const && expr->type->common.categ == INT_T) {
 			if (expr->val->int_v.out_64bit) {
 				PERROR("the size of offset \"%s\" is out",
 						node->common.location, expr->node->common.name);
@@ -979,7 +983,7 @@ int get_offset(tree_t* node, symtab_t table) {
 		}
 	}
 
-	return 0;
+	return -1;
 }
 
 #include <unistd.h>
@@ -1175,10 +1179,13 @@ void parse_device(tree_t* node, symtab_t table) {
 	 * other objects, and they will be parsed two times
 	 * as some variables can be used befor defined*/
 	/* the first time to parse the symbols and expressions */
+	fprintf(stderr, "parse object\n");
 	parse_object(node, table);
 
+	fprintf(stderr, "end parse object\n");
 	/* the second time to parse symbols and expressions */
 	parse_undef_list(table);
+	fprintf(stderr, "end\n");
 	table->is_parsed = 1;
 
 	return;
@@ -1478,10 +1485,11 @@ void parse_unparsed_obj(tree_t* node, symtab_t table) {
 	} else if (node->common.type == IMPLEMENT_TYPE) {
 		node->implement.spec;
 	} else if (node->common.type == DEVICE_TYPE){
-		error("other object type\n");
+		fprintf(stderr, "node file %s, line %d\n", node->common.location.file->name, node->common.location.first_line);
+		//error("other object type\n");
 		return;
 	} else {
-		error("other object type\n");
+		error("other object type2\n");
 	}
 	parse_obj_spec(spec, table);
 
@@ -1794,7 +1802,6 @@ void parse_struct_top(tree_t* node, symtab_t table) {
 	attr->common.node = node;
 	node->common.attr = attr;
 	symbol_insert(table, node->ident.str, STRUCT_TYPE, attr);
-
 	/* parse the struct elements, and insert them into table*/
 	parse_top_struct_cdecl(node, table, attr);
 
