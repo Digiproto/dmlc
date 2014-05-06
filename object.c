@@ -24,7 +24,7 @@
  * @file object.c
  * @brief object
  * @author alloc, alloc.young@gmail.com
- * @version 
+ * @version
  * @date 2013-05-10
  */
 #include <string.h>
@@ -38,6 +38,7 @@
 #include "gen_common.h"
 #include "table_utility.h"
 #include "node.h"
+#include "decl.h"
 
 /**
  * @brief asprintf : combine the string into one based on the format
@@ -446,6 +447,35 @@ static void create_none_object(object_t *obj, symbol_t sym) {
 }
 
 static void create_objs(object_t *obj, type_t type);
+static void merge_table(symtab_t dst, symtab_t src) {
+
+	symbol_t tmp;
+	tmp = src->list;
+	while(tmp) {
+		symbol_insert(dst, tmp->name, tmp->type, tmp->attr);
+		tmp = tmp->lnext;
+	}
+}
+
+static void merge_object(object_t *obj, symbol_t sym) {
+
+	struct object_common *attr;
+	attr = sym->attr;
+	if(attr->table) {
+		merge_table(obj->symtab, attr->table);
+	}
+}
+
+static void merge_symbol(symbol_t dst, symbol_t src) {
+	struct object_common *attr1, *attr2;
+
+	attr1 = dst->attr;
+	attr2 = src->attr;
+
+	if(attr1->table && attr2->table) {
+		merge_table(attr1->table, attr2->table);
+	}
+}
 
 /**
  * @brief create_dummy_field : create a dummy field
@@ -486,14 +516,26 @@ static void create_field_object(object_t *obj, symbol_t sym){
  * @param sym : symbol of register
  */
 static void create_register_object(object_t *obj, symbol_t sym){
-	dml_register_t *reg = (dml_register_t *)gdml_zmalloc(sizeof(*reg));
-	register_attr_t *reg_attr = (register_attr_t *)(sym->attr);
-	symtab_t table = reg_attr->common.table;
+	symtab_t table = obj->symtab;
+	symbol_t sym2;
+	if((sym2 = _symbol_find(table->table, sym->name, OBJECT_TYPE)) != NULL) {
+		/* merge two object */
+		merge_object((object_t *)sym2->attr, sym);
+	} else {
 
-	init_object(&reg->obj, obj, sym->name,"register",reg_attr->common.node, table);
-	create_objs(&reg->obj, FIELD_TYPE);
-	create_objs(&reg->obj, DATA_TYPE);
-	create_objs(&reg->obj, EVENT_TYPE);
+		dml_register_t *reg = (dml_register_t *)gdml_zmalloc(sizeof(*reg));
+		register_attr_t *reg_attr = (register_attr_t *)(sym->attr);
+		symtab_t table = reg_attr->common.table;
+
+		init_object(&reg->obj, obj, sym->name, "register", reg_attr->common.node, table);
+		create_objs(&reg->obj, FIELD_TYPE);
+		create_objs(&reg->obj, DATA_TYPE);
+		create_objs(&reg->obj, EVENT_TYPE);
+		if(!strcmp(sym->name, "status")) {
+			tree_t *node = reg_attr->common.node;
+			fprintf(stderr, "file %s, line %d\n", node->common.location.file->name, node->common.location.first_line );
+		}
+	}
 	//print_all_symbol(reg->obj.symtab);
 }
 
@@ -653,6 +695,7 @@ static void create_bank_object(object_t *obj, symbol_t sym){
 	create_objs(&bank->obj, GROUP_TYPE);
 	create_objs(&bank->obj, IMPLEMENT_TYPE);
 	create_objs(&bank->obj, ATTRIBUTE_TYPE);
+	fprintf(stderr, "bank name %s\n", sym->name);
 	//print_all_symbol(table);
 }
 
@@ -746,6 +789,35 @@ symbol_list_t* fake_bank_list() {
 	return list;
 }
 
+typedef struct node_created {
+	symbol_t sym;
+	struct list_head entry;
+} node_name_t;
+
+
+static symbol_t symbol_created(struct list_head *p, symbol_t sym) {
+	struct list_head *tmp;
+	node_name_t *node;
+
+	list_for_each(tmp, p) {
+		node = list_entry(tmp, node_name_t, entry);
+		if(!strcmp(sym->name, node->sym->name)) {
+			return node->sym;
+		}
+	}
+	return NULL;
+}
+
+static void add_to_created(struct list_head *head, symbol_t sym) {
+	struct list_head *p;
+	node_name_t *node;
+
+	node = gdml_zmalloc(sizeof(*node));
+	node->sym = sym;
+	INIT_LIST_HEAD(&node->entry);
+	list_add_tail(&node->entry, head);
+}
+
 /**
  * @brief create_objs : create child object with type
  *
@@ -759,18 +831,30 @@ static void create_objs(object_t *obj, type_t type) {
 	symbol_list_t *list = NULL;
 	symbol_list_t *head = list;
 	object_type_t obj_type;
+	LIST_HEAD(created);
+	symbol_t sym2;
 
 	list = symbol_list_find_type(table, type);
 	obj_type = type2obj_type(type);
 	if (type == BANK_TYPE && list == NULL) {
 		list = fake_bank_list();
 	}
+	symbol_list_t *list2 = list;
+	/*
+	while(list) {
+		if((sym2 = symbol_created(&created, list->sym)) != NULL) {
+			merge_symbol(sym2, list->sym);
+		} else {
+			add_to_created(&created, list->sym);
+		}
+        list = list->next;
+	} */
+	list = list2;
     while(list) {
 		create_func[obj_type](obj, list->sym);
-        /*restore OBJ to device*/
-        list = list->next;
-    }
-
+		/*restore OBJ to device*/
+		list = list->next;
+	}
     symbol_list_free(head);
 }
 
@@ -812,43 +896,89 @@ typedef enum toplevel_type {
 	TOPLEVEL_STRUCT,
 	TOPLEVEL_EXTERN,
 	TOPLEVEL_TYPEDEF,
-	TOPLEVEL_EXTERN_TYPEDEF
+	TOPLEVEL_EXTERN_TYPEDEF,
+	TOPLEVEL_CDECL_TYPE
 } toplevel_type_t;
 
-void toplevel_create_none(device_t *dev, symbol_t sym) {
+static void toplevel_create_none(device_t *dev, symbol_t sym) {
 	printf("toplevel: please use your self implementation\n");
 	return;
 }
 
-void toplevel_create_header(device_t *dev, symbol_t sym) {
-	node_entry_t *tmp = (node_entry_t *)create_node_entry(sym);
+static void toplevel_create_header(device_t *dev, symbol_t sym) {
+	node_entry_t *tmp;
+
+	tmp = (node_entry_t *)create_node_entry(sym);
 	list_add_tail(&tmp->entry, &dev->headers);
 	return;
 }
 
-void toplevel_create_footer(device_t *dev, symbol_t sym) {
-	node_entry_t *tmp = create_node_entry(sym);
+static void toplevel_create_footer(device_t *dev, symbol_t sym) {
+	node_entry_t *tmp;
+
+	tmp = create_node_entry(sym);
 	list_add_tail(&tmp->entry, &dev->footers);
 }
 
 
-void toplevel_create_loggroup(device_t *dev, symbol_t sym) {
-	node_entry_t *tmp = create_node_entry(sym);
+static void toplevel_create_loggroup(device_t *dev, symbol_t sym) {
+	node_entry_t *tmp;
+
+	tmp	= create_node_entry(sym);
 	list_add_tail(&tmp->entry, &dev->loggroups);
 }
 
-void toplevel_create_struct(device_t *dev, symbol_t sym) {
-	node_entry_t *tmp = create_node_entry(sym);
+static void toplevel_create_struct(device_t *dev, symbol_t sym) {
+	node_entry_t *tmp;
+
+	tmp = create_node_entry(sym);
 	list_add_tail(&tmp->entry, &dev->struct_defs);
 }
 
-void (*toplevel_func[])(device_t *dev, symbol_t sym) = {
+static void toplevel_create_extern(device_t *dev, symbol_t sym) {
+	node_entry_t *tmp;
+
+	tmp = create_node_entry(sym);
+	list_add_tail(&tmp->entry, &dev->externs);
+}
+
+static void toplevel_create_typedef(device_t *dev, symbol_t sym) {
+	node_entry_t *tmp;
+	tree_t *node;
+	cdecl_t *type;
+
+	type = sym->attr;
+	node = type->node;
+	if(!node->cdecl.is_extern) {
+		tmp = create_node_entry(sym);
+		list_add_tail(&tmp->entry, &dev->typedefs);
+	}
+}
+
+static void toplevel_create_extern_typedef(device_t *dev, symbol_t sym) {
+	node_entry_t *tmp;
+
+	tmp = create_node_entry(sym);
+	list_add_tail(&tmp->entry, &dev->extern_typedefs);
+}
+
+static void toplevel_create_cdecl(device_t *dev, symbol_t sym) {
+	node_entry_t *tmp;
+	tree_t *node;
+
+	tmp = create_node_entry(sym);
+}
+
+static void (*toplevel_func[])(device_t *dev, symbol_t sym) = {
 	[TOPLEVEL_NONE] = toplevel_create_none,
 	[TOPLEVEL_HEADER] = toplevel_create_header,
 	[TOPLEVEL_FOOTER] = toplevel_create_footer,
 	[TOPLEVEL_LOGGROUP] = toplevel_create_loggroup,
 	[TOPLEVEL_STRUCT] = toplevel_create_struct,
-	[TOPLEVEL_EXTERN ... TOPLEVEL_EXTERN_TYPEDEF] = toplevel_create_none
+	[TOPLEVEL_EXTERN] = toplevel_create_extern,
+	[TOPLEVEL_TYPEDEF] = toplevel_create_typedef,
+	[TOPLEVEL_EXTERN_TYPEDEF] = toplevel_create_extern_typedef,
+	[TOPLEVEL_CDECL_TYPE] = toplevel_create_cdecl
 };
 
 static toplevel_type_t get_toplevel(type_t type) {
@@ -864,12 +994,13 @@ static toplevel_type_t get_toplevel(type_t type) {
 		case STRUCT_TYPE:
 		    top_type = TOPLEVEL_STRUCT;
 		   	break;
-		case TYPEDEF_TYPE:
+		case TYPEDEF_T:
 		   	top_type = TOPLEVEL_TYPEDEF;
 		   	break;
 		case LOGGROUP_TYPE:
 		   	top_type = TOPLEVEL_LOGGROUP;
 		   	break;
+			/* a complex case */
 		default:
 		   	top_type = TOPLEVEL_NONE;
 	}
@@ -896,6 +1027,7 @@ static void create_device_misc(device_t *dev) {
 	create_dev_node_type(dev, HEADER_TYPE);
 	create_dev_node_type(dev, FOOTER_TYPE);
 	create_dev_node_type(dev, STRUCT_TYPE);
+	create_dev_node_type(dev, TYPEDEF_T);
 }
 
 
@@ -917,13 +1049,13 @@ object_t *create_device_object(symbol_t sym){
 	BE_DBG(OBJ, "device %s found\n",sym->name);
 	init_object(&dev->obj, NULL, sym->name, "device", dev_attr->common.node, root_table);
 	p = &dev->constants;
-	for(i = 0; i < 9; i++, p++) {
+	for(i = 0; i < 12; i++, p++) {
 		INIT_LIST_HEAD(p);
 	}
 	obj = &dev->obj;
 	DEV = obj;
 	create_objs(obj, BANK_TYPE);
-	create_objs(obj,CONNECT_TYPE );
+	create_objs(obj, CONNECT_TYPE );
 	create_objs(obj, ATTRIBUTE_TYPE);
 	create_objs(obj, IMPLEMENT_TYPE);
 	create_objs(obj, PORT_TYPE);
@@ -1190,32 +1322,34 @@ static void register_realize(object_t *obj) {
 	}
 	reg->offset = reg_attr->offset;
 	reg->is_undefined = 0;
-        int ret = -1;
-        param_value_t valuexxx;
-        memset(&valuexxx, 0, sizeof(valuexxx));
-        paramspec_t spec = {.expr_node = reg->obj.node->reg.offset, .value = &valuexxx};
-        reg->offset = get_reg_offset(&spec, &ret);
-        if(ret != -1) {
-                reg->interval = ret;
-        } else {
-                reg->interval = 4;
-        }
 	if(reg->offset == -1) {
-		/*search for parameter offset */
-		sym = symbol_find(obj->symtab, "offset", PARAMETER_TYPE);
-		if(!sym) {
-			reg->is_undefined = 1;
+		int ret = -1;
+		param_value_t valuexxx;
+		memset(&valuexxx, 0, sizeof(valuexxx));
+		paramspec_t spec = {.expr_node = reg->obj.node->reg.offset, .value = &valuexxx};
+		reg->offset = get_reg_offset(&spec, &ret);
+		if(ret != -1) {
+				reg->interval = ret;
 		} else {
-			parameter_attr  = (parameter_attr_t *)sym->attr;
-			reg->offset = get_reg_offset(parameter_attr->param_spec, &reg->interval);
-			if(reg->offset == -1) {
+				reg->interval = 4;
+		}
+		if(reg->offset == -1) {
+			/*search for parameter offset */
+			sym = symbol_find(obj->symtab, "offset", PARAMETER_TYPE);
+			if(!sym) {
 				reg->is_undefined = 1;
+			} else {
+				parameter_attr  = (parameter_attr_t *)sym->attr;
+				reg->offset = get_reg_offset(parameter_attr->param_spec, &reg->interval);
+				if(reg->offset == -1) {
+					reg->is_undefined = 1;
+				}
+				if(reg->interval == -1) {
+					BE_DBG(GENERAL, "register array interval not right\n");
+					exit(-1);
+				}
+				BE_DBG(GENERAL, "reg offset 0x%x\n", reg->offset);
 			}
-			if(reg->interval == -1) {
-				BE_DBG(GENERAL, "register array interval not right\n");
-				exit(-1);
-			}
-			BE_DBG(GENERAL, "reg offset 0x%x\n", reg->offset);
 		}
 	}
 	/*
@@ -1755,6 +1889,9 @@ void print_data(object_t *data, int table_count) {
 void print_object(object_t *obj, int tab_count) {
 	const char *pos = (const char *)tab[tab_count];
 	BE_DBG(OBJ, "%sobject type %s, name %s, symtab %p, sibling %p, symtab parent %p\n", pos, obj->obj_type, obj->name, obj->symtab, obj->symtab->sibling, obj->symtab->parent);
+
+	fprintf(stderr, "%sobject type %s, name %s, symtab %p, sibling %p, symtab parent %p\n", pos, obj->obj_type, obj->name, obj->symtab, obj->symtab->sibling, obj->symtab->parent);
+
 	struct list_head *p;
 	object_t *tmp;
 

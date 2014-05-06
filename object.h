@@ -99,6 +99,9 @@ typedef struct device {
    	struct list_head footers;
    	struct list_head struct_defs;
    	struct list_head loggroups;
+	struct list_head externs;
+	struct list_head typedefs;
+	struct list_head extern_typedefs;
 
 	int bank_count;
 	object_t **banks;
