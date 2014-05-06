@@ -28,5 +28,6 @@
 void gen_device_macros(device_t *dev, FILE *f);
 void gen_device_struct(device_t *dev, FILE *f);
 void gen_device_loggroup(device_t *dev, FILE *f);
-
+void gen_device_toplevel_struct(device_t *dev, FILE *f);
+void gen_device_typedef(device_t *t, FILE *f);
 #endif /* __GEN_STRUCT_H__ */

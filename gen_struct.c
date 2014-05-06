@@ -1,27 +1,39 @@
 /*
- * gen_struct.c: 
+ * gen_struct.c:
  *
  * Copyright (C) 2013 alloc <alloc.young@gmail.com>
  * Skyeye Develop Group, for help please send mail to
  * <skyeye-developer@lists.gro.clinux.org>
  *
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 #include "gen_struct.h"
+#include "node.h"
 extern symtab_t root_table;
+
+static int is_simics_dir(const char *dir) {
+	const char *simics_keyword_str = "simics";
+	char *ret;
+
+	ret = strstr(dir, simics_keyword_str);
+	if(ret) {
+		return 1;
+	}
+	return 0;
+}
 
 static void gen_data_struct(object_t *obj, FILE *f) {
 	object_t *parent = obj->parent;
@@ -31,7 +43,7 @@ static void gen_data_struct(object_t *obj, FILE *f) {
 
 	name = get_cdecl_name(node);
 	type = get_type_info(node);
-	fprintf(f, "%s %s;\n", type, name);     
+	fprintf(f, "%s %s;\n", type, name);
 }
 
 static void gen_device_data_struct(device_t *dev, FILE *f) {
@@ -104,8 +116,8 @@ static void gen_connect_struct(object_t *obj, FILE *f) {
  * @param f : header file of struct
  */
 static void gen_attribute_struct(object_t *obj, FILE *f) {
-	attribute_t *attr = (attribute_t *)obj;	
-	
+	attribute_t *attr = (attribute_t *)obj;
+
 	if(!obj->is_array) {
 		fprintf(f, "\t%s %s;\n", attr->alloc_type, obj->name);
 	} else {
@@ -282,7 +294,7 @@ void gen_device_loggroup(device_t *dev, FILE *f) {
 
     list = head = symbol_list_find_type(root_table, LOGGROUP_TYPE);
     if(list) {
-        fprintf(f, "typedef enum %s_log_group {\n", dev_name);
+        fprintf(f, "\ntypedef enum %s_log_group {\n", dev_name);
         i = 1;
         while(list) {
             sym = list->sym;
@@ -299,6 +311,159 @@ void gen_device_loggroup(device_t *dev, FILE *f) {
     }
 	symbol_list_free(head);
 }
+
+static int cdecl_is_complex_type(cdecl_t *type) {
+	int ret;
+
+	switch(type->common.categ) {
+		case STRUCT_T:
+		case LAYOUT_T:
+		case BITFIELDS_T:
+			ret = 1;
+			break;
+		default:
+			ret = 0;
+	}
+	return ret;
+}
+
+static void handle_complex_case(cdecl_t *type, FILE *f, int pos);
+extern FILE *out;
+static void handle_struct(cdecl_t *type, FILE *f, int pos) {
+	symtab_t table;
+	symbol_t sym;
+
+	out = f;
+	D_n(pos, "struct {\n");
+	table = type->struc.table;
+	sym = table->list;
+	while(sym) {
+		cdecl_t *type = sym->attr;
+		if(cdecl_is_complex_type(type)) {
+			handle_complex_case(type, f, pos + 1);
+		} else {
+			const char *name = get_cdecl_name(type->node);
+			const char *stype = get_type_info(type->node);
+			D_n(pos+1, "%s %s;\n", stype, name);
+		}
+		sym = sym->lnext;
+	}
+	D_n(pos, "} %s;\n", type->var_name);
+}
+
+static void handle_layout(cdecl_t *type, FILE *f, int pos) {
+	out = f;
+	int size;
+	const char *name;
+
+	size = type->common.size;
+	name = type->var_name;
+	D_n(pos, "struct { char data[%d] } %s;\n", size, name);
+}
+
+static void handle_bitfields(cdecl_t *type, FILE *f, int pos) {
+	out = f;
+	int size;
+
+	size = type->bitfields.size;
+	D_n(pos, "uint%d %s;\n", size, type->var_name);
+}
+
+static void handle_complex_case(cdecl_t *type, FILE *f, int pos) {
+	switch (type->common.categ) {
+		case STRUCT_T:
+			handle_struct(type, f, pos);
+			break;
+		case LAYOUT_T:
+			handle_layout(type, f, pos);
+			break;
+		case BITFIELDS_T:
+			handle_bitfields(type, f, pos);
+		default:
+			break;
+	}
+}
+
+static void gen_structtypedef(node_entry_t *entry, FILE *f) {
+	symbol_t sym;
+
+	sym = entry->sym;
+	fprintf(f, "typedef struct %s %s;\n", sym->name, sym->name);
+}
+
+static void gen_structdef(node_entry_t *entry, FILE *f) {
+	symbol_t sym;
+	struct_attr_t *attr;
+	symtab_t table;
+	tree_t *node;
+
+	sym = entry->sym;
+	attr = sym->attr;
+	node = attr->common.node;
+	table = attr->table;
+	symbol_t tmp = table->list;
+	fprintf(f, "\nstruct %s {\n", sym->name);
+	//fprintf(stderr, "struct name %s, file %s, line %d\n",sym->name, node->common.location.file->name, node->common.location.first_line);
+	while(tmp) {
+		cdecl_t *type = tmp->attr;
+		if(!cdecl_is_complex_type(type)) {
+			const char *name;
+			const char *stype;
+			name = get_cdecl_name(type->node);
+			stype = get_type_info(type->node);
+			fprintf(f, "\t%s %s;\n", stype, name);
+		} else {
+			handle_complex_case(type, f, 1);
+		}
+		tmp = tmp->lnext;
+	}
+	fprintf(f, "};\n");
+}
+
+void gen_device_toplevel_struct(device_t *dev, FILE *f) {
+	node_entry_t *tmp;
+	struct list_head *p;
+
+	list_for_each(p, &dev->struct_defs) {
+		tmp = list_entry(p, node_entry_t, entry);
+		gen_structtypedef(tmp, f);
+	}
+
+	list_for_each(p, &dev->struct_defs) {
+		tmp = list_entry(p, node_entry_t, entry);
+		gen_structdef(tmp, f);
+	}
+}
+
+static void gen_typedef(node_entry_t *entry, FILE *f) {
+	symbol_t sym;
+	cdecl_t *type;
+	tree_t *node;
+
+	sym = entry->sym;
+	type = sym->attr;
+	node = type->node;
+	const char *fname = node->common.location.file->name;
+	if(is_simics_dir(fname)) {
+		return;
+	}
+	const char *stype = get_type_info(node);
+	const char *name = get_cdecl_name(node);
+	out = f;
+	gen_src_loc(&node->common.location);
+	fprintf(f, "typedef %s %s;\n", stype, name);
+}
+
+void gen_device_typedef(device_t *dev, FILE *f) {
+	struct list_head *p;
+	node_entry_t *tmp;
+
+	list_for_each(p, &dev->typedefs) {
+		tmp = list_entry(p, node_entry_t, entry);
+		gen_typedef(tmp, f);
+	}
+}
+
 
 /**
  * @brief gen_device_macros : generate the macro about device
