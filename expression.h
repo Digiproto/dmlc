@@ -108,6 +108,7 @@ typedef struct expr {
 
 #define is_ptr_type(type) (type->common.categ == POINTER_T || type->common.categ == STRING_T)
 #define is_null_ptr(expr) (expr->is_null)
+#define is_string_type(type) (type->common.categ == STRING_T || ((type->common.categ == POINTER_T)&& type->common.bty->common.categ == CHAR_T))
 
 #define is_common_type(categ) (categ >= BOOL_T && (categ <= TYPEDEF_T))
 

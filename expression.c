@@ -1253,6 +1253,33 @@ expr_t* check_equality_expr(tree_t* node, symtab_t table, expr_t* expr) {
 		expr_to_int(expr);
 		return expr;
 	}
+	if(is_string_type(type1) ^ is_string_type(type2)) {
+		fprintf(stderr, "expect both string type\n");
+		exit(-1);
+	} else if(is_string_type(type1)){
+		expr_t *expr1, *expr2;
+		expr1 = expr->kids[0];
+		expr2 = expr->kids[1];
+
+		if(!(expr1->is_const && expr2->is_const)) {
+			fprintf(stderr, "%s:%d: ", node->common.location.file->name, node->common.location.first_line);
+			fprintf(stderr, "error: comparison with string literal results in unspecified behavior\n");
+			exit(-1);
+		}
+		const char *name1 = expr1->val->p;
+		const char *name2 = expr2->val->p;
+		cdecl_t *type = gdml_zmalloc(sizeof *type);
+		value_t *val = gdml_zmalloc(sizeof *val);
+		expr->is_const = 1;
+		type->common.categ = BOOL_T;
+		expr->val = val;
+		if(!strcmp(name1, name2)) {
+			val->int_v.value = 1;
+		} else {
+			val->int_v.value = 0;
+		}
+		return expr;
+	}
 
 	if ((is_ptr_type(type1) && is_ptr_type(type2)) ||
 			(is_ptr_type(type1) && is_null_ptr(expr->kids[0])) ||
@@ -2128,6 +2155,7 @@ cdecl_t* check_parameter_type(symbol_t symbol, expr_t* expr) {
 		/* Pay attention: this is only for debugging */
 		PERRORN("other parameter type", expr->node);
 	}
+	//fprintf(stderr, "++++++++++++type %d\n ", type->common.categ);
 	return type;
 }
 
@@ -2395,9 +2423,12 @@ expr_t* check_ident_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	if (symbol != NULL) {
 		//fprintf(stderr, "symbol name: %s, type: %d, table %d\n", symbol->name, symbol->type, table->table_num);
 		if (is_common_type(symbol->type)) {
+			EXPR_TRACE("common symbol type\n");
 			expr->type = symbol->attr;
 		}
 		else {
+
+			EXPR_TRACE("complex symbol type\n");
 			expr->type = get_common_type(table, symbol, expr);
 		}
 	}
