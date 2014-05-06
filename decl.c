@@ -35,6 +35,7 @@
 #include "info_output.h"
 #include "object.h"
 
+static int in_typedef;
 static cdecl_t* parse_cdecl(tree_t* node, symtab_t table);
 /**
  * @brief get_param_decl : parse the method parameters and
@@ -658,8 +659,6 @@ static void parse_c_array(tree_t* node, symtab_t table, cdecl_t* type) {
 	expr_t *e;
 	e = check_expr(node->array.expr, table);
 	if(!e->is_const) {
-		PERRORN("error, array size must be constant len\n", node->array.expr);
-		exit(-1);
 	} else {
 		drv->len = e->val->int_v.value;
 	}
@@ -796,7 +795,8 @@ static int is_c_keyword(tree_t* node) {
  */
 static void parse_ident(tree_t* node, symtab_t table, cdecl_t* decl) {
 	assert(node != NULL); assert(table != NULL); assert(decl != NULL);
-	if (is_c_keyword(node) && (decl->common.is_typedef == 0)) {
+	//if (is_c_keyword(node) && (decl->common.is_typedef == 0)) {
+	if (is_c_keyword(node) && !in_typedef) {
 		error("c keyword can not be the identifier name\n");
 	}
 	else {
@@ -1066,6 +1066,7 @@ static cdecl_t* parse_cdecl(tree_t* node, symtab_t table) {
 	 * have name, not have type */
 	tree_t* decl = node->cdecl.decl;
 	type = parse_decl(decl, table, type);
+	type->node = node;
 
 	return type;
 }
@@ -1196,9 +1197,17 @@ void parse_typedef_cdecl(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 	//cdecl_t* type = parse_cdecl(node->cdecl.decl, table);
 	tree_t* decl = node->cdecl.decl;
+	/*
 	cdecl_t* type =  parse_base(decl->cdecl.basetype, table, decl->cdecl.is_const);
 	type->common.is_typedef = 1;
+	type->node = decl;
 	type = parse_decl(decl->cdecl.decl, table, type);
+	*/
+	//decl->common.is_typedef = 1;
+	//fprintf(stderr, "file %s, line %d\n", node->common.location.file->name, node->common.location.first_line);
+	in_typedef = 1;
+	cdecl_t *type = parse_cdecl(decl, table);
+	in_typedef = 0;
 	if (type == NULL)
 		return;
 
