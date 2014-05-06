@@ -283,6 +283,7 @@ static const char *type_name[] = {
 	fn(OBJECT_T) \
 	fn(INTERFACE_T)
 
+/*typical type value: layout 138, int 127 */
 enum data_type {
 	DATA_TYPE_START = TYPE_END + 1,
 	DATA_TYPELIST(type_produce)
