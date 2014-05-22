@@ -175,6 +175,7 @@ symbol_t get_symbol_from_banks(const char* name);
 cdecl_t* check_parameter_type(symbol_t symbol, expr_t* expr);
 cdecl_t* check_constant_type(symbol_t symbol, expr_t* expr);
 cdecl_t* check_foreach_type(symbol_t symbol, expr_t* expr);
+symtab_t get_data_table2(object_t *obj);
 /* it's a temporary proposal.
  * use the function so frequently that I add this marco.
  * by eJim Lee 2013-11-30 */

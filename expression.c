@@ -219,6 +219,7 @@ symbol_t get_symbol_from_root_table(const char* name, type_t type) {
 	return symbol;
 }
 
+extern symtab_t root_table;
 /**
  * @brief get_device : get symbol from banks
  *
@@ -232,9 +233,18 @@ symbol_t get_symbol_from_banks(const char* name) {
 	bank_attr_t* attr = NULL;
 	symbol_t symbol = NULL;
 	device_t* dev = get_device();
+	fprintf(stderr, "dev %p\n", dev);
 	list_for_each(p, &dev->obj.childs) {
 		tmp = list_entry(p, object_t, entry);
-		symbol = defined_symbol(tmp->symtab->sibling, name, 0);
+		//symbol = defined_symbol(tmp->symtab->sibling, name, 0);
+		if(!strcmp(name,  tmp->name)) {
+			symbol = symbol_find(root_table, name, BANK_TYPE);		
+		} else {
+			symbol = defined_symbol(tmp->symtab->sibling, name, 0);
+		}
+		print_all_symbol(tmp->symtab->sibling);
+		fprintf(stderr, "bank name %s, symbol %p\n", tmp->name, symbol);
+		//symbol = defined_symbol(tmp->symtab, name, OBJECT_T);
 		if (symbol)
 			return symbol;
 	}
@@ -334,7 +344,7 @@ reference_t* get_reference(tree_t* node, reference_t* ref, expr_t* expr, symtab_
 			ident_node = node->quote.ident;
 			new->name = ident_node->ident.str;
 			if (check_dml_obj_refer(ident_node, table) == 0) {
-				PERRORN("reference to unknown object '%s'", node, ident_node->ident.str);
+				//PERRORN("reference to unknown object '%s'", node, ident_node->ident.str);
 			}
 			else {
 				expr->is_obj = 1;
@@ -520,6 +530,44 @@ symtab_t get_data_table(symbol_t symbol) {
 	return table ;
 }
 
+symtab_t get_data_table2(object_t *obj) {
+	tree_t *node;
+
+	node = obj->node;
+	cdecl_t* type = node->common.cdecl;
+	symtab_t table = NULL;
+	
+	/*
+	if (type->common.categ == POINTER_T) {
+		symbol_t new_sym = (symbol_t)gdml_zmalloc(sizeof(struct symbol));
+		new_sym->name = symbol->name;
+		new_sym->attr = type->common.bty;
+		table = get_data_table(new_sym);
+		new_sym->name = NULL; new_sym->attr = NULL;
+		free(new_sym);
+	}
+	else*/ if (record_type(type)) {
+		get_record_table(type);
+	}
+	else if (is_array_type(type)) {
+		type = type->common.bty;
+		if (record_type(type)) {
+			get_record_table(type);
+		}
+		else if (is_array_type(type)) {
+			type = type->common.bty;
+			get_record_table(type);
+		}
+		else {
+			error("other data '%s' type: %d\n", obj->name, type->common.categ);
+		}
+	}
+	else {
+		error("other data '%s' type: %d\n", obj->name, type->common.categ);
+	}
+
+	return table ;
+}
 /**
  * @brief get_point_table : get table about pointer type
  *
@@ -665,6 +713,7 @@ symtab_t get_symbol_table(symtab_t sym_tab, symbol_t symbol) {
 	symtab_t table = NULL;
 	void* attr = symbol->attr;
 
+	fprintf(stderr, "symbol type %d, DATA TYPE %d, object type %d\n", symbol->type, DATA_TYPE, OBJECT_TYPE);
 	switch(symbol->type) {
 		case TEMPLATE_TYPE:
 			table = ((template_attr_t*)attr)->table;
@@ -705,9 +754,15 @@ symtab_t get_symbol_table(symtab_t sym_tab, symbol_t symbol) {
 		case PARAMETER_TYPE:
 			table = get_default_symbol_tale(sym_tab, symbol);
 			break;
-		case OBJECT_TYPE:
-			table = get_object_table(symbol);
+		case OBJECT_TYPE: {
+			object_t *obj = symbol->attr;	
+			if(!strcmp(obj->obj_type, "data")) {	
+				table = get_data_table2(obj);	
+			} else {
+				table = get_object_table(symbol);
+			}
 			break;
+		}
 		case DATA_TYPE:
 			table = get_data_table(symbol);
 			break;
@@ -1254,8 +1309,9 @@ expr_t* check_equality_expr(tree_t* node, symtab_t table, expr_t* expr) {
 		return expr;
 	}
 	if(is_string_type(type1) ^ is_string_type(type2)) {
-		fprintf(stderr, "expect both string type\n");
-		exit(-1);
+		fprintf(stderr, "expect both string type, file %s, line %d\n", node->common.location.file->name, node->common.location.first_line);
+		fprintf(stderr, "type1 %d, type2 %d\n", type1->common.categ, type2->common.categ);
+		fprintf(stderr, "string CMP %d\n", STRING_T);
 	} else if(is_string_type(type1)){
 		expr_t *expr1, *expr2;
 		expr1 = expr->kids[0];
@@ -1279,6 +1335,20 @@ expr_t* check_equality_expr(tree_t* node, symtab_t table, expr_t* expr) {
 			val->int_v.value = 0;
 		}
 		return expr;
+	}
+		
+	tree_t *left = node->binary.left;
+	if(left->common.type == COMPONENT_TYPE && !strcmp(left->component.ident->ident.str, "name")) {
+		tree_t *right = node->binary.right;
+		if(right->common.type == CONST_STRING_TYPE) {
+			cdecl_t *type = gdml_zmalloc(sizeof *type);
+			value_t *val = gdml_zmalloc(sizeof *val);
+			expr->is_const = 1;
+			type->common.categ = BOOL_T;
+			expr->val = val;
+			val->int_v.value = 0;
+			return expr;
+		}
 	}
 
 	if ((is_ptr_type(type1) && is_ptr_type(type2)) ||
@@ -1581,7 +1651,7 @@ expr_t* check_assign_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	}
 	EXPR_TRACE("check type compatiable\n");
 	if (!can_assign(expr->kids[0], expr->kids[1])) {
-		error("wrong assignment\n");
+		error("wrong assignment, left type %d, right %d\n", expr->kids[0]->type->common.categ, expr->kids[1]->type->common.categ);
 	}
 	expr->type = expr->kids[0]->type;
 	node->expr_assign.ty = expression_type_copy(node->expr_assign.ty, expr->type);
@@ -1791,6 +1861,7 @@ expr_t* check_unary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 			}
 			else {
 				expr->type = pointer_to(expr->kids[0]->type);
+				node->common.cdecl = expr->type;
 			}
 			break;
 		case POINTER_TYPE:
@@ -1996,9 +2067,11 @@ static int find_dml_obj(symtab_t table, const char* name) {
 			if (symbol)
 				obj_type = dml_obj_type(symbol);
 			else {
+				/*
 				symbol = get_symbol_from_banks(name);
 				if(symbol)
 					obj_type = dml_obj_type(symbol);
+				*/
 			}
 			return obj_type;
 		}
@@ -2006,7 +2079,7 @@ static int find_dml_obj(symtab_t table, const char* name) {
 	else {
 		symbol = get_symbol_from_root_table(name, 0);
 		if (!symbol)
-			symbol = get_symbol_from_banks(name);
+			//symbol = get_symbol_from_banks(name);
 		if (symbol)
 			obj_type = dml_obj_type(symbol);
 		return obj_type;
@@ -2101,13 +2174,18 @@ cdecl_t* check_parameter_type(symbol_t symbol, expr_t* expr) {
 			return type;
 		}
 		param_type = spec->value->type;
+		fprintf(stderr, "is orignal\n");
 	} else {
 		param_type = ((param_value_t*)parameter)->type;
 	}
 
 	if (param_type == PARAM_TYPE_NONE || param_type == PARAM_TYPE_LIST ||
 		param_type == PARAM_TYPE_REF) {
+		fprintf(stderr, "paramxxx check %d, list type %d\n", param_type, PARAM_TYPE_LIST);
 		type->common.categ = PARAMETER_TYPE;
+	} else if(param_type == PARAM_TYPE_LIST2) {
+		type->common.categ = LIST_T;
+		type->node = spec->expr_node;
 	}
 	else if (param_type == PARAM_TYPE_BOOL) {
 		type->common.categ = BOOL_T;
@@ -2294,14 +2372,17 @@ static cdecl_t* get_obj_type(symbol_t symbol, symtab_t table, expr_t* expr) {
 		type->common.categ = INT_T;
 		return type;
 	}
-
-	object_attr_t* attr = node->common.attr;
-	symbol_t new_symbol = (symbol_t)gdml_zmalloc(sizeof(struct symbol));
-	new_symbol->name = symbol->name;
-	new_symbol->type = attr->common.obj_type;
-	new_symbol->attr = attr;
-	type = get_common_type(table, new_symbol, expr);
-	free(new_symbol);
+	if(!strcmp(obj->obj_type, "data")) {
+		type = node->common.cdecl;				
+	} else {
+	    object_attr_t* attr = node->common.attr;
+	    symbol_t new_symbol = (symbol_t)gdml_zmalloc(sizeof(struct symbol));
+	    new_symbol->name = symbol->name;
+	    new_symbol->type = attr->common.obj_type;
+	    new_symbol->attr = attr;
+	    type = get_common_type(table, new_symbol, expr);
+	    free(new_symbol);
+	}
 
 	return type;
 }
@@ -2420,6 +2501,7 @@ expr_t* check_ident_expr(tree_t* node, symtab_t table, expr_t* expr) {
 		if (!symbol)
 			symbol = get_symbol_from_banks(node->ident.str);
 	}
+	fprintf(stderr, "symbol %p\n", symbol);
 	if (symbol != NULL) {
 		//fprintf(stderr, "symbol name: %s, type: %d, table %d\n", symbol->name, symbol->type, table->table_num);
 		if (is_common_type(symbol->type)) {
@@ -2470,13 +2552,15 @@ expr_t* check_ident_expr(tree_t* node, symtab_t table, expr_t* expr) {
 			if (table->pass_num == 0) {
 				expr->no_defined = 1;
 			} else {
-				error("%s no undeclared in template\n", str);
+				int *p = NULL;
+				*p = 0;
+				error("%s not undeclared in template\n", str);
 			}
 		}
 	}
 
 	expr->node = node;
-	node->ident.ty = expression_type_copy(node->ident.ty, expr->type);
+	//node->ident.ty = expression_type_copy(node->ident.ty, expr->type);
 	EXPR_TRACE("end check ident expr\n");
 	return expr;
 }
@@ -2495,6 +2579,8 @@ expr_t* check_ident_expr(tree_t* node, symtab_t table, expr_t* expr) {
 		if (((type*)attr)->is_array) { \
 			return 1; \
 		} else { \
+			int *p = NULL; \
+			*p = 0; \
 			error("subscripted value is neither array nor vector"); \
 		} \
 	} while (0)
@@ -2656,6 +2742,7 @@ symbol_t get_symbol_from_templates(symtab_t table, const char* name, int type) {
 	symtab_t ref_table = NULL;
 	symbol_t sym = NULL;
 	struct template_table* temp = table->template_table;
+	int i = 0;
 	while(temp) {
 		sym = defined_symbol(temp->table, name, type);
 		if (sym) {
@@ -2666,6 +2753,11 @@ symbol_t get_symbol_from_templates(symtab_t table, const char* name, int type) {
 			if (sym) {
 				break;
 			}
+		}
+		i++;
+		if(i > 20) {
+			fprintf(stderr, "table %p\n", table);
+			break;
 		}
 		temp = temp->next;
 	}
@@ -2758,11 +2850,18 @@ expr_t* check_refer(symtab_t table, reference_t* ref, expr_t* expr) {
 	reference_t* tmp = ref;
 
 	if (table->no_check == 1) {
+		fprintf(stderr, "no check \n");
 		expr->type->common.categ = INT_T;
 		return expr;
 	}
-
+	if(!strcmp(tmp->name, "arl_table")) {
+		fprintf(stderr, "+++++++++++++try to find arl table \n");
+	}
 	symbol = symbol_find_notype(table, tmp->name);
+	if(!strcmp(tmp->name, "arl_table")) {
+		fprintf(stderr, "+++++++++++++try to find arl table %p, name %s, type %d\n", symbol, symbol->name, symbol->type);
+	}
+	fprintf(stderr, "symbol name %s\n", tmp->name);
 	symbol = (symbol == NULL) ? get_symbol_from_banks(tmp->name) : symbol;
 	while (tmp->next) {
 		if ((symbol->type == INTERFACE_TYPE) ||
@@ -2772,6 +2871,7 @@ expr_t* check_refer(symtab_t table, reference_t* ref, expr_t* expr) {
 			symbol = symbol_find_notype(table, tmp->name);
 			symbol = (symbol == NULL) ? get_symbol_from_root_table(tmp->name, 0) : symbol;
 		}
+		fprintf(stderr, "symbol %p\n", symbol);	
 		if (symbol != NULL) {
 			ref_table = get_symbol_table(table, symbol);
 			ref_table = (ref_table == NULL) ? get_symbol_table_from_template(table, tmp->name) : ref_table;
@@ -2802,6 +2902,13 @@ expr_t* check_refer(symtab_t table, reference_t* ref, expr_t* expr) {
 			obj_type = ((object_t*)(symbol->attr))->obj_type;
 		}
 		ref_symbol = symbol_find_notype(ref_table, tmp->next->name);
+		fprintf(stderr, "ref name %s\n", tmp->next->name);
+		const char *wired = tmp->next->name;
+		if(!strcmp(wired, "c") || !strcmp(wired, "rma")) {
+			fprintf(stderr, "%s, ref_table %p, table %p\n", wired, ref_table, table);
+			print_all_symbol(ref_table);
+			print_all_symbol(table);
+		}
 		ref_symbol = (ref_symbol == NULL) ? get_symbol_from_template(table, tmp->name, tmp->next->name) : ref_symbol;
 		if ((symbol->type == CONNECT_TYPE && !strcmp(tmp->next->name, "obj")) ||
 			((symbol->type == OBJECT_TYPE) && !(strcmp(obj_type, "connect")) && (!strcmp(tmp->next->name, "obj")))||
@@ -2866,7 +2973,9 @@ expr_t* check_component_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	reference->name = ident->ident.str;
 	reference = get_reference(node->component.expr, reference, expr, table);
 	print_reference(reference);
+	fprintf(stderr, "before ref check, file %s, line %d\n", node->common.location.file->name, node->common.location.first_line);
 	expr = check_refer(table, reference, expr);
+	fprintf(stderr, "after ref check\n");
 	check_no_defiend_expr(expr, node);
 	expr->node = node;
 	node->component.ty = expression_type_copy(node->component.ty, expr->type);
@@ -3112,12 +3221,14 @@ expr_t* check_array_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 	EXPR_TRACE("check array expr\n");
 	cdecl_t* type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
-	type->common.categ = NO_TYPE;
 	type = array_of(type, 0);
+	type->common.categ = ARRAY_TYPE;
+	type->node = node;
 	expr->type = type;
 
 	EXPR_TRACE("end check array expr\n");
 	expr->node = node;
+	fprintf(stderr, "check array typexx %s, line %d\n", node->common.location.file->name, node->common.location.first_line);
 	return expr;
 }
 
