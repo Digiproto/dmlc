@@ -22,6 +22,8 @@
  */
 #include "flow_ctrl.h"
 static int block_has_node_type(tree_t *, type_t);
+extern symbol_t get_expression_sym(tree_t *node);
+extern symtab_t current_table;
 
 /**
  * @brief handle_inline_case : charge the inline block has the type node
@@ -39,22 +41,65 @@ static int handle_inline_case(tree_t *t, type_t type) {
     symbol_t sym = NULL; 
     int ret = 0; 
    	ref_ret_t ref_ret;
+	object_t *obj;
+	symtab_t oldtab = NULL;
 
     if(type == CALL_TYPE || type == THROW_TYPE) {
         tmp = it->call_inline.expr;
-        sym = get_ref_sym(tmp->expr_brack.expr, &ref_ret, NULL);
+	fprintf(stderr, "file %s, line %d\n", t->common.location.file->name, t->common.location.first_line);
+	if(tmp->common.type == EXPR_BRACK_TYPE) {
+        	sym = get_ref_sym(tmp->expr_brack.expr, &ref_ret, NULL);
+	} else  {
+		sym = get_ref_sym(tmp, &ref_ret, NULL);
+	}
         if(!sym) {
             my_DBG("err,no inline function\n");
+		fprintf(stderr, "no inline function found\n");
+		exit(-1);
         }    
+	if(sym->owner) {
+		obj = sym->owner;	
+		if(current_table != obj->symtab) {
+			oldtab = current_table;
+			current_table = obj->symtab;
+		}
+	}
         method_attr_t *m = sym->attr;
         tmp = m->common.node;
         tmp = tmp->method.block;
         ret = block_has_node_type(tmp, type);
-        if(ret) {
-            return ret; 
-        }    
+	if(oldtab) {
+		current_table = oldtab;	
+	}
     }    
 	return ret;
+}
+
+static int handle_foreach_case(tree_t *t, type_t type) {
+	tree_t *node;
+	symbol_t list;	
+	tree_t *tmp;
+
+	node = t->foreach.in_expr;
+	list = get_expression_sym(node);
+	if(!list) {
+		return 0;
+	}
+	if(list->type != ARRAY_TYPE) {
+		if(list->type == PARAMETER_TYPE) {
+			param_value_t *val;
+			int len = 0;
+			val = list->attr;	
+			if(val->type == PARAM_TYPE_LIST) {
+				len = val->u.list.size;
+				if(!len) {
+					return 0;
+				}
+			}
+		}
+	}
+	tmp = t->foreach.block;
+        return  block_has_node_type(tmp, type);
 }
 
 /**
@@ -161,8 +206,9 @@ static int block_has_node_type(tree_t *t, type_t node_type) {
                         break;
                     }
                 } else if(type == FOREACH_TYPE) {
-                    tmp = it->foreach.block;
-                    ret = block_has_node_type(tmp, node_type);
+		    ret = handle_foreach_case(it, node_type);
+                    //tmp = it->foreach.block;
+                    //ret = block_has_node_type(tmp, node_type);
                     if(ret) {
                         break;
                     }
@@ -177,14 +223,29 @@ static int block_has_node_type(tree_t *t, type_t node_type) {
                         break;
                     }
                 } else if(type == AFTER_CALL_TYPE) {
-					ret = handle_after_call_case(it, node_type);
-					if(ret) {
-						break;
-					}
-				}
+		     ret = handle_after_call_case(it, node_type);
+		     if(ret) {
+			break;
+		     }
+		} else if (type == SWITCH_TYPE) {
+			ret = block_has_node_type(it->switch_tree.block, node_type); 
+			if(ret) {
+				break;
+			}
+		} else if(type == CASE_TYPE) {
+			ret = block_has_node_type(it->case_tree.block, node_type);
+			if(ret) {
+				break;
+			}
+		}
                 it = it->common.sibling;
             }
-    }
+    } else if(node->common.type == INLINE_TYPE) {
+		ret = handle_inline_case(node, node_type);
+	} else if(node->common.type == FOR_TYPE) {
+		fprintf(stderr, "for+++++++++\n ");
+		ret = block_has_node_type(node->for_tree.block, node_type);
+	}
     return ret;
 }
 
