@@ -54,8 +54,7 @@ void translate_assign(tree_t *t) {
 		}
 		return;
 	}
-
-	/*need more special cases, such as layout etc*/
+	fprintf(stderr, "node %s, line %d\n", node->common.location.file->name, node->common.location.first_line);
 	translate(node);
 	D(" %s ",t->expr_assign.assign_symbol);
 	node = t->expr_assign.right;
