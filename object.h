@@ -127,6 +127,7 @@ typedef struct register_def {
 	int array_size;
 	int field_count;
 	int is_undefined;
+	int is_unmapped;
 	object_t **fields;
 } dml_register_t;
 
