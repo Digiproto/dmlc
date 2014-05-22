@@ -705,7 +705,7 @@ arraydef_attr_t* get_arraydef(tree_t* node, symtab_t table) {
 		return NULL;
 	}
 	arraydef_attr_t* arraydef = (arraydef_attr_t*)gdml_zmalloc(sizeof(arraydef_attr_t));
-	set_obj_array();
+	//set_obj_array();
 	if ((node->array.is_fix) == 1) {
 		arraydef->fix_array = 1;
 		arraydef->high = get_int_value(node->array.expr, table);
@@ -862,6 +862,7 @@ paramspec_t* get_param_spec(tree_t* node, symtab_t table) {
 
 	if (node->paramspec.expr && (table->no_check == 0)) {
 		expr_t* expr = check_expr(node->paramspec.expr, table);
+		fprintf(stderr, "after check\n");
 		if (expr->no_defined) {
 			undef_var_insert(table, node->paramspec.expr);
 			value->type = PARAM_TYPE_NONE;
@@ -884,6 +885,10 @@ paramspec_t* get_param_spec(tree_t* node, symtab_t table) {
 			value->type = PARAM_TYPE_FLOAT;
 			if (expr->val)
 				value->u.floating = expr->val->d;
+		} else if(expr->type->common.categ == ARRAY_TYPE) {
+			fprintf(stderr, "lll");
+			
+			value->type = PARAM_TYPE_LIST2;
 		}
 		else {
 			value->type = PARAM_TYPE_NONE;
@@ -979,7 +984,7 @@ int get_offset(tree_t* node, symtab_t table) {
 			return expr->val->int_v.value;
 		}
 		else {
-			PERROR("the offset final size in other type", node->common.location);
+			return -1;
 		}
 	}
 
@@ -1017,7 +1022,7 @@ void parse_undef_list(symtab_t table) {
 }
 
 static void insert_array_index_into_obj(tree_t *node, arraydef_attr_t* array, symtab_t table);
-
+extern int in_group;
 /**
  * @brief parse_register_attr : parse the attribute of register
  *
@@ -1030,15 +1035,34 @@ void parse_register_attr(tree_t* node, symtab_t table) {
 	object_attr_t* attr = node->common.attr;
 	symtab_t reg_table = attr->common.table;
 	
+	if(!reg_table) {
+		reg_table = symtab_create(TMP_TYPE);
+		attr->common.table = reg_table;
+	}
 	if (node->reg.array) {
-		set_obj_array();
-		attr->reg.is_array = 1;
 		attr->reg.arraydef = get_arraydef(node->reg.array, table);
 		insert_array_index_into_obj(node, attr->reg.arraydef, reg_table);
 	}
 	attr->reg.size = get_size(node->reg.sizespec, table);
-	attr->reg.offset = get_offset(node->reg.offset, reg_table);
+	if(!in_group) {
+		attr->reg.offset = get_offset(node->reg.offset, reg_table);
+	}
 	attr->common.desc = get_obj_desc(node->reg.spec);
+	tree_t *offset = node->reg.offset;
+	if(offset && offset->common.type != UNDEFINED_TYPE) {
+		parameter_attr_t* attr = (parameter_attr_t*)gdml_zmalloc(sizeof(parameter_attr_t));
+                attr->is_original = 1;
+                attr->name = "offset";
+                attr->common.node = node;
+		paramspec_t *spec = gdml_zmalloc(sizeof(*spec));	
+		param_value_t *value = gdml_zmalloc(sizeof (*value));
+		value->is_original = 1;
+		value->type = PARAM_TYPE_INT;
+		spec->value = value;
+		spec->expr_node = offset;
+                attr->param_spec = spec;
+                symbol_insert(reg_table, "offset", PARAMETER_TYPE, attr);
+	}
 
 	return;
 }
@@ -1110,7 +1134,6 @@ void parse_attribute_attr(tree_t* node, symtab_t table) {
 
 	object_attr_t* attr = node->common.attr;
 	attr->attribute.arraydef = get_arraydef(node->attribute.arraydef, table);
-
 	return;
 }
 
@@ -1233,6 +1256,7 @@ void parse_bank(tree_t* node, symtab_t table) {
 
 	/* parsing the symbols that in bank table */
 	obj_spec_t* spec = node->bank.spec;
+	//symtab_t a_tab = node->common.table;
 	parse_obj_spec(spec, table);
 
 	return;
@@ -1307,7 +1331,9 @@ static void insert_array_index_into_obj(tree_t *node, arraydef_attr_t* array, sy
  * @param table : table of register
  */
 void parse_register(tree_t* node, symtab_t table) {
-	assert(node != NULL); assert(table != NULL);
+	if(!node || !table) {
+		return;
+	}
 	object_attr_t* attr = node->common.attr;
 
 	obj_spec_t* spec = node->reg.spec;
@@ -1489,7 +1515,7 @@ void parse_unparsed_obj(tree_t* node, symtab_t table) {
 		//error("other object type\n");
 		return;
 	} else {
-		error("other object type2\n");
+		//error("other object type2\n");
 	}
 	parse_obj_spec(spec, table);
 
@@ -1568,11 +1594,11 @@ void parse_parameter(tree_t* node, symtab_t table) {
 				value = attr->param_spec->value;
 				value->flag = PARAM_FLAG_DEFAULT;
 			} else {
-				error( "duplicate assignment to parameter '%s'\n", node->ident.str);
+				//error( "duplicate assignment to parameter1 '%s'\n", node->ident.str );
 			}
 		}
         } else {
-           error( "duplicate assignment to parameter '%s'\n", node->ident.str);
+           error( "duplicate assignment to parameter2 '%s'\n", node->ident.str);
         }
 
 	return;
@@ -1664,6 +1690,7 @@ void parse_method(tree_t* node, symtab_t table) {
 	symbol_insert(table, node->ident.str, METHOD_TYPE, attr);
 	/* insert the parameters of method into method table */
 	params_insert_table(attr->table, attr->method_params);
+	fprintf(stderr, "parse method %s\n", node->ident.str);
 
 	return;
 }
@@ -1733,7 +1760,7 @@ void parse_constant(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
 	if (symbol_defined(table, node->assign.decl->ident.str))
-		error("duplicate assignment to parameter '%s'\n", node->assign.decl->ident.str);
+		error("duplicate assignment to parameter3 '%s'\n", node->assign.decl->ident.str);
 
 	constant_attr_t* attr = (constant_attr_t*)gdml_zmalloc(sizeof(constant_attr_t));
 	attr->name = node->assign.decl->ident.str;
@@ -1921,6 +1948,31 @@ void parse_if_else(tree_t* node, symtab_t table) {
 	 * (2). if (cond) {
 	 *			statements
 	 *		}*/
+	if(expr->is_const) {
+		if(expr->val->int_v.value) {
+			tree_t* if_node = node->if_else.if_block;
+			symtab_t if_table = NULL;
+			if (if_node->common.type != BLOCK_TYPE) {
+			if (if_node->common.parse)
+				if_node->common.parse(if_node, node->if_else.if_table);
+			} else {
+				parse_compound_statement(if_node);
+			}
+			if (node->if_else.else_if) {
+				tree_t* else_if_node = node->if_else.else_if;
+				else_if_node->common.parse(else_if_node, table);
+			}
+		} else {		
+			if (node->if_else.else_if) {
+				tree_t* else_if_node = node->if_else.else_if;
+				else_if_node->common.parse(else_if_node, table);
+			}
+			tree_t* else_block = node->if_else.else_block;
+			/* not have the else block */
+			if (else_block== NULL)
+				return;
+		}
+	}
 	tree_t* if_node = node->if_else.if_block;
 	symtab_t if_table = NULL;
 	if (if_node->common.type != BLOCK_TYPE) {
@@ -2125,6 +2177,7 @@ static void parse_call_inline_method(symtab_t table, tree_t* call_expr, tree_t* 
 	assert(call_expr != NULL);
 	object_t *obj = NULL; tree_t* block = NULL;
 	tree_t *node = NULL; method_attr_t *method_attr = NULL;
+	fprintf(stderr, "table %d\n", table->table_num);
 	symbol_t method_sym = get_call_expr_info(call_expr, table);
 	symtab_t saved_table;
 	if (method_sym) {
@@ -2140,16 +2193,20 @@ static void parse_call_inline_method(symtab_t table, tree_t* call_expr, tree_t* 
 		if(method_sym && (method_sym->type == METHOD_TYPE)) {
 			obj = (object_t *)method_sym->owner;
 			if(!obj) {
+				int *p = NULL;
+				*p = 0;
 				error("method '%s' object cannot empty\n", method_sym->name);
 			} else {
 				if (!block_empty(block))
 					DBG("ADD: obj name %s, method name %s\n", obj->name, method_sym->name);
+					fprintf(stderr, "call/inline obj %s, func %s\n", obj->name, method_sym->name);
 					add_object_method(obj, method_sym->name);
 			}
 		} else {
 			error("method not right %p, %d\n", method_sym, method_sym->type);
 		}
 	} else {
+		fprintf(stderr, "file %s, line %d\n", call_expr->common.location.file->name, call_expr->common.location.first_line);
 		error("method not defined\n");
 	}
 
@@ -2419,6 +2476,7 @@ void parse_foreach(tree_t* node, symtab_t table) {
 	 *		foreach ident in '(' expression ')' statement
 	 */
 	/* insert ident into table of foreach */
+	fprintf(stderr, "foreach: file %s, line %d\n", node->common.location.file->name, node->common.location.first_line);
 	tree_t* ident = node->foreach.ident;
 	foreach_attr_t* attr = (foreach_attr_t*)gdml_zmalloc(sizeof(foreach_attr_t));
 	attr->ident = ident->ident.str;
@@ -2432,10 +2490,14 @@ void parse_foreach(tree_t* node, symtab_t table) {
 	symbol_insert(node->foreach.table, ident->ident.str, FOREACH_TYPE, attr);
 
 	symbol_t list = get_expression_sym(in_expr);
+	if(!list) {
+		return;
+	}
 	param_value_t *val = NULL;
 	symtab_t saved = current_table;
 	int len, i;
 	len = i = 0;
+	fprintf(stderr, "list type %d, array_type  %d, parameter type %d\n", list->type, ARRAY_TYPE, PARAMETER_TYPE);
 	if(list->type != ARRAY_TYPE){
 		if(list->type == PARAMETER_TYPE ) {
 			val = list->attr;
@@ -2448,12 +2510,14 @@ void parse_foreach(tree_t* node, symtab_t table) {
 			my_DBG("error type in foreach\n");
 		}
 	}
+	fprintf(stderr, "len %d\n",  len);
 	symbol_t tmp = symbol_find(attr->table, ident->ident.str, FOREACH_TYPE);
 	if (val->u.list.vector == NULL) {
 		current_table = saved;
 		return;
 	}
 	else if(val->u.list.vector[0].type == PARAM_TYPE_REF) {
+		fprintf(stderr, "object \n");
 		symbol_set_type(tmp, OBJECT_TYPE);
 	}
 	tree_t* block = node->foreach.block;
