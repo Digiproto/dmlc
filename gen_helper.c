@@ -37,6 +37,10 @@ int is_block(tree_t *node) {
     return 0;
 }
 
+symtab_t get_block_table(tree_t *node) {
+	return	node->block.table;	
+}
+
 /**
  * @brief node_is_expression : check the syntax tree node is expression or not
  *

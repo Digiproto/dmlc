@@ -30,6 +30,7 @@
 int need_pos(tree_t *node);
 int need_semicolon(tree_t *node);
 int is_block(tree_t *node);
+symtab_t get_block_table(tree_t *);
 void handle_one_statement(tree_t *node);
 
 #endif /* __GEN_HELPER_H__ */
