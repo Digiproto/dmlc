@@ -317,6 +317,16 @@ void print_all_symbol(symtab_t symtab);
 	} while(0)
 #endif
 
+//#define ENABLE_TABLE_LIST_TRACE
+#ifdef ENABLE_TABLE_LIST_TRACE
+#define TABLE_LIST_TRACE(fmt, ...) do { \
+	fprintf(stderr, fmt, ##__VA_ARGS__); \
+	} while(0)
+#else
+#define TABLE_LIST_TRACE(fmt, ...) do {\
+	} while(0)
+#endif
+
 
 #ifdef DEBUG_SYMBOLS
 #define DEBUG_TOP_LEVEL debug_proc

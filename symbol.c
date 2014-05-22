@@ -171,7 +171,6 @@ static symtab_t table_new(type_t type)
 
 	symtab_t new_symtab = (symtab_t) gdml_zmalloc(sizeof(struct symtab));
     assert(new_symtab != NULL);
-    memset(new_symtab, 0x0, sizeof(struct symtab));
 	new_symtab->type = type;
 	new_symtab->table_num = table_count++;
     return new_symtab;
@@ -215,8 +214,10 @@ symbol_t symbol_find_from_templates(struct template_table* templates, const char
 
         while (templates != NULL) {
                 table = templates->table;
+		fprintf(stderr, "try to search template %s\n", templates->template_name);
                 if(table) {
-		rt = _symbol_find(table->table, name, type);
+			rt = symbol_find(table, name, type);
+			//rt = _symbol_find(table->table, name, type);
 		if(rt) {
 			return rt;
 		}
@@ -248,7 +249,7 @@ symbol_t default_symbol_find(symtab_t symtab, const char* name, type_t type)
 			TABLE_TRACE("symbol %s found in table %p, num %d\n", name, tmp, tmp->table_num);
 		    return rt;
 		}
-		TABLE_TRACE("try to search template %s\n", name);
+		TABLE_TRACE("try to search templates %s\n", name);
 		rt = symbol_find_from_templates(tmp->template_table, name, type);
 		if (rt) {
 			return rt;
@@ -739,15 +740,15 @@ void get_all_symbol(symtab_t symtab, symbol_callback func_callback)
  * @param table : symbol table with symbol
  */
 void print_all_symbol(symtab_t table) {
-	printf("------------------start print-----------------------\n");
+	fprintf(stderr, "------------------start print table %d -----------------------\n", table->table_num);
 	symbol_t symbol = table->list;
 	const char *type;
 	while(symbol != NULL) {
 		type = sym_type2str[symbol->type];
-		printf("symbol: %s, type %s\n", symbol->name, type);
+		fprintf(stderr, "symbol: %s, type %s\n", symbol->name, type);
 		symbol = symbol->lnext;
 	}
-	printf("------------------finish print-----------------------\n");
+	fprintf(stderr, "------------------finish print-----------------------\n");
 
 	return ;
 }
@@ -840,22 +841,29 @@ symbol_list_t *_symbol_list_find(symtab_t tab, match_func_t match, void *arg, in
 
 	/*find in table*/
 	if(!tab) {
+		TABLE_LIST_TRACE("table empty return NULL\n");	
 		return first;
 	}
+	TABLE_LIST_TRACE("try local table %p, table num %d\n", tab, tab->table_num);	
 	first = symbol_list_match(tab, match, arg);
 	if(depth == 1) {
+		TABLE_LIST_TRACE("just find in local table , with depth(1)\n");
 		return first;
 	}
+	TABLE_LIST_TRACE("try table templates, first %p\n", first);
 	tmpl = tab->template_table;
 	while(tmpl) {
 		table = tmpl->table;
 		//tmp = symbol_list_match(table, match, arg);
+		TABLE_LIST_TRACE("try to find in template %p, table num %d\n", table, table->table_num);
+		//print_all_symbol(table);
 		tmp = _symbol_list_find(table, match, arg, depth+1);
 		if(tmp) {
 			first = list_join(first, tmp);
 		}
 		tmpl = tmpl->next;
 	}
+	TABLE_LIST_TRACE("end search table templates\n");
 	return first;
 }
 
