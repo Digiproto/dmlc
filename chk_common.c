@@ -13,7 +13,7 @@ extern symtab_t current_table;
 static void pre_chk_method(object_t *obj, tree_t *method) {
         method_attr_t *attr;
         symtab_t table;
-
+	
         attr = method->common.attr;
         table = attr->table;
         saved_table = table->parent;
@@ -60,9 +60,10 @@ void chk_dml_method(object_t *obj, struct method_name *m) {
 		obj_ref.ref = NULL;
 		current_table = obj->symtab; 
 		pre_gen_method(&obj_ref, method, &context);
-		//printf("obj %s, method to check %s\n", obj->name, m->name);
+		fprintf(stderr, "obj %s, start to check method %s\n", obj->name, m->name);
         parse_method_block(method);
         //post_chk_method(obj, method);
+		fprintf(stderr, "obj %s, end to check method %s\n", obj->name, m->name);
 		post_gen_method(&obj_ref, method, &context);
 }
 
