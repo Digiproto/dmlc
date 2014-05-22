@@ -41,8 +41,8 @@ static void gen_data_struct(object_t *obj, FILE *f) {
 	const char *name;
 	const char *type;
 
-	name = get_cdecl_name(node);
-	type = get_type_info(node);
+	name = get_cdecl_name(node->cdecl.decl);
+	type = get_type_info(node->cdecl.decl);
 	fprintf(f, "%s %s;\n", type, name);
 }
 
