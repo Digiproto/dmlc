@@ -220,6 +220,10 @@ void translate_ref_expr(tree_t *t){
 
 
 	sym = get_ref_sym(t, &ref_ret, NULL);
+	if(!sym) {
+		fprintf(stderr, "no symbol found \n");
+		exit(-1);
+	}
 	if(sym && !ref_ret.is_obj){
 		//translate_c_ref(t);
 		printf_ref(&ref_ret);
@@ -437,6 +441,7 @@ static int check_method_in_param(symbol_t sym, tree_t* call_expr, int in_line) {
 
 	tree_t* param_node = get_method_param_node(call_expr);
 	int arg_num = (param_node == NULL) ? 0 : get_param_num(param_node);
+	fprintf(stderr, "file %s, line %d\n", expr->common.location.file->name, expr->common.location.first_line);
 	if ((params == NULL) && (arg_num == 0)) {
 		ret = 0;
 	} else if ((params == NULL) || (params->in_argc != arg_num)) {
@@ -602,6 +607,7 @@ static void translate_call_common(tree_t *expr, tree_t *ret){
 	enter_scope();
 	if(flow->_throw) {
 		symbol_t throw = flow->_throw;
+		D("sss %p", flow->_throw);
 		name = get_symbol_alias(throw);	
 		gen_src_loc(flow->throw_loc);
 		POS;
@@ -703,7 +709,7 @@ static void process_method_parameters(method_attr_t *m, int alias) {
  *
  * @param t : syntax tree node of expression
  */
-static void get_expr_type(tree_t *t) {
+static void gen_expr_type(tree_t *t) {
         if(t->common.type == CAST_TYPE) {
                 translate(t->cast.ctype);
         } else {
@@ -723,7 +729,7 @@ static int node_has_type(tree_t *node);
  * @param output : the output parameters of method
  * @param context : the context of current generating
  */
-static void process_inline_start(method_attr_t *m, tree_t *input, tree_t *output, context_t *context) {
+static void process_inline_start(method_attr_t *m, tree_t *input, tree_t *output, context_t *context, object_t *old_obj) {
 	tree_t *mt = m->common.node;
 	tree_t *params = mt->method.params;
 	tree_t *node;
@@ -745,12 +751,20 @@ static void process_inline_start(method_attr_t *m, tree_t *input, tree_t *output
 			} else {
 				  /*just get type info*/
 				  //print_cdecl1(node2, 0, 1);
+				  cdecl_t *cdecl = node2->common.cdecl;
 				  current_table = context->saved;
-				  get_expr_type(node2);
+				  gen_expr_type(node2);
 				  current_table = context->current;
 				  bind_tmp_type(node, node2);
 				  name = get_cdecl_name(node);
 				  sym = symbol_find_notype(context->current, name);
+				  if(cdecl) {
+					cdecl_t *old_cdecl = sym->attr;
+					sym->type = INT_T;
+				  	sym->attr = cdecl;
+					print_all_symbol(context->current);
+				  }
+				  //sym->attr = cdecl;
 				  name = get_symbol_alias(sym);
 				  D(" ");
 				  D("%s", name);
@@ -760,8 +774,11 @@ static void process_inline_start(method_attr_t *m, tree_t *input, tree_t *output
 			/*translate node2*/
 			//D("%s",node2->ident.str);
 			current_table = context->saved;
+			object_t *obj = OBJ->obj;
+			OBJ->obj = old_obj;
 			translate(node2);
 			current_table = context->current;
+			OBJ->obj = obj;
 			D(";");
 			new_line();
 			node = node->common.sibling;
@@ -779,7 +796,7 @@ static void process_inline_start(method_attr_t *m, tree_t *input, tree_t *output
 						translate(node);
 				} else {
 						current_table = context->saved;
-						get_expr_type(node2);
+						gen_expr_type(node2);
 						current_table = context->current;
 						bind_tmp_type(node, node2);
 						name = get_cdecl_name(node);
@@ -917,7 +934,7 @@ static int is_explicit(tree_t *t, int *boolean) {
 			*boolean = !!expr->val->int_v.value;
 			ret = 1;
 		}
-	}
+	} else if(node->common.type == QUOTE_TYPE)
 	return ret;
 }
 
@@ -946,6 +963,9 @@ void translate_if_else(tree_t *t) {
 		} else {
 			node = t->if_else.else_block;
 			table = t->if_else.else_table;
+		}
+		if(!node) {
+			return;
 		}
 		saved = current_table;	
 		current_table = table;
@@ -1033,9 +1053,17 @@ void translate_while(tree_t *t) {
 	D("(");
 	translate(node);
 	D(") ");
+	symtab_t saved;
 
 	node = t->do_while.block;
+	if(is_block(node)) {
+		saved = current_table;	
+		current_table = get_block_table(node);
+	}
 	translate(node);
+	if(is_block(node)) {
+		current_table = saved;
+	}
 }
 
 /**
@@ -1096,42 +1124,74 @@ void translate_for(tree_t *t) {
  *
  * @param t : syntax tree node of try catch
  */
-static void translate_try_catch(tree_t *t) {
+void translate_try_catch(tree_t *t) {
 	tree_t *node;
 	symbol_t sym;	
 	symbol_t sym2;
 	symbol_t sym3;
-	int i;
+	symtab_t saved;
+	symbol_t exec;
+	YYLTYPE *l;
+	symbol_t _throw;
+	YYLTYPE *throw_l;
 
 	node = t->try_catch.try_block;
+	POS;
 	enter_scope();
 	symbol_insert(current_table,"exec",TMP_TYPE,NULL);
 	symbol_insert(current_table,"throw",TMP_TYPE,NULL);
 	sym = symbol_find(current_table,"exec",TMP_TYPE);
 	sym2 = symbol_find(current_table,"throw",TMP_TYPE);
 	set_throw_symbol_alias(sym2);
-
-	D("bool %s = 0;",get_symbol_alias(sym));
-	new_line();
-	enter_scope();
+	saved = current_table;
+	exec = flow->exec;
+	l = flow->exec_loc;
+	_throw = flow->_throw;
+	throw_l = flow->throw_loc;
+	flow->exec = sym;
+	flow->exec_loc = &node->common.location;
+	flow->_throw = sym2;
+	flow->throw_loc = &node->common.location;
+	POS;
+	D("bool %s = 0;\n",get_symbol_alias(sym));
+	POS;
+	if(is_block(node)) {
+		current_table = get_block_table(node);
+	}
 	/*try block*/
 	translate(node);
-	exit_scope();
 	
+	current_table = saved;
+	flow->exec = exec;
+	flow->exec_loc = l;
+	flow->_throw = _throw;
+	flow->throw_loc = throw_l;
 	/*catch block*/
 	node = t->try_catch.catch_block;
-	D("%s: ;",get_symbol_alias(sym2));
 	new_line();
+	POS_n(get_tab_count() - 1);
+	D("%s:",get_symbol_alias(sym2));
+	new_line();
+	POS;
 	D("if (%s) ",get_symbol_alias(sym));
-	enter_scope();
 	translate(node);
+	/*
 	sym3 = symbol_find(current_table,"exit",TMP_TYPE);
 	if(sym3) {
+		POS;
 		D("goto %s;",get_symbol_alias(sym3));
-	}
-	exit_scope();
+	}*/
 }
 
+
+void translate_sizeof(tree_t *t) {
+	tree_t *expr;
+	
+	expr = t->sizeof_tree.expr;
+	D("sizeof(");
+	translate(expr);
+	D(")");
+}
 /**
  * @brief translate_throw : translate the throw expression
  *
@@ -1192,6 +1252,7 @@ void translate_case(tree_t *t) {
 	D("case ");
 	translate(expr);
 	D(" :");
+	new_line();
 	translate(t->case_tree.block);
 }
 
@@ -1225,6 +1286,9 @@ symbol_t get_expression_sym(tree_t *node) {
 		return sym;
 	} else {
 		my_DBG("TODO: other cases \n");
+		fprintf(stderr, "get expression symbol other case %d\n", node->common.type);
+		
+		//exit(-1);
 	}
 	return NULL;
 }
@@ -1257,11 +1321,17 @@ void translate_foreach(tree_t *t) {
 	}
 	table = attr->table;
 	list = get_expression_sym(node);
+	if(!list) {
+		return;
+	}
 	if(list->type != ARRAY_TYPE){
 		if(list->type == PARAMETER_TYPE ) {
 			val = list->attr;
 			if(val->type == PARAM_TYPE_LIST) {
 				len = val->u.list.size;		
+				if(!len) {
+					return;
+				}
 			} else {
 				my_DBG("error type in foreach\n");
 			}
@@ -1408,8 +1478,15 @@ void translate_inline(tree_t *t) {
 	symtab_t saved_table;
 	ref_ret_t dummy;
 	context_t context;
-
-	sym = get_call_expr_ref(expr->expr_brack.expr, &dummy);
+	tree_t *call_expr;
+	object_t *old_obj;
+	
+	if(expr->common.type == EXPR_BRACK_TYPE) {
+		call_expr = expr->expr_brack.expr;
+	} else {
+		call_expr = expr;
+	}
+	sym = get_call_expr_ref(expr, &dummy);
 	if(sym) {
 		my_DBG("sym %s found\n", sym->name);
 	} else {
@@ -1423,7 +1500,10 @@ void translate_inline(tree_t *t) {
 	*/
 	/*get sym info*/
 	//translate(expr);
-	tree_t *expr_list = expr->expr_brack.expr_in_brack;
+	tree_t *expr_list = NULL;
+	if(expr->common.type == EXPR_BRACK_TYPE) {
+		expr_list = expr->expr_brack.expr_in_brack; 
+	}
 	method_attr_t *method = sym->attr;
 	//object_t *obj = SYM->attr;
 	process_method_parameters(method, 1);
@@ -1445,10 +1525,11 @@ void translate_inline(tree_t *t) {
 	obj_ref.obj = (object_t *)sym->owner;
 	/*need to get this ref*/
 	obj_ref.ref = NULL; 
+	old_obj = OBJ->obj;
 	pre_gen_method(&obj_ref, method->common.node, &context);
 	POS;
 	enter_scope();
-	process_inline_start(method, expr_list, ret, &context);
+	process_inline_start(method, expr_list, ret, &context, old_obj);
 	process_inline_block(method);
 	D("\n");
 	process_inline_end(method, ret, &context);
@@ -1798,6 +1879,8 @@ void translate_ident(tree_t *t) {
 	const char *alias_name;
 	cdecl_t *type;
 	
+	fprintf(stderr, "current table %d, parent %d, name %s\n", current_table->table_num, current_table->parent->table_num, name);
+	print_all_symbol(current_table);
 	if(is_simics_api(name)) {
 		D("%s", name);
 		return;
