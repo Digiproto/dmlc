@@ -24,17 +24,31 @@
 #include "expression.h"
 
 extern symtab_t root_table;
+static void check_parameter_list(symbol_t sym, symtab_t table) {
+		
+}
+
 static cdecl_t* get_common_type2(symtab_t table, symbol_t symbol) {
 	assert(table != NULL); assert(symbol != NULL);
 	expr_t expr;
 
 	cdecl_t* type = NULL;
+	fprintf(stderr, "sym type %d, object type %d\n", symbol->type, OBJECT_TYPE);
 	switch(symbol->type) {
 		case PARAM_TYPE:
 			type = ((params_t*)(symbol->attr))->decl;
 			break;
 		case PARAMETER_TYPE:
+			fprintf(stderr, "to check parameterxxxx! type\n");
 			type = check_parameter_type(symbol, &expr);
+			if(type->common.categ == LIST_T) {
+				check_parameter_list(symbol, table);
+			} else if(!strcmp(symbol->name, "this")) {
+				object_t *obj = get_current_obj();
+				type->common.categ = OBJECT_T;
+				type->object.obj = obj;
+				fprintf(stderr, "object xxx %p\n", obj);
+			}
 			break;
 		case CONSTANT_TYPE:
 			type = check_constant_type(symbol, &expr);
@@ -56,10 +70,12 @@ static cdecl_t* get_common_type2(symtab_t table, symbol_t symbol) {
 		case OBJECT_TYPE:
 			//object_t *obj = symbol->attr;
 			type = (cdecl_t *)gdml_zmalloc(sizeof(cdecl_t));
+			/*
 			if(!strcmp(((object_t *)(symbol->attr))->obj_type, "data")) {
 				object_t *obj = symbol->attr;
 				*type = *(obj->node->common.cdecl);
-			} else {
+			} else */ 
+			{
 				type->common.categ = OBJECT_T;
 				type->object.obj = symbol->attr;
 			}
@@ -92,8 +108,14 @@ static symtab_t get_type_aggregate_table(cdecl_t *type) {
 		return type->struc.table;
 	} else if(categ == LAYOUT_T) {
 		return type->layout.table;
-	} else {
+	} else if (categ == BITFIELDS_T) {
 		return type->bitfields.table;
+	} else if(categ == POINTER_T) {
+		cdecl_t *ptype;
+		ptype = type->common.bty;
+		categ = ptype->common.categ;
+		if((categ  == STRUCT_T ) || (categ == LAYOUT_T) || (categ == BITFIELDS_T));
+			return get_type_aggregate_table(ptype);
 	}
 	return NULL;
 }
@@ -102,18 +124,46 @@ static symtab_t get_obj_table(cdecl_t *type) {
 	object_t *obj;
 
 	obj = type->object.obj;
-	return obj->symtab;
+	fprintf(stderr, "obj %p, obj name %s, is array %d, type %s\n",  obj, obj->name, obj->is_array, obj->obj_type);
+	if(!strcmp(obj->obj_type, "data")) {
+		type->common.categ = obj->node->common.cdecl->common.categ; 
+		fprintf(stderr, "get data table\n");
+		return get_data_table2(obj);
+	} else {
+		return obj->symtab;
+	}
+	return NULL;
 }
 void check_quote_node(tree_t *node, symtab_t table, type_info_t **info) {
 	cdecl_t *cdecl = gdml_zmalloc(sizeof *cdecl);
 
 	NODE_TRACE("check quote, %p, table %p\n", node->quote.ident, table);
-	check_expr_type(node->quote.ident, table, info);
+	object_t *obj = get_current_obj();
+	symtab_t obj_tab = NULL;
+	symtab_t table2;
+	if(obj) {
+		obj_tab = obj->symtab;	
+	}
+	if(obj_tab) {
+		table2 = obj_tab;	
+	} else {
+		table2 = table;
+	}
+	check_expr_type(node->quote.ident, table2, info);
 	/* just make a copy */
 	*cdecl = *node->quote.ident->common.cdecl;
 	node->common.cdecl = cdecl;
 }
 
+extern object_t *default_bank;
+symbol_t get_default_bank_obj(const char *name) {
+	symbol_t sym = NULL;
+	if(default_bank) {
+		symtab_t table = default_bank->symtab;
+		sym = defined_symbol(table, name, OBJECT_TYPE);	
+	}
+	return sym;
+}
 void check_ident_node(tree_t* node, symtab_t table, type_info_t **info) {
 	assert(node != NULL); assert(table != NULL);
 	cdecl_t *type;
@@ -124,10 +174,12 @@ void check_ident_node(tree_t* node, symtab_t table, type_info_t **info) {
 		symtab_t root_table = get_root_table();
 		symbol = symbol_find_notype(root_table, node->ident.str);
 		if (!symbol)
-			symbol = get_symbol_from_banks(node->ident.str);
+			//symbol = get_symbol_from_banks(node->ident.str);
+			symbol = get_default_bank_obj(node->ident.str);
+			
 	}
 	if (symbol != NULL) {
-		NODE_TRACE("symbol name: %s, type name: %s\n", symbol->name, TYPENAME(symbol->type));
+		NODE_TRACE("symbolxxx name: %s, type : %d\n", symbol->name, symbol->type);
 		if (is_common_type(symbol->type)) {
 			type = symbol->attr;
 		}
@@ -148,6 +200,9 @@ void check_ident_node(tree_t* node, symtab_t table, type_info_t **info) {
 		}
 		else if (strcmp(str, "this") == 0) {
 			type->common.categ = OBJECT_T;
+			object_t *obj = get_current_obj();			
+			type->object.obj = obj; 
+			fprintf(stderr, "object ++++++++++ obj %p\n", obj);
 		}
 		else if (strcmp(str, "i") == 0) {
 			object_t* obj = get_current_obj();
@@ -155,19 +210,22 @@ void check_ident_node(tree_t* node, symtab_t table, type_info_t **info) {
 				//new_int_type(expr);
 				type->common.categ = INT_T;
 				type->common.size = sizeof(int) * 8;
+
+				fprintf(stderr, "kkkkkkk++++\n");
 			} else {
 				error("%s no undeclared\n", str);
 			}
 		}
 		else {
 			if (table->pass_num == 0) {
+				fprintf(stderr, "kkkkkkk___\n");
 			} else {
 				error("%s no undeclared in template\n", str);
 			}
 		}
 	}
 	node->common.cdecl = type;
-	NODE_TRACE("ident name %s ,type %p, type name %s\n", node->ident.str, type, TYPENAME(type->common.categ));
+	NODE_TRACE("ident name %s ,type %d, ident type %d\n", node->ident.str, type->common.categ, IDENT_TYPE);
 }
 
 static void collect_singlebit_info(tree_t *node, type_info_t **info);
@@ -197,30 +255,45 @@ void check_bit_slic_node(tree_t *node, symtab_t table, type_info_t **info) {
 				cdecl_t *typex = gdml_zmalloc(sizeof *type);
 				object_t *elem = gdml_zmalloc(sizeof *elem);
 				*elem = *obj;
-				elem->is_array = 0;
+				if(!strcmp(obj->obj_type, "data")) {
+					cdecl_t *type = obj->node->common.cdecl;
+					fprintf(stderr, "arrayxxx name %s\n", obj->name);
+					if(type->common.categ == ARRAY_T) {
+						cdecl_t *type2 = type->common.bty;
+						if(type2 && type2->common.categ == ARRAY_T) {
+							elem->is_array = 1;
+						} else {
+							elem->is_array = 0;
+						}
+					}
+				} else {
+					elem->is_array = 0;
+				}
 				typex->common.categ = OBJECT_T;
 				typex->object.obj = elem;
 				type = typex;
+				fprintf(stderr, "object arrayxxxx, obj type %s\n", elem->obj_type);
 			} else {
 				if(!obj->is_abstract) {
+					fprintf(stderr, "objxxxx name %s\n", obj->name);
 					cdecl_t *typex = gdml_zmalloc(sizeof *type);
 					typex->common.categ = INT_T;
 					type->common.size = sizeof(int);
 					collect_singlebit_info(node, info);
-				} else {
-					PERRORN("index an abstract non array object \n", node);
 				}
 			}
-		} else {
-			NODE_TRACE("got type %d\n", type->common.categ);
-			PERRORN("subscripted value is neither array nor pointer nor integer(bitslice)\n", node);
+		} else if(type->common.categ == LIST_T){ 
+			tree_t *node_list;
+			tree_t *elem;
+			tree_t *list;
+			
+			node_list = type->node;								
+			list = node_list->array.expr;
+			elem = list;
+			type_info_t *dummy;
+			type->node = elem;
 		}
 	} else {
-		if(!is_int_type(type)) {
-			int *p = NULL;
-			*p = 0;
-			PERRORN("illegal bitslice operation, Expect integer type, got type %s\n", node, TYPENAME(type->common.categ));
-		}
 		type = gdml_zmalloc(sizeof *type);
 		type->common.categ = BITSLIC_T;
 		/* it,s  a bitslic the same as bitfield */
@@ -302,15 +375,25 @@ void check_component_node(tree_t *node, symtab_t table, type_info_t **info) {
 	symtab_t tab;
 
 	NODE_TRACE("before check component %p, %p, file %s, line %d\n", node->component.expr, table, node->common.location.file->name, node->common.location.first_line);
+	fprintf(stderr, "table num %d\n", table->table_num);
 	check_expr_type(node->component.expr, table, info);
 	type = node->component.expr->common.cdecl;
+	if(type->common.categ == LIST_T){ 
+		tree_t *elem;
+
+		elem = type->node;								
+		type_info_t *dummy;
+		check_expr_type(elem, table, &dummy);	
+		node->component.expr = elem;
+		type = elem->common.cdecl;
+		fprintf(stderr, "list eval, node %p\n", elem);
+	}
 	if(node->component.type == COMPONENT_DOT_TYPE) {
 		if(!is_type_aggregate(type) && !is_type_object(type) ){
-			PERRORN("trying to get a member of non-aggregate or object\n", node);
+			//PERRORN("trying to get a member of non-aggregate or object\n", node);
 		}
 	} else if(node->component.type == COMPONENT_POINTER_TYPE) {
-		if(type->common.categ != POINTER_T) {
-			PERRORN("not pointer \n", node);
+		if(type->common.categ != POINTER_T || !(type->common.categ == OBJECT_TYPE)) {
 		} else {
 			type = type->common.bty;
 			if(!is_type_aggregate(type) && !is_type_object(type)) {
@@ -318,16 +401,17 @@ void check_component_node(tree_t *node, symtab_t table, type_info_t **info) {
 			}
 		}
 	}
-	if(is_type_aggregate(type)) {
+	if(is_type_aggregate(type) || type->common.categ == POINTER_T) {
 		tab = get_type_aggregate_table(type);
 	} else {
+		fprintf(stderr, "type %d\n", type->common.categ);
 		tab = get_obj_table(type);
 	}
 	const char *field = node->component.ident->ident.str;
 	symbol_t sym = NULL;
 	if(is_type_object(type)) {
 		object_t *obj = type->object.obj;
-		if(obj && !strcmp(obj->obj_type, "interface")) {
+		if(obj && (!strcmp(obj->obj_type, "interface") )) {
 			return;
 		}
 		sym = symbol_find_notype(tab, field);
@@ -345,7 +429,7 @@ void check_component_node(tree_t *node, symtab_t table, type_info_t **info) {
 			PERRORN("object has no child named %s, tab %p, table num %d, root_table %p\n", node, field, tab, tab->table_num, root_table);
 		}
 	}
-	if(is_type_aggregate(type)) {
+	if(is_type_aggregate(type)|| type->common.categ == POINTER_T) {
 		//type = sym->attr;
 		NODE_TRACE("type name %d layout %d, bitfield %d\n", type->common.categ, LAYOUT_T, BITFIELDS_T);
 		switch(type->common.categ) {
@@ -360,12 +444,17 @@ void check_component_node(tree_t *node, symtab_t table, type_info_t **info) {
 		}
 		type = sym->attr;
 	} else {
-		type = gdml_zmalloc(sizeof *type);
-		type->common.categ = OBJECT_T;
-		type->object.obj = sym->attr;
+		object_t *obj = type->object.obj;
+		if(!strcmp(obj->obj_type, "data")) {
+			type = sym->attr;
+		} else {
+			type = gdml_zmalloc(sizeof *type);
+			type->common.categ = OBJECT_T;
+			type->object.obj = sym->attr;
+		}
 	}
 	node->common.cdecl = type;
-	NODE_TRACE("component type %p, name %s, table %p\n", type, TYPENAME(type->common.categ), table);
+	NODE_TRACE("component type %p, type %d, table %p\n", type, type->common.categ, table);
 }
 
 void check_node_type(tree_t *node, symtab_t table, type_info_t **info) {
