@@ -7,14 +7,14 @@ FS          (f|F|l|L)
 INTS          ([Uu](L|l|LL|ll)?|(L|l|LL|ll)[Uu]?)
 CM          ([^%]|%[^}])
 
-%top{
+%{
 #include <stdio.h>  
 #include "types.h"
 #include "ast.h"
 #include "Parser.h"  
 void count(yyscan_t scanner);
 #define MAX_HEAD_LEN 1024
-}
+%}
 
 %{
 #define YY_USER_ACTION yylloc->first_line = yylloc->last_line = yylineno;         \
@@ -283,7 +283,7 @@ void count(yyscan_t scanner)
 		printf("In %s, lineno=%d, yytext=%s\n", __FUNCTION__, lineno, text);
 	}
 #endif
-}  
+} 
       
       
 int check_type()  

@@ -38,12 +38,6 @@
 struct file_stack* filestack_top;
 
 #define YYLTYPE_IS_DECLARED 1
-#define BISON_VERSION_HIGH
-#ifdef  BISON_VERSION_HIGH
-#define YY_TYPEDEF_YY_SCANNER_T
-typedef void* yyscan_t;
-#endif
-
 
 #define YYLLOC_DEFAULT(Current, Rhs, N)                                \
 	do{                                                                \
@@ -402,6 +396,7 @@ object
         tree_t* node = $<tree_type>4;
         node->bank.spec = get_obj_spec(node->bank.spec, $5);
         node->common.print_node = print_bank;
+	//node->common.parse = parse_bank;
 
         bank_attr_t* attr = (bank_attr_t*)($<tree_type>4->common.attr);
         attr->common.desc = get_obj_desc(node->bank.spec);
@@ -443,7 +438,7 @@ object
         tree_t* node = $<tree_type>6;
         node->reg.spec = get_obj_spec(node->reg.spec, $7);
         node->common.print_node = print_register;
-
+	//node->common.parse = parse_register;
         register_attr_t* attr = (register_attr_t*)(node->common.attr);
         object_spec_type = -1;
         object_comm_attr = NULL;
@@ -684,6 +679,7 @@ object
         tree_t* node = $<tree_type>4;
         node->attribute.spec = get_obj_spec(node->attribute.spec, $5);
         node->common.print_node = print_attribute;
+	//node->common.parse = parse_attribute;
 
         attribute_attr_t* attr = (attribute_attr_t*)(node->common.attr);
         attr->common.desc = get_obj_desc(node->attribute.spec);
@@ -1661,7 +1657,7 @@ cdecl
 		node->cdecl.basetype = $2;
 		node->cdecl.decl = $3;
 		node->common.print_node = print_cdecl;
-		node->common.translate = translate_cdecl2;
+		node->common.translate = translate_cdecl;
 		$$ = node;
 	}
 	;
@@ -2387,6 +2383,7 @@ expression
 		tree_t* node = (tree_t*)create_node("sizeof", SIZEOF_TYPE, sizeof(struct tree_sizeof), &@$);
 		node->sizeof_tree.expr = $2;
 		node->common.print_node = print_sizeof;
+		node->common.translate = translate_sizeof;
 		$$ = node;
 	}
 	| '-' expression {
@@ -2567,6 +2564,7 @@ expression
 		node->component.expr = $1;
 		node->component.ident = $3;
 		node->common.print_node = print_component;
+		node->common.translate = translate_ref_expr;
 		$$ = node;
 	}
 	| SIZEOFTYPE typeoparg {
@@ -2821,6 +2819,7 @@ statement
 		tree_t* node = (tree_t*)create_node("try_catch", TRY_CATCH_TYPE, sizeof(struct tree_try_catch), &@$);
 		node->common.parse = parse_try_catch;
 		current_table = change_table(current_table, table_stack, TRY_CATCH_TYPE);
+		node->common.translate = translate_try_catch;
 		$<tree_type>$ = node;
 	}
 	statement {
@@ -2981,7 +2980,7 @@ statement
 		/* TODO: charge the break */
 		node->case_tree.expr = $2;
 		current_table = change_table(current_table, table_stack,  CASE_TYPE);
-
+		node->common.translate = translate_case;
 		$<tree_type>$ = node;
 	}
 	statement {
@@ -2996,6 +2995,7 @@ statement
 	| DEFAULT ':' {
 		tree_t* node = (tree_t*)create_node("default", DEFAULT_TYPE, sizeof(struct tree_default), &@$);
 		current_table = change_table(current_table, table_stack,  DEFAULT_TYPE);
+		node->common.translate = translate_default;
 		$<tree_type>$ = node;
 	}
 	statement {
