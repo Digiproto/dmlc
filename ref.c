@@ -183,17 +183,24 @@ void collect_ref_info(tree_t *expr, ref_info_t *fi){
 		add_node_info(fi,ni);
 	} else if (type == DML_KEYWORD_TYPE) {
 		/*bank field */
+		fprintf(stderr, "dml keyword %s\n", expr->ident.str);
 		ni = new_node_info(expr, NULL);
 		add_node_info(fi, ni);
 	}  else if (type == BIT_SLIC_EXPR_TYPE) {
 		collect_ref_info(expr->bit_slic.expr, fi);
 		ni = new_node_info(NULL, expr->bit_slic.bit);
 		add_node_info(fi, ni);
-	} else {
+	} else if(type == EXPR_BRACK_TYPE) {
+		tree_t *brack = expr->expr_brack.expr_in_brack;
+		collect_ref_info(brack, fi);			
+	} else { 
 		my_DBG("TODO: other type %d\n", type);
+		fprintf(stderr, "other type %d\n", type);
+		exit(-1);
 	}
 }
 
+extern symbol_t get_default_bank_obj(const char *name);
 /**
  * @brief printf_ref : generate the reference code
  *
@@ -215,9 +222,11 @@ void printf_ref(ref_ret_t *ref_ret){
 	object_t *con = NULL;
 	symtab_t table = current_table;
 	ref_ret->type_info = NULL;
+	symtab_t tab2 = current_table;
 
 	check_expr_type(ref_ret->node, table, &ref_ret->type_info);
 
+	fprintf(stderr, "node file %s, line %d\n", ref_ret->node->common.location.file->name, ref_ret->node->common.location.first_line);
 	if((ref_ret->type_info) && (ref_ret->type_info->kind & (TYPE_LAYOUT | TYPE_BITFIELD))) {
 		/* translate layout and bitfield*/
 		enum type_info kind = ref_ret->type_info->kind;
@@ -236,6 +245,7 @@ void printf_ref(ref_ret_t *ref_ret){
 		}
 		return;
 	}
+	fprintf(stderr, "node2 file %s, line %d\n", ref_ret->node->common.location.file->name, ref_ret->node->common.location.first_line);
 	if(ref_ret->con) {
 		con = ref_ret->con;
 	}
@@ -256,19 +266,34 @@ void printf_ref(ref_ret_t *ref_ret){
 			}else if(node->common.type == QUOTE_TYPE){
 				tmp = node->quote.ident;
 				name = tmp->ident.str;
-			} else {
+				object_t *obj = get_current_obj();
+				if(obj) {
+					tab2 = obj->symtab;
+				}	
+			} else { 
 				my_DBG("node name %s type %d\n",node->common.name,node->common.type);
 
 			}
 			if(i == 0){
 				i++;
-				sym = symbol_find_notype(current_table, name);
+				sym = symbol_find_notype(tab2, name);
 				if(!sym){
 					my_DBG("no sym %s found in current symtab \n",name);
+					sym = get_default_bank_obj(name);	
 				}
-				if(ref_ret->is_obj) {
-					obj = (object_t *)sym->attr;
+				if(!strcmp(name, "this")) {
+					object_t *obj;
+					obj = get_current_obj();
+				}
+				if(ref_ret->is_obj || ref_ret->is_data) {
+					if(!strcmp(name, "this")) {
+						obj = get_current_obj();
+					} else {
+						obj = (object_t *)sym->attr;
+					}
+
 					alias = get_obj_ref(obj);
+					fprintf(stderr, "obj %p\n", obj);
 					if(obj->is_array) {
 						int len = 0;
 						tmp_str = strrchr(alias, '[');
@@ -413,6 +438,7 @@ extern symbol_t get_symbol_from_template(symtab_t table, const char* parent_name
  *
  * @return : the object of symbol
  */
+extern object_t *default_bank;
 static object_t* get_other_type_obj(symtab_t table, const char* parent_name, const char* name) {
 	assert(table != NULL); assert(name != NULL);
 	object_t* obj = NULL;
@@ -421,6 +447,12 @@ static object_t* get_other_type_obj(symtab_t table, const char* parent_name, con
 		obj = OBJ->obj;
 	}
 	else {
+		if(default_bank) {
+			symtab_t table = default_bank->symtab;	
+			sym = defined_symbol(table, name, 0);
+			if(sym) 
+				return (object_t *)sym->attr;	
+		}
 		sym = symbol_find_notype(table, name);
 		if (sym->type == SELECT_TYPE) {
 			select_attr_t* attr = sym->attr; if (strcmp(name, "bank") || attr->type != PARAMETER_TYPE) {
@@ -556,6 +588,8 @@ symbol_t get_ref_sym(tree_t *t, ref_ret_t *ret, symtab_t table){
 			if(node_next->common.type == DML_KEYWORD_TYPE) {
 				if(node->common.type == QUOTE_TYPE){
 					tmp = node->quote.ident;
+					object_t *obj = get_current_obj();
+					symtab = obj->symtab;
 					name = tmp->ident.str;
 				} else if(node->common.type == IDENT_TYPE || node->common.type == DML_KEYWORD_TYPE){
 					name = node->ident.str;
@@ -573,50 +607,64 @@ symbol_t get_ref_sym(tree_t *t, ref_ret_t *ret, symtab_t table){
 				if(!name2 || !name){
 					my_DBG("error name null\n");
 				}
-				sym = symbol_find(symtab, name, OBJECT_TYPE);
-				if (sym) {
-					obj = (object_t*)(sym->attr);
-				} else {
-					obj = get_other_type_obj(symtab, fore_name, name);
-				}
-				symtab = obj->symtab;
-				if (symtab->is_parsed == 0 && obj->node) {
-					parse_unparsed_obj(obj->node, symtab);
-				}
-				my_DBG("object name %s, name %s\n", obj->name, name2);
-				if(!strcmp(obj->obj_type, "interface")) {
-					obj2 = obj;
-					ret->con = NULL;
-					ret->iface = obj2;
-					ret->index = index;
-					node = t->component.ident;
-					ret->method = node->ident.str;
-					has_interface = 1;
-					break;
-				}
-				symtab->obj = obj;
-				sym = symbol_find_notype(symtab, name2);
-				if(sym){
-					my_DBG("sym type %d, interface type %d\n", sym->type, INTERFACE_TYPE);
-					/*may be interface function need */
-					if(sym->type == OBJECT_TYPE) {
-						obj2 = (object_t *)sym->attr;
-						if(!strcmp(obj2->obj_type, "interface")) {
-							my_DBG("interface object\n");
-							ret->con = obj;
-							ret->iface = obj2;
-							node = t->component.ident;
-							name = node->ident.str;
-							ret->method = name;
-							ret->index = index;
-							has_interface = 1;
-							break;
+				if(ret->is_obj) {
+					sym = symbol_find(symtab, name, OBJECT_TYPE);
+					if (sym) {
+						obj = (object_t*)(sym->attr);
+					} else {
+						obj = get_other_type_obj(symtab, fore_name, name);
+					}
+					if(!strcmp(obj->obj_type, "data")) {
+						symtab = get_data_table2(obj);   	
+						ret->is_obj = 0;
+						ret->is_data = 1;
+					} else {
+						symtab = obj->symtab;
+					}
+					if (symtab->is_parsed == 0 && obj->node) {
+						parse_unparsed_obj(obj->node, symtab);
+					}
+					my_DBG("object name %s, name %s\n", obj->name, name2);
+					if(!strcmp(obj->obj_type, "interface")) {
+						obj2 = obj;
+						ret->con = NULL;
+						ret->iface = obj2;
+						ret->index = index;
+						node = t->component.ident;
+						ret->method = node->ident.str;
+						has_interface = 1;
+						break;
+					}
+					symtab->obj = obj;
+					sym = symbol_find_notype(symtab, name2);
+					if(sym){
+						my_DBG("sym type %d, interface type %d\n", sym->type, INTERFACE_TYPE);
+						/*may be interface function need */
+						if(sym->type == OBJECT_TYPE) {
+							obj2 = (object_t *)sym->attr;
+							if(!strcmp(obj2->obj_type, "interface")) {
+								my_DBG("interface object\n");
+								ret->con = obj;
+								ret->iface = obj2;
+								node = t->component.ident;
+								name = node->ident.str;
+								ret->method = name;
+								ret->index = index;
+								has_interface = 1;
+								break;
+							}
 						}
 					}
+					else {
+						fprintf(stderr, "file %s, line %d\n", t->common.location.file->name, t->common.location.first_line);
+						int *p = NULL;
+						*p = 0;
+						printf("symbol '%s' not find\n", name2);
+					}
+				} else {
+					fprintf(stderr, "ref->obj %d\n", ret->is_obj);	
 				}
-				else {
-					printf("symbol '%s' not find\n", name2);
-				}
+			
 			}
 			p = ni_next->entry.next;
 			fore_name = name;

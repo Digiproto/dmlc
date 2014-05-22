@@ -49,6 +49,7 @@ typedef struct index_info {
 
 typedef struct ref_ret {
         int is_obj;
+	int is_data;
         object_t *con;
         object_t *iface;
         const char *method;
@@ -68,6 +69,7 @@ static inline void init_index_list(index_list_t *indexs) {
 
 static inline void init_ref_ret(ref_ret_t *fr) {
 	fr->is_obj = 0;
+	fr->is_data = 0;
 	fr->con = NULL;
 	fr->iface = NULL;
 	fr->method = NULL;
