@@ -34,6 +34,7 @@ typedef struct register_array_list {
 	int len;
 	int interval;
 	int arg; 
+	int list_count;
 	struct list_head list;
 } reg_array_t;
 
@@ -41,5 +42,5 @@ typedef struct reg_element {
 	struct list_head entry;
 	object_t *obj;
 } reg_item_t;
-#define LIST_SZ 4
+#define LIST_SZ 128
 #endif /* __GEN_COMMON_H__ */

@@ -368,9 +368,10 @@ static reg_array_t *new_reg_list(void) {
 	int i = 0;
 	reg_array_t *e;
 
-	reg_array_t *list = gdml_zmalloc(sizeof(*list) * list_count);
+	reg_array_t *list = gdml_zmalloc(sizeof(*list) * LIST_SZ);
+	list->list_count = LIST_SZ;
 	e = &list[0];
-	for(; i < list_count; i++) {
+	for(; i < list->list_count; i++) {
 		INIT_LIST_HEAD(&e->list);
 		e++;
 	}
@@ -419,29 +420,33 @@ static int find_slot(reg_array_t *list, int base,  int size) {
 	int i = 1;
 	reg_array_t *e;
 
-	for(; i < list_count; i++) {
+	fprintf(stderr, "base %d, size %d, list %p\n", base, size, list);	
+	for(; i < list->list_count; i++) {
 		e = &list[i];
 		if(e->size == size) {
 			return i;
 		}
 	} 
-	for(i = 1; i < list_count; i++) {
+	fprintf(stderr, "here list %p\n", list);
+	for(i = 1; i < list->list_count; i++) {
 		e = &list[i];
 		if(!e->size) {
 			e->size = size;
 			return i;
 		}
 	}
-	if(i >= list_count) {
-		list_count *= 2;
-		list = realloc(list, list_count * sizeof(*e));
+	fprintf(stderr, "here2 list %p\n", list);
+	if(i >= list->list_count) {
+		list->list_count *= 2;
+		list = realloc(list, list->list_count * sizeof(*e));
 	}
-	for(; i < list_count; i++) {
+	fprintf(stderr, "here3 list %p\n", list);
+	for(; i < list->list_count; i++) {
 		e = &list[i];
 		e->size = 0;
 		INIT_LIST_HEAD(&e->list);
 	}
-	i = list_count/2;
+	i = list->list_count/2;
 	e = &list[i];	
 	e->size = size;
 	e->base = base;
@@ -458,7 +463,7 @@ static int find_slot(reg_array_t *list, int base,  int size) {
 static void reg_list_insert(reg_array_t *list, int i, object_t *obj) {
 	reg_item_t *item = gdml_zmalloc(sizeof(*item));
 
-	if(i >= list_count) {
+	if(i >= list->list_count) {
 		BE_DBG(GENERAL, "index too large, expect index value smaller than %d\n", list_count);
 	}
 	item->obj = obj;
@@ -484,15 +489,19 @@ static reg_array_t *sort_register_array(bank_t *b) {
 	list_for_each(p, &b->obj.childs) {
 		obj = list_entry(p, object_t, entry);	
 		reg = (dml_register_t *)obj;
-		if(reg->is_undefined) {
+		if(reg->is_undefined || reg->is_unmapped) {
 			continue;
 		}
+		fprintf(stderr, "i %d, reg %s, base 0x%x, list %p\n", i++, reg->obj.name, reg->offset, list);
 		if(reg->is_array) {
-			i = find_slot(list, reg->offset,  reg->array_size);		
-			reg_list_insert(list, i, obj);
+			fprintf(stderr, "is array list %p\n", list);
+			reg_array_t *list2 = list;
+			i = find_slot(list2, reg->offset,  reg->array_size);		
+			reg_list_insert(list2, i, obj);
 		} else {
 			reg_list_insert(list, 0, obj);
 		}
+		fprintf(stderr, "end\n");
 	}
 	return list;
 }
