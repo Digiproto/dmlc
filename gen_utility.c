@@ -35,6 +35,15 @@ const char *simics_apis[] = {
 	"VT_old_step_post",
 	"VT_old_time_clean",
 	"VT_old_step_clean",
+	"new_dbuffer",
+	"dbuffer_read_all",
+	"dbuffer_clear",
+	"dbuffer_append",
+	"dbuffer_update_all",
+	"dbuffer_free",
+	"sb_init",
+	"sb_addfmt",
+	"sb_free",
 	NULL
 };
 
@@ -44,6 +53,7 @@ const char *simics_typedefs[] = {
 	"Sim_RW_Read",
 	"Sim_Endian_Target",
 	"Sim_PE_No_Exception",
+	"uint8",
 	"NULL",
 	NULL
 };
