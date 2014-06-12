@@ -118,8 +118,16 @@ typedef struct bank_def {
 	struct list_head attributes;
 }bank_t;
 
+#define MAX_DEPTH 8
+typedef struct offset_info {
+	int  offset;
+	int interval[MAX_DEPTH];
+	unsigned int len;
+} offset_info_t;
+
 typedef struct register_def {
     object_t obj;
+	offset_info_t offset_info;
     int size;
     int offset;
 	int interval;
@@ -235,6 +243,7 @@ typedef struct port {
 
 typedef struct group {
 	object_t obj;
+	offset_info_t offset_info;
 	struct list_head groups;
 	struct list_head attributes;
 	struct list_head registers;

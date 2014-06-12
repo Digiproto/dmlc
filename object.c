@@ -39,7 +39,7 @@
 #include "table_utility.h"
 #include "node.h"
 #include "decl.h"
-
+static int g_register_size;
 /**
  * @brief asprintf : combine the string into one based on the format
  *
@@ -143,7 +143,7 @@ static arraydef_attr_t *_get_arraydef(object_attr_t *attr) {
  *
  * @param obj : the struct of object
  */
-static void process_object_names(object_t *obj) {
+static void process_object_names(object_t *obj, arraydef_attr_t *array) {
 	/*
 	if(OBJ && (!strcmp(obj->obj_type,"register") || !strcmp(obj->obj_type,"field") || !strcmp(obj->obj_type, "interface"))){
 		obj->qname = string_concat_with(OBJ->qname,obj->name,"__");
@@ -160,7 +160,6 @@ static void process_object_names(object_t *obj) {
 	*/
 	char *name = NULL;
 	int depth;
-	arraydef_attr_t *array;
 	object_attr_t *attr;
 	const char *index;
 	tree_t *node;
@@ -172,6 +171,7 @@ static void process_object_names(object_t *obj) {
 		obj->depth = 0;
 		return;
 	}
+	obj->is_array = (array != NULL);
 	if(obj->is_array) {
 		depth = obj->parent->depth + 1;
 	} else {
@@ -202,7 +202,6 @@ static void process_object_names(object_t *obj) {
 		      node = create_string_node(name);
 		      obj->i_node = obj->d_node = node;
 		      /*rename object */
-		      array = _get_arraydef(obj->node->common.attr);
 		      if(array->fix_array) {
 			      index = "i";
 		      } else {
@@ -211,6 +210,20 @@ static void process_object_names(object_t *obj) {
 		      asprintf(&name, "%s[$%s]", obj->name, index);
 			obj->a_name = obj->name;
 			obj->name = name;
+			asprintf(&name, "_idx%d", depth - 1);
+			param_value_t *val = gdml_zmalloc(sizeof(*val));
+			val->type = PARAM_TYPE_STRING;
+			val->u.string = name;	
+			symbol_insert(obj->symtab, index, PARAMETER_TYPE, val);
+			int size;
+			if(!array->fix_array) {
+				fprintf(stderr, "highxxx %d, low %d\n", array->high, array->low);
+				size = array->high - array->low + 1;
+			} else {
+				size = array->high;
+			}
+			obj->array_size = size;
+
 		} else {
 			obj->a_name = obj->name;
 		}
@@ -443,17 +456,14 @@ static void process_object_relationship(object_t *obj) {
 				group_t *gp = (group_t *)parent;
 				list = &gp->groups;
 			}
+		} else if(!strcmp(obj->obj_type, "register") && !strcmp(parent->obj_type, "group")){
+			list = &((group_t *)parent)->registers;
 		} else {
 			list = &parent->childs;
 		}
 		list_add_tail(&obj->entry, list);
 		symbol_insert(parent->symtab, obj->name, OBJECT_TYPE, obj);
 	}
-	param_value_t *val = (param_value_t *)gdml_zmalloc(sizeof(*val));
-	val->type = PARAM_TYPE_STRING;
-	val->u.string = obj->name;
-	symbol_insert(obj->symtab, "name", PARAMETER_TYPE, val);
-
 }
 
 static void process_default_template(object_t *obj);
@@ -627,7 +637,13 @@ static object_t *create_dummy_field(object_t *obj) {
 static void create_field_object(object_t *obj, symbol_t sym){
 	field_t *fld = gdml_zmalloc(sizeof(*fld));
 	field_attr_t *field_attr = (field_attr_t *)sym->attr;
-	init_object(&fld->obj, obj, sym->name, "field", field_attr->common.node, field_attr->common.table);
+	tree_t *node = field_attr->common.node;
+	symtab_t table = field_attr->common.table;
+	parse_field_attr(node, obj->symtab);
+	/* parse the elements that in filed table*/
+	fprintf(stderr, "file %s, line %d\n", node->common.location.file->name, node->common.location.first_line);
+	parse_field(node, table);
+	init_object(&fld->obj, obj, sym->name, "field", node, table);
 	create_objs(&fld->obj, DATA_TYPE);
 }
 
@@ -699,6 +715,10 @@ static void create_connect_object(object_t *obj, symbol_t sym) {
 	connect_t *con = (connect_t *)gdml_zmalloc(sizeof(*con));
 	connect_attr_t *attr = (connect_attr_t *)(sym->attr);
 	symtab_t table = attr->common.table;
+	parse_connect_attr(attr->common.node, obj->symtab);
+	/* parse elements and calculate expressions that
+	 * in  connect table*/
+	parse_connect(attr->common.node, table);
 	init_object(&con->obj, obj, sym->name, "connect", attr->common.node, table);
 	create_objs(&con->obj, INTERFACE_TYPE);
 	create_objs(&con->obj, DATA_TYPE);
@@ -797,6 +817,7 @@ static void create_event_object(object_t *obj, symbol_t sym) {
 	event_t *event = (event_t *)gdml_zmalloc(sizeof(*event));
 	event_attr_t *attr = (event_attr_t *)sym->attr;
 	symtab_t table = attr->common.table;
+	parse_event(attr->common.node, table);
 	init_object(&event->obj, obj, sym->name, "event", attr->common.node, table);
 	create_objs(&event->obj, DATA_TYPE);
 }
@@ -820,12 +841,13 @@ static void create_group_object(object_t *obj, symbol_t sym) {
 	INIT_LIST_HEAD(&gp->attributes);
 	INIT_LIST_HEAD(&gp->registers);
 	init_object(&gp->obj, obj, sym->name, "group", attr->common.node, table);
-	fprintf(stderr, "create groupxxx  object\n");
+	fprintf(stderr, "create groupxxx  %s\n", sym->name);
 	create_objs(&gp->obj, REGISTER_TYPE);
 	create_objs(&gp->obj, GROUP_TYPE);
 	create_objs(&gp->obj, DATA_TYPE);
 	create_objs(&gp->obj, EVENT_TYPE);
 	create_objs(&gp->obj, ATTRIBUTE_TYPE);
+	print_all_symbol(gp->obj.symtab);
 }
 
 object_t *default_bank;
@@ -1117,9 +1139,11 @@ static void toplevel_create_typedef(device_t *dev, symbol_t sym) {
 
 	type = sym->attr;
 	node = type->node;
-	if(!node->cdecl.is_extern) {
-		tmp = create_node_entry(sym);
+	tmp = create_node_entry(sym);
+	if(!type->common.is_extern) {
 		list_add_tail(&tmp->entry, &dev->typedefs);
+	} else {
+		list_add_tail(&tmp->entry, &dev->extern_typedefs);
 	}
 }
 
@@ -1215,6 +1239,10 @@ object_t *create_device_object(symbol_t sym){
 		BE_DBG(OBJ, "device exists\n");
 	device_attr_t *dev_attr = (device_attr_t *)sym->attr;
 	BE_DBG(OBJ, "device %s found\n",sym->name);
+	param_value_t *val = (param_value_t *)gdml_zmalloc(sizeof(*val));
+	val->type = PARAM_TYPE_STRING;
+	val->u.string = sym->name;
+	symbol_insert(root_table, "name", PARAMETER_TYPE, val);
 	parse_device(dev_attr->common.node, root_table);	
 	init_object(&dev->obj, NULL, sym->name, "device", dev_attr->common.node, root_table);
 	p = &dev->constants;
@@ -1299,16 +1327,16 @@ static void field_realize(object_t *obj) {
 	set_current_obj(obj);
 	//add_object_templates(obj);
 	if(fld->is_dummy) {
-		process_object_names(obj);
+		process_object_names(obj, NULL);
 		process_object_templates(obj);
 		return;
 	}
 
 	/* parse default parameters about registers
 	 * such as: size, offset, array*/
-	parse_field_attr(obj->node, obj->symtab->parent);
+	//parse_field_attr(obj->node, obj->symtab->parent);
 	/* parse the elements that in filed table*/
-	parse_field(obj->node, obj->symtab);
+	//parse_field(obj->node, obj->symtab);
 	bitrange = obj->node->field.bitrange;
 	if (bitrange) {
 		expr = bitrange->array.expr;
@@ -1323,7 +1351,7 @@ static void field_realize(object_t *obj) {
 			fld->len = fld->high - fld->low + 1;
 		}
 	}
-	process_object_names(obj);
+	process_object_names(obj, NULL);
 	process_object_templates(obj);
 	return;
 }
@@ -1338,9 +1366,12 @@ static void field_realize(object_t *obj) {
  * @return : 0 = left node is constant value
  *			1 = right node is constant value
  */
-static int get_binopnode_constant(tree_t *t, type_t op, int *result) {
+static int get_binopnode_constant(tree_t *t, type_t op, int *result, symtab_t table) {
 	tree_t *left, *right;
 	int ret = -1;
+	expr_t *lexpr;
+	expr_t *rexpr;
+	int tmp;
 
 	if(!t || (t->common.type == UNDEFINED_TYPE)
 		|| ((t->common.type != INTEGER_TYPE) && (t->common.type != BINARY_TYPE))) {
@@ -1354,6 +1385,20 @@ static int get_binopnode_constant(tree_t *t, type_t op, int *result) {
 		*result = t->int_cst.value;
 		ret = 2;
 		return ret;
+	}
+	lexpr = check_expr(left, table);
+	rexpr = check_expr(right, table);	
+	if(lexpr->is_const && lexpr->type->common.categ == INT_T) {
+			tmp = lexpr->val->int_v.value;
+			*result = tmp;	
+			ret = 0;
+			return ret;
+	}
+	if(rexpr->is_const && rexpr->type->common.categ == INT_T) {
+			tmp = rexpr->val->int_v.value;
+			*result = tmp;	
+			ret = 1;
+			return ret;
 	}
 	if(left->common.type == INTEGER_TYPE && right->common.type == INTEGER_TYPE && t->binary.type == op) {
 		if(op == ADD_TYPE){
@@ -1386,12 +1431,11 @@ static int get_binopnode_constant(tree_t *t, type_t op, int *result) {
  *
  * @return : offset of register
  */
-static int get_reg_offset(paramspec_t *t, int *interval) {
+static int get_reg_offset(paramspec_t *t, int *interval, symtab_t table) {
 	tree_t *node;
 	int offset = 0;
 	tree_t *tmp;
 	int ret;
-
 	if((t->value->type == PARAM_TYPE_INT) && t->value->is_const) {
 		offset = t->value->u.integer;
 		*interval = 0;
@@ -1400,11 +1444,16 @@ static int get_reg_offset(paramspec_t *t, int *interval) {
 		return -1;
 	} else {
 		node = t->expr_node;
-		ret = get_binopnode_constant(node, ADD_TYPE, &offset);
+		ret = get_binopnode_constant(node, ADD_TYPE, &offset, table);
 		if(ret < 0) {
 			/*wrong format base + $i * register_size */
 			BE_DBG(GENERAL, "wrong register offset format, node type %d, expected format %d(+)\n", node->common.type, ADD_TYPE);
-			exit(-1);
+				
+			fprintf(stderr, "wrong register offset format, node type %d, expected format %d(+), file %s, line %d\n", node->common.type, ADD_TYPE,
+																node->common.location.file->name,
+																node->common.location.first_line);
+			offset = -2;
+			//exit(-1);
 
 		} else if(!ret) {
 			tmp = node->binary.right;
@@ -1413,7 +1462,7 @@ static int get_reg_offset(paramspec_t *t, int *interval) {
 		} else {
 			tmp = node->binary.left;
 		}
-		ret = get_binopnode_constant(tmp, MUL_TYPE, interval);
+		ret = get_binopnode_constant(tmp, MUL_TYPE, interval, table);
 		if(ret < 0) {
 			BE_DBG(GENERAL, "wrong register offset format, node type %d, expected format %d(*)\n", node->common.type, MUL_TYPE);
 		}
@@ -1421,6 +1470,177 @@ static int get_reg_offset(paramspec_t *t, int *interval) {
 	return offset;
 }
 
+static int my_index;
+static void get_offset_info(tree_t *expr, offset_info_t *info, symtab_t table) {
+	tree_t *left, *right;
+	expr_t *lexpr;
+	expr_t *rexpr;
+	expr_t *tmp;
+
+	if(expr->common.type == BINARY_TYPE && expr->binary.type == ADD_TYPE) {
+		left = expr->binary.left;	
+		right = expr->binary.right;
+		/*
+		lexpr = check_expr(left, table);	
+		rexpr = check_expr(right, table);
+		if(lexpr->is_const && lexpr->type->common.categ == INT_T) {
+			info->offset = lexpr->val->int_v.value;				
+			fprintf(stderr, "offset 0x%x\n", info->offset);
+		} else {
+			get_offset_info(left, info, table);
+		} */ 
+		if(left->common.type == INTEGER_TYPE) {
+			info->offset = left->int_cst.value;
+			fprintf(stderr, "index %d, offset %d\n", my_index, info->offset);
+		} else {
+			get_offset_info(left, info, table);
+		}
+		if(right->common.type == BINARY_TYPE && right->binary.type == MUL_TYPE) {
+			tree_t *sub_left = right->binary.left;	
+			tree_t *sub_right = right->binary.right;	
+			int tmp;
+			if(sub_left->common.type == INTEGER_TYPE) {
+				tmp = sub_left->int_cst.value;	
+			} else if(sub_right->common.type == INTEGER_TYPE) {
+				tmp = sub_right->int_cst.value;	
+			}
+			info->interval[my_index++] = tmp;	
+			fprintf(stderr, "index %d, interval %d\n", my_index, tmp);
+		} else {
+			fprintf(stderr, "error offset format, expect multiply, got %d\n", right->common.type);
+			exit(-1);
+		}
+	} else {
+		fprintf(stderr, "error offsetxxx format, got %d, binary %d, expr %p\n", expr->common.type, expr->binary.type, expr);
+		fprintf(stderr, "file %s, line %d\n", expr->common.location.file->name, expr->common.location.first_line);
+		int *p = NULL;
+		*p = 0;
+		exit(-1);
+	}
+}
+
+static void get_register_offset2(object_t *reg, tree_t *offset_expr, symtab_t table, offset_info_t *info) {
+	int interval = -1;
+	tree_t *expr;
+	tree_t *left;
+	tree_t *right;
+	expr_t *lexpr;
+	expr_t *rexpr;
+	int tmp;
+	int simple_case = 0;
+	tree_t *complex_expr;
+	fprintf(stderr, "file %s, line %d\n", offset_expr->common.location.file->name, offset_expr->common.location.first_line);	
+	expr = offset_expr;				
+	if(!expr)
+		return;
+	if(offset_expr->common.type == BINARY_TYPE && offset_expr->binary.type == MUL_TYPE) {
+		if(offset_expr->binary.right->common.type == INTEGER_TYPE) {
+			interval = offset_expr->binary.right->int_cst.value; 	
+			fprintf(stderr, "right\n");
+			if(offset_expr->binary.left->common.type == EXPR_BRACK_TYPE){
+				expr = 	offset_expr->binary.left->expr_brack.expr_in_brack;
+				fprintf(stderr, "brack, expr %p\n", expr);
+			} else {
+				info->offset = 0;	
+				info->interval[0] = interval; 
+				return ;
+			}
+		} else if(offset_expr->binary.left->common.type == INTEGER_TYPE) {
+			fprintf(stderr, "left \n");
+			interval = offset_expr->binary.left->int_cst.value; 	
+			if(offset_expr->binary.right->common.type == EXPR_BRACK_TYPE){
+				expr = 	offset_expr->binary.right->expr_brack.expr_in_brack;
+				fprintf(stderr, "brack, expr %p\n", expr);
+			} else {
+				info->offset = 0;	
+				info->interval[0] = interval; 
+				return ;
+			}
+		}
+	}
+	if(expr->common.type == BINARY_TYPE && expr->binary.type == ADD_TYPE)	
+	{
+		left = expr->binary.left;
+		right = expr->binary.right;
+	} else {
+		fprintf(stderr, "expect binary op , got %d, ADD_TYPE %d\n", expr->common.type, ADD_TYPE);
+		exit(-1);
+	}
+	fprintf(stderr, "expr %p\n", expr);
+	//complex_expr = expr;
+	/*
+	if(left->common.type == INTEGER_TYPE) {
+		tmp = left->int_cst.value;
+		if(interval != -1) {
+			info->offset = tmp * interval;	
+		} else {
+			info->offset = tmp;
+		}	
+		goto check_multiply;
+	} else {
+		tmp = left->int_cst.value;
+		if(interval != -1) {
+			info->offset = tmp * interval;	
+		} else {
+			info->offset = tmp;
+		}	
+		goto check_multiply;	
+	} */
+	lexpr = check_expr(left, table);
+	rexpr = check_expr(right, table);	
+	if(lexpr->is_const && lexpr->type->common.categ == INT_T) {
+			tmp = lexpr->val->int_v.value;
+			fprintf(stderr, "left const \n");
+			if(interval != -1)
+				info->offset = tmp * interval;
+			else 
+				info->offset = tmp;
+			expr = right;
+			goto check_multiply;
+	} else if(rexpr->is_const && rexpr->type->common.categ == INT_T) {
+			tmp = rexpr->val->int_v.value;
+			fprintf(stderr, "right const \n");
+			if(interval != -1)
+				info->offset = tmp * interval;
+			else 
+				info->offset = tmp;
+			expr = left;
+			goto check_multiply;
+	} 
+	my_index = 0;
+	fprintf(stderr, "expr %p\n", expr);
+	if(expr->common.type == BINARY_TYPE && expr->binary.type == ADD_TYPE){	
+		fprintf(stderr, "expect binary op , got %d, binary %d, ADD_TYPE %d\n", expr->common.type, expr->binary.type, ADD_TYPE);
+	}
+	get_offset_info(expr, info, table);
+	if(interval != -1) {
+		info->offset *= interval;
+		for(tmp = 0; tmp < MAX_DEPTH; tmp++){
+			if(info->interval[tmp] > 0) {
+				info->interval[tmp] *= interval;	
+			}
+		}
+	}
+	return;
+	check_multiply:
+		if(expr->common.type == BINARY_TYPE && expr->binary.type == MUL_TYPE) {
+			if(expr->binary.right->common.type == INTEGER_TYPE) {
+				tmp = expr->binary.right->int_cst.value;	
+				if(interval != -1) {
+					info->interval[0] = interval * tmp;
+				} else 
+					info->interval[0] = tmp;
+			} else if(expr->binary.left->common.type == INTEGER_TYPE) {
+				tmp = expr->binary.left->int_cst.value;	
+				if(interval != -1) {
+					info->interval[0] = interval * tmp;
+				} else 
+					info->interval[0] = tmp;
+			}
+		}
+	return;
+				
+}
 static void event_realize(object_t *obj);
 
 static int register_unmapped(object_t *obj) {
@@ -1437,6 +1657,17 @@ static int register_unmapped(object_t *obj) {
 	return 0;	
 }
 
+static void print_offset_info(offset_info_t *info) {
+	fprintf(stderr, "offsetxxx info\n");
+	if(info) {
+		fprintf(stderr, "offset %d\n", info->offset);
+		int i;
+		for(i = 0; i < 16; i++) {
+			fprintf(stderr, "interval %d 0x%x\n", i, info->interval[i]);
+		}
+	}		
+}
+
 /**
  * @brief register_realize : realize the content of register
  *
@@ -1444,10 +1675,9 @@ static int register_unmapped(object_t *obj) {
  */
 static void register_realize(object_t *obj) {
 	dml_register_t *reg  = (dml_register_t *)obj;
-	bank_t *bank = (bank_t *)obj->parent;
 	register_attr_t *reg_attr;
 	int i = 0;
-	int register_size = bank->register_size;
+	int register_size = g_register_size;
 	struct list_head *p;
 	object_t *tmp;
 	arraydef_attr_t *arraydef = NULL;
@@ -1485,40 +1715,40 @@ static void register_realize(object_t *obj) {
 	//parse_register_attr(reg->obj.node, obj->symtab->parent);
 	/* parse the elements that in the register table */
 	//parse_register(obj->node, obj->symtab->sibling);
-
 	reg_attr = reg->obj.node->common.attr;
 	reg->is_array = reg_attr->is_array;
-	obj->is_array = reg->is_array;
 	reg->size = reg_attr->size;
 	/*take default value, if not specified*/
 	if(!reg->size || reg->size == -1) {
 		reg->size = register_size;
 	}
-	process_object_names(obj);
-	if(reg->is_array) {
-		arraydef = reg_attr->arraydef;
-		if(!arraydef->fix_array) {
-			reg->array_size = arraydef->high - arraydef->low + 1;
-		} else {
-			reg->array_size = arraydef->high;
-			/*default index*/
-		}
-		obj->array_size = reg->array_size;
-	}
+	process_object_names(obj, reg_attr->arraydef);	
 	reg->offset = reg_attr->offset;
+	reg->array_size = obj->array_size;
 	reg->is_undefined = 0;
 	reg->is_unmapped = register_unmapped(obj);
+	if(reg->offset == -2) 
+		reg->is_undefined = 1;
 	if(reg->offset == -1) {
+		fprintf(stderr, "register offsetxxxx, %s\n", obj->name);
 		int ret = -1;
 		param_value_t valuexxx;
 		memset(&valuexxx, 0, sizeof(valuexxx));
 		paramspec_t spec = {.expr_node = reg->obj.node->reg.offset, .value = &valuexxx};
-		reg->offset = get_reg_offset(&spec, &ret);
+		fprintf(stderr, "ddddxx\n");
+		reg->offset = get_reg_offset(&spec, &ret, obj->symtab);
+		fprintf(stderr, "ssssxxxx\n");
+		//get_register_offset2(obj, spec.expr_node, obj->symtab, &reg->offset_info);
+		//print_offset_info(&reg->offset_info);
+		fprintf(stderr, "ddddxxx\n");
 		if(ret != -1) {
 				reg->interval = ret;
 		} else {
 				reg->interval = 4;
 		}
+		if(reg->offset == -2) {
+			reg->is_undefined = 1;
+		}	
 		if(reg->offset == -1) {
 			/*search for parameter offset */
 			sym = symbol_find(obj->symtab, "offset", PARAMETER_TYPE);
@@ -1526,12 +1756,13 @@ static void register_realize(object_t *obj) {
 				reg->is_undefined = 1;
 			} else {
 				parameter_attr  = (parameter_attr_t *)sym->attr;
-				reg->offset = get_reg_offset(parameter_attr->param_spec, &reg->interval);
+				reg->offset = get_reg_offset(parameter_attr->param_spec, &reg->interval, obj->symtab->parent);
 				if(reg->offset == -1) {
 					reg->is_undefined = 1;
 				}
 				if(reg->interval == -1) {
 					BE_DBG(GENERAL, "register array interval not right\n");
+					fprintf(stderr, "fucking you\n");
 					exit(-1);
 				}
 				BE_DBG(GENERAL, "reg offset 0x%x\n", reg->offset);
@@ -1610,6 +1841,7 @@ static void bank_calculate_register_offset(object_t *obj) {
 
 static void attribute_realize(object_t *obj);
 static void implement_realize(object_t* obj);
+
 /**
  * @brief bank_realize : realize the content of bank
  *
@@ -1665,7 +1897,8 @@ static void bank_realize(object_t *obj) {
 	} else {
 		reg_size = 4;
 	}
-	process_object_names(obj);
+	g_register_size = reg_size;
+	process_object_names(obj, NULL);
 
 	bank->register_size = reg_size;
 	list_for_each(p, &obj->childs) {
@@ -1680,6 +1913,10 @@ static void bank_realize(object_t *obj) {
 		tmp = list_entry(p, object_t, entry);
 		implement_realize(tmp);
 	}
+	list_for_each(p, &bank->groups) {
+		tmp = list_entry(p, object_t, entry);
+		group_realize(tmp);
+	}
 	list_for_each(p, &obj->events) {
 		tmp = list_entry(p, object_t, entry);
 		event_realize(tmp);
@@ -1693,6 +1930,10 @@ static void bank_realize(object_t *obj) {
 	process_object_templates(obj);
 }
 
+static void interface_realize(object_t *obj) {
+	process_object_names(obj, NULL);		
+}
+
 /**
  * @brief connect_realize : realize the content of connect
  *
@@ -1703,32 +1944,29 @@ static void connect_realize(object_t *obj) {
 	tree_t *node;
 	connect_attr_t *attr;
 
-	set_current_obj(obj);
 	//add_object_templates(obj);
 	/* parse the connect arraydef expression */
-	parse_connect_attr(obj->node, obj->symtab->parent);
+	//parse_connect_attr(obj->node, obj->symtab->parent);
 	/* parse elements and calculate expressions that
 	 * in  connect table*/
-	parse_connect(obj->node, obj->symtab->sibling);
+	//parse_connect(obj->node, obj->symtab->sibling);
 
 	node = obj->node;
 	attr = node->common.attr;
-	obj->is_array = attr->is_array;
-	process_object_names(obj);
-	if(obj->is_array) {
-		array_def = attr->arraydef;
-		obj->array_size = array_def->fix_array;
-		if(!obj->array_size) {
-			obj->array_size = array_def->high - array_def->low + 1;
-		} else {
-			obj->array_size = array_def->high;
-		}
-	}
+	process_object_names(obj, attr->arraydef);	
 	struct list_head *p;
 	object_t *tmp;
 	list_for_each(p, &obj->events) {
 		tmp = list_entry(p, object_t, entry);
 		event_realize(tmp);
+	}
+	list_for_each(p, &obj->data) {
+		tmp = list_entry(p, object_t, entry);
+		data_realize(tmp);
+	}
+	list_for_each(p, &obj->childs) {
+		tmp = list_entry(p, object_t, entry);
+		interface_realize(tmp);
 	}
 }
 
@@ -1736,18 +1974,74 @@ static void data_realize(object_t *obj) {
 	cdecl_t *cdecl;
 	
 	cdecl = obj->node->common.cdecl;
+	process_object_names(obj, NULL);
 	obj->is_array = (cdecl->common.categ == ARRAY_T);	
-	if(obj->is_array ) {
-		fprintf(stderr, "dataxxx name %s, array \n", obj->name);
-	}
-	process_object_names(obj);
 	if(obj->is_array ) {
 		fprintf(stderr, "dataxxx name %s , data type %s\n", obj->name, obj->obj_type);
 	}
 }
 
-static void group_realize(object_t *obj) {
+static offset_info_t *loc;
+static void get_group_loc(object_t *obj) {
+	struct list_head *p;
+	object_t *tmp;
+	group_t *gp;
+	
+	gp = (group_t *)obj;
+	if(list_empty(&gp->registers)) {
+		p = gp->groups.next;		
+		tmp = list_entry(p, object_t, entry);
+		get_group_loc(tmp);
+	} else {
+		p = gp->registers.next;		
+		tmp = list_entry(p, object_t, entry);
+		dml_register_t *reg = (dml_register_t *)tmp;	
+		loc = &reg->offset_info;
+	}
+}
 
+
+static void get_group_map_info(object_t *obj) {
+	group_t *gp;
+	
+	gp = (group_t *)obj;	
+	get_group_loc(obj);	
+	if(loc) {
+		gp->offset_info.len = loc->interval[obj->depth - 1];	
+		gp->offset_info.offset = loc->offset;
+	}
+}
+
+static void group_realize(object_t *obj) {
+	struct list_head *p;
+	object_t *tmp;
+	group_t *gp;
+	group_attr_t *attr;
+
+	gp = (group_t *)obj;
+	attr = obj->node->common.attr;
+	process_object_names(obj, attr->arraydef);
+	list_for_each(p, &gp->registers) {
+		tmp = list_entry(p, object_t, entry);
+		register_realize(tmp);
+	}
+	list_for_each(p, &gp->groups) {
+		tmp = list_entry(p, object_t, entry);
+		group_realize(tmp);
+	}
+	list_for_each(p, &gp->attributes) {
+		tmp = list_entry(p, object_t, entry);
+		attribute_realize(tmp);
+	}
+	list_for_each(p, &obj->events) {
+		tmp = list_entry(p, object_t, entry);
+		event_realize(tmp);
+	}
+	list_for_each(p, &obj->data) {
+		tmp = list_entry(p, object_t, entry);
+		data_realize(tmp);
+	}
+	get_group_map_info(obj);
 }
 
 /**
@@ -1882,7 +2176,6 @@ static void attribute_realize(object_t *obj) {
 	parameter_attr_t* attr;
 	paramspec_t* spec;
 	attribute_t *attr_obj = (attribute_t *)obj;
-	arraydef_attr_t *array = NULL;
 
 	//set_current_obj(obj);
 
@@ -1895,19 +2188,6 @@ static void attribute_realize(object_t *obj) {
 	attribute_attr->attr_obj = attr_obj;
 	parse_attribute(obj->node, obj->symtab->sibling);
 	*/
-	if(attribute_attr->is_array) {
-		array = attribute_attr->arraydef;
-	}
-	if(array) {
-		int size;
-		obj->is_array = 1;
-		if(array->fix_array) {
-			size = array->high;
-		} else {
-			size = array->high - array->low + 1;
-		}
-		obj->array_size = size;
-	}
 	sym = defined_symbol(obj->symtab->sibling, "allocate_type", PARAMETER_TYPE);
 	if (sym) {
 		get_param_spec(attr, spec);
@@ -1941,17 +2221,7 @@ static void attribute_realize(object_t *obj) {
 			attr_obj->ty = INT_T;
 		}
 	}
-	process_object_names(obj);
-	if(attribute_attr->is_array) {
-		int depth = obj->depth;				
-		char *name;
-		asprintf(&name, "_idx%d", depth - 1);
-		param_value_t *val = gdml_zmalloc(sizeof(*val));
-		val->type = PARAM_TYPE_STRING;
-		val->u.string = name;	
-		if(array->ident)
-			symbol_insert(obj->symtab, array->ident, PARAMETER_TYPE, val);
-	}
+	process_object_names(obj, attribute_attr->arraydef);
 	struct list_head *p;
 	object_t *tmp;
 	list_for_each(p, &obj->events) {
@@ -1973,7 +2243,7 @@ static void attribute_realize(object_t *obj) {
 static void implement_realize(object_t* obj) {
 	set_current_obj(obj);
 	parse_implement(obj->node, obj->symtab->sibling);
-	process_object_names(obj);
+	process_object_names(obj, NULL);
 	return;
 }
 
@@ -1987,6 +2257,7 @@ static void port_realize(object_t *obj) {
 	object_t *tmp;
 	int i = 0;
 	dml_port_t *port = (dml_port_t *)obj;
+	port_attr_t *attr;
 
 	set_current_obj(obj);
 	//add_object_templates(obj);
@@ -1997,7 +2268,8 @@ static void port_realize(object_t *obj) {
 	port->num = i;
 	port->impls = (object_t **)gdml_zmalloc(sizeof(*port->impls) * i);
 	parse_port(obj->node, obj->symtab->sibling);
-	process_object_names(obj);
+	attr = obj->node->common.attr;
+	process_object_names(obj, attr->arraydef);
 	parse_port(obj->node, obj->symtab->sibling);
 	i = 0;
 	list_for_each(p, &port->implements) {
@@ -2031,9 +2303,16 @@ static void port_realize(object_t *obj) {
  */
 static void event_realize(object_t *obj) {
 	set_current_obj(obj);
-	parse_event(obj->node, obj->symtab->sibling);
+	//parse_event(obj->node, obj->symtab->sibling);
 	//add_object_templates(obj);
-	process_object_names(obj);
+	struct list_head *p;
+	object_t *tmp;
+				
+	process_object_names(obj, NULL);
+	list_for_each(p, &obj->data) {
+		tmp = list_entry(p, object_t, entry);
+		data_realize(tmp);
+	}
 }
 
 /**
@@ -2048,6 +2327,9 @@ void device_realize(device_t *dev) {
 
 	/* calculate the number of bank */
 	list_for_each(p, &dev->obj.childs) {
+		if ((!strcmp(tmp->obj_type, "bank")) && (!strcmp(tmp->name, "__fake_bank"))) {
+			continue;
+		}
 		i++;
 	}
 	dev->banks = (object_t **)gdml_zmalloc(sizeof(tmp) * i);
@@ -2075,7 +2357,7 @@ void device_realize(device_t *dev) {
 	 * as something can be detemined after the object instantiated*/
 	//parse_device(dev->obj.node, dev->obj.symtab->sibling);
 
-	process_object_names(&dev->obj);
+	process_object_names(&dev->obj, NULL);
 	list_for_each(p, &dev->obj.childs) {
 		tmp = list_entry(p, object_t, entry);
 		bank_realize(tmp);
@@ -2408,6 +2690,7 @@ static void process_bank_template(object_t *obj){
 	dml_register_t *reg;
 	int undefined = 0;
 	int defined = 0;
+	int j;
 
 	for(i = 0; i < bank->reg_count; i++) {
 		reg = (dml_register_t *)bank->regs[i];
@@ -2421,12 +2704,13 @@ static void process_bank_template(object_t *obj){
 	val->type = PARAM_TYPE_LIST;
 	val->u.list.size = defined;
 	val->u.list.vector = gdml_zmalloc(sizeof(*val) * bank->reg_count);
-	for(i = 0; i < defined; i++) {
+	for(i = 0, j = 0; i < bank->reg_count; i++) {
 		reg = (dml_register_t *)bank->regs[i];
 		if(!reg->is_undefined ) {
 			tmp.type = PARAM_TYPE_REF;
 			tmp.u.ref = bank->regs[i];
-			val->u.list.vector[i] = tmp;
+			val->u.list.vector[j] = tmp;
+			j++;
 		}
 	}
 	symbol_insert(table, "mapped_registers", PARAMETER_TYPE, val);
@@ -2434,12 +2718,13 @@ static void process_bank_template(object_t *obj){
 	val->type = PARAM_TYPE_LIST;
 	val->u.list.size = undefined;
 	if(undefined > 0) {
-		for(i = 0; i < undefined; i++) {
+		val->u.list.vector = gdml_zmalloc(sizeof(*val) * undefined);	
+		for(i = 0, j = 0; i < bank->reg_count; i++) {
 			reg = (dml_register_t *)bank->regs[i];
 			if(reg->is_undefined) {
 				tmp.type = PARAM_TYPE_REF;
 				tmp.u.ref = bank->regs[i];
-				val->u.list.vector[i] = tmp;
+				val->u.list.vector[j++] = tmp;
 			}
 		}
 	}
