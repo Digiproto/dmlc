@@ -53,7 +53,7 @@ static void gen_constructor(device_t *dev, FILE *f) {
 	for(i = 0; i < dev->bank_count; i++) {
 		obj = dev->banks[i];
 		fprintf(f, "\ttarget_%s_socket.register_b_transport(this, &Lt_%s_target::custom_b_transport_%s);\n", name, name,obj->name);
-		fprintf(f, "\tm_iface_%s = SIM_get_bank_access(m_obj, \"%s\");\n", obj->name, obj->name);
+		fprintf(f, "\tm_iface_%s = SIM_find_bank_access(m_obj, \"%s\");\n", obj->name, obj->name);
 	}
 	fprintf(f, "}\n");
 }
