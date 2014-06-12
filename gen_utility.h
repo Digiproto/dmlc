@@ -43,6 +43,7 @@ const char *get_symbol_alias(symbol_t sym);
 void set_symbol_alias(symbol_t sym,int type,int index);
 void set_symbol_ret_alias(symbol_t sym);
 void set_symbol_alias_name(symbol_t sym, char *name);
+void set_symbol_alias_name_force(symbol_t sym, char *name);
 void set_exit_symbol_alias(symbol_t sym);
 void set_throw_symbol_alias(symbol_t sym);
 void set_label_symbol_alias(symbol_t sym);
@@ -67,6 +68,12 @@ int  get_tab_count(void);
 							POS_n(pos); \
 							D(fmt, ## __VA_ARGS__); \
 							} while(0)
+
+#define D_c(fmt, ...) do {         \
+							POS_n(get_tab_count()); \
+							D(fmt, ## __VA_ARGS__); \
+							} while(0)
+
 
 //#define DEVICE_TEST
 #ifdef DEVICE_TEST
@@ -112,7 +119,7 @@ int is_simics_api(const char *name);
 static void gen_src_loc(YYLTYPE *l) {
     if(l) {
         POS;
-        D("#line %d \"%s\"", l->first_line, l->file->name);
+        D("//#line %d \"%s\"", l->first_line, l->file->name);
     }
     new_line();
 }

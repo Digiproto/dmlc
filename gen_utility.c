@@ -23,13 +23,14 @@
 
 #include "gen_utility.h"
 
-static char tab[16][32] =
-    { {"\0"}, {"\t"}, {"\t\t"}, {"\t\t\t"}, {"\t\t\t\t"}, {"\t\t\t\t\t"}, {"\t\t\t\t\t\t"}, {"\t\t\t\t\t\t\t"}, {"\t\t\t\t\t\t\t\t"}, {"\t\t\t\t\t\t\t\t\t"}, {"\t\t\t\t\t\t\t\t\t\t"}, {"\t\t\t\t\t\t\t\t\t\t\t"}, {"\t\t\t\t\t\t\t\t\t\t\t\t"}, {"\t\t\t\t\t\t\t\t\t\t\t\t\t"}, {"\t\t\t\t\t\t\t\t\t\t\t\t\t\t"}, {"\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t"} };
+static char tab[32][32] =
+    { {"\0"}, {"\t"}, {"\t\t"}, {"\t\t\t"}, {"\t\t\t\t"}, {"\t\t\t\t\t"}, {"\t\t\t\t\t\t"}, {"\t\t\t\t\t\t\t"}, {"\t\t\t\t\t\t\t\t"}, {"\t\t\t\t\t\t\t\t\t"}, {"\t\t\t\t\t\t\t\t\t\t"}, {"\t\t\t\t\t\t\t\t\t\t\t"}, {"\t\t\t\t\t\t\t\t\t\t\t\t"}, {"\t\t\t\t\t\t\t\t\t\t\t\t\t"}, {"\t\t\t\t\t\t\t\t\t\t\t\t\t\t"}, {"\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t"} , {"\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t"}, {"\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t"}, {"\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t"}, {"\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t"}};
 
 const char *simics_apis[] = {
 	"SIM_mem_op_is_read",
 	"SIM_mem_op_set_value",
 	"SIM_mem_op_get_value",
+	"SIM_set_mem_op_type", 
 	"SIM_step_count",
 	"VT_old_time_post",
 	"VT_old_step_post",
@@ -40,10 +41,29 @@ const char *simics_apis[] = {
 	"dbuffer_clear",
 	"dbuffer_append",
 	"dbuffer_update_all",
+	"dbuffer_len",
+	"dbuffer_append_value",
+	"dbuffer_remove_head",
 	"dbuffer_free",
+	"dbuffer_clone",
+	"dbuffer_remove",
+	"dbuffer_remove_tail",
+	"dbuffer_insert",
 	"sb_init",
 	"sb_addfmt",
 	"sb_free",
+	"UNALIGNED_LOAD_BE32",
+	"UNALIGNED_LOAD_BE64",
+	"UNALIGNED_LOAD_BE16",
+	"UNALIGNED_STORE_BE64",
+	"UNALIGNED_STORE_BE32",	
+	"UNALIGNED_STORE_BE16",	
+	"malloc",
+	"free",
+	"SIM_get_attribute",
+	"SIM_make_attr_integer",
+	"SIM_set_attribute",
+	"memset",
 	NULL
 };
 
@@ -53,6 +73,7 @@ const char *simics_typedefs[] = {
 	"Sim_RW_Read",
 	"Sim_Endian_Target",
 	"Sim_PE_No_Exception",
+	"Sim_Trans_Store", 
 	"uint8",
 	"NULL",
 	NULL
@@ -210,11 +231,12 @@ void set_symbol_ret_alias(symbol_t sym) {
  * @param name : the aliases of symbol
  */
 void set_symbol_alias_name(symbol_t sym, char *name) {
-    if(!sym->alias_name) {
         sym->alias_name = name;
-    }
 }
 
+void set_symbol_alias_name_force(symbol_t sym, char *name) {
+        sym->alias_name = name;
+}
 /**
  * @brief set_exit_symbol_alias : set aliases of exit symbol
  *
@@ -252,14 +274,12 @@ void set_throw_symbol_alias(symbol_t sym){
     void *p;
 
     if(sym) {
-        if(!sym->alias_name) {
             index = get_throw_index();
             snprintf(tmp, TMP_SIZE, "%s%d", "throw", index);
             len = strlen(tmp);
             p = gdml_zmalloc(len + 1);
             p = strncat(p, tmp, TMP_SIZE);
             sym->alias_name = p;
-        }
     }
 }
 
@@ -361,6 +381,7 @@ int adjust_size(int size) {
     return size;
 }
 
+extern int in_extern(const char *name);
 /**
  * @brief is_simics_api : check the string is simics api
  *
@@ -381,6 +402,8 @@ int is_simics_api(const char *name) {
 		tmp = simics_apis[i];
 	}
 	i = 0;
+	if(in_extern(name))
+		return 1;
 	tmp = simics_typedefs[0];
 	while(tmp) {
 		if(!strcmp(tmp, name))
