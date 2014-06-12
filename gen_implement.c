@@ -98,8 +98,8 @@ static void gen_iface_method_header(object_t *obj, tree_t *method, FILE *f) {
 	fprintf(f, "\nstatic %s\n", ret);
 	fprintf(f, "_DML_IFACE_%s__%s", obj->qname, method->method.name);
 	fprintf(f, "(conf_object_t *obj");	
-	print_params_protoc(params, f);
-	fprintf(f, ")");
+	//print_params_protoc(params, f);
+	gen_method_params(obj, method, 0);
 }
 
 /**
@@ -139,7 +139,7 @@ static void gen_implement_method(object_t *obj, symbol_t sym, FILE *f) {
 	}
 	if(has_ret) {
 		gen_src_loc(&method->common.location);
-		fprintf(f, "\t%s result = 0;\n", ret);
+		fprintf(f, "\t%s result;\n", ret);
 	}
 	POS;
 	enter_scope();
