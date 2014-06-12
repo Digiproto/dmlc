@@ -49,10 +49,8 @@ typedef struct bitfield_info {
 
 typedef struct {
 	enum type_info kind;
-	union {
-		bt_info bt;
-		layout_info layout;
-	} u;
+	bt_info bt;
+	layout_info layout;
 } type_info_t;
 
 #endif /* __TYPE_INFO_H__ */
