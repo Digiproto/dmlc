@@ -36,7 +36,6 @@
 #include "object.h"
 
 static int in_typedef;
-static cdecl_t* parse_cdecl(tree_t* node, symtab_t table);
 /**
  * @brief get_param_decl : parse the method parameters and
  * get the type and variable name about parameters
@@ -67,8 +66,6 @@ params_t* get_param_decl(tree_t* node, symtab_t table) {
 
 	return param;
 }
-
-static cdecl_t* parse_cdecl(tree_t* node, symtab_t table);
 
 /**
  * @brief parse_data_cdecl : parse data declaration and
@@ -145,6 +142,7 @@ void parse_local_decl(tree_t* node, symtab_t table) {
 		insert_record_elems(decl);
 	}
 	symbol_insert(table, decl->var_name, decl->common.categ, decl);
+	fprintf(stderr, "localxxx %s, type %p\n", decl->var_name, decl);
 
 	return;
 }
@@ -191,6 +189,33 @@ void parse_undef_cdecl(tree_t* node, symtab_t table) {
 	return;
 }
 
+typedef struct struct_def {
+	struct list_head entry;
+	const char *name;
+	cdecl_t *cdecl;
+} struct_def_t;
+static LIST_HEAD(structs);
+static void add_to_struct_defs(const char *name, cdecl_t *cdecl) {
+	struct_def_t *def = gdml_zmalloc(sizeof *def);	
+	INIT_LIST_HEAD(&def->entry);
+	def->name = strdup(name);	
+	def->cdecl = cdecl;
+	list_add_tail(&def->entry, &structs);
+}
+
+static cdecl_t *find_struct_def(const char *name) {
+	struct list_head *p;
+	struct_def_t *e;
+	
+	list_for_each(p, &structs) {
+		e = list_entry(p, struct_def_t, entry);
+		if(!strcmp(e->name, name))
+			return e->cdecl;
+	
+	}
+	return NULL;
+}
+
 /**
  * @brief parse_struct : parse struct definition, and its elements
  *
@@ -199,13 +224,17 @@ void parse_undef_cdecl(tree_t* node, symtab_t table) {
  *
  * @return : pointer to declaration about struct
  */
+static int has_undef;
 static cdecl_t* parse_struct(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
 	cdecl_t* type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
 	type->common.categ = STRUCT_T;
 	type->struc.table = node->struct_tree.table;
-
+	
+	if(node->struct_tree.name) {
+		add_to_struct_defs(node->struct_tree.name, type);
+	}
 	tree_t* elem_node = node->struct_tree.block;
 	cdecl_t* decl = NULL;
 	element_t* elem = NULL;
@@ -218,6 +247,7 @@ static cdecl_t* parse_struct(tree_t* node, symtab_t table) {
 		if (decl->common.no_decalare == 1) {
 			elem_node->common.parse = parse_undef_cdecl;
 			undef_var_insert(struct_table, elem_node);
+			has_undef = 1;
 			free(elem); free(decl);
 			elem = NULL; decl = NULL;
 		}
@@ -479,6 +509,9 @@ static int get_int_size(const char* int_str) {
 	return size;
 }
 
+static cdecl_t attr_dummy_type;
+cdecl_t *attr_value_type  = &attr_dummy_type;
+
 /**
  * @brief parse_type_ident : get variable declaration type
  *
@@ -567,6 +600,10 @@ static cdecl_t* parse_type_ident(tree_t* node, symtab_t table) {
 			/* in simics, some type can be used before defined,
 			 * so it is not wrong when meet undefined indentifier
 			 * in first time, only sign it for second checking */
+			if(!strcmp(node->ident.str, "attr_value_t") && in_typedef) {
+				//type = attr_value_type;
+				//fprintf(stderr, "fucking you here, node file %s, line %d\n", node->common.location.file->name, node->common.location.first_line);
+			}
 			if (table->pass_num == 0) {
 				//printf("table pass num %d, symbol %s, nodeclare\n", table->pass_num, node->ident.str);
 				type->var_name = node->ident.str;
@@ -982,6 +1019,8 @@ static cdecl_t* derive_type(cdecl_t* type) {
 		free_drv(type->common.drv);
 		return ty;
 	}
+	if(ty->common.qual && !ty->common.bty)
+		ty->common.bty = type;
 	while (drv != NULL) {
 		if (drv->ctor == POINTER_TO) {
 			cdecl_t* tmp = pointer_to(ty);
@@ -1054,7 +1093,7 @@ static cdecl_t* parse_decl(tree_t* node, symtab_t table, cdecl_t* type) {
  *
  * @return : pointer to variable struct
  */
-static cdecl_t* parse_cdecl(tree_t* node, symtab_t table) {
+cdecl_t* parse_cdecl(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
 	/* parse the decal base type*/
@@ -1072,6 +1111,7 @@ static cdecl_t* parse_cdecl(tree_t* node, symtab_t table) {
 	return type;
 }
 
+extern void add_extern(tree_t *node, const char *);
 /**
  * @brief parse_extern_cdecl_or_ident : parse the extern variable declaration
  *
@@ -1085,6 +1125,7 @@ void parse_extern_cdecl_or_ident(tree_t* node, symtab_t table) {
 	/* as some type and identifier can be used before declares
 	 * so when the first pass times, insert the undefined node
 	 * into table so as the second passing time the check them*/
+	add_extern(node->cdecl.decl, decl->var_name);	
 	if (table->pass_num == 0) {
 		if (decl->common.no_decalare == 1) {
 			tree_t* tmp = node->cdecl.decl;
@@ -1208,6 +1249,7 @@ void parse_typedef_cdecl(tree_t* node, symtab_t table) {
 	//fprintf(stderr, "file %s, line %d\n", node->common.location.file->name, node->common.location.first_line);
 	in_typedef = 1;
 	cdecl_t *type = parse_cdecl(decl, table);
+	type->common.is_extern = node->cdecl.is_extern;
 	in_typedef = 0;
 	if (type == NULL)
 		return;

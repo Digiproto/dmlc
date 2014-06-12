@@ -175,6 +175,7 @@ void parse_local_decl(tree_t* node, symtab_t table);
 void parse_data_cdecl(tree_t* node, symtab_t table);
 void parse_typedef_cdecl(tree_t* node, symtab_t table);
 void parse_top_struct_cdecl(tree_t* node, symtab_t table, void* attr);
+cdecl_t *parse_cdecl(tree_t *node, symtab_t table);
 
 int record_type(cdecl_t* type);
 cdecl_t* pointer_to(cdecl_t* type);
