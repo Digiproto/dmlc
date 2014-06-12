@@ -358,7 +358,7 @@ object_attr_t* create_object(symtab_t table, const char* node_name, const char* 
     * node and attribute, and add other default parameter, and also get it's
     * symbol table, insert other parameters and variables into table, but it's
     * default parameters can defined only once, such as: size, desc,etc*/
-   if (symbol_defined(table, symbol_name)) {
+   if (symbol_defined_type(table, symbol_name, type)) {
        symbol_t symbol = symbol_find(table, symbol_name, type);
        if (symbol == NULL) {
            fprintf(stderr, "error: name collision on '%s'\n", symbol_name);
@@ -844,6 +844,7 @@ paramspec_t* get_param_spec(tree_t* node, symtab_t table) {
 	paramspec_t* spec = (paramspec_t*)gdml_zmalloc(sizeof(paramspec_t));
 	param_value_t* value = (param_value_t*)gdml_zmalloc(sizeof(param_value_t));
 	spec->value = value;
+	spec->expr_node = node->paramspec.expr;
 
 	if (node->paramspec.is_auto) {
 		value->type = PARAM_TYPE_NONE;
@@ -968,10 +969,13 @@ int get_offset(tree_t* node, symtab_t table) {
 		return offset;
 	}
 	else if (node->common.type == UNDEFINED_TYPE) {
-		return -1;
+		return -2;
 	}
 	else {
+		
+		fprintf(stderr, "dddd0\n");
 		expr_t* expr = check_expr(node, table);
+		fprintf(stderr, "dddd\n");
 		/*
 		if (expr->is_const == 0) {
 			return 4;
@@ -1063,7 +1067,6 @@ void parse_register_attr(tree_t* node, symtab_t table) {
                 attr->param_spec = spec;
                 symbol_insert(reg_table, "offset", PARAMETER_TYPE, attr);
 	}
-
 	return;
 }
 
@@ -1167,6 +1170,10 @@ void parse_port_attr(tree_t* node, symtab_t table) {
 	return;
 }
 
+typedef struct  {
+	struct list_head entry;
+	tree_t *node;
+} parameter_entry_t;
 /**
  * @brief parse_object : call object parsing function to parse object
  *
@@ -1178,14 +1185,34 @@ void parse_object(tree_t* node, symtab_t table) {
 	/* the symbols, parameters, constant, expressions that
 	 * in the current table are the sibling about the object node*/
 	tree_t* tmp = node;
+	LIST_HEAD(parameters);
+	parameter_entry_t *e;	
+	struct list_head *p;
 	while (tmp) {
 		if ((tmp->common.parse) && (tmp->common.parsed == 0)) {
+			if(tmp->common.type == PARAMETER_TYPE) {
+				e = (parameter_entry_t *)gdml_zmalloc(sizeof *e);	
+				INIT_LIST_HEAD(&e->entry);
+				e->node = tmp;
+				list_add_tail(&e->entry, &parameters);
+			}
+		}
+		tmp = tmp->common.sibling;
+	}
+	tmp = node;
+	while (tmp) {
+		if ((tmp->common.parse) && (tmp->common.parsed == 0) && (tmp->common.type != PARAMETER_TYPE)) {
 			tmp->common.parse(tmp, table);
 			tmp->common.parsed = 1;
 		}
 		tmp = tmp->common.sibling;
 	}
-
+	list_for_each(p, &parameters) {
+		e = list_entry(p, parameter_entry_t, entry);
+		tmp = e->node;
+		tmp->common.parse(tmp, table);
+		tmp->common.parsed = 1;
+	}
 	return;
 }
 
@@ -1221,7 +1248,7 @@ void parse_device(tree_t* node, symtab_t table) {
  * @param table : table of object
  */
 void parse_obj_spec(obj_spec_t* spec, symtab_t table) {
-	assert(table != NULL);
+	//assert(table != NULL);
 	if (spec == NULL) {
 		return;
 	}
@@ -1239,9 +1266,10 @@ void parse_obj_spec(obj_spec_t* spec, symtab_t table) {
 	}
 
 	/* the second time to parse symbols */
-	parse_undef_list(table);
-	table->is_parsed = 1;
-
+	if(table) {
+		parse_undef_list(table);
+		table->is_parsed = 1;
+	}
 	return;
 }
 
@@ -1267,7 +1295,7 @@ void parse_bank(tree_t* node, symtab_t table) {
  *
  * @return : pointer to int type struct
  */
-static cdecl_t* new_int() {
+cdecl_t* new_int() {
 	cdecl_t* type = (cdecl_t*)gdml_zmalloc(sizeof(cdecl_t));
 	type->common.categ = INT_T;
 	type->common.size = sizeof(int) * 8;
@@ -1349,7 +1377,7 @@ void parse_register(tree_t* node, symtab_t table) {
  * @param table : table of field
  */
 void parse_field(tree_t* node, symtab_t table) {
-	assert(node != NULL); assert(table != NULL);
+	assert(node != NULL); 
 
 	obj_spec_t* spec = node->field.spec;
 	parse_obj_spec(spec, table);
@@ -1667,7 +1695,7 @@ void parse_method(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
 	method_attr_t* attr = NULL;
-	if (symbol_defined(table, node->method.name)) {
+	if (symbol_defined_type(table, node->method.name, METHOD_TYPE)) {
 		symbol_t symbol = symbol_find(table, node->method.name, METHOD_TYPE);
 		if (symbol == NULL) {
 			error("name collision on '%s'\n", node->method.name);
@@ -1690,8 +1718,9 @@ void parse_method(tree_t* node, symtab_t table) {
 	symbol_insert(table, node->ident.str, METHOD_TYPE, attr);
 	/* insert the parameters of method into method table */
 	params_insert_table(attr->table, attr->method_params);
-	fprintf(stderr, "parse method %s\n", node->ident.str);
-
+	fprintf(stderr, "parse method %s\n", node->ident.str); 
+	if(attr->method_params)	
+		fprintf(stderr, "param %p, in argc %d\n",  attr->method_params, attr->method_params->in_argc);
 	return;
 }
 
@@ -1759,7 +1788,7 @@ void parse_loggroup(tree_t* node, symtab_t table) {
 void parse_constant(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
-	if (symbol_defined(table, node->assign.decl->ident.str))
+	if (symbol_defined_type(table, node->assign.decl->ident.str, CONSTANT_TYPE))
 		error("duplicate assignment to parameter3 '%s'\n", node->assign.decl->ident.str);
 
 	constant_attr_t* attr = (constant_attr_t*)gdml_zmalloc(sizeof(constant_attr_t));
@@ -1768,9 +1797,11 @@ void parse_constant(tree_t* node, symtab_t table) {
 	node->common.attr = attr;
 
 	/*the constant symbol must be defined before used*/
+	//fprintf(stderr, "parse constant %s\n", attr->name);
 	attr->value = check_expr(node->assign.expr, table);
 	if (attr->value->no_defined) {
 		undef_var_insert(table, node);
+		fprintf(stderr, "constxxx undef name %s\n", attr->name);
 		return;
 	}
 	if (attr->value->is_const) {
@@ -1820,7 +1851,7 @@ void parse_typedef(tree_t* node, symtab_t table) {
 void parse_struct_top(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 
-	if (symbol_defined(table, node->ident.str))
+	if (symbol_defined_type(table, node->ident.str, STRUCT_TYPE))
 		error("name collision on '%s'\n", node->ident.str);
 
 	struct_attr_t* attr = (struct_attr_t*)gdml_zmalloc(sizeof(struct_attr_t));
@@ -2079,6 +2110,8 @@ void parse_for(tree_t* node, symtab_t table) {
 	}
 
 	tree_t* block = node->for_tree.block;
+	if(!block)
+		return;
 	if (block->common.type != BLOCK_TYPE) {
 		if (block->common.parse)
 			block->common.parse(block, node->for_tree.table);
@@ -2164,7 +2197,6 @@ void parse_try_catch(tree_t* node, symtab_t table) {
 
 	return;
 }
-
 /**
  * @brief parse_call_inline_method : parse the call/inline statement
  *
@@ -2177,7 +2209,7 @@ static void parse_call_inline_method(symtab_t table, tree_t* call_expr, tree_t* 
 	assert(call_expr != NULL);
 	object_t *obj = NULL; tree_t* block = NULL;
 	tree_t *node = NULL; method_attr_t *method_attr = NULL;
-	fprintf(stderr, "table %d\n", table->table_num);
+	fprintf(stderr, "table %d, file %s, line %d\n", table->table_num, call_expr->common.location.file->name, call_expr->common.location.first_line);
 	symbol_t method_sym = get_call_expr_info(call_expr, table);
 	symtab_t saved_table;
 	if (method_sym) {
@@ -2635,8 +2667,7 @@ void parse_goto(tree_t* node, symtab_t table) {
 	const char* label_name = ident->ident.str;
 	symbol_t symbol = symbol_find(table, label_name, LABEL_TYPE);
 	if (symbol == NULL)
-		error("label ‘%s’ used but not defined\n", label_name);
-
+		//error("label ‘%s’ used but not defined\n", label_name);
 	return;
 }
 
@@ -2810,6 +2841,10 @@ void add_template_to_table(symtab_t table, const char* template, int second_chec
 	template_attr_t* attr = symbol->attr;
 	new_table->table = attr->table;
 	new_table->template_name = strdup(template);
+	obj_spec_t *spec = attr->common.node->temp.spec;
+	if(!attr->table->is_parsed) {
+		parse_obj_spec(spec, attr->table);	
+	}
 
 	if (new_table->table != NULL) {
 		if (table->template_table == NULL) {
