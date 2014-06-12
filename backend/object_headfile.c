@@ -64,10 +64,12 @@ static void gen_object_headfile(device_t *dev, FILE *f) {
 	fprintf(f, "#include <%s/event.h>\n", headfile_dir);
 #endif
 	gen_device_header(dev, f);
-    fprintf(f, "#include \"%s_struct.h\"\n", dev_name);
+    //fprintf(f, "#include \"%s_struct.h\"\n", dev_name);
     fprintf(f, "\n");
 	gen_device_typedef(dev, f);
 	gen_device_toplevel_struct(dev, f);
+
+    fprintf(f, "#include \"%s_struct.h\"\n", dev_name);
     gen_device_loggroup(dev, f);
     fprintf(f, "\n");
     fprintf(f, "void %s_hard_reset(%s_t *_obj);\n", dev_name, dev_name);
