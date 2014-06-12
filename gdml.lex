@@ -249,6 +249,7 @@ L?\"([^"\\]|\\['"?\\abfnrtv]|\\[0-7]{1,3}|\\[Xx][0-9a-fA-F]+|({L}|{D}))*\"	{
 "?"					{ count(yyscanner); return('?'); }
 "$"					{ count(yyscanner); return('$'); }
 "\n"				{ /* ignore. */}
+"\r\n"				{ /* ignore. */}
 \\$					{ /* ignore. */}
 [ \t\v\f]			{ count(yyscanner); }
 .					{
