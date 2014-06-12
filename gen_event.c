@@ -34,7 +34,7 @@ void gen_device_event_class(device_t *dev, FILE *f) {
  * @param f : file to be generated
  */
 static void gen_event_code(object_t *obj, FILE *f) {
-	const char *evt = obj->name;
+	const char *evt = obj->qname;
 	const char *dev = DEV->name;
 
 	fprintf(f, "\nstatic void\n");
@@ -56,6 +56,21 @@ static void gen_event_code(object_t *obj, FILE *f) {
 	add_object_method(obj, "callback");
 }
 
+static gen_object_tree_event_code(object_t *obj, FILE *f) {
+	struct list_head *p;
+	object_t *tmp;
+
+	list_for_each(p, &obj->events) {
+		tmp = list_entry(p, object_t, entry);
+		gen_event_code(tmp, f);
+	}
+	list_for_each(p, &obj->childs) {
+		tmp = list_entry(p, object_t, entry);
+		gen_object_tree_event_code(tmp, f);
+	}
+
+}
+
 /**
  * @brief gen_device_event_code : generate the code of event object
  *
@@ -63,13 +78,15 @@ static void gen_event_code(object_t *obj, FILE *f) {
  * @param f : c file to be generated
  */
 void gen_device_event_code(device_t *dev, FILE *f) {
+	/*
 	struct list_head *p;
 	object_t *tmp;
 
 	list_for_each(p, &dev->obj.events) {
 		tmp = list_entry(p, object_t, entry);
 		gen_event_code(tmp, f);
-	}
+	} */
+	gen_object_tree_event_code(&dev->obj, f);
 }
 
 /**
