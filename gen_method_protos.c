@@ -40,6 +40,7 @@ void gen_obj_method_protos(object_t *obj) {
 	obj_ref.obj = obj;
 	obj_ref.ref = NULL;
 
+	
 	list_for_each(p, &obj->method_generated) {
 		mn = list_entry(p, struct method_name, entry);
 		method = mn->method;
@@ -49,6 +50,10 @@ void gen_obj_method_protos(object_t *obj) {
 		D(";\n");
 	}
 	list_for_each(p, &obj->childs) {
+		tmp = list_entry(p, object_t, entry);
+		gen_obj_method_protos(tmp);
+	}
+	list_for_each(p, &obj->events) {
 		tmp = list_entry(p, object_t, entry);
 		gen_obj_method_protos(tmp);
 	}
@@ -84,6 +89,10 @@ void gen_device_method_protos(device_t *dev, FILE *f) {
 		tmp = list_entry(p, object_t, entry);
 		gen_obj_method_protos(tmp);
 	}
+	list_for_each(p, &dev->attributes) {
+		tmp = list_entry(p, object_t, entry);
+		gen_obj_method_protos(tmp);
+	}
 	list_for_each(p, &dev->ports) {
 		tmp = list_entry(p, object_t, entry);
 		gen_obj_method_protos(tmp);
@@ -94,8 +103,4 @@ void gen_device_method_protos(device_t *dev, FILE *f) {
 		}
 	}
 	gen_device_implement_header(dev, f);
-	list_for_each(p, &dev->obj.events) {
-		tmp = list_entry(p, object_t, entry);
-		gen_obj_method_protos(tmp);
-	}
 }
