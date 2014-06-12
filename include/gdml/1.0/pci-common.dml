@@ -22,7 +22,7 @@ parameter pci_hotplug default false;
 parameter pcie_device default false;
 
 method require_pci_bus() {
-    if ($pci_hotplug && !$pci_bus) {
+    if ($pci_hotplug && !$pci_bus.obj) {
         log "error", 1, PCI_config: 
         "Trying to access the PCI bus of a hot-pluggable object that has %s",
             "not yet been plugged in";
@@ -148,7 +148,7 @@ template pci_config_generic {
             // Set if not already set
             if ($this == -1) {
                 inline $require_pci_bus();
-                $this = $pci_bus.pci_bus.get_bus_address($pci_bus, $dev.obj);
+                $this = $pci_bus.pci_bus.get_bus_address($dev.obj);
             }
         }
     }
@@ -329,14 +329,14 @@ template pci_config_generic {
         field base[$base_msb:$min_size_bits] {
             parameter documentation = "The base address";
             method read() -> (value) {
-                if ($expansion_rom && $expansion_rom_size != 0) {
+                if ($expansion_rom.obj && $expansion_rom_size != 0) {
                     inline $get_base() -> (value);
                 } else {
                     value = 0;
                 }
             }
             method write(value) {
-                if ($expansion_rom && $expansion_rom_size != 0) {
+                if ($expansion_rom.obj && $expansion_rom_size != 0) {
                     $this = value;
                     inline $update_mapping();
                 }
@@ -346,14 +346,14 @@ template pci_config_generic {
         field e [0:0] {
             parameter documentation = "Address decode enable";
             method read() -> (value) {
-                if ($expansion_rom && $expansion_rom_size != 0) {
+                if ($expansion_rom.obj && $expansion_rom_size != 0) {
                     value = $this;
                 } else {
                     value = 0;
                 }
             }
             method write(value) {
-                if ($expansion_rom && $expansion_rom_size != 0) {
+                if ($expansion_rom.obj && $expansion_rom_size != 0) {
                     $this = value;
                     inline $update_mapping();
                 }
@@ -365,11 +365,11 @@ template pci_config_generic {
         }
 
         method pci_mapping_enabled() -> (bool enabled) {
-            enabled = $e && $expansion_rom && $expansion_rom_size != 0;
+            enabled = $e && $expansion_rom.obj && $expansion_rom_size != 0;
         }
 
         method pci_mapping_object() -> (conf_object_t *obj) {
-            obj = $expansion_rom;
+            obj = $expansion_rom.obj;
         }
     }
 
@@ -389,7 +389,7 @@ template pci_config_generic {
         /* only if SERR# enable in the command register */
         if ($command.se == 1) {
             inline $require_pci_bus();
-            $pci_bus.pci_bus.system_error($pci_bus);
+            $pci_bus.pci_bus.system_error();
             $status.ssa = 1;
         }
     }
@@ -570,11 +570,11 @@ template base_address {
             local conf_object_t *map_obj;
             inline $require_pci_bus();
             inline $pci_mapping_object() -> (map_obj);
-            if ($pci_bus && map_obj) {
+            if ($pci_bus.obj && map_obj) {
                 log "info", 2, PCI_config: 
                     "Removing %s space mapping for %s (function %d)",
                     $map_type, $qname, $map_func;
-                $pci_bus.pci_bus->remove_map($pci_bus, map_obj,
+                $pci_bus.pci_bus->remove_map( map_obj,
                                              $map_type == "memory"
                                               ? Sim_Addr_Space_Memory
                                               : Sim_Addr_Space_IO,
@@ -860,7 +860,7 @@ method pci_data_from_memory(addr_space_t space, void *buffer, uint64 address,
     memset(&info, 0, sizeoftype(map_info_t));
     info.function = space;
 
-    ex = $pci_bus.io_memory.operation($pci_bus, &trans.s, info);
+    ex = $pci_bus.io_memory.operation(&trans.s, info);
 
     if (ex == Sim_PE_IO_Not_Taken) {
         // master abort
@@ -922,7 +922,7 @@ method pci_data_to_memory(addr_space_t space, const void *buffer,
     memset(&info, 0, sizeoftype(map_info_t));
     info.function = space;
 
-    ex = $pci_bus.io_memory.operation($pci_bus, &trans.s, info);
+    ex = $pci_bus.io_memory.operation( &trans.s, info);
 
     if (ex == Sim_PE_IO_Not_Taken) {
         // master abort
@@ -961,7 +961,7 @@ method pci_raise_interrupt_pin(int pin) default {
 
         inline $require_pci_bus();
         log "info", 4, PCI_config: "Raising interrupt pin %d", pin;
-        $pci_bus.pci_bus->raise_interrupt($pci_bus, $dev.obj, pin);
+        $pci_bus.pci_bus->raise_interrupt( $dev.obj, pin);
         $pci_config.interrupts[pin] = 1;
 
         if ($pcie_device)
@@ -973,7 +973,7 @@ method pci_lower_interrupt_pin(int pin) default {
     if ($pci_config.interrupts[pin]) {
         inline $require_pci_bus();
         log "info", 4, PCI_config: "Lowering interrupt pin %d", pin;
-        $pci_bus.pci_bus->lower_interrupt($pci_bus, $dev.obj, pin);
+        $pci_bus.pci_bus->lower_interrupt( $dev.obj, pin);
         $pci_config.interrupts[pin] = 0;
 
         if ($pci_config.interrupts == 0 && $pcie_device)

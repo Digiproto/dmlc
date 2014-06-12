@@ -265,7 +265,7 @@ bank pci_config {
                     $secondary_status.dpe = 0;
 
                     inline $require_pci_bus();
-                    $secondary_bus.pci_bus.bus_reset($secondary_bus);
+                    $secondary_bus.pci_bus.bus_reset();
                 }
             }
         }
@@ -354,14 +354,14 @@ method pci_bus_connected() {
 
 method get_bus_info() {
     /* lookup config, io and memory spaces for our pci busses */
-    if ($pci_bus) {
+    if ($pci_bus.obj) {
         local attr_value_t pcval;
         local attr_value_t pival;
         local attr_value_t pmval;
 
-        pcval = SIM_get_attribute($pci_bus, "conf_space");
-        pmval = SIM_get_attribute($pci_bus, "memory_space");
-        pival = SIM_get_attribute($pci_bus, "io_space");
+        pcval = SIM_get_attribute($pci_bus.obj, "conf_space");
+        pmval = SIM_get_attribute($pci_bus.obj, "memory_space");
+        pival = SIM_get_attribute($pci_bus.obj, "io_space");
         if (pcval.kind != Sim_Val_Object
             || pmval.kind != Sim_Val_Object
             || pival.kind != Sim_Val_Object) {
@@ -382,14 +382,14 @@ method get_bus_info() {
     }
 
 
-    if ($secondary_bus) {
+    if ($secondary_bus.obj) {
         local attr_value_t scval;
         local attr_value_t sival;
         local attr_value_t smval;
 
-        scval = SIM_get_attribute($secondary_bus, "conf_space");
-        smval = SIM_get_attribute($secondary_bus, "memory_space");
-        sival = SIM_get_attribute($secondary_bus, "io_space");
+        scval = SIM_get_attribute($secondary_bus.obj, "conf_space");
+        smval = SIM_get_attribute($secondary_bus.obj, "memory_space");
+        sival = SIM_get_attribute($secondary_bus.obj, "io_space");
         if (scval.kind != Sim_Val_Object
             || smval.kind != Sim_Val_Object
             || sival.kind != Sim_Val_Object) {
@@ -419,7 +419,7 @@ method post_init() {
 
 method remove_secondary_config() {
     $pci_bus.pci_bus.remove_map(
-        $pci_bus, $dev.obj, Sim_Addr_Space_Conf, DOWNSTREAM_CONF);
+         $dev.obj, Sim_Addr_Space_Conf, DOWNSTREAM_CONF);
 }
 
 method remap_secondary_config() {
@@ -447,14 +447,14 @@ method remap_secondary_config() {
     }
 
     /* tell secondary bus about new number */
-    $secondary_bus.pci_bus.set_bus_number($secondary_bus, sec);
+    $secondary_bus.pci_bus.set_bus_number(sec);
 
     memset(&map, 0, sizeof(map));
 
     inline $compute_conf_space_window(&map, sec, sub);
     map.function = DOWNSTREAM_CONF;
 
-    $pci_bus.pci_bus.add_map($pci_bus, $dev.obj, Sim_Addr_Space_Conf,
+    $pci_bus.pci_bus.add_map( $dev.obj, Sim_Addr_Space_Conf,
                              $secondary_bus_spc.cfg, map);
 }
 
@@ -505,7 +505,7 @@ method map_downstream(addr_space_t space, uint64 base, uint64 length,
     else
         tgt = $secondary_bus_spc.mem;
 
-    $pci_bus.pci_bus.add_map($pci_bus, $dev.obj, space, tgt, info);
+    $pci_bus.pci_bus.add_map($dev.obj, space, tgt, info);
     log "info", 2, PCI_bridge:
         "New downstream %s space mapping (function %d): base = 0x%x, length = 0x%x",
         space == Sim_Addr_Space_IO ? "I/O" : "memory",                     
@@ -550,7 +550,7 @@ method map_upstream(addr_space_t space, uint64 base, uint64 length,
     else
         tgt = $pci_bus_spc.mem;
 
-    $secondary_bus.pci_bus.add_map($secondary_bus, $dev.obj, space, tgt, info);
+    $secondary_bus.pci_bus.add_map($dev.obj, space, tgt, info);
 
     log "info", 2, PCI_bridge:
         "New upstream %s space mapping (function %d): base = 0x%llx, length = 0x%llx",
@@ -562,13 +562,13 @@ method map_upstream(addr_space_t space, uint64 base, uint64 length,
 
 method remove_io() {
     $pci_bus.pci_bus.remove_map(
-        $pci_bus, $dev.obj, Sim_Addr_Space_IO, DOWNSTREAM_IO);
+         $dev.obj, Sim_Addr_Space_IO, DOWNSTREAM_IO);
     $pci_bus.pci_bus.remove_map(
-        $pci_bus, $dev.obj, Sim_Addr_Space_IO, DOWNSTREAM_IO_VGA);
+         $dev.obj, Sim_Addr_Space_IO, DOWNSTREAM_IO_VGA);
     $secondary_bus.pci_bus.remove_map(
-        $secondary_bus, $dev.obj, Sim_Addr_Space_IO, UPSTREAM_IO_1);
+         $dev.obj, Sim_Addr_Space_IO, UPSTREAM_IO_1);
     $secondary_bus.pci_bus.remove_map(
-        $secondary_bus, $dev.obj, Sim_Addr_Space_IO, UPSTREAM_IO_2);
+         $dev.obj, Sim_Addr_Space_IO, UPSTREAM_IO_2);
 }
 
 
@@ -743,17 +743,17 @@ method swap_map_pair(map_pair_t *a, map_pair_t *b) {
 
 method remove_memory() {
     $pci_bus.pci_bus.remove_map(
-        $pci_bus, $dev.obj, Sim_Addr_Space_Memory, DOWNSTREAM_PREF);
+        $dev.obj, Sim_Addr_Space_Memory, DOWNSTREAM_PREF);
     $pci_bus.pci_bus.remove_map(
-        $pci_bus, $dev.obj, Sim_Addr_Space_Memory, DOWNSTREAM_MEM);
+         $dev.obj, Sim_Addr_Space_Memory, DOWNSTREAM_MEM);
     $pci_bus.pci_bus.remove_map(
-        $pci_bus, $dev.obj, Sim_Addr_Space_Memory, DOWNSTREAM_MEM_VGA);
+         $dev.obj, Sim_Addr_Space_Memory, DOWNSTREAM_MEM_VGA);
     $secondary_bus.pci_bus.remove_map(
-        $secondary_bus, $dev.obj, Sim_Addr_Space_Memory, UPSTREAM_MEM_1);
+         $dev.obj, Sim_Addr_Space_Memory, UPSTREAM_MEM_1);
     $secondary_bus.pci_bus.remove_map(
-        $secondary_bus, $dev.obj, Sim_Addr_Space_Memory, UPSTREAM_MEM_2);
+         $dev.obj, Sim_Addr_Space_Memory, UPSTREAM_MEM_2);
     $secondary_bus.pci_bus.remove_map(
-        $secondary_bus, $dev.obj, Sim_Addr_Space_Memory, UPSTREAM_MEM_3);
+         $dev.obj, Sim_Addr_Space_Memory, UPSTREAM_MEM_3);
 }
 
 method remap_memory() {
