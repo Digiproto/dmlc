@@ -40,7 +40,20 @@ typedef struct register_array_list {
 
 typedef struct reg_element {
 	struct list_head entry;
+	struct list_head case_entry;
 	object_t *obj;
 } reg_item_t;
+
+typedef struct case_sort {
+	struct list_head entry;
+	struct list_head sublist;
+	int val;
+} case_sort_t;
+
+typedef struct case_array_list {
+	int list_count;
+	struct list_head list;
+} case_array_t;
+
 #define LIST_SZ 128
 #endif /* __GEN_COMMON_H__ */
