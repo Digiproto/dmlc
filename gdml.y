@@ -36,6 +36,7 @@
 //extern struct file_stack* filestack_top;
 
 struct file_stack* filestack_top;
+static int if_count;
 
 #define YYLTYPE_IS_DECLARED 1
 
@@ -81,6 +82,8 @@ extern tree_t* parse_file(const char* name);
 extern void insert_array_index(object_attr_t* attr, symtab_t table);
 /* the root table for source file */
 extern symtab_t root_table;
+extern void add_header(tree_t *);
+extern void add_footer(tree_t *);
 /* a stack with chain for symbol table*/
 stack_t* table_stack;
 
@@ -220,7 +223,7 @@ tree_t* current_object_node = NULL;
 %left LEFT_OP RIGHT_OP
 %left '+' '-'
 %left '*' '/' '%'
-%right '!' '~' '#' '$' DEFINED INC_OP DEC_OP
+%right '!' '~' '#' '$' DEFINED INC_OP DEC_OP SIZEOF
 %left HYPERUNARY
 %left POINTSAT '.' '(' '['
 
@@ -1103,7 +1106,7 @@ toplevel
 	: TEMPLATE objident {
 		template_attr_t* attr = (template_attr_t*)gdml_zmalloc(sizeof(template_attr_t));
 		attr->name = $2->ident.str;
-		if (symbol_defined(current_table, $2->ident.str))
+		if (symbol_defined_type(current_table, $2->ident.str, TEMPLATE_TYPE))
 			error("name collision on '%s'\n", $2->ident.str);
 		symbol_insert(current_table, $2->ident.str, TEMPLATE_TYPE, attr);
 
@@ -1194,6 +1197,7 @@ toplevel
 		/* TODO: should analyze the content of head */
 		//node->head.head = $1;
 		node->common.parse = parse_header_node;
+		add_header(node);
 		$$ = node;
 	}
 	| FOOTER BODY {
@@ -1204,6 +1208,7 @@ toplevel
 		/* TODO: should analyze the content of foot */
 		//node->head.head = $1;
 		node->common.parse = parse_footer_node;
+		add_footer(node);
 		$$ = node;
 	}
 	;
@@ -2016,7 +2021,6 @@ typeident
 		tree_t* node = (tree_t*)c_keyword_node("char", &@$);
 		node->ident.type = CHAR_TYPE;
 		node->common.translate = translate_c_keyword;
-		//node->common.translate = translate_char;
 		$$ = node;
 	}
 	| DOUBLE {
@@ -2028,6 +2032,7 @@ typeident
 	| FLOAT {
 		tree_t* node = (tree_t*)c_keyword_node("float", &@$);
 		node->ident.type = FLOAT_TYPE;
+		node->common.translate = translate_c_keyword;
 		$$ = node;
 	}
 	| INT {
@@ -2189,7 +2194,7 @@ expression
 		node->ternary.expr_true = $3;
 		node->ternary.expr_false = $5;
 		node->common.print_node = print_ternary;
-		//node->common.translate = translate_cond_expr;
+		node->common.translate = translate_cond_expr;
 		$$ = node;
 	}
 	| expression '+' expression {
@@ -2359,6 +2364,7 @@ expression
 		node->binary.left = $1;
 		node->binary.right = $3;
 		node->common.print_node = print_binary;
+		node->common.translate = translate_binop_expr;
 		$$ = node;
 	}
 	| expression '&' expression {
@@ -2403,7 +2409,7 @@ expression
 		node->common.print_node = print_unary;
 		node->common.translate = translate_unary_expr;
 		$$ = node;
-	}
+	}	
 	| '!' expression {
 		tree_t* node = (tree_t*)create_node("non_op", UNARY_TYPE, sizeof(struct tree_unary), &@$);
 		node->unary.operat = strdup("!");
@@ -2529,6 +2535,7 @@ expression
 		node->string.length = strlen($1);
 		node->string.pointer = $1;
 		node->common.print_node = print_string;
+		node->common.translate = translate_string;
 		$$=node;
 	}
 	| UNDEFINED {
@@ -2571,6 +2578,7 @@ expression
 		tree_t* node = (tree_t*)create_node("sizeoftype", SIZEOFTYPE_TYPE, sizeof(struct tree_sizeoftype), &@$);
 		node->sizeoftype.typeoparg = $2;
 		node->common.print_node = print_sizeoftype;
+		node->common.translate = translate_sizeoftype;
 		$$ = node;
 	}
 	;
@@ -2595,12 +2603,14 @@ expression
 		tree_t* node = (tree_t*)create_node("new", NEW_TYPE, sizeof(struct tree_new), &@$);
 		node->new_tree.type = $2;
 		node->common.print_node = print_new;
+		node->common.translate = translate_new;
 		$$ = node;
 	}
 	| NEW ctypedecl '[' expression ']' {
 		tree_t* node = (tree_t*)create_node("new", NEW_TYPE, sizeof(struct tree_new), &@$);
 		node->new_tree.type = $2;
 		node->new_tree.count = $4;
+		node->common.translate = translate_new;
 		node->common.print_node = print_new;
 		$$ = node;
 	}
@@ -2813,6 +2823,7 @@ statement
 		node->delete_tree.expr = $2;
 		node->common.print_node = print_delete;
 		node->common.parse = parse_delete;
+		node->common.translate = translate_delete;
 		$$ = node;
 	}
 	| TRY {
@@ -2850,7 +2861,6 @@ statement
 		node->common.print_node = print_after_call;
 		node->common.parse = parse_after_call;
 		node->common.translate = translate_after_call;
-
 		$$ = node;
 	}
 	| CALL expression returnargs ';' {
@@ -2922,6 +2932,7 @@ statement
 		node->select.cond = $9;
 		node->common.print_node = print_select;
 		node->common.parse = parse_select;
+		node->common.translate = translate_select;
 		current_table = change_table(current_table, table_stack,  SELECT_TYPE);
 		$<tree_type>$ = node;
 	}
@@ -2971,6 +2982,7 @@ statement
 		node->label.block = $4;
 		node->common.print_node = print_label;
 		node->common.parse = parse_label;
+		node->common.translate = translate_label;
 		node->label.table = current_table;
 		current_table = pop(table_stack);
 		$$ = node;
@@ -3012,6 +3024,7 @@ statement
 		node->goto_tree.label = $2;
 		node->common.print_node = print_goto;
 		node->common.parse = parse_goto;
+		node->common.translate = translate_goto;
 		$$ = node;
 	}
 	| BREAK ';' {
@@ -3042,12 +3055,14 @@ statement
 		tree_t* node = (tree_t*)create_node("error", ERROR_TYPE, sizeof(struct tree_error), &@$);
 		node->error.str = NULL;
 		node->common.print_node = print_error;
+		node->common.translate = translate_error;
 		$$ = node;
 	}
 	| ERROR STRING_LITERAL ';' {
 		tree_t* node = (tree_t*)create_node("error", ERROR_TYPE, sizeof(struct tree_error), &@$);
 		node->error.str = $2;
 		node->common.print_node = print_error;
+		node->common.translate = translate_error;
 		$$ = node;
 	}
 	;
@@ -3132,6 +3147,7 @@ local
 		node->local_tree.is_static = 1;
 		node->local_tree.cdecl = $2;
 		node->common.print_node = print_local;
+		node->common.translate = translate_local;
 		$$ = node;
 	}
 	| local_keyword cdecl '=' expression ';' {
@@ -3242,6 +3258,7 @@ ident
 	| DEVICE {
 		tree_t* node = (tree_t*)dml_keyword_node("device", &@$);
 		node->ident.type = DEVICE_TYPE;
+		node->common.translate = translate_dml_keyword;
 		$$ = node;
 	}
 	| EVENT {
@@ -3297,6 +3314,7 @@ ident
 	| PORT {
 		tree_t* node = (tree_t*)dml_keyword_node("port", &@$);
 		node->ident.type = PORT_TYPE;
+		node->common.translate = translate_dml_keyword;
 		$$ = node;
 	}
 	| SIZE {
