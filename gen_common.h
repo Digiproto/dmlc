@@ -92,8 +92,18 @@ void translate_throw(tree_t *t);
 void translate_return(tree_t *t);
 void translate_try_catch(tree_t *t);
 void translate_sizeof(tree_t *t);
+void translate_sizeoftype(tree_t *t);
+void translate_new(tree_t *t);
+void translate_delete(tree_t *t);
+void translate_select(tree_t *t);
+void translate_goto(tree_t *t);
+void translate_label(tree_t *t);
+void translate_error(tree_t *t);
+
 int block_empty(tree_t *t);
 symbol_t  get_call_expr_info(tree_t *node, symtab_t table);
 symbol_t  get_expression_sym(tree_t *node);
 int check_method_param(symbol_t sym, tree_t* call_expr, tree_t* ret_expr, int in_line);
+void gen_method_params(object_t *obj, tree_t *m, int);
+void print_cdeclx(tree_t *node);
 #endif /* __GEN_COMMON_H__ */
