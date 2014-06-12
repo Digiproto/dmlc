@@ -28,7 +28,6 @@
 #include "info_output.h"
 #include "gen_common.h"
 #include "node_type.h"
-
 extern obj_ref_t *OBJ;
 extern symtab_t current_table;
 void ref_info_init(ref_info_t *fi) {
@@ -117,15 +116,15 @@ void ref_info_print(ref_info_t *fi) {
 static void translate_layout(type_info_t *type) {
 
 	const char *endian;
-	if(!strcmp(type->u.layout.endian, "\"big-endian\"")) {
+	if(!strcmp(type->layout.endian, "\"big-endian\"")) {
 		endian = "be";
 	} else {
 		endian = "le";
 	}
 	D("(");
 	D("dml_load_%s_s32((", endian);
-	translate(type->u.layout.expr);
-	D(").data + %d)", type->u.layout.offset );
+	translate(type->layout.expr);
+	D(").data + %d)", type->layout.offset );
 	D(")");
 }
 
@@ -134,9 +133,9 @@ static void translate_bitfield(type_info_t *type) {
 	tree_t *e;
 	tree_t *node;
 
-	s = type->u.bt.start;
-	e = type->u.bt.end;
-	node = type->u.bt.expr;
+	s = type->bt.start;
+	e = type->bt.end;
+	node = type->bt.expr;
 	/* copy from bitslic */
 	D("(");
 	translate(node);
@@ -150,6 +149,7 @@ static void translate_bitfield(type_info_t *type) {
 	D(")");
 	D(")");
 }
+
 /**
  * @brief collect_ref_info : collect the information of reference
  *
@@ -193,7 +193,16 @@ void collect_ref_info(tree_t *expr, ref_info_t *fi){
 	} else if(type == EXPR_BRACK_TYPE) {
 		tree_t *brack = expr->expr_brack.expr_in_brack;
 		collect_ref_info(brack, fi);			
-	} else { 
+		node_info_t *e = list_entry(fi->list.prev, node_info_t, entry);
+		e->flags |= FLAGS_BRACK;
+	} else if(type == UNARY_TYPE){  
+		collect_ref_info(expr->unary.expr,  fi);	
+		node_info_t *e = list_entry(fi->list.prev, node_info_t, entry);
+		if(expr->unary.type == ADDR_TYPE)
+			e->flags |= FLAGS_ADDR;
+		else 
+			e->flags |= FLAGS_POINTER;
+	} else {
 		my_DBG("TODO: other type %d\n", type);
 		fprintf(stderr, "other type %d\n", type);
 		exit(-1);
@@ -238,6 +247,7 @@ void printf_ref(ref_ret_t *ref_ret){
 				translate_layout(ref_ret->type_info);
 				break;
 			case TYPE_BITFIELD:
+			case TYPE_LAYOUT | TYPE_BITFIELD:
 				translate_bitfield(ref_ret->type_info);
 				break;
 			default:
@@ -249,7 +259,7 @@ void printf_ref(ref_ret_t *ref_ret){
 	if(ref_ret->con) {
 		con = ref_ret->con;
 	}
-
+	fprintf(stderr, "nameMe %s\n", name);
 	fi = ref_ret->ref;
 	head = &fi->list;
 	p = head->next;
@@ -274,12 +284,19 @@ void printf_ref(ref_ret_t *ref_ret){
 				my_DBG("node name %s type %d\n",node->common.name,node->common.type);
 
 			}
+			if(ni->flags & FLAGS_BRACK)
+				D("(");
+			if(ni->flags & FLAGS_ADDR)
+				D("&");
+			if(ni->flags & FLAGS_POINTER) 
+				D("*");
 			if(i == 0){
 				i++;
 				sym = symbol_find_notype(tab2, name);
 				if(!sym){
 					my_DBG("no sym %s found in current symtab \n",name);
 					sym = get_default_bank_obj(name);	
+					fprintf(stderr, "get default bank name %s\n", name);
 				}
 				if(!strcmp(name, "this")) {
 					object_t *obj;
@@ -288,13 +305,14 @@ void printf_ref(ref_ret_t *ref_ret){
 				if(ref_ret->is_obj || ref_ret->is_data) {
 					if(!strcmp(name, "this")) {
 						obj = get_current_obj();
-					} else {
+					} else if(sym->type == PARAMETER_TYPE) {
+						obj = get_parameter_obj(current_table, name);				
+					} else { 
 						obj = (object_t *)sym->attr;
 					}
-
 					alias = get_obj_ref(obj);
-					fprintf(stderr, "obj %p\n", obj);
-					if(obj->is_array) {
+					fprintf(stderr, "obj %p, alias %p\n", obj, alias);
+					if(obj->is_array && strcmp(obj->obj_type, "data")) {
 						int len = 0;
 						tmp_str = strrchr(alias, '[');
 						if(tmp_str) {
@@ -308,9 +326,12 @@ void printf_ref(ref_ret_t *ref_ret){
 				} else {
 					alias = get_symbol_alias(sym);
 				}
-				D("%s", alias);
+				D("%s",  alias);
 			} else {
 				D("%s", name);
+			}
+			if(ni->flags & FLAGS_BRACK) {
+				D(")");
 			}
 			p = p->next;
 		} else if(ni->index) {
@@ -378,7 +399,7 @@ static object_t* get_bank_obj(symtab_t table, const char* name) {
  *
  * @return : object of dml parameter
  */
-static object_t* get_parameter_obj(symtab_t table, const char* name) {
+object_t* get_parameter_obj(symtab_t table, const char* name) {
 	assert(table != NULL); assert(name != NULL);
 	symbol_t symbol = symbol_find(table, name, PARAMETER_TYPE);
 	parameter_attr_t* attr = symbol->attr;
@@ -404,7 +425,7 @@ static object_t* get_parameter_obj(symtab_t table, const char* name) {
 	else {
 		return NULL;
 	}
-	return (object_t*)(obj_sym->attr);
+	return NULL;
 }
 
 /**
@@ -494,7 +515,7 @@ static object_t* get_other_type_obj(symtab_t table, const char* parent_name, con
 
 	return obj;
 }
-
+extern int flowx;
 /**
  * @brief get_ref_sym : get the reference of expression
  *
@@ -562,6 +583,13 @@ symbol_t get_ref_sym(tree_t *t, ref_ret_t *ret, symtab_t table){
 			my_DBG("error component foramt, type %d\n", node->common.type);
 		}
 	}
+	if(ref_obj && node->common.type != DML_KEYWORD_TYPE) {
+		object_t *obj;
+		obj = get_current_obj();	
+		if(obj && !flowx) {
+			symtab = obj->symtab;
+		}
+	}
 	sym = symbol_find_notype(symtab, name);
 	if(!ref_obj && sym->type != OBJECT_TYPE){/*just printf it*/
 		ret->is_obj = 0;
@@ -572,8 +600,11 @@ symbol_t get_ref_sym(tree_t *t, ref_ret_t *ret, symtab_t table){
 	p = fi->list.next;
 	struct list_head *head = &fi->list;
 	my_DBG("outof\n");
-	if(p->next == p) {
+	if(p->next == head) {
 		/*only one node*/
+		if(!sym && default_bank) {
+			sym = get_default_bank_obj(name);
+		}
 		goto end;
 	}
 
@@ -583,6 +614,7 @@ symbol_t get_ref_sym(tree_t *t, ref_ret_t *ret, symtab_t table){
 		ni_next = list_entry(p->next, node_info_t, entry);
 		node = ni->node;
 		node_next = ni_next->node;
+		fprintf(stderr, "node_next %p\n", node_next);
 	normal_case:
 		if(node_next) {
 			if(node_next->common.type == DML_KEYWORD_TYPE) {

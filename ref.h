@@ -35,9 +35,13 @@ typedef struct ref_info {
 	struct list_head list;
 } ref_info_t;
 
+#define FLAGS_BRACK 1
+#define FLAGS_ADDR 2
+#define FLAGS_POINTER 4
 struct tree_t;
 typedef struct node_info {
 	struct list_head entry;
+	int flags;
 	tree_t *node;
 	tree_t *index;
 }node_info_t;
@@ -89,4 +93,5 @@ void ref_info_print(ref_info_t *fi);
 symbol_t get_ref_sym(tree_t *t, ref_ret_t *ret, symtab_t table);
 void collect_ref_info(tree_t *expr, ref_info_t *fi);
 void printf_ref(ref_ret_t *ref_ret);
+object_t* get_parameter_obj(symtab_t table, const char* name);
 #endif /* __REF_H__ */
