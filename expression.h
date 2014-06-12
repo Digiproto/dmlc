@@ -188,7 +188,10 @@ extern obj_ref_t *OBJ;
  */
 
 static inline object_t* get_current_obj() {
-	return OBJ->obj;
+	if(OBJ)
+		return OBJ->obj;
+	else 
+		return NULL;
 }
 
 //#define DEBUG_EXPRESSION
