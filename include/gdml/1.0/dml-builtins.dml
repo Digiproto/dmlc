@@ -474,7 +474,12 @@ template register {
 
     method hard_reset() default {
         //if ($allocate)
-            $this = $hard_reset_value;
+        //    $this = $hard_reset_value;
+	if($fields[0].explicit) {
+		foreach f in ($fields)
+			call f.hard_reset;
+	}
+	
     }
 
     method after_hard_reset() default {
@@ -494,8 +499,12 @@ template register {
     }
 
     method soft_reset() default {
-        if ($allocate)
-            $this = $soft_reset_value;
+        //if ($allocate)
+         //   $this = $soft_reset_value;
+	if($fields[0].explicit) {
+		foreach f in ($fields)
+			call f.hard_reset;
+	}
     }
 
     method after_soft_reset() default {
@@ -548,24 +557,26 @@ template register {
 	    }
 	} else {
 	    // No explicit fields
-	    if ($allocate) {
+	    //if ($allocate) {
 		$this = value;
-	    } else if ($configuration != "none"
+	    //} else if ($configuration != "none"
                        && $configuration != "pseudo") {
-                error "set() not implemented for non-allocated register";
-	    }
+             //   error "set() not implemented for non-allocated register";
+	    //}
 	}
     }
 
     method get() -> (typeof($this) value) default {
 	if ($fields[0].explicit) {
 	    local typeof($this) fieldval = 0;
+	    local typeof($this) val = 0;
 	    foreach field in ($fields) {
 		if ($bitsize == field.bitsize)
 		    // Only one field
 		    call field.get() -> (fieldval);
 		else {
-		    call field.get() -> (fieldval[field.msb:field.lsb]);
+		    call field.get() -> (val);
+		    fieldval[field.msb:field.lsb] = val;
 		}
 	    }
 	    value = fieldval;
@@ -666,7 +677,7 @@ template register {
             //inline $write_access_main(memop, msb1, lsb, value);
             //inline $after_write(memop);
             call $write_access_main(memop, msb1, lsb, value);
-            call $after_write(memop);
+            inline $after_write(memop);
         //}
     }
 
@@ -794,8 +805,6 @@ template field {
 	if ($allocate)
 	    if (defined $soft_reset_value)
 		$this = $soft_reset_value;
-	    else
-		$this = ($reg.soft_reset_value)[$msb:$lsb];
     }
 
     method read() -> (typeof($this) value) default {
