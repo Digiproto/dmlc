@@ -27,6 +27,8 @@ static int expr_is_bit_slic(tree_t *t);
 static int expr_is_layout(tree_t *);
 static void translate_layout_assign(tree_t *t, type_info_t *info);
 static void translate_bit_slic_assign(tree_t *t, type_info_t *info);
+static void translate_layout_bitslic_assign(tree_t *t, type_info_t *info);
+	
 
 /**
  * @brief translate_assign : translate the assign expression
@@ -49,6 +51,8 @@ void translate_assign(tree_t *t) {
 			case TYPE_LAYOUT:
 				translate_layout_assign(t, info);
 				break;
+			case TYPE_BITFIELD | TYPE_LAYOUT:
+				translate_layout_bitslic_assign(t, info);
 			default:
 				fprintf(stderr, "unkown type kind %d\n", kind);
 		}
@@ -61,20 +65,18 @@ void translate_assign(tree_t *t) {
 	translate(node);
 }
 
-/*
-   void translate_cond_expr(tree_t *t) {
+void translate_cond_expr(tree_t *t) {
    tree_t *node;
 
-   node = t->ternay.cond;
+   node = t->ternary.cond;
    translate(node);
    D(" ? ");
-   node = t->ternay.expr_true;
+   node = t->ternary.expr_true;
    translate(node);
    D(" : ");
-   node = t->ternay.expr_false;
+   node = t->ternary.expr_false;
    translate(node);
-   }
-   */
+}
 
 /**
  * @brief translate_cast_expr : translate the cast expression
@@ -92,7 +94,7 @@ void translate_cast_expr(tree_t *t) {
 	translate(node);
 	D(")");
 }
-
+extern int in_sizeof;
 /**
  * @brief translate_binop_expr : translate the binary operation expression
  *
@@ -130,22 +132,42 @@ void translate_binop_expr(tree_t *t) {
  * @param t : syntax tree node of bit slicing expression
  */
 void translate_bit_slic(tree_t *t) {
+	tree_t *snode;
+	tree_t *enode;
 	tree_t *node;
-
+	int be = 0;
+	
+	if(t->bit_slic.endian) {
+		if(!strcmp(t->bit_slic.endian->ident.str, "be")) {
+			be = 1;
+		} else {
+			be = 0;
+		}
+	}
 	node = t->bit_slic.expr;
 	D("(");
 	translate(node);
 	D(" >> ");
 	node = t->bit_slic.bit_end;
 	if(node) {
-		translate(node);
+		if(!be) {
+			translate(node);
+		} else {
+			translate(t->bit_slic.bit);	
+		}
 		D(" & ");
 		D("MASK1(");
-		node = t->bit_slic.bit;
-		translate(node);
-		D(" - ");
-		node = t->bit_slic.bit_end;
-		translate(node);
+		snode = t->bit_slic.bit;
+		enode = t->bit_slic.bit_end;
+		if(!be) {
+			translate(snode);
+			D(" - ");
+			translate(enode);
+		} else {
+			translate(enode);
+			D(" - ");
+			translate(snode);
+		}
 		D(")");
 	} else {
 		node = t->bit_slic.bit;
@@ -444,9 +466,9 @@ static void translate_bit_slic_assign(tree_t *t, type_info_t *info) {
 	   right = t->expr_assign.right;
 	   sexpr = node->bit_slic.bit;
 	   */
-	sexpr = info->u.bt.start;
-	eexpr = info->u.bt.end;
-	expr = info->u.bt.expr;
+	sexpr = info->bt.start;
+	eexpr = info->bt.end;
+	expr = info->bt.expr;
 	right = t->expr_assign.right;
 	if(!eexpr) {
 		eexpr = sexpr;
@@ -484,21 +506,88 @@ static void translate_layout_assign(tree_t *t, type_info_t *info) {
 	int offset;
 	const char *endian;
 
-	if(!strcmp(info->u.layout.endian, "\"big-endian\"")) {
+	if(!strcmp(info->layout.endian, "\"big-endian\"")) {
 		endian = "be";
 	} else {
 		endian = "le";
 	}
-	offset = info->u.layout.offset;
+	offset = info->layout.offset;
 	tree_t *expr;
-	D("dml_store_%s_s32((", endian);
-	translate(info->u.layout.expr);
-	D(").data + %d, ", offset);
+	D("dml_store_%s_s32(((", endian);
+	translate(info->layout.expr);
+	D(").data + %d), ", offset);
 	right = t->expr_assign.right;
 	translate(right);
 	D(")");
 }
 
+static void translate_layout_bitslic_assign(tree_t *t, type_info_t *info) {
+	tree_t *right;
+	int offset;
+	const char *endian;
+	int be;
+
+	if(!strcmp(info->layout.endian, "\"big-endian\"")) {
+		endian = "be";
+		be = 1;
+	} else {
+		endian = "le";
+		be = 0;
+	}
+	offset = info->layout.offset;
+	tree_t *expr;
+	D("dml_store_%s_s32((", endian);
+	translate(info->layout.expr);
+	D(").data + %d, ", offset);
+	{
+	tree_t *sexpr;
+	tree_t *eexpr = NULL;
+	tree_t *left;
+	tree_t *expr;
+
+	/*
+	   node = t->expr_assign.left;
+	   right = t->expr_assign.right;
+	   sexpr = node->bit_slic.bit;
+	   */
+	sexpr = info->bt.start;
+	eexpr = info->bt.end;
+	expr = info->bt.expr;
+	right = t->expr_assign.right;
+	if(!eexpr) {
+		eexpr = sexpr;
+	}
+	D("MIX(");
+	translate(expr);
+	D(", ");
+	D("(uint64 )");
+	translate(right);
+	D(" << ");
+	translate(eexpr);
+	D(", ");
+	D("(uint64 )");
+	D("MASK1(");
+	if(be) {
+		translate(sexpr);
+		D(" - ");
+		translate(eexpr);
+	} else {
+		translate(eexpr);
+		D(" - ");
+		translate(sexpr);
+	}
+	D(")");
+	D(" << ");
+	if(be)
+		translate(eexpr);
+	else 
+		translate(sexpr);
+	D(")");
+	}
+	//right = t->expr_assign.right;
+	//translate(right);
+	D(")");
+}
 
 /**
  * @brief translate_brack_expr : translate the expression in brackc

@@ -38,4 +38,5 @@ void translate_post_expr(tree_t *t);
 void translate_cast_expr(tree_t *t);
 void translate_layout(tree_t *t);
 void translate_bitfields(tree_t *t);
+void translate_cond_expr(tree_t *);
 #endif /* __GEN_EXPRESSION_H__ */
