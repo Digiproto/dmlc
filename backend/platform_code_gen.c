@@ -23,7 +23,7 @@
 #include "platform_code_gen.h"
 #include "gen_method_protos.h"
 #include "gen_object.h"
-
+extern void gen_device_footer(device_t *, FILE *);
 /**
  * @brief gen_cfile : generate the c file about device
  *
@@ -43,6 +43,7 @@ void gen_cfile(device_t *dev, const char *out) {
 		gen_device_init(dev, f);
 		/*generate common code for all platforms */
 		gen_dml_code(dev, f);
+		gen_device_footer(dev, f);
 		gen_device_type_info(dev, f);
 		post_gen_code(dev, f);
 		fclose(f);
