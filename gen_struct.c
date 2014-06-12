@@ -23,7 +23,7 @@
 #include "gen_struct.h"
 #include "node.h"
 extern symtab_t root_table;
-
+static void gen_obj_event_struct(object_t *obj, FILE *f, int pos);
 static int is_simics_dir(const char *dir) {
 	const char *simics_keyword_str = "simics";
 	char *ret;
@@ -35,15 +35,39 @@ static int is_simics_dir(const char *dir) {
 	return 0;
 }
 
-static void gen_data_struct(object_t *obj, FILE *f) {
+extern void print_cdeclx(tree_t *node);
+static void gen_data_struct(object_t *obj, FILE *f, int pos) {
 	object_t *parent = obj->parent;
 	tree_t *node = obj->node;
 	const char *name;
 	const char *type;
-
+	const char *tab;
+	
+	tab = get_tabstr_n(pos);
+	out = f;
+	fprintf(f, "%s", tab);
+	print_cdeclx(node->cdecl.decl);
+	fprintf(f, ";\n");
+	/*
 	name = get_cdecl_name(node->cdecl.decl);
 	type = get_type_info(node->cdecl.decl);
-	fprintf(f, "%s %s;\n", type, name);
+	if(type && name) {
+		fprintf(f, "%s%s %s;\n", tab, type, name);
+	} else {
+		cdecl_t *ctype = node->common.cdecl;	
+		name = ctype->var_name;
+		fprintf(f, "%s%s %s", tab, type, name);
+		if(ctype->common.categ == ARRAY_T) {
+			while(ctype && ctype->common.categ == ARRAY_T) {
+			int size; 
+			size = ctype->common.size;	
+			fprintf(f, "[%d]", size/32);
+			ctype = ctype->common.bty;
+			}
+		}
+		fprintf(f, ";\n");
+	}
+	*/
 }
 
 static void gen_device_data_struct(device_t *dev, FILE *f) {
@@ -52,9 +76,7 @@ static void gen_device_data_struct(device_t *dev, FILE *f) {
 
 	list_for_each(p, &dev->obj.data) {
 		tmp = list_entry(p, object_t, entry);
-		printf("add \n");
-		fprintf(f, "\t");
-		gen_data_struct(tmp, f);
+		gen_data_struct(tmp, f, 1);
 	}
 }
 
@@ -102,6 +124,10 @@ static void gen_connect_struct(object_t *obj, FILE *f) {
         tmp = list_entry(p, object_t, entry);
         gen_iface_struct(tmp, f);
     }
+    	list_for_each(p, &obj->data) {
+        	tmp = list_entry(p, object_t, entry);
+        	gen_data_struct(tmp, f, 2);
+	}
 	if(!obj->is_array) {
     	fprintf(f, "\t} %s;\n", obj->name);
 	} else {
@@ -117,11 +143,37 @@ static void gen_connect_struct(object_t *obj, FILE *f) {
  */
 static void gen_attribute_struct(object_t *obj, FILE *f) {
 	attribute_t *attr = (attribute_t *)obj;
+	struct list_head *p;
+	object_t *tmp;
+	
 
 	if(!obj->is_array) {
-		fprintf(f, "\t%s %s;\n", attr->alloc_type, obj->name);
+		if(attr->alloc_type) {
+			fprintf(f, "\t%s %s;\n", attr->alloc_type, obj->name);
+		} else {
+			fprintf(f, "\tstruct {\n");
+			//fprintf(f, "\t\tconf_object_t *obj;\n");
+		}
 	} else {
-		fprintf(f, "\t%s %s[%d];\n", attr->alloc_type, obj->a_name, obj->array_size);
+		if(attr->alloc_type) {
+			fprintf(f, "\t%s %s[%d];\n", attr->alloc_type, obj->a_name, obj->array_size);
+		} else {
+			fprintf(f, "\tstruct {\n");
+			//fprintf(f, "\t\tconf_object_t *obj;\n");
+		}
+	}
+	list_for_each(p, &obj->data) {
+		tmp = list_entry(p, object_t, entry); 
+		gen_data_struct(tmp, f, 2);
+	}
+	if(!obj->is_array) {
+		if(!attr->alloc_type) {	
+			fprintf(f, "\t} %s;\n", obj->name);
+		}
+	} else {
+		if(!attr->alloc_type) {
+			fprintf(f, "\t} %s[%d];\n", obj->a_name, obj->array_size);
+		}
 	}
 }
 
@@ -189,11 +241,11 @@ static void gen_register_struct(object_t *obj, FILE *f) {
     if(first->is_dummy) {
         /*dummy  field*/
         type = size2str(reg_size);
-		if(!reg->is_array) {
+		if(!obj->is_array) {
         	fprintf(f, "\t\t%s %s;\n", type, obj->name);
 		} else {
 
-        	fprintf(f, "\t\t%s %s[%d];\n", type, obj->a_name, reg->array_size);
+        	fprintf(f, "\t\t%s %s[%d];\n", type, obj->a_name, obj->array_size);
 		}
         obj->attr_type = type;
     } else {
@@ -202,16 +254,42 @@ static void gen_register_struct(object_t *obj, FILE *f) {
             fld = list_entry(p, object_t, entry);
             gen_field_struct(fld, f);
         }
-		if(!reg->is_array) {
+	list_for_each(p, &obj->data) {
+            fld = list_entry(p, object_t, entry);
+            gen_data_struct(fld, f, 2);
+        }
+		if(!obj->is_array) {
         	fprintf(f, "\t\t} %s;\n", obj->name);
 		} else {
-        	fprintf(f, "\t\t} %s[%d];\n", obj->a_name, reg->array_size);
+        	fprintf(f, "\t\t} %s[%d];\n", obj->a_name, obj->array_size);
 		}
 		type = size2str(reg_size);
         obj->attr_type = type;
     }
+	gen_obj_event_struct(obj, f, 2);
 }
 
+static void gen_group_struct(object_t *obj, FILE *f) {
+	struct list_head *p;
+	group_t *gp = (group_t *)obj;
+	object_t *tmp;
+	
+	fprintf(f, "\t\tstruct {\n");
+	list_for_each(p, &gp->registers) {
+		tmp = list_entry(p, object_t, entry);	
+		gen_register_struct(tmp, f);	
+	}
+	
+	list_for_each(p, &gp->groups) {
+		tmp = list_entry(p, object_t, entry);	
+		gen_group_struct(tmp, f);
+	}
+	if(obj->is_array) {
+		fprintf(f, "\t\t} %s[%d];\n", obj->a_name, obj->array_size);	
+	} else {
+		fprintf(f, "\t\t} %s;\n", obj->name);
+	}
+}
 /**
  * @brief gen_bank_struct : generate the content of bank
  *
@@ -229,6 +307,11 @@ static void gen_bank_struct(object_t *obj, FILE *f) {
         reg = list_entry(p, object_t, entry);
         gen_register_struct(reg, f);
     }
+	list_for_each(p, &bank->groups) {
+        reg = list_entry(p, object_t, entry);
+        gen_group_struct(reg, f);
+    }
+	gen_obj_event_struct(obj, f, 1);
     fprintf(f, "\t} %s;\n", obj->name);
 #if backend != 3
     fprintf(f, "\tMemoryRegion mr_%s;\n", obj->name);
@@ -316,7 +399,6 @@ static int cdecl_is_complex_type(cdecl_t *type) {
 	int ret;
 
 	switch(type->common.categ) {
-		case STRUCT_T:
 		case LAYOUT_T:
 		case BITFIELDS_T:
 			ret = 1;
@@ -358,7 +440,7 @@ static void handle_layout(cdecl_t *type, FILE *f, int pos) {
 
 	size = type->common.size;
 	name = type->var_name;
-	D_n(pos, "struct { char data[%d] } %s;\n", size, name);
+	D_n(pos, "struct { char data[%d]; } %s;\n", size, name);
 }
 
 static void handle_bitfields(cdecl_t *type, FILE *f, int pos) {
@@ -407,11 +489,33 @@ static void gen_structdef(node_entry_t *entry, FILE *f) {
 	while(tmp) {
 		cdecl_t *type = tmp->attr;
 		if(!cdecl_is_complex_type(type)) {
+			const char *tab;
+			tab = get_tabstr_n(1);
+			out = f;
+			fprintf(f, "%s", tab);
+			print_cdeclx(type->node);
+			fprintf(f, ";\n");
+
+			/*
 			const char *name;
 			const char *stype;
 			name = get_cdecl_name(type->node);
 			stype = get_type_info(type->node);
-			fprintf(f, "\t%s %s;\n", stype, name);
+			if(name && stype) {
+				fprintf(f, "\t%s %s;\n", stype, name);
+			} else {
+				name = type->var_name;
+				fprintf(f, "\t%s %s", stype, name);
+				if(type->common.categ == ARRAY_T) {
+					while(type && type->common.categ == ARRAY_T) {
+						int size; 
+						size = type->common.size;	
+						fprintf(f, "[%d]", size/32);
+						type = type->common.bty;
+					}
+				}
+				fprintf(f, ";\n");
+			}*/
 		} else {
 			handle_complex_case(type, f, 1);
 		}
@@ -446,12 +550,26 @@ static void gen_typedef(node_entry_t *entry, FILE *f) {
 	const char *fname = node->common.location.file->name;
 	if(is_simics_dir(fname)) {
 		return;
+	}	
+	if(node->cdecl.is_extern) {
+		return;
 	}
 	const char *stype = get_type_info(node);
 	const char *name = get_cdecl_name(node);
 	out = f;
 	gen_src_loc(&node->common.location);
-	fprintf(f, "typedef %s %s;\n", stype, name);
+	D("typedef ");
+	if(!cdecl_is_complex_type(type)) {
+			out = f;
+			print_cdeclx(type->node);
+			fprintf(f, ";\n");
+	} else {
+		handle_complex_case(type, f, 1);
+	}
+	/*
+	if(name && type) {
+		fprintf(f, "typedef %s %s;\n", stype, name);
+	} */
 }
 
 void gen_device_typedef(device_t *dev, FILE *f) {
@@ -475,6 +593,27 @@ void gen_device_macros(device_t *dev, FILE *f) {
 	gen_banks_macro(dev, f);
 }
 
+static void gen_event_struct(object_t *obj, FILE *f, int pos) {
+	struct list_head *p;
+	object_t *tmp;
+
+	list_for_each(p, &obj->data) {
+		tmp = list_entry(p, object_t, entry);
+		gen_data_struct(tmp, f, pos + 1);
+	}
+}
+static void gen_obj_event_struct(object_t *obj, FILE *f, int pos) {
+	struct list_head *p;
+	object_t *tmp;
+	const char *tab = get_tabstr_n(pos);		
+
+	list_for_each(p, &obj->events) {
+		tmp = list_entry(p, object_t, entry);
+		fprintf(f, "%sstruct {\n", tab);
+		gen_event_struct(tmp, f, pos);
+		fprintf(f, "%s} %s;\n", tab, tmp->name);
+	}
+}
 /**
  * @brief gen_device_struct : generate the content of device struct
  *
@@ -489,4 +628,5 @@ void gen_device_struct(device_t *dev, FILE *f) {
 	gen_device_notifier(dev, f);
 #endif
 	gen_device_data_struct(dev, f);
+	gen_obj_event_struct(&dev->obj, f, 1);
 }
