@@ -108,6 +108,7 @@ typedef struct search_arg {
 symbol_t default_symbol_find(symtab_t symtab, const char* name, type_t type);
 symbol_t symbol_find(symtab_t symtab, const char* name, type_t type);
 symbol_t _symbol_find(symbol_t *table, const char* name, type_t type);
+symbol_t _symbol_find_not(symbol_t *table, const char* name, type_t type);
 symbol_t _symbol_find_notype(symbol_t* symbol_table, const char* name);
 symbol_t symbol_find_from_templates(struct template_table *table, const char *name, type_t type);
 symbol_t symbol_find_curr(symtab_t symtab, const char* name, type_t type);
@@ -135,6 +136,9 @@ void symtab_free(symtab_t symtab, int table_num);
 int pre_symbol_insert(pre_dml_t pre_dml);
 pre_parse_symbol_t* pre_symbol_find(const char* name);
 int symbol_defined(symtab_t table, const char* name);
+
+int symbol_defined_type(symtab_t table, const char* name, type_t type);
+
 symbol_t defined_symbol(symtab_t table, const char* name, type_t type);
 
 #ifdef SYMBOL_DEBUG

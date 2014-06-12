@@ -137,6 +137,20 @@ symbol_t _symbol_find(symbol_t* symbol_table, const char* name, type_t type) {
     return NULL;
 }
 
+symbol_t _symbol_find_not(symbol_t* symbol_table, const char* name, type_t type) {
+    symbol_t symbol = symbol_table[str_hash(name)];
+	if (symbol) {
+		/* hash conflict */
+		while ((symbol != NULL) &&
+				((strcmp(symbol->name, name) != 0) || (symbol->type == type))) {
+			symbol = symbol->next;
+		}
+		if(symbol != NULL) {
+			return symbol;
+		}
+	}
+    return NULL;
+}
 /**
  * @brief find information of the symbol with same name on the hash table.
  *
@@ -445,7 +459,7 @@ int symbol_insert(symtab_t symtab, const char* name, type_t type, void* attr)
     assert(name != NULL && symtab != NULL);
 
     symbol_t rt;
-    rt = _symbol_find_notype(symtab->table, name);
+    rt = _symbol_find(symtab->table, name, type);
     if(rt) {
         /* identifier have been defined while find stack top table
          * having identifier with same name and type.  */
@@ -855,7 +869,7 @@ symbol_list_t *_symbol_list_find(symtab_t tab, match_func_t match, void *arg, in
 	while(tmpl) {
 		table = tmpl->table;
 		//tmp = symbol_list_match(table, match, arg);
-		TABLE_LIST_TRACE("try to find in template %p, table num %d\n", table, table->table_num);
+		TABLE_LIST_TRACE("try to find in template %p, table num %d, name %s\n", table, table->table_num, tmpl->template_name);
 		//print_all_symbol(table);
 		tmp = _symbol_list_find(table, match, arg, depth+1);
 		if(tmp) {
@@ -1202,6 +1216,18 @@ int symbol_defined(symtab_t table, const char* name) {
     assert(name != NULL);
 
     symbol_t symbol = _symbol_find_notype(table->table, name);
+
+    if (symbol)
+        return 1;
+    else
+        return 0;
+}
+
+int symbol_defined_type(symtab_t table, const char* name, type_t type) {
+    assert(table != NULL);
+    assert(name != NULL);
+
+    symbol_t symbol = _symbol_find(table->table, name, type);
 
     if (symbol)
         return 1;
