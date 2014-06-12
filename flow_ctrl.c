@@ -24,7 +24,7 @@
 static int block_has_node_type(tree_t *, type_t);
 extern symbol_t get_expression_sym(tree_t *node);
 extern symtab_t current_table;
-
+int flowx;
 /**
  * @brief handle_inline_case : charge the inline block has the type node
  *
@@ -48,10 +48,12 @@ static int handle_inline_case(tree_t *t, type_t type) {
         tmp = it->call_inline.expr;
 	fprintf(stderr, "file %s, line %d\n", t->common.location.file->name, t->common.location.first_line);
 	if(tmp->common.type == EXPR_BRACK_TYPE) {
+		flowx = 1;
         	sym = get_ref_sym(tmp->expr_brack.expr, &ref_ret, NULL);
 	} else  {
 		sym = get_ref_sym(tmp, &ref_ret, NULL);
 	}
+	flowx = 0;
         if(!sym) {
             my_DBG("err,no inline function\n");
 		fprintf(stderr, "no inline function found\n");
@@ -187,9 +189,12 @@ static int block_has_node_type(tree_t *t, type_t node_type) {
                         if(ret) {
                             break;
                         }
-                        ret = block_has_node_type(it->if_else.else_if, node_type);
-                        if(ret) {
-                            break;
+			if(it->if_else.else_if) {
+				tree_t *node = it->if_else.else_if;	
+                        	ret = block_has_node_type(node, node_type);
+                        	if(ret) {
+                            		break;
+				}
                         }
                         ret = block_has_node_type(it->if_else.else_block, node_type);
                         if(ret) {
@@ -245,6 +250,24 @@ static int block_has_node_type(tree_t *t, type_t node_type) {
 	} else if(node->common.type == FOR_TYPE) {
 		fprintf(stderr, "for+++++++++\n ");
 		ret = block_has_node_type(node->for_tree.block, node_type);
+	} else if(node->common.type == IF_ELSE_TYPE) {
+		it = node;
+		fprintf(stderr, "it it\n");
+		ret = block_has_node_type(it->if_else.if_block, node_type);
+		if(ret) {
+			return ret;
+		}
+		if(it->if_else.else_if) {
+			tree_t *node = it->if_else.else_if;	
+			ret = block_has_node_type(node, node_type);
+			if(ret) {
+				return ret;
+			}
+		}
+		ret = block_has_node_type(it->if_else.else_block, node_type);
+		if(ret) {
+		    return ret;
+		}
 	}
     return ret;
 }
