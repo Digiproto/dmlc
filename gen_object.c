@@ -118,10 +118,20 @@ static void gen_port_objs(object_t *obj) {
 static void gen_group_objs(object_t *obj) {
 	struct list_head *p;
 	object_t *tmp;
-
+	group_t *gp;
+	
+	gp = (group_t *)obj;
 	list_for_each(p, &obj->events) {
    		tmp = list_entry(p, object_t, entry);
-    	gen_obj_generic_code(tmp);
+    		gen_obj_generic_code(tmp);
+	}
+	list_for_each(p, &gp->groups) {
+   		tmp = list_entry(p, object_t, entry);
+    		gen_obj_generic_code(tmp);
+	}
+	list_for_each(p, &gp->registers) {
+   		tmp = list_entry(p, object_t, entry);
+    		gen_obj_generic_code(tmp);
 	}
 }
 
