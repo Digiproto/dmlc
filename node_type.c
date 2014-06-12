@@ -24,6 +24,8 @@
 #include "expression.h"
 
 extern symtab_t root_table;
+extern cdecl_t *new_int();
+extern cdecl_t *parse_cdecl(tree_t *node, symtab_t table);
 static void check_parameter_list(symbol_t sym, symtab_t table) {
 		
 }
@@ -33,21 +35,43 @@ static cdecl_t* get_common_type2(symtab_t table, symbol_t symbol) {
 	expr_t expr;
 
 	cdecl_t* type = NULL;
-	fprintf(stderr, "sym type %d, object type %d\n", symbol->type, OBJECT_TYPE);
+	fprintf(stderr, "sym type %d, object type %d, no type %d\n", symbol->type, OBJECT_TYPE, NO_TYPE);
 	switch(symbol->type) {
 		case PARAM_TYPE:
 			type = ((params_t*)(symbol->attr))->decl;
+			if(type->common.categ == NO_TYPE) {
+				tree_t *node = type->node;				
+				fprintf(stderr, "parse cdeclxx\n");
+				type = parse_cdecl(node, table);		
+				if(type->common.categ == NO_TYPE) {
+				type = new_int(); 
+				}
+			}
 			break;
 		case PARAMETER_TYPE:
 			fprintf(stderr, "to check parameterxxxx! type\n");
 			type = check_parameter_type(symbol, &expr);
+			parameter_attr_t *attr = symbol->attr;
+			paramspec_t *spec = attr->param_spec; 
+			tree_t *expr_node = NULL;
+			if(spec)
+				expr_node = spec->expr_node;
 			if(type->common.categ == LIST_T) {
 				check_parameter_list(symbol, table);
 			} else if(!strcmp(symbol->name, "this")) {
 				object_t *obj = get_current_obj();
 				type->common.categ = OBJECT_T;
-				type->object.obj = obj;
-				fprintf(stderr, "object xxx %p\n", obj);
+				if(obj->is_array) {
+					object_t *elem = gdml_zmalloc(sizeof *elem);
+					*elem = *obj;	
+					elem->is_array = 0;
+					type->object.obj = elem;
+				} else 
+					type->object.obj = obj;
+			} else if(expr_node && expr_node->common.type == QUOTE_TYPE) {
+					type_info_t *info;
+					check_expr_type(expr_node, table, &info);		
+					type = expr_node->common.cdecl;
 			}
 			break;
 		case CONSTANT_TYPE:
@@ -180,6 +204,11 @@ void check_ident_node(tree_t* node, symtab_t table, type_info_t **info) {
 	}
 	if (symbol != NULL) {
 		NODE_TRACE("symbolxxx name: %s, type : %d\n", symbol->name, symbol->type);
+		if(symbol->type == PARAM_TYPE) {
+			symbol_t tmp = _symbol_find_not(table->table, node->ident.str, PARAM_TYPE);
+			if(tmp)
+				symbol = tmp;
+		}
 		if (is_common_type(symbol->type)) {
 			type = symbol->attr;
 		}
@@ -299,9 +328,9 @@ void check_bit_slic_node(tree_t *node, symtab_t table, type_info_t **info) {
 		/* it,s  a bitslic the same as bitfield */
 		*info = gdml_zmalloc(sizeof **info);
 		(*info)->kind = TYPE_BITFIELD;
-		(*info)->u.bt.expr = node->bit_slic.expr;
-		(*info)->u.bt.start = node->bit_slic.bit;
-		(*info)->u.bt.end = node->bit_slic.bit_end;
+		(*info)->bt.expr = node->bit_slic.expr;
+		(*info)->bt.start = node->bit_slic.bit;
+		(*info)->bt.end = node->bit_slic.bit_end;
 	}
 	NODE_TRACE("leave bit slic\n");
 	node->common.cdecl = type;
@@ -314,12 +343,12 @@ static void collect_layout_info(tree_t *node, type_info_t **info) {
 
 	*info = gdml_zmalloc(sizeof **info);
 	(*info)->kind = TYPE_LAYOUT;
-	(*info)->u.layout.expr = node->component.expr;
+	(*info)->layout.expr = node->component.expr;
 	type = node->component.expr->common.cdecl;
 	table = get_type_aggregate_table(type);
 	int offset = 0;
 	const char *name = node->component.ident->ident.str;
-	(*info)->u.layout.endian = type->layout.bitorder;
+	(*info)->layout.endian = type->layout.bitorder;
 	symbol_t sym = table->list;
 	while(sym) {
 		if(!strcmp(sym->name, name)) {
@@ -330,7 +359,7 @@ static void collect_layout_info(tree_t *node, type_info_t **info) {
 		}
 		sym = sym->lnext;
 	}
-	(*info)->u.layout.offset = offset/8;
+	(*info)->layout.offset = offset/8;
 	NODE_TRACE("offsetxxx %d\n", offset);
 }
 
@@ -342,7 +371,7 @@ static void collect_bitfield_info(tree_t *node, type_info_t **info) {
 		*info = gdml_zmalloc(sizeof **info);
 	}
 	(*info)->kind |= TYPE_BITFIELD;
-	(*info)->u.bt.expr = node->component.expr;
+	(*info)->bt.expr = node->component.expr;
 	const char *name = node->component.ident->ident.str;
 	type = node->component.expr->common.cdecl;
 	bit_element_t *e;
@@ -356,8 +385,8 @@ static void collect_bitfield_info(tree_t *node, type_info_t **info) {
 	}
 	e = sym->attr;
 	if(e) {
-		(*info)->u.bt.start = e->start;
-		(*info)->u.bt.end = e->end;
+		(*info)->bt.start = e->start;
+		(*info)->bt.end = e->end;
 	}
 }
 
@@ -365,9 +394,9 @@ static void collect_singlebit_info(tree_t *node, type_info_t **info) {
 
 	*info = gdml_zmalloc(sizeof **info);
 	(*info)->kind = TYPE_BITFIELD;
-	(*info)->u.bt.start = node->bit_slic.bit;
-	(*info)->u.bt.end = NULL;
-	(*info)->u.bt.expr = node->bit_slic.expr;
+	(*info)->bt.start = node->bit_slic.bit;
+	(*info)->bt.end = NULL;
+	(*info)->bt.expr = node->bit_slic.expr;
 }
 
 void check_component_node(tree_t *node, symtab_t table, type_info_t **info) {
@@ -457,6 +486,34 @@ void check_component_node(tree_t *node, symtab_t table, type_info_t **info) {
 	NODE_TRACE("component type %p, type %d, table %p\n", type, type->common.categ, table);
 }
 
+static void check_unary_type(tree_t *node, symtab_t table, type_info_t **info) {
+	tree_t *expr;
+	cdecl_t *type;
+	cdecl_t *tmp;	
+	
+	type = gdml_zmalloc(sizeof *type);
+	expr = node->unary.expr;
+	check_expr_type(expr, table, info);
+	tmp = expr->common.cdecl;	
+	if(node->unary.type == ADDR_TYPE) {
+		type->common.categ = POINTER_T;		
+		type->common.bty = tmp;
+	} else if(node->unary.type == POINTER_TYPE) {
+		*type = *tmp->common.bty;	
+	}
+	node->common.cdecl = type;
+}
+
+static void check_binary_type(tree_t *node, symtab_t table, type_info_t **info) {
+	tree_t *left, *right;
+	
+	left = node->binary.left;
+	right = node->binary.right;
+	check_expr_type(left, table, info);	
+	check_expr_type(right, table, info);
+	node->common.cdecl = left->common.cdecl;	
+}
+
 void check_node_type(tree_t *node, symtab_t table, type_info_t **info) {
 
 	switch(node->common.type) {
@@ -472,6 +529,16 @@ void check_node_type(tree_t *node, symtab_t table, type_info_t **info) {
 			break;
 		case BIT_SLIC_EXPR_TYPE:
 			check_bit_slic_node(node, table, info);
+			break;
+		case EXPR_BRACK_TYPE:
+			check_node_type(node->expr_brack.expr_in_brack, table, info);
+			node->common.cdecl = node->expr_brack.expr_in_brack->common.cdecl;
+			break;
+		case UNARY_TYPE:
+			check_unary_type(node, table, info);	
+			break;
+		case BINARY_TYPE:
+			check_binary_type(node, table, info);
 			break;
 		default:
 			break;
