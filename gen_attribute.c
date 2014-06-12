@@ -49,6 +49,7 @@ static void gen_attribute_set(object_t *obj, FILE *f) {
 	fprintf(f, "void *_, ");
 	fprintf(f, "conf_object_t *obj, attr_value_t *value, attr_value_t *_id)\n");
 	fprintf(f, "{\n");
+	if(attr->alloc_type) {
 	fprintf(f, "\t%s_t *_dev = (%s_t *)obj;\n", DEV->name, DEV->name);
 	fprintf(f, "\tattr_value_t *tmp;\n");
 	if(obj->is_array) {
@@ -71,6 +72,9 @@ static void gen_attribute_set(object_t *obj, FILE *f) {
 		fprintf(f, "SIM_attr_floating(*tmp);\n");
 	} else if (type == STRING_T) {
 		fprintf(f, "SIM_attr_string(*tmp);\n");
+	} else {
+		fprintf(f, "SIM_attr_object(*tmp.u.obj);\n");
+	}
 	}
 	fprintf(f, "\treturn 0;\n");
 	fprintf(f, "}\n");
@@ -97,6 +101,7 @@ static void gen_attribute_get(object_t *obj, FILE *f) {
 	fprintf(f, "attr_value_t\n");
 	fprintf(f, "%s_get(void *_, conf_object_t *obj, attr_value_t *_idx)\n", name);
 	fprintf(f, "{\n");
+	if(attr->alloc_type) {
 	fprintf(f, "\t%s_t *_dev = (%s_t *)obj;\n", DEV->name, DEV->name);
 	fprintf(f, "\tattr_value_t attr;\n");
 	fprintf(f, "\tmemset(&attr, 0, sizeof(attr));\n");
@@ -119,6 +124,9 @@ static void gen_attribute_get(object_t *obj, FILE *f) {
 		fprintf(f, "\t}\n");
 	}
 	fprintf(f, "\tattr = tmp;\n");
+	} else {
+		fprintf(f, "\tattr_value_t attr;\n");
+	}
 	fprintf(f, "\treturn attr;\n");
 	fprintf(f, "}\n");
 }
