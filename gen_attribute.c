@@ -23,7 +23,7 @@
 #include "gen_attribute.h"
 
 extern object_t *DEV;
-
+extern void gen_inline_method(object_t *, const char *name);
 /**
  * @brief gen_attribute_set : generate the code of set method in attribute object
  *
@@ -47,16 +47,16 @@ static void gen_attribute_set(object_t *obj, FILE *f) {
 
 	fprintf(f, "%s_set(", name);
 	fprintf(f, "void *_, ");
-	fprintf(f, "conf_object_t *obj, attr_value_t *value, attr_value_t *_id)\n");
+	fprintf(f, "conf_object_t *obj, attr_value_t *_value, attr_value_t *_id)\n");
 	fprintf(f, "{\n");
 	if(attr->alloc_type) {
 	fprintf(f, "\t%s_t *_dev = (%s_t *)obj;\n", DEV->name, DEV->name);
 	fprintf(f, "\tattr_value_t *tmp;\n");
 	if(obj->is_array) {
 		fprintf(f, "\tunsigned index = SIM_attr_integer(*_id);\n");
-		fprintf(f, "\ttmp = &value->u.list.vector[%s];\n", "index","index");
+		fprintf(f, "\ttmp = &_value->u.list.vector[%s];\n", "index","index");
 	} else {
-		fprintf(f, "\ttmp = value;\n");
+		fprintf(f, "\ttmp = _value;\n");
 	}
 	if(obj->is_array) {
 		fprintf(f, "\t_dev->%s[%s]", obj->a_name, "index");
@@ -75,6 +75,26 @@ static void gen_attribute_set(object_t *obj, FILE *f) {
 	} else {
 		fprintf(f, "SIM_attr_object(*tmp.u.obj);\n");
 	}
+	} else if(attr->type && !strcmp(attr->type, "i")){
+	} else {
+		symbol_t sym = symbol_find(obj->symtab, "set", METHOD_TYPE);
+		method_attr_t *attr;
+		symtab_t table;
+		attr = (method_attr_t *)sym->attr;
+		table = attr->table;	
+		sym = _symbol_find_type(table, PARAM_TYPE);
+		set_symbol_alias_name(sym, sym->name);
+		fprintf(f, "\t%s_t *_dev = (%s_t *)obj;\n", DEV->name, DEV->name);
+		if(obj->is_array) {
+			fprintf(f, "\tunsigned _idx0 = SIM_attr_integer(*_id);\n");
+			fprintf(f, "\tattr_value_t %s = _value->u.list.vector[%s];\n", sym->name, "_idx0");
+		} else {
+			fprintf(f, "\tattr_value_t %s = *_value;\n", sym->name);	
+		}
+		tabcount_set(1);
+		POS;
+		gen_attribute_inline_method(obj, "set");	
+		D("\n");
 	}
 	fprintf(f, "\treturn 0;\n");
 	fprintf(f, "}\n");

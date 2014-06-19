@@ -1,4 +1,5 @@
 /*
+
 	 * object.c: 
 	 *
  * Copyright (C) 2013 alloc <alloc.young@gmail.com>
@@ -670,7 +671,7 @@ static void create_register_object(object_t *obj, symbol_t sym){
 		fprintf(stderr, "registerxxx name %s, table %p, file %s, line %d\n", sym->name, obj->symtab, reg_attr->common.node->common.location.file->name, reg_attr->common.node->common.location.first_line);
 		print_all_symbol(obj->symtab->sibling);
 		if(!strcmp(obj->obj_type, "group")) {
-			in_group = 1;	
+			//in_group = 1;	
 		}
 		parse_register_attr(reg_attr->common.node, obj->symtab);
 		in_group = 0;
@@ -1471,7 +1472,7 @@ static int get_reg_offset(paramspec_t *t, int *interval, symtab_t table) {
 }
 
 static int my_index;
-static void get_offset_info(tree_t *expr, offset_info_t *info, symtab_t table) {
+static int get_offset_info(tree_t *expr, offset_info_t *info, symtab_t table) {
 	tree_t *left, *right;
 	expr_t *lexpr;
 	expr_t *rexpr;
@@ -1506,10 +1507,26 @@ static void get_offset_info(tree_t *expr, offset_info_t *info, symtab_t table) {
 			}
 			info->interval[my_index++] = tmp;	
 			fprintf(stderr, "index %d, interval %d\n", my_index, tmp);
+		} else if(right->common.type == QUOTE_TYPE){
+			info->interval[my_index++] = 1;	
 		} else {
 			fprintf(stderr, "error offset format, expect multiply, got %d\n", right->common.type);
+			fprintf(stderr, "file %s, line %d\n", right->common.location.file->name, right->common.location.first_line);
 			exit(-1);
 		}
+	} else if(expr->common.type == BINARY_TYPE && expr->binary.type == MUL_TYPE) {
+			tree_t *sub_left = expr->binary.left;	
+			tree_t *sub_right = expr->binary.right;	
+			int tmp;
+			if(sub_left->common.type == INTEGER_TYPE) {
+				tmp = sub_left->int_cst.value;	
+			} else if(sub_right->common.type == INTEGER_TYPE) {
+				tmp = sub_right->int_cst.value;	
+			}
+			//if(my_index < MAX_DEPTH) {
+				fprintf(stderr, "my index %d\n", my_index);
+				info->interval[my_index++] = tmp;	
+			//}
 	} else {
 		fprintf(stderr, "error offsetxxx format, got %d, binary %d, expr %p\n", expr->common.type, expr->binary.type, expr);
 		fprintf(stderr, "file %s, line %d\n", expr->common.location.file->name, expr->common.location.first_line);
@@ -1517,9 +1534,10 @@ static void get_offset_info(tree_t *expr, offset_info_t *info, symtab_t table) {
 		*p = 0;
 		exit(-1);
 	}
+	return 0;
 }
 
-static void get_register_offset2(object_t *reg, tree_t *offset_expr, symtab_t table, offset_info_t *info) {
+static int get_register_offset2(object_t *reg, tree_t *offset_expr, symtab_t table, offset_info_t *info) {
 	int interval = -1;
 	tree_t *expr;
 	tree_t *left;
@@ -1527,18 +1545,31 @@ static void get_register_offset2(object_t *reg, tree_t *offset_expr, symtab_t ta
 	expr_t *lexpr;
 	expr_t *rexpr;
 	int tmp;
-	int simple_case = 0;
+	int ret;
+	int multi = 0; 
 	tree_t *complex_expr;
-	fprintf(stderr, "file %s, line %d\n", offset_expr->common.location.file->name, offset_expr->common.location.first_line);	
 	expr = offset_expr;				
 	if(!expr)
+		return -1;
+	ret = get_offset(expr, table);
+	if(ret >= 0) {
+		info->offset = ret;
 		return;
+	} else if(ret == -2) {
+		return -1;
+	}
+	fprintf(stderr, "file %s, line %d\n", offset_expr->common.location.file->name, offset_expr->common.location.first_line);	
+	expr = offset_expr;					
+	if(expr->common.type == EXPR_BRACK_TYPE) {
+		expr = expr->expr_brack.expr_in_brack;
+	}
 	if(offset_expr->common.type == BINARY_TYPE && offset_expr->binary.type == MUL_TYPE) {
 		if(offset_expr->binary.right->common.type == INTEGER_TYPE) {
 			interval = offset_expr->binary.right->int_cst.value; 	
 			fprintf(stderr, "right\n");
 			if(offset_expr->binary.left->common.type == EXPR_BRACK_TYPE){
 				expr = 	offset_expr->binary.left->expr_brack.expr_in_brack;
+				multi = 1;
 				fprintf(stderr, "brack, expr %p\n", expr);
 			} else {
 				info->offset = 0;	
@@ -1550,6 +1581,7 @@ static void get_register_offset2(object_t *reg, tree_t *offset_expr, symtab_t ta
 			interval = offset_expr->binary.left->int_cst.value; 	
 			if(offset_expr->binary.right->common.type == EXPR_BRACK_TYPE){
 				expr = 	offset_expr->binary.right->expr_brack.expr_in_brack;
+				multi = 1;
 				fprintf(stderr, "brack, expr %p\n", expr);
 			} else {
 				info->offset = 0;	
@@ -1563,7 +1595,9 @@ static void get_register_offset2(object_t *reg, tree_t *offset_expr, symtab_t ta
 		left = expr->binary.left;
 		right = expr->binary.right;
 	} else {
-		fprintf(stderr, "expect binary op , got %d, ADD_TYPE %d\n", expr->common.type, ADD_TYPE);
+		fprintf(stderr, "expect binary op , got %d, ADD_TYPE %d, file %s, line %d\n", expr->common.type, ADD_TYPE,
+												expr->common.location.file->name,
+												expr->common.location.first_line);
 		exit(-1);
 	}
 	fprintf(stderr, "expr %p\n", expr);
@@ -1612,7 +1646,10 @@ static void get_register_offset2(object_t *reg, tree_t *offset_expr, symtab_t ta
 	if(expr->common.type == BINARY_TYPE && expr->binary.type == ADD_TYPE){	
 		fprintf(stderr, "expect binary op , got %d, binary %d, ADD_TYPE %d\n", expr->common.type, expr->binary.type, ADD_TYPE);
 	}
-	get_offset_info(expr, info, table);
+	ret = get_offset_info(expr, info, table);
+	if(ret == -1) {
+		goto check_multiply;	
+	}
 	if(interval != -1) {
 		info->offset *= interval;
 		for(tmp = 0; tmp < MAX_DEPTH; tmp++){
@@ -1624,18 +1661,25 @@ static void get_register_offset2(object_t *reg, tree_t *offset_expr, symtab_t ta
 	return;
 	check_multiply:
 		if(expr->common.type == BINARY_TYPE && expr->binary.type == MUL_TYPE) {
-			if(expr->binary.right->common.type == INTEGER_TYPE) {
-				tmp = expr->binary.right->int_cst.value;	
-				if(interval != -1) {
-					info->interval[0] = interval * tmp;
-				} else 
-					info->interval[0] = tmp;
-			} else if(expr->binary.left->common.type == INTEGER_TYPE) {
-				tmp = expr->binary.left->int_cst.value;	
-				if(interval != -1) {
-					info->interval[0] = interval * tmp;
-				} else 
-					info->interval[0] = tmp;
+			if( !multi  && (expr->binary.left->common.type == EXPR_BRACK_TYPE || expr->binary.right->common.type == EXPR_BRACK_TYPE)) {
+				if(expr->binary.left->common.type == INTEGER_TYPE) {
+					tmp = expr->binary.left->int_cst.value;	
+					interval = tmp;
+					expr = expr->binary.right->expr_brack.expr_in_brack;
+				} else if(expr->binary.right->common.type == INTEGER_TYPE) {
+					tmp = expr->binary.right->int_cst.value;	
+					interval = tmp;
+					expr = expr->binary.left->expr_brack.expr_in_brack;
+				}		
+					
+			}
+			ret = get_offset_info(expr, info, table);
+			if(interval != -1){	
+				for(tmp = 0; tmp < MAX_DEPTH; tmp++){
+					if(info->interval[tmp] > 0) {
+						info->interval[tmp] *= interval;	
+					}
+				}
 			}
 		}
 	return;
@@ -1662,7 +1706,7 @@ static void print_offset_info(offset_info_t *info) {
 	if(info) {
 		fprintf(stderr, "offset %d\n", info->offset);
 		int i;
-		for(i = 0; i < 16; i++) {
+		for(i = 0; i < MAX_DEPTH; i++) {
 			fprintf(stderr, "interval %d 0x%x\n", i, info->interval[i]);
 		}
 	}		
@@ -1729,8 +1773,10 @@ static void register_realize(object_t *obj) {
 	reg->is_unmapped = register_unmapped(obj);
 	if(reg->offset == -2) 
 		reg->is_undefined = 1;
+	if(reg->offset >= 0) 
+		reg->offset_info.offset = reg->offset;
 	if(reg->offset == -1) {
-		fprintf(stderr, "register offsetxxxx, %s\n", obj->name);
+		fprintf(stderr, "register  %s\n", obj->name);
 		int ret = -1;
 		param_value_t valuexxx;
 		memset(&valuexxx, 0, sizeof(valuexxx));
@@ -1738,18 +1784,17 @@ static void register_realize(object_t *obj) {
 		fprintf(stderr, "ddddxx\n");
 		reg->offset = get_reg_offset(&spec, &ret, obj->symtab);
 		fprintf(stderr, "ssssxxxx\n");
-		//get_register_offset2(obj, spec.expr_node, obj->symtab, &reg->offset_info);
-		//print_offset_info(&reg->offset_info);
+		my_index = 0;
+		ret = get_register_offset2(obj, spec.expr_node, obj->symtab, &reg->offset_info);
+		print_offset_info(&reg->offset_info);
+		reg->offset = -3;
 		fprintf(stderr, "ddddxxx\n");
 		if(ret != -1) {
 				reg->interval = ret;
 		} else {
 				reg->interval = 4;
-		}
-		if(reg->offset == -2) {
-			reg->is_undefined = 1;
 		}	
-		if(reg->offset == -1) {
+		if(ret == -1) {
 			/*search for parameter offset */
 			sym = symbol_find(obj->symtab, "offset", PARAMETER_TYPE);
 			if(!sym) {
@@ -1757,7 +1802,8 @@ static void register_realize(object_t *obj) {
 			} else {
 				parameter_attr  = (parameter_attr_t *)sym->attr;
 				reg->offset = get_reg_offset(parameter_attr->param_spec, &reg->interval, obj->symtab->parent);
-				if(reg->offset == -1) {
+				ret = get_register_offset2(obj, parameter_attr->param_spec->expr_node, obj->symtab, &reg->offset_info);
+				if(ret == -1) {
 					reg->is_undefined = 1;
 				}
 				if(reg->interval == -1) {
@@ -1968,6 +2014,7 @@ static void connect_realize(object_t *obj) {
 		tmp = list_entry(p, object_t, entry);
 		interface_realize(tmp);
 	}
+	process_object_templates(obj);
 }
 
 static void data_realize(object_t *obj) {
@@ -2009,6 +2056,7 @@ static void get_group_map_info(object_t *obj) {
 	if(loc) {
 		gp->offset_info.len = loc->interval[obj->depth - 1];	
 		gp->offset_info.offset = loc->offset;
+		gp->loc = loc;
 	}
 }
 
@@ -2155,6 +2203,7 @@ static const char* get_type(const char* str, attribute_t* attr) {
 		type = "i";
 		attr->ty = INT_T;
 	}
+	fprintf(stderr, "typexxxxx %s\n", type);
 	return type;
 }
 
@@ -2211,9 +2260,10 @@ static void attribute_realize(object_t *obj) {
 			attr_obj->ty = INT_T;
 		}
 	}
-	sym = defined_symbol(obj->symtab, "type", PARAMETER_TYPE);
+	sym = defined_symbol(obj->symtab->sibling, "type", PARAMETER_TYPE);
 	if (sym) {
 		get_param_spec(attr, spec);
+		fprintf(stderr, "type1xx\n");
 		if (spec->value->u.string != NULL) {
 			attr_obj->type = get_type(spec->value->u.string, attr_obj);
 		} else {
@@ -2716,7 +2766,8 @@ static void process_bank_template(object_t *obj){
 	symbol_insert(table, "mapped_registers", PARAMETER_TYPE, val);
 	val = gdml_zmalloc(sizeof(*val));
 	val->type = PARAM_TYPE_LIST;
-	val->u.list.size = undefined;
+	val->u.list.size = 0;
+	/*
 	if(undefined > 0) {
 		val->u.list.vector = gdml_zmalloc(sizeof(*val) * undefined);	
 		for(i = 0, j = 0; i < bank->reg_count; i++) {
@@ -2727,7 +2778,7 @@ static void process_bank_template(object_t *obj){
 				val->u.list.vector[j++] = tmp;
 			}
 		}
-	}
+	}*/
 
 	symbol_insert(table, "unmapped_registers", PARAMETER_TYPE, val);
 	val = gdml_zmalloc(sizeof(*val));
@@ -2824,6 +2875,16 @@ static void process_field_template(object_t *obj){
 	symbol_insert(table, "hard_reset_value", PARAMETER_TYPE, val);
 }
 
+static void process_connect_template(object_t *obj) {
+
+	symtab_t table = obj->symtab;
+	param_value_t *val;
+
+	val = (param_value_t *)gdml_zmalloc(sizeof(*val));
+	val->type = PARAM_TYPE_REF;
+	val->u.ref = obj;
+	symbol_insert(table, "obj", PARAMETER_TYPE, val);
+}
 /**
  * @brief free_rely_temp_list : free the list of relied templates
  *
@@ -2908,7 +2969,7 @@ static void (*specific_temp_fn[])(object_t *obj) = {
 	[Obj_Type_Bank] = process_bank_template,
 	[Obj_Type_Register] = process_register_template,
 	[Obj_Type_Field] = process_field_template,
-	[Obj_Type_Connect] = object_none_temp_fn,
+	[Obj_Type_Connect] = process_connect_template,
 };
 
 /**
@@ -2999,8 +3060,9 @@ void add_object_method(object_t *obj,const char *name){
 
 	list_for_each(p,&obj->methods){
 		m = list_entry(p,struct method_name,entry);
-		if(!strcmp(m->name,name))
+		if(!strcmp(m->name,name)) {
 			return;
+		}
 	}
 	m = gdml_zmalloc(sizeof(*m));
 	m->name = strdup(name);

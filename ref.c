@@ -421,6 +421,13 @@ object_t* get_parameter_obj(symtab_t table, const char* name) {
 		if (obj_sym) {
 			return (object_t*)(obj_sym->attr);
 		}
+	} else if(expr_node->common.type == COMPONENT_TYPE) {
+		type_info_t *info = NULL;
+		check_expr_type(expr_node, table, &info);		
+		cdecl_t *cdecl = expr_node->common.cdecl;
+		if(cdecl && cdecl->common.categ == OBJECT_T) {
+			return cdecl->object.obj;	
+		}
 	}
 	else {
 		return NULL;
@@ -544,6 +551,8 @@ symbol_t get_ref_sym(tree_t *t, ref_ret_t *ret, symtab_t table){
 	object_t *obj2 = NULL;
 	int has_interface = 0;
 	tree_t *index = NULL;
+	int idx = 0;
+	index_var_t *index_var;
 
 	if(!table) {
 		symtab = current_table;
@@ -662,6 +671,9 @@ symbol_t get_ref_sym(tree_t *t, ref_ret_t *ret, symtab_t table){
 						ret->con = NULL;
 						ret->iface = obj2;
 						ret->index = index;
+						index_var = new_index_var(index);	
+						idx++;
+						list_add_tail(&index_var->entry, &ret->indexs.list);	
 						node = t->component.ident;
 						ret->method = node->ident.str;
 						has_interface = 1;
@@ -682,6 +694,9 @@ symbol_t get_ref_sym(tree_t *t, ref_ret_t *ret, symtab_t table){
 								name = node->ident.str;
 								ret->method = name;
 								ret->index = index;
+								index_var = new_index_var(index);	
+								idx++;
+								list_add_tail(&index_var->entry, &ret->indexs.list);	
 								has_interface = 1;
 								break;
 							}
@@ -704,6 +719,9 @@ symbol_t get_ref_sym(tree_t *t, ref_ret_t *ret, symtab_t table){
 			/*skip index*/
 			while(ni_next->index) {
 				index = ni_next->index;
+				index_var = new_index_var(index);	
+				idx++;
+				list_add_tail(&index_var->entry, &ret->indexs.list);	
 				p = ni_next->entry.next;
 				ni_next = list_entry(p, node_info_t, entry);
 			}
@@ -714,6 +732,7 @@ symbol_t get_ref_sym(tree_t *t, ref_ret_t *ret, symtab_t table){
 		}
 	}
 	ret->index = index;
+	ret->indexs.nums = idx;
 	if(has_interface && ret->con) {
 		/*just ref object part*/
 		p = &ni_next->entry;

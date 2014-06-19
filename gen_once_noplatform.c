@@ -28,10 +28,19 @@
 #include "gen_event.h"
 
 extern object_t *DEV;
+extern FILE *out;
 static int list_count = LIST_SZ;
+static offset_info_t *loc;
+static void gen_group_access2(object_t *obj, reg_array_t *list, int register_size, int is_read);
+static reg_array_t *sort_register_array2(struct list_head *p);
+
 /* just a try*/
 #define MAGIC_NUM 100
-
+typedef struct {
+	int param;
+	int exec;
+	int found;
+} label_info_t;
 static const char *get_output_fmt(int num) {
 	const char *fmt;
 
@@ -43,6 +52,44 @@ static const char *get_output_fmt(int num) {
 	return fmt;
 } 
 
+static int reg_cal_offset(dml_register_t *reg) {
+	int depth, j;
+	int offset;
+	int is_array;	
+
+	depth = reg->obj.depth;
+	offset = reg->offset_info.offset;
+	is_array = reg->obj.is_array;
+	depth = is_array ? depth -1 : depth;
+	if(depth >= 1) {
+		j = 0;
+		while(j < depth) {
+			offset += reg->offset_info.interval[j] * loc->interval[j];
+			j++;
+		}		
+	}
+	return offset;
+}
+
+static int gen_reg_offset(dml_register_t *reg) {
+	int depth, j;
+	int offset;
+	int is_array;	
+
+	depth = reg->obj.depth;
+	offset = reg->offset_info.offset;
+	is_array = reg->obj.is_array;
+	depth = is_array ? depth -1 : depth;
+	D_c("start = 0x%x;\n", reg->offset_info.offset);
+	if(depth > 1) {
+		j = 0;
+		while(j < depth) {
+			D_c("start += 0x%x * _idx%d;\n", reg->offset_info.interval[j], j);
+			j++;
+		}	
+	}
+	D_c("end = start + 0x%x;\n", reg->offset_info.interval[depth -1]);
+}
 static void sort_case(struct list_head *head, reg_item_t *item, int register_size) {
 	struct list_head *p;
 	case_sort_t *sort = NULL;
@@ -51,7 +98,7 @@ static void sort_case(struct list_head *head, reg_item_t *item, int register_siz
 	reg = (dml_register_t *)item->obj;	
 	list_for_each(p, head) {
 		sort = list_entry(p, case_sort_t, entry);	
-		if(reg->offset/register_size == sort->val) {
+		if(reg->offset_info.offset/register_size == sort->val) {
 			list_add_tail(&item->case_entry, &sort->sublist);
 			return;
 		}
@@ -59,31 +106,265 @@ static void sort_case(struct list_head *head, reg_item_t *item, int register_siz
 	sort = (case_sort_t *)gdml_zmalloc(sizeof *sort);
 	INIT_LIST_HEAD(&sort->entry);	
 	INIT_LIST_HEAD(&sort->sublist);	
-	sort->val = reg->offset/register_size;
+	sort->val = reg_cal_offset(reg)/register_size;
 	list_add_tail(&sort->entry, head);
 	list_add_tail(&item->case_entry, &sort->sublist);
 }
 
+static void gen_register_array_access(reg_array_t *list, label_info_t *info, int register_size, int is_read) {
+	int i;
+	struct list_head *p;
+	dml_register_t *reg;	
+	reg_item_t *item;
+	int param;
+	int exec_index;
+	int found_index;
+	reg_array_t *e;
+	int len;
+	const char *func;
 
-static void gen_group_read_access(object_t *obj, FILE *f, int pos) {
-	const char *tab = get_tabstr_n(pos);	
+	func = is_read ? "read_access":"write_access";
+	param = info->param;
+	exec_index = info->exec;
+	found_index = info->found;
+	for(i = 1; i < list->list_count; i++) {
+		e = &list[i];
+		if(!e->size) {
+			break;
+		}
+		len = register_size * e->size;
+		POS;
+		enter_scope();
+		list_for_each(p, &e->list) {
+			item = list_entry(p, reg_item_t, entry);
+			reg = (dml_register_t *)item->obj;
+			int ret_index = get_local_index();
+			int depth = item->obj->depth;
+			add_object_method(item->obj, func);
+			int tmp = reg->offset/len;
+			int interval = reg->offset_info.interval[depth - 1];
+			int start;
+			int end;
+			int j;
+			int index;
+			start = reg_cal_offset(reg);	
+			end = start + (reg->array_size - 1)* interval;
+			D_c("if(v%d_offset >= 0x%x && v%d_offset <= 0x%x)\n", param, start, param, end); // temp
+			POS;
+			enter_scope();
+			D_c("int _idx0;\n");
+			D_c("_idx0 = (v%d_offset - 0x%x) / %d;\n", param, start, interval);
+			D_c("if(((_idx0 >= 0) && (_idx0 < %d)) && ((v%d_offset - _idx0* %d - 0x%x) == 0))\n",reg->array_size, param,  interval, start);
+			POS;
+			enter_scope();
+			if(is_read) {
+				ret_index = get_local_index();
+				D_c("uint64 v%d_ret_value;\n", ret_index);
+			}
+			D_c("v%d_size2 = %d;\n", param, reg->size);
+			D_c("v%d_exec = _DML_M_%s__%s(_dev, ", exec_index, item->obj->qname, func);
+			if(depth > 1) {
+				j = 0;
+				while(j < depth -1) {
+					D("%d, ", loc->interval[j]);
+					j++;
+				}		
+			}	
+			D("_idx0, memop, 31, 0, " );
+			if(is_read) {
+				D("&v%d_ret_value);\n", ret_index);
+			} else {	
+				D("writevalue);\n");
+			}
+			D_c("if(v%d_exec)", exec_index);
+			enter_scope();
+			D_c("return 1;\n");
+			exit_scope();
+			new_line();
+			if(is_read) {
+				D_c("*readvalue = v%d_ret_value;\n", ret_index);
+			}
+			D_c("goto found%d;\n", found_index);
+			exit_scope();
+			new_line();
+			exit_scope();
+			new_line();
+
+		}
+		exit_scope();
+		new_line();
+	}
+}
+
+static void gen_register_single_access(reg_array_t *list, label_info_t *info, int register_size, int is_read) {
+	int i;
+	struct list_head *p;
+	dml_register_t *reg;	
+	reg_item_t *item;
+	int param;
+	int exec_index;
+	int found_index;
+	const char *func;
+
+	param = info->param;
+	exec_index = info->exec;
+	found_index = info->found;
+	func = is_read ? "read_access":"write_access";
+	D_c("switch(v%d_offset / %d)\n",param, register_size);
+	POS;
+	enter_scope();
+	int offset = 0;
+	int size = 0;
+	int bound = 0;
+	int depth = 0;
+	int j;
+	LIST_HEAD(sorted_list);	
+	list_for_each(p, &list[0].list){
+		item = list_entry(p, reg_item_t, entry);
+		sort_case(&sorted_list, item, register_size);	
+	}
+	case_sort_t *tmpx;
+	list_for_each(p, &sorted_list) {
+		tmpx = list_entry(p, case_sort_t, entry);	
+		struct list_head *p2;
+		if(tmpx->val < MAGIC_NUM) {
+			D_c("case %d:\n", tmpx->val);
+		} else {
+			D_c("case 0x%x:\n", tmpx->val);
+		}
+		list_for_each(p2, &tmpx->sublist) {
+			item = list_entry(p2, reg_item_t, case_entry);
+			object_t *t = item->obj;
+			reg = (dml_register_t *)t;
+			int local_index = get_local_index();
+			int ret_index = get_local_index();
+			offset = reg_cal_offset(reg);	
+			bound = offset + reg->size;
+			depth = t->depth;
+			int tmp = reg->offset/register_size;
+			POS;
+			enter_scope();
+			D_c("uint8 v%d_lsb;\n",local_index);
+			D_c("uint8 v%d_msb;\n",local_index);
+			D_c("v%d_size2 = v%d_size < %d - v%d_offset ? v%d_size : %d - v%d_offset;\n",param,param,bound,param,param,bound,param);
+			D_c("v%d_lsb = (v%d_offset - %d) * 8;\n",local_index,param, offset);
+			D_c("v%d_msb = v%d_lsb + v%d_size2 * 8;\n",local_index,local_index,param);
+			POS;
+			enter_scope();
+			if(is_read) {
+				D_c("uint64 v%d_ret_value  = 0;\n",ret_index);	
+			}
+			add_object_method(t, func);	
+			D_c("v%d_exec = _DML_M_%s__%s(_dev, ",exec_index,t->qname, func); 
+			if(depth >= 1) {
+				j = 0;
+				while(j < depth) {
+					D("%d, ", loc->interval[j]);
+					j++;
+				}
+			}
+			D("memop, v%d_msb, v%d_lsb, ", local_index,local_index);
+			if(is_read)
+				D("&v%d_ret_value);\n", ret_index);	
+			else 
+				D("writevalue);\n");	
+			D_c("if(v%d_exec)",exec_index);		
+			enter_scope();
+			D_c("return 1;\n");
+			exit_scope();	
+			D("\n");
+			if(is_read)
+				D_c("*readvalue = v%d_ret_value;\n",ret_index);	
+			exit_scope();
+			D("\n");
+			D_c("goto found%d;\n", found_index);
+			exit_scope();
+			D("\n");
+		}	
+	}
+	exit_scope();
+	D("\n");
+}
+
+static void gen_register_access(reg_array_t *list, int register_size, int is_read) {
+	int exec_index = get_local_index();
+	int param = get_local_index();
+	int exit_index = get_exit_index();
+	int found_index = get_local_index();
+
+	label_info_t info = {.param = param, .exec = exec_index, .found = found_index};
+	POS;
+	enter_scope();
+	D_c("bool v%d_exec = 0;\n",exec_index);
+	POS;
+	enter_scope();
+	POS;
+	enter_scope();
+	D_c("uint64 v%d_offset = offset;\n",param);	
+	D_c("int64 v%d_size = size;\n",param);
+	D_c("int64 v%d_size2;\n",param);
+	if(is_read)
+		D_c("*readvalue = 0;\n");
+	gen_register_array_access(list, &info, register_size, is_read);
+	gen_register_single_access(list, &info, register_size, is_read);	
+	D_c("*success = 0;\n");
+	D_c("goto exit%d;\n",exit_index);
+	D_c("found%d:\n", found_index);
+	D_c("*success = v%d_size == v%d_size2;\n", param, param);
+	exit_scope();
+	D("\n");
+	//D_c("exit%d:;\n",exit_index);
+	exit_scope();
+	D("\n");
+	exit_scope();
+	D("\n");
+	D_c("return 0;\n");
+	D_c("exit%d:;\n",exit_index);
+}
+
+static void gen_group_access(object_t *obj, int register_size, int is_read) {
 	struct list_head *p;
 	group_t *gp;
 	object_t *tmp;
 	int i;	
 	int start, end;
+	reg_array_t *list;
 	gp = (group_t *)obj;
+	int j;
+	int index;
+
 	for(i = 0; i < obj->array_size; i++) {	
-		start = gp->offset_info.offset + gp->offset_info.len * i;
+		j = 0;
+		start = gp->offset_info.offset;
+		while(j < obj->depth - 1) {
+			start += loc->interval[j] * gp->loc->interval[j];  
+			j++;
+		}
+		start += gp->offset_info.len * i;
 		end = start + gp->offset_info.len; 
-		fprintf(f, "%sif(offset >=  0x%x && v_offset < 0x%x) {\n", tab, start, end);
+		loc->interval[obj->depth -1] = i;
+		index = obj->depth -1;
+		D_c("if(offset >=  0x%x && offset < 0x%x)", start, end);
+		enter_scope();
 		list_for_each(p, &gp->groups) {
 			tmp = list_entry(p, object_t, entry);
-			fprintf(f, "%s{\n", tab);
-			gen_group_read_access(tmp, f, pos + 1);	
-			fprintf(f, "%s}\n", tab);
+			POS;
+			enter_scope();
+			gen_group_access(tmp, register_size, is_read);	
+			exit_scope();
+			D("\n");
 		}
-		fprintf(f, "%s}\n", tab);
+		if(!list_empty(&gp->registers)) {
+			struct list_head *p;
+			object_t *obj;
+			list_for_each(p, &gp->registers) {
+				obj = list_entry(p, object_t,entry );
+			}
+			list = sort_register_array2(&gp->registers);		
+			gen_group_access2(obj, list, register_size, is_read);
+		}
+		exit_scope();
+		D("\n");
 	}
 }
 	
@@ -96,185 +377,21 @@ static void gen_group_read_access(object_t *obj, FILE *f, int pos) {
  */
 static void gen_bank_read_access(bank_t *b, reg_array_t *list, FILE *f){
 	int register_size = b->register_size;
-	int offset;
-	int size;
-	object_t *t;
 	struct list_head *p;
-	int exec_index = get_local_index();
-	int param = get_local_index();
-	int i;
-	int ret_index;
-	int local_index;
-	dml_register_t *reg;
-	reg_array_t *e;
-	reg_item_t *item;
-	int len;
-	int tmp;
+	object_t *tmp;
+	out = f;
 
 	fprintf(f,"\nstatic bool\n");
 	fprintf(f,"_DML_M_%s__read_access(%s_t *_dev, generic_transaction_t *memop, physical_address_t offset, physical_address_t size, bool *success, uint64 *readvalue)\n",b->obj.qname,DEV->name);
-	fprintf(f, "{\n");
-	fprintf(f,"\t{\n");
-	fprintf(f,"\t\t{\n");
-	fprintf(f,"\t\t\tbool v%d_exec = 0;\n",exec_index);
-	fprintf(f,"\t\t\t{\n");
-	fprintf(f,"\t\t\t\t{\n");	
-	fprintf(f,"\t\t\t\t\tuint64 v%d_offset = offset;\n",param);	
-	fprintf(f,"\t\t\t\t\tint64 v%d_size = size;\n",param);
-	fprintf(f,"\t\t\t\t\tint64 v%d_size2;\n",param);
-	fprintf(f,"\t\t\t\t\t*readvalue = 0;\n");
-	
-	/*genenrate register array access function*/
-	for(i = 1; i < list_count; i++) {
-		e = &list[i];
-		if(!e->size) {
-			break;
-		}
-		len = register_size * e->size;
-		//fprintf(f,"\t\t\t\t\tswitch(v%d_offset / %d )\n",param, len);
-		fprintf(f, "\t\t\t\t\t{\n");
-		list_for_each(p, &e->list) {
-			item = list_entry(p, reg_item_t, entry);
-			reg = (dml_register_t *)item->obj;
-			ret_index = get_local_index();
-			add_object_method(item->obj, "read_access");
-			tmp = reg->offset/len;
-			//if(tmp < MAGIC_NUM) {
-			//	fprintf(f, "\t\t\t\t\t\tcase %d:\n", tmp);
-			//} else {
-			//	fprintf(f, "\t\t\t\t\t\tcase 0x%x:\n", tmp);
-			//}
-			fprintf(f,"\t\t\t\t\t\t\tif(v%d_offset >= 0x%x && v%d_offset < 0x%x)\n", param, reg->offset, param, reg->offset + reg->array_size * reg->interval); // temp
-			fprintf(f,"\t\t\t\t\t\t\t{\n");
-			fprintf(f,"\t\t\t\t\t\t\t\tint _idx0;\n");
-			fprintf(f,"\t\t\t\t\t\t\t\t_idx0 = (v%d_offset - 0x%x) / %d;\n", param, reg->offset, reg->interval);
-			fprintf(f,"\t\t\t\t\t\t\t\tif(((_idx0 >= 0) && (_idx0 < %d)) && ((v%d_offset - _idx0 * %d - 0x%x) == 0))\n", reg->array_size, param, reg->interval, reg->offset);
-			fprintf(f,"\t\t\t\t\t\t\t\t{\n");
-			fprintf(f,"\t\t\t\t\t\t\t\t\tuint64 v%d_ret_value;\n", ret_index);
-			fprintf(f,"\t\t\t\t\t\t\t\t\tv%d_size2 = %d;\n", param, reg->size);
-			fprintf(f,"\t\t\t\t\t\t\t\t\tv%d_exec = _DML_M_%s__read_access(_dev, _idx0, memop, 31, 0, &v%d_ret_value);\n", exec_index, item->obj->qname, ret_index);
-			//fprintf(f,"\t\t\t\t\t\t\t\t\tprintf(\"-- %s: read %s[%%d] -> value 0x%%lx\\n\", _idx0, v%d_ret_value);\n", DEV->name, item->obj->a_name, ret_index);
-			fprintf(f,"\t\t\t\t\t\t\t\t\tif(v%d_exec){\n", exec_index);
-			fprintf(f,"\t\t\t\t\t\t\t\t\t\treturn 1;\n");
-			fprintf(f,"\t\t\t\t\t\t\t\t\t}\n");
-			fprintf(f,"\t\t\t\t\t\t\t\t\t*readvalue = v%d_ret_value;\n", ret_index);
-			fprintf(f,"\t\t\t\t\t\t\t\t\tgoto found;\n");
-			fprintf(f,"\t\t\t\t\t\t\t\t}\n");
-			//fprintf(f,"\t\t\t\t\t\t\t\tbreak;\n");
-			fprintf(f,"\t\t\t\t\t\t\t}\n");
-
-		}
-		fprintf(f, "\t\t\t\t\t}\n");
+	enter_scope();
+	gen_register_access(list, register_size, 1);
+	list_for_each(p, &b->groups) {
+		tmp = list_entry(p, object_t, entry);
+		group_t *gp = (group_t *)tmp;
+		loc = &gp->offset_info;	
+		gen_group_access(tmp, register_size, 1);	
 	}
-    /*genenrate single register access*/
-	fprintf(f,"\t\t\t\t\tswitch(v%d_offset / %d)\n",param, register_size);
-	fprintf(f, "\t\t\t\t\t{\n");
-	offset = 0;
-	size = 0;
-	int bound = 0;
-	LIST_HEAD(sorted_list);	
-	list_for_each(p, &list[0].list){
-		item = list_entry(p, reg_item_t, entry);
-		sort_case(&sorted_list, item, register_size);	
-	}
-	/*
-	list_for_each(p, &list[0].list){
-		item = list_entry(p, reg_item_t, entry);
-		t = item->obj;
-		reg = (dml_register_t *)t;
-		local_index = get_local_index();
-		offset = reg->offset;
-		bound = reg->offset + reg->size;
-		tmp = reg->offset/register_size;
-		if(tmp < MAGIC_NUM) {
-			fprintf(f,"\t\t\t\t\t\tcase %d:\n", tmp);
-		} else {
-			fprintf(f,"\t\t\t\t\t\tcase 0x%x:\n", tmp);
-		}
-		fprintf(f,"\t\t\t\t\t\t\t{\n");
-		fprintf(f,"\t\t\t\t\t\t\t\tuint8 v%d_lsb;\n",local_index);
-		fprintf(f,"\t\t\t\t\t\t\t\tuint8 v%d_msb;\n",local_index);
-		fprintf(f,"\t\t\t\t\t\t\t\tv%d_size2 = v%d_size < %d - v%d_offset ? v%d_size : %d - v%d_offset;\n",param,param,bound,param,param,bound,param);
-		fprintf(f,"\t\t\t\t\t\t\t\tv%d_lsb = (v%d_offset - %d) * 8;\n",local_index,param,offset);
-		fprintf(f,"\t\t\t\t\t\t\t\tv%d_msb = v%d_lsb + v%d_size2 * 8;\n",local_index,local_index,param);
-		fprintf(f,"\t\t\t\t\t\t\t\t{\n");
-		ret_index = get_local_index();
-		fprintf(f,"\t\t\t\t\t\t\t\t\tuint64 v%d_ret_value  = 0;\n",ret_index);	
-		fprintf(f,"\t\t\t\t\t\t\t\t\t{\n");
-		add_object_method(t,"read_access");	
-		fprintf(f,"\t\t\t\t\t\t\t\t\t\tv%d_exec = _DML_M_%s__read_access(_dev, memop, v%d_msb, v%d_lsb, &v%d_ret_value);\n",exec_index,t->qname,local_index,local_index,ret_index);	
-		//fprintf(f,"\t\t\t\t\t\t\t\t\t\tprintf(\"-- %s: read %s -> value 0x%%lx\\n\", v%d_ret_value);\n", DEV->name, item->obj->a_name, ret_index);
-		fprintf(f,"\t\t\t\t\t\t\t\t\t\tif(v%d_exec)\n",exec_index);		
-		fprintf(f,"\t\t\t\t\t\t\t\t\t\t\treturn 1;\n");
-		
-		fprintf(f,"\t\t\t\t\t\t\t\t\t}\n");
-		
-		fprintf(f,"\t\t\t\t\t\t\t\t\t*readvalue = v%d_ret_value;\n",ret_index);	
-
-		fprintf(f,"\t\t\t\t\t\t\t\t}\n");
-
-		fprintf(f,"\t\t\t\t\t\t\t\tgoto found;\n");
-
-		fprintf(f,"\t\t\t\t\t\t\t}\n");
-	}
-	*/
-	case_sort_t *tmpx;
-	list_for_each(p, &sorted_list) {
-		tmpx = list_entry(p, case_sort_t, entry);	
-		struct list_head *p2;
-		if(tmpx->val < MAGIC_NUM) {
-			fprintf(f,"\t\t\t\t\t\tcase %d:\n", tmpx->val);
-		} else {
-			fprintf(f,"\t\t\t\t\t\tcase 0x%x:\n", tmpx->val);
-		}
-		list_for_each(p2, &tmpx->sublist) {
-			item = list_entry(p2, reg_item_t, case_entry);
-			t = item->obj;
-			reg = (dml_register_t *)t;
-			local_index = get_local_index();
-			offset = reg->offset;
-			bound = reg->offset + reg->size;
-			tmp = reg->offset/register_size;
-			fprintf(f,"\t\t\t\t\t\t\t{\n");
-			fprintf(f,"\t\t\t\t\t\t\t\tuint8 v%d_lsb;\n",local_index);
-			fprintf(f,"\t\t\t\t\t\t\t\tuint8 v%d_msb;\n",local_index);
-			fprintf(f,"\t\t\t\t\t\t\t\tv%d_size2 = v%d_size < %d - v%d_offset ? v%d_size : %d - v%d_offset;\n",param,param,bound,param,param,bound,param);
-			fprintf(f,"\t\t\t\t\t\t\t\tv%d_lsb = (v%d_offset - %d) * 8;\n",local_index,param,offset);
-			fprintf(f,"\t\t\t\t\t\t\t\tv%d_msb = v%d_lsb + v%d_size2 * 8;\n",local_index,local_index,param);
-			fprintf(f,"\t\t\t\t\t\t\t\t{\n");
-			ret_index = get_local_index();
-			fprintf(f,"\t\t\t\t\t\t\t\t\tuint64 v%d_ret_value  = 0;\n",ret_index);	
-			fprintf(f,"\t\t\t\t\t\t\t\t\t{\n");
-			add_object_method(t,"read_access");	
-			fprintf(f,"\t\t\t\t\t\t\t\t\t\tv%d_exec = _DML_M_%s__read_access(_dev, memop, v%d_msb, v%d_lsb, &v%d_ret_value);\n",exec_index,t->qname,local_index,local_index,ret_index);	
-			//fprintf(f,"\t\t\t\t\t\t\t\t\t\tprintf(\"-- %s: read %s -> value 0x%%lx\\n\", v%d_ret_value);\n", DEV->name, item->obj->a_name, ret_index);
-			fprintf(f,"\t\t\t\t\t\t\t\t\t\tif(v%d_exec)\n",exec_index);		
-			fprintf(f,"\t\t\t\t\t\t\t\t\t\t\treturn 1;\n");
-			
-			fprintf(f,"\t\t\t\t\t\t\t\t\t}\n");
-			
-			fprintf(f,"\t\t\t\t\t\t\t\t\t*readvalue = v%d_ret_value;\n",ret_index);	
-
-			fprintf(f,"\t\t\t\t\t\t\t\t}\n");
-
-			fprintf(f,"\t\t\t\t\t\t\t\tgoto found;\n");
-
-			fprintf(f,"\t\t\t\t\t\t\t}\n");
-		}	
-	}
-	int exit_index = get_exit_index();	
-	fprintf(f,"\t\t\t\t\t}\n");
-	fprintf(f,"\t\t\t\t\t*success = 0;\n");
-	fprintf(f,"\t\t\t\t\tgoto exit%d;\n",exit_index);
-	fprintf(f,"\t\t\t\tfound:\n");
-	fprintf(f,"\t\t\t\t\t*success = v%d_size == v%d_size2;\n", param, param);
-	fprintf(f,"\t\t\t\t}\n");
-	fprintf(f,"\t\t\texit%d:;\n",exit_index);
-	fprintf(f,"\t\t\t}\n");
-	fprintf(f,"\t\t}\n");
-	fprintf(f,"\t\treturn 0;\n");
-	fprintf(f,"\t}\n");
-	fprintf(f,"}\n");
+	exit_scope();
 }		
 
 /**
@@ -286,166 +403,28 @@ static void gen_bank_read_access(bank_t *b, reg_array_t *list, FILE *f){
  */
 static void gen_bank_write_access(bank_t *b, reg_array_t *list, FILE *f){
 	int register_size = b->register_size;
-	int offset;
-	int size;
-	object_t *t;
 	struct list_head *p;
-	int exec_index = get_local_index();
-	int param = get_local_index();
-	reg_array_t *e;
-	reg_item_t *item;
-	int len;
-	int tmp;
-	dml_register_t *reg;
-	int i;
-	int ret_index;
-	int local_index;
+	object_t *tmp;
+	out = f;
 
-	fprintf(f,"\nstatic bool \n");
+	fprintf(f,"\nstatic bool\n");
 	fprintf(f,"_DML_M_%s__write_access(%s_t *_dev, generic_transaction_t *memop, physical_address_t offset, physical_address_t size, uint64 writevalue, bool *success)\n",b->obj.qname,DEV->name);
-	fprintf(f, "{\n");
-	fprintf(f,"\t{\n");
-	fprintf(f,"\t\t{\n");
-	fprintf(f,"\t\t\tbool v%d_exec = 0;\n",exec_index);
-	fprintf(f,"\t\t\t{\n");
-	fprintf(f,"\t\t\t\t{\n");	
-	fprintf(f,"\t\t\t\t\tuint64 v%d_offset = offset;\n",param);	
-	fprintf(f,"\t\t\t\t\tint64 v%d_size = size;\n",param);
-	fprintf(f,"\t\t\t\t\tint64 v%d_size2;\n",param);
+	enter_scope();
+	gen_register_access(list, register_size, 0);
+	list_for_each(p, &b->groups) {
+		tmp = list_entry(p, object_t, entry);
+		gen_group_access(tmp, register_size, 0);	
+	}
+	exit_scope();
+}
 
-	/*genenrate register array access function*/
-	for(i = 1; i < list_count; i++) {
-		e = &list[i];
-		if(!e->size) {
-			break;
-		}
-		len = register_size * e->size;
-		//fprintf(f,"\t\t\t\t\tswitch(v%d_offset / %d )\n",param, len);
-		fprintf(f, "\t\t\t\t\t{\n");
-		list_for_each(p, &e->list) {
-			item = list_entry(p, reg_item_t, entry);
-			reg = (dml_register_t *)item->obj;
-			ret_index = get_local_index();
-			add_object_method(item->obj, "write_access");
-			tmp = reg->offset/len;
-			//if(tmp < MAGIC_NUM) {
-			//	fprintf(f, "\t\t\t\t\t\tcase %d:\n", tmp);
-			//} else {
-			//	fprintf(f, "\t\t\t\t\t\tcase 0x%x:\n", tmp);
-			//}
-			fprintf(f,"\t\t\t\t\t\t\tif(v%d_offset >= 0x%x && v%d_offset < 0x%x)\n", param, reg->offset, param, reg->offset + reg->array_size * reg->interval); // temp
-			fprintf(f,"\t\t\t\t\t\t\t{\n");
-			fprintf(f,"\t\t\t\t\t\t\t\tint _idx0;\n");
-			fprintf(f,"\t\t\t\t\t\t\t\t_idx0 = (v%d_offset - 0x%x) / %d;\n", param, reg->offset, reg->interval);
-			fprintf(f,"\t\t\t\t\t\t\t\tif(((_idx0 >= 0) && (_idx0 < %d)) && ((v%d_offset - _idx0 * %d - 0x%x) == 0))\n", reg->array_size, param, reg->interval, reg->offset);
-			fprintf(f,"\t\t\t\t\t\t\t\t{\n");
-			fprintf(f,"\t\t\t\t\t\t\t\tv%d_size2 = %d;\n", param, reg->size);
-			//fprintf(f,"\t\t\t\t\t\t\t\t\tprintf(\"-- %s: write %s[%%d] <- value 0x%%lx\\n\", _idx0, writevalue);\n", DEV->name, item->obj->a_name);
-			fprintf(f,"\t\t\t\t\t\t\t\t\tv%d_exec = _DML_M_%s__write_access(_dev, _idx0, memop, 31, 0, writevalue);\n", exec_index, item->obj->qname);
-			fprintf(f,"\t\t\t\t\t\t\t\t\tif(v%d_exec){\n", exec_index);
-			fprintf(f,"\t\t\t\t\t\t\t\t\t\treturn 1;\n");
-			fprintf(f,"\t\t\t\t\t\t\t\t\t}\n");
-			fprintf(f,"\t\t\t\t\t\t\t\t\tgoto found;\n");
-			fprintf(f,"\t\t\t\t\t\t\t\t}\n");
-			//fprintf(f,"\t\t\t\t\t\t\t\tbreak;\n");
-			fprintf(f,"\t\t\t\t\t\t\t}\n");
 
-		}
-		fprintf(f, "\t\t\t\t\t}\n");
-	}
-	
-	fprintf(f,"\t\t\t\t\tswitch(v%d_offset / %d )\n",param,register_size);
-	fprintf(f, "\t\t\t\t\t{\n");
-	offset = 0;
-	size = 0;
-	int bound = 0;
-	LIST_HEAD(sorted_list);	
-	list_for_each(p, &list[0].list){
-		item = list_entry(p, reg_item_t, entry);
-		sort_case(&sorted_list, item, register_size);	
-	}
-	/*
-	list_for_each(p, &list[0].list){
-		item = list_entry(p, reg_item_t, entry);
-		t = item->obj;
-		reg = (dml_register_t *)t;
-		local_index = get_local_index();
-		offset = reg->offset;
-		bound = offset + reg->size;
-		tmp = reg->offset/reg->size;
-		if(tmp < MAGIC_NUM) {
-			fprintf(f, "\t\t\t\t\t\tcase %d:\n", tmp);
-		} else {
-			fprintf(f, "\t\t\t\t\t\tcase 0x%x:\n", tmp);
-		}
-		fprintf(f,"\t\t\t\t\t\t\t{\n");
-		fprintf(f,"\t\t\t\t\t\t\t\tuint8 v%d_lsb;\n",local_index);
-		fprintf(f,"\t\t\t\t\t\t\t\tuint8 v%d_msb;\n",local_index);
-		fprintf(f,"\t\t\t\t\t\t\t\tv%d_size2 = v%d_size < %d - v%d_offset ? v%d_size : %d - v%d_offset;\n",param,param,bound,param,param,bound,param);
-		fprintf(f,"\t\t\t\t\t\t\t\tv%d_lsb = (v%d_offset - %d) * 8;\n",local_index,param,offset);
-		fprintf(f,"\t\t\t\t\t\t\t\tv%d_msb = v%d_lsb + v%d_size2 * 8;\n",local_index,local_index,param);
-		offset += register_size;
-		fprintf(f,"\t\t\t\t\t\t\t\t{\n");
-		ret_index = get_local_index();
-		add_object_method(t,"write_access");
-		//fprintf(f,"\t\t\t\t\t\t\t\t\tprintf(\"-- %s: write %s <- value 0x%%lx\\n\", writevalue);\n", DEV->name, item->obj->a_name);
-		fprintf(f,"\t\t\t\t\t\t\t\t\tv%d_exec = _DML_M_%s__write_access(_dev, memop, v%d_msb, v%d_lsb, writevalue);\n",exec_index,t->qname,local_index,local_index);	
-		fprintf(f,"\t\t\t\t\t\t\t\t\tif(v%d_exec)\n",exec_index);		
-		fprintf(f,"\t\t\t\t\t\t\t\t\t\treturn 1;\n");	
-		fprintf(f,"\t\t\t\t\t\t\t\t}\n");
-		fprintf(f,"\t\t\t\t\t\t\t\tgoto found;\n");
-		fprintf(f,"\t\t\t\t\t\t\t}\n");
-	}
-	*/
-	case_sort_t *tmpx;
-	list_for_each(p, &sorted_list) {
-		tmpx = list_entry(p, case_sort_t, entry);	
-		struct list_head *p2;
-		if(tmpx->val < MAGIC_NUM) {
-			fprintf(f,"\t\t\t\t\t\tcase %d:\n", tmpx->val);
-		} else {
-			fprintf(f,"\t\t\t\t\t\tcase 0x%x:\n", tmpx->val);
-		}
-		list_for_each(p2, &tmpx->sublist) {
-			item = list_entry(p2, reg_item_t, case_entry);
-			t = item->obj;
-			reg = (dml_register_t *)t;
-			local_index = get_local_index();
-			offset = reg->offset;
-			bound = offset + reg->size;
-			tmp = reg->offset/reg->size;
-			fprintf(f,"\t\t\t\t\t\t\t{\n");
-			fprintf(f,"\t\t\t\t\t\t\t\tuint8 v%d_lsb;\n",local_index);
-			fprintf(f,"\t\t\t\t\t\t\t\tuint8 v%d_msb;\n",local_index);
-			fprintf(f,"\t\t\t\t\t\t\t\tv%d_size2 = v%d_size < %d - v%d_offset ? v%d_size : %d - v%d_offset;\n",param,param,bound,param,param,bound,param);
-			fprintf(f,"\t\t\t\t\t\t\t\tv%d_lsb = (v%d_offset - %d) * 8;\n",local_index,param,offset);
-			fprintf(f,"\t\t\t\t\t\t\t\tv%d_msb = v%d_lsb + v%d_size2 * 8;\n",local_index,local_index,param);
-			offset += register_size;
-			fprintf(f,"\t\t\t\t\t\t\t\t{\n");
-			ret_index = get_local_index();
-			add_object_method(t,"write_access");
-			//fprintf(f,"\t\t\t\t\t\t\t\t\tprintf(\"-- %s: write %s <- value 0x%%lx\\n\", writevalue);\n", DEV->name, item->obj->a_name);
-			fprintf(f,"\t\t\t\t\t\t\t\t\tv%d_exec = _DML_M_%s__write_access(_dev, memop, v%d_msb, v%d_lsb, writevalue);\n",exec_index,t->qname,local_index,local_index);	
-			fprintf(f,"\t\t\t\t\t\t\t\t\tif(v%d_exec)\n",exec_index);		
-			fprintf(f,"\t\t\t\t\t\t\t\t\t\treturn 1;\n");	
-			fprintf(f,"\t\t\t\t\t\t\t\t}\n");
-			fprintf(f,"\t\t\t\t\t\t\t\tgoto found;\n");
-			fprintf(f,"\t\t\t\t\t\t\t}\n");
-		}	
-	}
-	int exit_index = get_exit_index();	
-	fprintf(f,"\t\t\t\t\t}\n");
-	fprintf(f,"\t\t\t\t\t*success = 0;\n");
-	fprintf(f,"\t\t\t\t\tgoto exit%d;\n",exit_index);
-	fprintf(f,"\t\t\t\tfound:\n");
-	fprintf(f,"\t\t\t\t\t*success = v%d_size == v%d_size2;\n", param, param);
-	fprintf(f,"\t\t\t\t}\n");
-	fprintf(f,"\t\t\texit%d:;\n",exit_index);
-	fprintf(f,"\t\t\t}\n");
-	fprintf(f,"\t\t}\n");
-	fprintf(f,"\t\treturn 0;\n");
-	fprintf(f,"\t}\n");
-	fprintf(f,"}\n");
+static void gen_group_access2(object_t *obj, reg_array_t *list, int register_size, int is_read) {
+	POS;
+	enter_scope();
+	gen_register_access(list, register_size, is_read);	
+	exit_scope();
+	D("\n");
 }
 
 /**
@@ -634,9 +613,8 @@ static reg_array_t *sort_register_array(bank_t *b) {
 		fprintf(stderr, "i %d, reg %s, base 0x%x, list %p\n", i++, reg->obj.name, reg->offset, list);
 		if(reg->is_array) {
 			fprintf(stderr, "is array list %p\n", list);
-			reg_array_t *list2 = list;
-			i = find_slot(list2, reg->offset,  reg->array_size);		
-			reg_list_insert(list2, i, obj);
+			i = find_slot(list, reg->offset,  reg->array_size);		
+			reg_list_insert(list, i, obj);
 		} else {
 			reg_list_insert(list, 0, obj);
 		}
@@ -645,6 +623,35 @@ static reg_array_t *sort_register_array(bank_t *b) {
 	return list;
 }
 
+static reg_array_t *sort_register_array2(struct list_head *regs_list) {
+	struct list_head *p;
+	object_t *obj;
+	dml_register_t *reg;
+	reg_array_t *list = NULL;
+	int i = 0;
+
+	if(!regs_list)
+		return;
+	list = new_reg_list();
+	list_for_each(p, regs_list) {
+		obj = list_entry(p, object_t, entry);	
+		reg = (dml_register_t *)obj;
+		fprintf(stderr, "i %d, regxxx %s, base 0x%x, list %p\n", i++, reg->obj.name, reg->offset_info.offset, list);
+		if(reg->is_undefined || reg->is_unmapped) {
+			continue;
+		}
+		fprintf(stderr, "i %d, regxxx %s, base 0x%x, list %p\n", i++, reg->obj.name, reg->offset_info.offset, list);
+		if(reg->is_array) {
+			fprintf(stderr, "is array list %p\n", list);
+			i = find_slot(list, reg->offset_info.offset,  reg->array_size);		
+			reg_list_insert(list, i, obj);
+		} else {
+			reg_list_insert(list, 0, obj);
+		}
+		fprintf(stderr, "end\n");
+	}
+	return list;
+}
 /**
  * @brief gen_code_once_noplatform : genenrate the code without relationship with platform
  *
@@ -662,7 +669,7 @@ void gen_code_once_noplatform(device_t *dev, FILE *f){
 	gen_device_event_code(dev, f);
 	list_for_each(p,&dev->obj.childs){
 		b = list_entry(p, bank_t, obj.entry);
-		list = sort_register_array(b);
+		list = sort_register_array2(&b->obj.childs);
 		gen_bank_read_access(b, list, f);
 		gen_bank_write_access(b, list, f);
 	}	

@@ -24,6 +24,92 @@
 #include "gen_implement.h"
 #include "gen_port.h"
 extern FILE *out;
+void gen_obj_method_protos(object_t *obj);
+static void gen_none_object(object_t* obj) {
+	/* we do not need to do anything */
+	return;
+}
+
+static void gen_bank_sepcial_obj(object_t* obj) {
+	bank_t*  bank = (bank_t*)obj;
+	struct list_head *p;
+	object_t *t;
+
+	list_for_each(p, &obj->events){
+		t = list_entry(p, object_t, entry);
+		gen_obj_method_protos(t);
+	}
+	list_for_each(p, &bank->attributes){
+		t = list_entry(p, object_t, entry);
+		gen_obj_method_protos(t);
+	}
+	list_for_each(p, &bank->implements){
+		t = list_entry(p, object_t, entry);
+		gen_obj_method_protos(t);
+	}
+	list_for_each(p, &bank->groups){
+		t = list_entry(p, object_t, entry);
+		gen_obj_method_protos(t);
+	}
+	return;
+}
+
+static void gen_group_special_obj(object_t* obj) {
+	struct list_head* p;
+	object_t* tmp;
+	group_t* gp = (group_t*)obj;
+	list_for_each(p, &obj->events){
+		tmp = list_entry(p, object_t, entry);
+		gen_obj_method_protos(tmp);
+	}
+	list_for_each(p, &gp->registers){
+		tmp = list_entry(p, object_t, entry);
+		gen_obj_method_protos(tmp);
+	}
+	list_for_each(p, &gp->groups){
+		tmp = list_entry(p, object_t, entry);
+		gen_obj_method_protos(tmp);
+	}
+}
+
+static void gen_port_special_object(object_t* obj) {
+	struct list_head *p;
+	object_t *tmp;
+	dml_port_t* port = (dml_port_t*)obj;
+	list_for_each(p, &obj->events){
+		tmp = list_entry(p, object_t, entry);
+		gen_obj_method_protos(tmp);
+	}
+	list_for_each(p, &port->connects){
+		tmp = list_entry(p, object_t, entry);
+		gen_obj_method_protos(tmp);
+	}
+	list_for_each(p, &port->attributes){
+		tmp = list_entry(p, object_t, entry);
+		gen_obj_method_protos(tmp);
+	}
+	list_for_each(p, &port->implements){
+		tmp = list_entry(p, object_t, entry);
+		gen_obj_method_protos(tmp);
+	}
+	return;
+}
+
+static void (*gen_obj_special[])(object_t* obj) = {
+	[Obj_Type_None] = gen_none_object,
+	[Obj_Type_Device] = gen_none_object,
+	[Obj_Type_Bank] = gen_bank_sepcial_obj,
+	[Obj_Type_Register] = gen_none_object,
+	[Obj_Type_Field]  = gen_none_object,
+	[Obj_Type_Attribute] = gen_none_object,
+	[Obj_Type_Connect]  = gen_none_object,
+	[Obj_Type_Port]    = gen_port_special_object,
+	[Obj_Type_Implement] = gen_none_object,
+	[Obj_Type_Interface] = gen_none_object,
+	[Obj_Type_Data]     = gen_none_object,
+	[Obj_Type_Event]    = gen_none_object,
+	[Obj_Type_Group]    = gen_group_special_obj
+};
 
 /**
  * @brief gen_obj_method_protos : generate the prototype of method
@@ -57,6 +143,7 @@ void gen_obj_method_protos(object_t *obj) {
 		tmp = list_entry(p, object_t, entry);
 		gen_obj_method_protos(tmp);
 	}
+	gen_obj_special[obj->encoding](obj);
 }
 
 /**

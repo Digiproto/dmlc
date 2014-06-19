@@ -51,6 +51,10 @@ typedef struct index_info {
 	struct list_head list;
 } index_list_t;
 
+typedef struct {
+	struct list_head entry;
+	tree_t *index;
+} index_var_t;
 typedef struct ref_ret {
         int is_obj;
 	int is_data;
@@ -70,6 +74,12 @@ static inline void init_index_list(index_list_t *indexs) {
 	INIT_LIST_HEAD(&indexs->list);
 }
 
+static inline index_var_t* new_index_var(tree_t *index) {
+	index_var_t *tmp = (index_var_t *)gdml_zmalloc(sizeof *tmp);
+	INIT_LIST_HEAD(&tmp->entry);
+	tmp->index = index;
+	return tmp;
+}
 
 static inline void init_ref_ret(ref_ret_t *fr) {
 	fr->is_obj = 0;

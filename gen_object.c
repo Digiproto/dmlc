@@ -33,7 +33,6 @@
 extern int method_to_generate;
 static void gen_obj_generic_code(object_t *obj);
 
-
 /**
  * @brief gen_object_method : entry to generate method code of object
  *

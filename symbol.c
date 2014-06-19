@@ -137,6 +137,16 @@ symbol_t _symbol_find(symbol_t* symbol_table, const char* name, type_t type) {
     return NULL;
 }
 
+symbol_t _symbol_find_type(symtab_t table,  type_t type) {
+	/* hash conflict */
+	symbol_t sym = table->list;
+	while ((sym != NULL) &&
+			(sym->type != type)) {
+		sym = sym->lnext;
+	}
+	return sym;
+}
+
 symbol_t _symbol_find_not(symbol_t* symbol_table, const char* name, type_t type) {
     symbol_t symbol = symbol_table[str_hash(name)];
 	if (symbol) {

@@ -47,6 +47,7 @@ static int handle_inline_case(tree_t *t, type_t type) {
     if(type == CALL_TYPE || type == THROW_TYPE) {
         tmp = it->call_inline.expr;
 	fprintf(stderr, "file %s, line %d\n", t->common.location.file->name, t->common.location.first_line);
+	init_ref_ret(&ref_ret);
 	if(tmp->common.type == EXPR_BRACK_TYPE) {
 		flowx = 1;
         	sym = get_ref_sym(tmp->expr_brack.expr, &ref_ret, NULL);

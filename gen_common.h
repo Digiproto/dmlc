@@ -106,4 +106,5 @@ symbol_t  get_expression_sym(tree_t *node);
 int check_method_param(symbol_t sym, tree_t* call_expr, tree_t* ret_expr, int in_line);
 void gen_method_params(object_t *obj, tree_t *m, int);
 void print_cdeclx(tree_t *node);
+void gen_attribute_inline_method(object_t *obj, const char *name); 
 #endif /* __GEN_COMMON_H__ */

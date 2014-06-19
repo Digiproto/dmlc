@@ -2209,7 +2209,7 @@ static void parse_call_inline_method(symtab_t table, tree_t* call_expr, tree_t* 
 	assert(call_expr != NULL);
 	object_t *obj = NULL; tree_t* block = NULL;
 	tree_t *node = NULL; method_attr_t *method_attr = NULL;
-	fprintf(stderr, "table %d, file %s, line %d\n", table->table_num, call_expr->common.location.file->name, call_expr->common.location.first_line);
+	fprintf(stderr, "tablex %d, file %s, line %d\n", table->table_num, call_expr->common.location.file->name, call_expr->common.location.first_line);
 	symbol_t method_sym = get_call_expr_info(call_expr, table);
 	symtab_t saved_table;
 	if (method_sym) {
@@ -2229,10 +2229,12 @@ static void parse_call_inline_method(symtab_t table, tree_t* call_expr, tree_t* 
 				*p = 0;
 				error("method '%s' object cannot empty\n", method_sym->name);
 			} else {
-				if (!block_empty(block))
+				fprintf(stderr, "call/inline obj %s, func %s\n", obj->name, method_sym->name);
+				if (!block_empty(block)) {
 					DBG("ADD: obj name %s, method name %s\n", obj->name, method_sym->name);
 					fprintf(stderr, "call/inline obj %s, func %s\n", obj->name, method_sym->name);
 					add_object_method(obj, method_sym->name);
+				}
 			}
 		} else {
 			error("method not right %p, %d\n", method_sym, method_sym->type);
@@ -2254,7 +2256,6 @@ static void parse_call_inline_method(symtab_t table, tree_t* call_expr, tree_t* 
 void parse_call(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 	parse_call_inline_method(table, node->call_inline.expr, node->call_inline.ret_args, 0);
-
 	return;
 }
 
@@ -2267,7 +2268,6 @@ void parse_call(tree_t* node, symtab_t table) {
 void parse_inline(tree_t* node, symtab_t table) {
 	assert(node != NULL); assert(table != NULL);
 	parse_call_inline_method(table, node->call_inline.expr, node->call_inline.ret_args, 1);
-
 	return;
 }
 

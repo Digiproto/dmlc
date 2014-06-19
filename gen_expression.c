@@ -322,6 +322,7 @@ void translate_expr_brack_direct(tree_t *t) {
 	object_t *tmp;
 
 	node = t->expr_brack.expr;
+	init_ref_ret(&ref_ret);
 	sym = get_ref_sym(node, &ref_ret, NULL);
 	if(sym && sym->type == OBJECT_TYPE) {
 		obj = (object_t *)sym->attr;

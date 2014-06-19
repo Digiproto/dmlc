@@ -244,6 +244,7 @@ typedef struct port {
 typedef struct group {
 	object_t obj;
 	offset_info_t offset_info;
+	offset_info_t *loc;
 	struct list_head groups;
 	struct list_head attributes;
 	struct list_head registers;

@@ -82,6 +82,7 @@ static void check_bank_sepcial_obj(object_t* obj) {
 	bank_t*  bank = (bank_t*)obj;
 	struct list_head *p;
 	object_t *t;
+
 	list_for_each(p, &obj->events){
 		t = list_entry(p, object_t, entry);
 		chk_obj_generic_code(t);
@@ -173,8 +174,16 @@ static void check_group_special_obj(object_t* obj) {
 	assert(obj != NULL);
 	struct list_head* p;
 	object_t* tmp;
-	dml_register_t* reg = (dml_register_t*)obj;
+	group_t* gp = (group_t*)obj;
 	list_for_each(p, &obj->events){
+		tmp = list_entry(p, object_t, entry);
+		chk_obj_generic_code(tmp);
+	}
+	list_for_each(p, &gp->registers){
+		tmp = list_entry(p, object_t, entry);
+		chk_obj_generic_code(tmp);
+	}
+	list_for_each(p, &gp->groups){
 		tmp = list_entry(p, object_t, entry);
 		chk_obj_generic_code(tmp);
 	}
@@ -204,7 +213,6 @@ static void (*check_obj_special[])(object_t* obj) = {
 static void check_obj_special_code(object_t* obj) {
 		assert(obj != NULL);
 		check_obj_special[obj->encoding](obj);
-
 		return;
 }
 
