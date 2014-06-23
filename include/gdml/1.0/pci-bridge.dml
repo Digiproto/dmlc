@@ -447,14 +447,14 @@ method remap_secondary_config() {
     }
 
     /* tell secondary bus about new number */
-    $secondary_bus.pci_bus.set_bus_number(sec);
+    $secondary_bus.pci_bus.set_bus_number( sec);
 
     memset(&map, 0, sizeof(map));
 
     inline $compute_conf_space_window(&map, sec, sub);
     map.function = DOWNSTREAM_CONF;
 
-    $pci_bus.pci_bus.add_map( $dev.obj, Sim_Addr_Space_Conf,
+    $pci_bus.pci_bus.add_map($dev.obj, Sim_Addr_Space_Conf,
                              $secondary_bus_spc.cfg, map);
 }
 
@@ -550,7 +550,7 @@ method map_upstream(addr_space_t space, uint64 base, uint64 length,
     else
         tgt = $pci_bus_spc.mem;
 
-    $secondary_bus.pci_bus.add_map($dev.obj, space, tgt, info);
+    $secondary_bus.pci_bus.add_map( $dev.obj, space, tgt, info);
 
     log "info", 2, PCI_bridge:
         "New upstream %s space mapping (function %d): base = 0x%llx, length = 0x%llx",
@@ -562,7 +562,7 @@ method map_upstream(addr_space_t space, uint64 base, uint64 length,
 
 method remove_io() {
     $pci_bus.pci_bus.remove_map(
-         $dev.obj, Sim_Addr_Space_IO, DOWNSTREAM_IO);
+        $dev.obj, Sim_Addr_Space_IO, DOWNSTREAM_IO);
     $pci_bus.pci_bus.remove_map(
          $dev.obj, Sim_Addr_Space_IO, DOWNSTREAM_IO_VGA);
     $secondary_bus.pci_bus.remove_map(
@@ -743,11 +743,11 @@ method swap_map_pair(map_pair_t *a, map_pair_t *b) {
 
 method remove_memory() {
     $pci_bus.pci_bus.remove_map(
-        $dev.obj, Sim_Addr_Space_Memory, DOWNSTREAM_PREF);
+         $dev.obj, Sim_Addr_Space_Memory, DOWNSTREAM_PREF);
     $pci_bus.pci_bus.remove_map(
-         $dev.obj, Sim_Addr_Space_Memory, DOWNSTREAM_MEM);
+        $dev.obj, Sim_Addr_Space_Memory, DOWNSTREAM_MEM);
     $pci_bus.pci_bus.remove_map(
-         $dev.obj, Sim_Addr_Space_Memory, DOWNSTREAM_MEM_VGA);
+        $dev.obj, Sim_Addr_Space_Memory, DOWNSTREAM_MEM_VGA);
     $secondary_bus.pci_bus.remove_map(
          $dev.obj, Sim_Addr_Space_Memory, UPSTREAM_MEM_1);
     $secondary_bus.pci_bus.remove_map(

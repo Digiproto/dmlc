@@ -148,7 +148,7 @@ template pci_config_generic {
             // Set if not already set
             if ($this == -1) {
                 inline $require_pci_bus();
-                $this = $pci_bus.pci_bus.get_bus_address($dev.obj);
+                $this = $pci_bus.pci_bus.get_bus_address( $dev.obj);
             }
         }
     }
@@ -414,6 +414,8 @@ template config_registers_attribute {
             value.u.list.vector[i] = SIM_make_attr_integer(val);
         }
     }
+    method set(value) {
+	}
 }
 
 /* Type 0 Configuration */
@@ -567,6 +569,7 @@ template base_address {
             log "info", 2, PCI_config: 
                 "Removing mapping for unknown base address %s", $qname;
         } else {
+		local int a;
             local conf_object_t *map_obj;
             inline $require_pci_bus();
             inline $pci_mapping_object() -> (map_obj);
@@ -624,7 +627,7 @@ template base_address {
                 info.function, info.base, info.length;
 
             $pci_bus.pci_bus->add_map(
-                $pci_bus, map_obj,
+                 map_obj,
                 $map_type == "memory" ? Sim_Addr_Space_Memory 
                                       : Sim_Addr_Space_IO,
                 map_target, info);
@@ -639,7 +642,11 @@ template memory_base_address_generic {
     is base_address;
 
     method update_mapping() default {
+	local bool enabledx;
         local bool enabled;
+	local int a;
+	
+	a = enabled + a;
 
         inline $this.remove_map;
 
@@ -860,7 +867,7 @@ method pci_data_from_memory(addr_space_t space, void *buffer, uint64 address,
     memset(&info, 0, sizeoftype(map_info_t));
     info.function = space;
 
-    ex = $pci_bus.io_memory.operation(&trans.s, info);
+    ex = $pci_bus.io_memory.operation( &trans.s, info);
 
     if (ex == Sim_PE_IO_Not_Taken) {
         // master abort
@@ -927,6 +934,7 @@ method pci_data_to_memory(addr_space_t space, const void *buffer,
     if (ex == Sim_PE_IO_Not_Taken) {
         // master abort
         log "info", 2, PCI_DMA: "Master Abort received";
+	$pci_config.status.c = 1;
         $pci_config.status.rma = 1;
     } else if (ex == Sim_PE_IO_Error) {
         // target abort

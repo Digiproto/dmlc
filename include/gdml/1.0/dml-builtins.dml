@@ -474,12 +474,16 @@ template register {
 
     method hard_reset() default {
         //if ($allocate)
-        //    $this = $hard_reset_value;
+           //$this = $hard_reset_value;
 	if($fields[0].explicit) {
-		foreach f in ($fields)
-			call f.hard_reset;
+		foreach f in ($fields) {
+			local uint32 tmp = $hard_reset_value[f.msb:f.lsb];
+			call f.set(tmp);
+		}
+	} else {
+		$this = $hard_reset_value;
 	}
-	
+
     }
 
     method after_hard_reset() default {
@@ -500,10 +504,14 @@ template register {
 
     method soft_reset() default {
         //if ($allocate)
-         //   $this = $soft_reset_value;
+        //   $this = $soft_reset_value;
 	if($fields[0].explicit) {
-		foreach f in ($fields)
-			call f.hard_reset;
+		foreach f in ($fields) {
+			local uint32 tmp = $soft_reset_value[f.msb:f.lsb];
+			call f.set(tmp);
+		}
+	} else {
+		$this = $soft_reset_value;
 	}
     }
 
@@ -557,12 +565,12 @@ template register {
 	    }
 	} else {
 	    // No explicit fields
-	    //if ($allocate) {
+	    if ($allocate) {
 		$this = value;
-	    //} else if ($configuration != "none"
+	    } else if ($configuration != "none"
                        && $configuration != "pseudo") {
-             //   error "set() not implemented for non-allocated register";
-	    //}
+                error "set() not implemented for non-allocated register";
+	    }
 	}
     }
 
@@ -606,9 +614,10 @@ template register {
             //inline $read_access_main(memop, msb1, lsb) -> (value);
             //inline $after_read(memop);
 			local uint64 readval;
+		inline $before_read(memop);
         	call $read_access_main(memop, msb1, lsb) -> (readval);
 			value = readval;
-        	call $after_read(memop);
+        	inline $after_read(memop);
         //}
     }
 
@@ -676,6 +685,7 @@ template register {
         } else { */
             //inline $write_access_main(memop, msb1, lsb, value);
             //inline $after_write(memop);
+	    inline $before_write(memop, msb1, lsb, value);
             call $write_access_main(memop, msb1, lsb, value);
             inline $after_write(memop);
         //}
@@ -760,10 +770,15 @@ template register {
 	}*/
     }
 
+    method before_read(memop) default {
+    	// no default action
+    }
     method after_read(memop) default {
         // no default action
     }
-
+    method before_write(memop, msb1, lsb, value) default {
+    	// no default action
+    }
     method after_write(memop) default {
         // no default action
     }
@@ -803,7 +818,6 @@ template field {
 
     method soft_reset() default {
 	if ($allocate)
-	    if (defined $soft_reset_value)
 		$this = $soft_reset_value;
     }
 
@@ -826,11 +840,11 @@ template field {
     }
 
     method set(value) default {
-        if ($allocate)
+        //if ($allocate)
             $this = value;
-        else if ($configuration != "none" && $configuration != "pseudo") {
-            error "set() not implemented for non-allocated field";
-        }
+        //else if ($configuration != "none" && $configuration != "pseudo") {
+        //    error "set() not implemented for non-allocated field";
+        //}
     }
 
     method get() -> (typeof($this) value) default {

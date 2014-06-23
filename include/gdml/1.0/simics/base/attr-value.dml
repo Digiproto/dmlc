@@ -64,7 +64,7 @@ extern uint32 SIM_attr_data_size(attr_value_t attr);
 extern uint32 SIM_attr_dict_size(attr_value_t attr);
 extern uint32 SIM_attr_list_size(attr_value_t attr);
 typedef struct { attr_value_t key; attr_value_t value; } attr_dict_pair_t;
-typedef struct { attr_kind_t kind; uint32 size; struct { const char *string; integer_t integer; int boolean; double floating; attr_value_t *list; attr_dict_pair_t *dict; uint8 *data; conf_object_t *object; struct { } *py_object; char *uobject; } u; } attr_value_t;
+typedef struct { attr_kind_t kind; struct { const char *string; integer_t integer; int boolean; double floating; struct { size_t size; attr_value_t *vector; } list; struct { size_t size; attr_dict_pair_t *vector; } dict; struct { size_t size; uint8 *data; } data; conf_object_t *object; struct { size_t size; char *filename; uint64 offset; } udata; char *uobject; } u; } attr_value_t;
 typedef int attr_kind_t;
 constant Sim_Val_Invalid = 0;
 constant Sim_Val_String = 1;
