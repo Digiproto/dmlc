@@ -1,0 +1,16 @@
+// Copyright 2008-2010 Virtutech AB
+
+// This file is part of Virtutech Simics, which is distributed
+// under the Virtutech Simics Software License Agreement.
+
+dml 1.0;
+
+header %{
+#include <simics\processor\memory-augmentation.h>
+%}
+
+import "simics/base/types.dml";
+
+extern int VT_get_augmentation_bit(uint8 *extra_page_data, uint32 pofs);
+extern void VT_clear_augmentation_bit(uint8 *extra_page_data, uint32 pofs);
+extern void VT_set_augmentation_bit(uint8 *extra_page_data, uint32 pofs);

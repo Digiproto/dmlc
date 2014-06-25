@@ -1,0 +1,50 @@
+// Copyright 2008-2010 Virtutech AB
+
+// This file is part of Virtutech Simics, which is distributed
+// under the Virtutech Simics Software License Agreement.
+
+dml 1.0;
+
+header %{
+#include <simics\simulator\rev-exec.h>
+%}
+
+import "simics/base/types.dml";
+import "simics/base/time.dml";
+import "simics/processor/time.dml";
+
+extern int VT_in_the_past(void);
+extern int VT_is_reversing(void);
+extern int VT_revexec_active(void);
+extern int VT_revexec_available(void);
+extern cycles_t VT_revexec_cycles(conf_object_t *cpu, revexec_pos_t _where);
+extern int VT_reverse(pc_step_t count);
+extern int VT_skipto_cycle(conf_object_t *clock, cycles_t count);
+extern int VT_skipto_step(conf_object_t *clock, pc_step_t count);
+extern int VT_rewind(conf_object_t *cpu, pc_step_t abscount);
+extern int VT_skipto_bookmark(const char *name);
+extern pc_step_t VT_get_rewind_overhead(conf_object_t *cpu, pc_step_t abscount);
+extern pc_step_t VT_revexec_steps(conf_object_t *cpu, revexec_pos_t _where);
+extern void VT_revexec_divert_output(int divert, int discard);
+extern void VT_delete_micro_checkpoint(int index);
+extern void VT_restore_micro_checkpoint(int index);
+extern void VT_in_time_order(conf_object_t *obj, simple_time_ordered_handler_t handler, integer_t user_param1, integer_t user_param2);
+extern void VT_c_in_time_order(conf_object_t *obj, time_ordered_handler_t handler, integer_t param, void *data, size_t data_size);
+extern void VT_revexec_ignore_class(const char *class_name);
+extern void VT_save_micro_checkpoint(const char *name, micro_checkpoint_flags_t flags);
+extern void VT_discard_future(void);
+extern void VT_revexec_barrier(void);
+typedef void (*time_ordered_handler_t)(conf_object_t *obj, integer_t param, void *data);
+typedef void (*simple_time_ordered_handler_t)(conf_object_t *obj, integer_t param1, integer_t param2);
+typedef int micro_checkpoint_flags_t;
+constant Sim_MC_ID_User = 0;
+constant Sim_MC_ID_Breakpoint = 1;
+constant Sim_MC_ID_Tmp = 2;
+constant Sim_MC_ID_N_States = 3;
+constant Sim_MC_ID_Last_States = 4;
+constant Sim_MC_ID_Mask = 255;
+constant Sim_MC_Persistent = 256;
+constant Sim_MC_Automatic = 512;
+typedef int revexec_pos_t;
+constant Sim_Reverse_Limit = 0;
+constant Sim_End_Of_Future = 1;

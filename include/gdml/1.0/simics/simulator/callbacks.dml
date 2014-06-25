@@ -1,0 +1,31 @@
+// Copyright 2008-2010 Virtutech AB
+
+// This file is part of Virtutech Simics, which is distributed
+// under the Virtutech Simics Software License Agreement.
+
+dml 1.0;
+
+header %{
+#include <simics\simulator\callbacks.h>
+%}
+
+import "simics/base/types.dml";
+import "simics/base/event.dml";
+
+extern int SIM_cancel_realtime_event(integer_t id);
+extern int SIM_process_work(int (*done)(void *done_data), void *done_data);
+extern int VT_signal_safe_callback(void (*func)(void *), void *user_data);
+extern int SIM_process_pending_work(void);
+extern integer_t SIM_realtime_event(uint32 delay_ms, void (*callback)(void *data), void *data, int run_in_thread, const char *desc);
+extern void SIM_notify_on_object(HANDLE obj, int run_in_thread, void (*callback)(void *data), void *data);
+extern void SIM_notify_on_socket(int sock, notify_mode_t mode, int run_in_thread, void (*callback)(void *data), void *data);
+extern void VT_post_local_work(conf_object_t *cell, void (*f)(void *data), void *data);
+extern void VT_domain_event_at(conf_object_t *domain, event_class_t *ec, conf_object_t *obj, conf_object_t *clock, double when, void *param);
+extern void VT_domain_event_soon(conf_object_t *domain, event_class_t *ec, conf_object_t *obj, void *param);
+extern void VT_stacked_post(conf_object_t *obj, void (*func)(conf_object_t *obj, void *param), void *user_data);
+extern void SIM_register_work(void (*f)(void *data), void *data);
+extern void SIM_run_alone(void (*f)(void *data), void *data);
+extern void SIM_thread_safe_callback(void (*f)(void *data), void *data);
+typedef int notify_mode_t;
+constant Sim_NM_Read = 0;
+constant Sim_NM_Write = 1;

@@ -1,0 +1,20 @@
+// Copyright 2008-2010 Virtutech AB
+
+// This file is part of Virtutech Simics, which is distributed
+// under the Virtutech Simics Software License Agreement.
+
+dml 1.0;
+
+header %{
+#include <simics\simulator\address-profiler.h>
+%}
+
+import "simics/base/types.dml";
+import "simics/model-iface/branch-recorder.dml";
+
+typedef int addr_type_t;
+extern addr_type_t VT_addr_type_from_str(const char *type);
+extern const char *VT_addr_type_to_str(addr_type_t type);
+constant Addr_Type_Invalid = 0;
+constant Addr_Type_Physical = 1;
+constant Addr_Type_Virtual = 2;

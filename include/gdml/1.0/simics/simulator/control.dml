@@ -1,0 +1,28 @@
+// Copyright 2008-2010 Virtutech AB
+
+// This file is part of Virtutech Simics, which is distributed
+// under the Virtutech Simics Software License Agreement.
+
+dml 1.0;
+
+header %{
+#include <simics\simulator\control.h>
+%}
+
+import "simics/base/types.dml";
+import "simics/base/time.dml";
+import "simics/processor/time.dml";
+
+extern int SIM_simics_is_running(void);
+extern int VT_inside_instruction(void);
+extern int VT_outside_execution_context_violation(void);
+extern pc_step_t SIM_continue(integer_t steps);
+extern void SIM_quit(int exit_code);
+extern void SIM_break_cycle(conf_object_t *obj, integer_t cycles);
+extern void SIM_break_step(conf_object_t *obj, integer_t steps);
+extern void VT_assert_outside_execution_context(const char *func, const char *file, int line);
+extern void SIM_break_message(const char *msg);
+extern void SIM_break_simulation(const char *msg);
+extern void VT_abort_simulation(const char *msg);
+extern void VT_user_interrupt(const char *msg, int break_script);
+extern void VT_reinstall_interrupt_key_handler(void);

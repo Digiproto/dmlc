@@ -1,0 +1,19 @@
+// Copyright 2008-2010 Virtutech AB
+
+// This file is part of Virtutech Simics, which is distributed
+// under the Virtutech Simics Software License Agreement.
+
+dml 1.0;
+
+header %{
+#include <simics\processor\stc.h>
+%}
+
+import "simics/base/types.dml";
+import "simics/base/memory.dml";
+
+extern void SIM_STC_flush_cache(conf_object_t *cpu);
+extern void SIM_flush_D_STC_logical(conf_object_t *cpu, logical_address_t vaddr, logical_address_t length);
+extern void SIM_flush_I_STC_logical(conf_object_t *cpu, logical_address_t vaddr, logical_address_t length);
+extern void SIM_flush_I_STC_physical(conf_object_t *cpu, physical_address_t paddr, physical_address_t length);
+extern void SIM_flush_D_STC_physical(conf_object_t *cpu, physical_address_t paddr, physical_address_t length, read_or_write_t read_or_write);

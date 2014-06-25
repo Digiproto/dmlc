@@ -1,0 +1,49 @@
+// Copyright 2008-2010 Virtutech AB
+
+// This file is part of Virtutech Simics, which is distributed
+// under the Virtutech Simics Software License Agreement.
+
+dml 1.0;
+
+header %{
+#include <simics\simulator\conf-object.h>
+%}
+
+import "simics/base/types.dml";
+import "simics/base/attr-value.dml";
+import "simics/base/conf-object.dml";
+
+extern attr_attr_t SIM_get_attribute_attributes(conf_class_t *cls, const char *attr);
+extern attr_value_t VT_get_all_objects_impl(attr_value_t ifaces);
+extern attr_value_t VT_get_all_instances(conf_class_t *cls);
+extern attr_value_t VT_get_attributes(conf_class_t *cls);
+extern attr_value_t VT_get_interfaces(conf_class_t *cls);
+extern attr_value_t VT_get_port_interfaces(conf_class_t *cls);
+extern attr_value_t SIM_get_class_attribute(conf_class_t *cls, const char *name);
+extern attr_value_t SIM_get_class_attribute_idx(conf_class_t *cls, const char *name, attr_value_t *index);
+extern attr_value_t SIM_get_attribute(conf_object_t *obj, const char *name);
+extern attr_value_t SIM_get_attribute_idx(conf_object_t *obj, const char *name, attr_value_t *index);
+extern attr_value_t SIM_get_all_classes(void);
+extern attr_value_t SIM_get_all_objects(void);
+extern attr_value_t VT_get_all_class_aliases(void);
+extern int SIM_class_has_attribute(conf_class_t *cls, const char *attr);
+extern int VT_object_checkpointable(conf_object_t *obj);
+extern int SIM_delete_objects(attr_value_t object_list);
+extern int SIM_change_attribute_attribute(conf_class_t *cls, const char *name, attr_attr_t attr);
+extern int SIM_delete_object(conf_object_t *obj);
+extern int DBG_check_typing_system(const char *type, attr_value_t *val);
+extern conf_class_t *SIM_get_class(const char *name);
+extern conf_object_t *SIM_create_object(conf_class_t *cls, const char *name, attr_value_t attrs);
+extern conf_object_t *SIM_get_object(const char *name);
+extern conf_object_t *VT_get_object_by_name(const char *name);
+extern const char *VT_get_class_description(conf_class_t *cls);
+extern const char *VT_get_attribute_type(conf_class_t *cls, const char *attr);
+extern const char *VT_get_port_interface_doc(const conf_class_t *cls, const char *name, const char *port);
+extern set_error_t SIM_set_class_attribute_idx(conf_class_t *cls, const char *name, attr_value_t *index, attr_value_t *value);
+extern set_error_t SIM_set_class_attribute(conf_class_t *cls, const char *name, attr_value_t *value);
+extern set_error_t SIM_set_attribute_idx(conf_object_t *obj, const char *name, attr_value_t *index, attr_value_t *value);
+extern set_error_t SIM_set_attribute(conf_object_t *obj, const char *name, attr_value_t *value);
+extern void VT_update_object_name(conf_object_t *obj);
+extern void VT_set_object_checkpointable(conf_object_t *obj, int checkpointable);
+extern void VT_set_delete_protection(conf_object_t *obj, int on);
+extern void VT_rename_object(conf_object_t *obj, const char *newname);

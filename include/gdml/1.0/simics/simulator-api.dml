@@ -1,0 +1,30 @@
+dml 1.0;
+// This file is generated. Do not edit.
+
+header %{
+#include <simics\simulator-api.h>
+%}
+
+import "simics/device-api.dml";
+import "simics/processor-api.dml";
+import "simics/simulator/address-profiler.dml";
+import "simics/simulator/breakpoints.dml";
+import "simics/simulator/callbacks.dml";
+import "simics/simulator/cmd-line.dml";
+import "simics/simulator/configuration.dml";
+import "simics/simulator/conf-object.dml";
+import "simics/simulator/control.dml";
+import "simics/simulator/embed.dml";
+import "simics/simulator/hap-consumer.dml";
+import "simics/simulator/host-profiling.dml";
+import "simics/simulator/memory.dml";
+import "simics/simulator/modules.dml";
+import "simics/simulator/output.dml";
+import "simics/simulator/paths.dml";
+import "simics/simulator/processor.dml";
+import "simics/simulator/python.dml";
+import "simics/simulator/rev-exec.dml";
+import "simics/simulator/script.dml";
+import "simics/simulator/sim-caches.dml";
+import "simics/simulator/version.dml";
+

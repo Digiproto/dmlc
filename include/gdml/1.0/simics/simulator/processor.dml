@@ -1,0 +1,24 @@
+// Copyright 2008-2010 Virtutech AB
+
+// This file is part of Virtutech Simics, which is distributed
+// under the Virtutech Simics Software License Agreement.
+
+dml 1.0;
+
+header %{
+#include <simics\simulator\processor.h>
+%}
+
+import "simics/base/types.dml";
+import "simics/base/attr-value.dml";
+
+extern attr_value_t SIM_get_all_processors(void);
+extern int SIM_object_is_processor(conf_object_t *obj);
+extern int SIM_processor_privilege_level(conf_object_t *cpu);
+extern int SIM_get_processor_number(const conf_object_t *cpu);
+extern int SIM_number_processors(void);
+extern conf_object_t *SIM_get_processor(int proc_no);
+extern conf_object_t *SIM_current_processor(void);
+extern conf_object_t *VT_first_clock(void);
+extern tuple_int_string_t SIM_disassemble_address(conf_object_t *cpu, generic_address_t address, int logical, int sub);
+extern void SIM_reset_processor(conf_object_t *cpu, int hard_reset);

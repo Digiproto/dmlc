@@ -1,0 +1,23 @@
+// Copyright 2008-2010 Virtutech AB
+
+// This file is part of Virtutech Simics, which is distributed
+// under the Virtutech Simics Software License Agreement.
+
+dml 1.0;
+
+header %{
+#include <simics\simulator\memory.h>
+%}
+
+import "simics/base/types.dml";
+
+extern physical_address_t SIM_load_binary(conf_object_t *obj, const char *file, physical_address_t offset, int use_pa, int verbose);
+extern physical_address_t VT_load_binary(conf_object_t *obj, const char *file, physical_address_t offset, int use_pa, int verbose, int no_clear);
+extern uint64 SIM_read_phys_memory_tags(conf_object_t *mem_space, physical_address_t paddr, uint32 ntags);
+extern uint64 VT_read_phys_memory_tags_mask(conf_object_t *mem_space, physical_address_t paddr, uint32 ntags);
+extern uint8 SIM_read_byte(conf_object_t *obj, generic_address_t paddr);
+extern uinteger_t SIM_read_phys_memory(conf_object_t *cpu, physical_address_t paddr, int length);
+extern void SIM_write_phys_memory(conf_object_t *cpu, physical_address_t paddr, uinteger_t value, int length);
+extern void SIM_write_phys_memory_tags(conf_object_t *mem_space, physical_address_t paddr, uint64 tag_bits, uint32 ntags);
+extern void SIM_write_byte(conf_object_t *obj, generic_address_t paddr, uint8 value);
+extern void SIM_load_file(conf_object_t *obj, const char *file, physical_address_t paddr, int verbose);

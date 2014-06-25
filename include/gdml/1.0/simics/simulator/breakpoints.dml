@@ -1,0 +1,21 @@
+// Copyright 2008-2010 Virtutech AB
+
+// This file is part of Virtutech Simics, which is distributed
+// under the Virtutech Simics Software License Agreement.
+
+dml 1.0;
+
+header %{
+#include <simics\simulator\breakpoints.h>
+%}
+
+import "simics/processor/types.dml";
+import "simics/model-iface/breakpoints.dml";
+
+extern breakpoint_id_t SIM_breakpoint(conf_object_t *obj, breakpoint_kind_t type, access_t access, uint64 address, uint64 length, breakpoint_flag_t flags);
+extern void SIM_delete_breakpoint(breakpoint_id_t id);
+extern void SIM_breakpoint_remove(int id, access_t access, generic_address_t address, generic_address_t length);
+typedef int breakpoint_flag_t;
+constant Sim_Breakpoint_Temporary = 1;
+constant Sim_Breakpoint_Simulation = 2;
+constant Sim_Breakpoint_Private = 4;

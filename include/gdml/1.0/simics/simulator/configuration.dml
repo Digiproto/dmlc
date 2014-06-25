@@ -1,0 +1,19 @@
+// Copyright 2008-2010 Virtutech AB
+
+// This file is part of Virtutech Simics, which is distributed
+// under the Virtutech Simics Software License Agreement.
+
+dml 1.0;
+
+header %{
+#include <simics\simulator\configuration.h>
+%}
+
+import "simics/base/attr-value.dml";
+
+extern int VT_write_configuration_objects(const char *file, attr_value_t obj_list, int save_queue);
+extern pre_conf_object_set_t *VT_get_configuration(const char *file);
+extern void SIM_set_configuration(attr_value_t conf);
+extern void SIM_read_configuration(const char *file);
+extern void SIM_add_configuration(pre_conf_object_set_t *object_list, const char *file);
+typedef struct { } pre_conf_object_set_t;

@@ -1,0 +1,19 @@
+// Copyright 2008-2010 Virtutech AB
+
+// This file is part of Virtutech Simics, which is distributed
+// under the Virtutech Simics Software License Agreement.
+
+dml 1.0;
+
+header %{
+#include <simics\simulator\python.h>
+%}
+
+import "simics/base/attr-value.dml";
+
+extern attr_value_t SIM_call_python_function(const char *func, attr_value_t *args);
+extern attr_value_t SIM_run_python(const char *line);
+extern attr_value_t VT_call_python_module_function(const char *module, const char *func, attr_value_t *args);
+extern struct { } *SIM_get_python_interface_type(const char *name);
+extern void SIM_source_python(const char *file);
+extern void SIM_source_python_in_module(const char *file, const char *module);

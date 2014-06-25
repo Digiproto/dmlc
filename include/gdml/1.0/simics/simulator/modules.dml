@@ -1,0 +1,19 @@
+// Copyright 2008-2010 Virtutech AB
+
+// This file is part of Virtutech Simics, which is distributed
+// under the Virtutech Simics Software License Agreement.
+
+dml 1.0;
+
+header %{
+#include <simics\simulator\modules.h>
+%}
+
+import "simics/base/attr-value.dml";
+
+extern attr_value_t SIM_get_all_failed_modules(void);
+extern attr_value_t SIM_get_all_modules(void);
+extern attr_value_t VT_get_all_modules_components(void);
+extern void SIM_load_module(const char *module);
+extern void SIM_unload_module(const char *module);
+extern void SIM_module_list_refresh(void);

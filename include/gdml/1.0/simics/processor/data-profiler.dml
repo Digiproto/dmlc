@@ -1,0 +1,18 @@
+// Copyright 2008-2010 Virtutech AB
+
+// This file is part of Virtutech Simics, which is distributed
+// under the Virtutech Simics Software License Agreement.
+
+dml 1.0;
+
+header %{
+#include <simics\processor\data-profiler.h>
+%}
+
+import "simics/base/types.dml";
+import "simics/util/prof-data.dml";
+
+typedef void (*data_profiler_flush_t)(conf_object_t *profiler, void *param);
+extern void VT_profiler_add_flush(conf_object_t *dp, data_profiler_flush_t flush_fun, void *flush_param);
+extern void VT_profiler_remove_flush(conf_object_t *dp, data_profiler_flush_t flush_fun, void *flush_param);
+extern void VT_prof_data_inc_pc(prof_data_t *prof, conf_object_t *cpu);

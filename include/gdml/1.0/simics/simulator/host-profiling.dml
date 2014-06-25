@@ -1,0 +1,16 @@
+// Copyright 2008-2010 Virtutech AB
+
+// This file is part of Virtutech Simics, which is distributed
+// under the Virtutech Simics Software License Agreement.
+
+dml 1.0;
+
+header %{
+#include <simics\simulator\host-profiling.h>
+%}
+
+import "simics/base/types.dml";
+
+extern profile_area_t *SIM_add_profiling_area(const char *name, uintptr_t start, uintptr_t end);
+extern void SIM_remove_profiling_area(profile_area_t *handle);
+typedef struct { } profile_area_t;

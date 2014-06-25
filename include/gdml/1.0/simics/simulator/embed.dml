@@ -1,0 +1,17 @@
+// Copyright 2008-2010 Virtutech AB
+
+// This file is part of Virtutech Simics, which is distributed
+// under the Virtutech Simics Software License Agreement.
+
+dml 1.0;
+
+header %{
+#include <simics\simulator\embed.h>
+%}
+
+import "simics/base-types.dml";
+
+extern void SIM_set_frontend_context(void *context);
+extern void SIM_init_command_line(void);
+extern void SIM_main_loop(void);
+extern void VT_save_preferences(void);

@@ -1,0 +1,31 @@
+// Copyright 2008-2010 Virtutech AB
+
+// This file is part of Virtutech Simics, which is distributed
+// under the Virtutech Simics Software License Agreement.
+
+dml 1.0;
+
+header %{
+#include <simics\model-iface\breakpoints.h>
+%}
+
+import "simics/base/types.dml";
+import "simics/base/memory-transaction.dml";
+import "simics/processor/types.dml";
+import "simics/pywrap.dml";
+
+typedef int breakpoint_id_t;
+typedef int breakpoint_handle_t;
+typedef struct { } breakpoint_t;
+typedef int breakpoint_kind_t;
+typedef struct { breakpoint_handle_t handle; access_t read_write_execute; generic_address_t start; generic_address_t end; } breakpoint_info_t;
+typedef struct { int num_breakpoints; breakpoint_info_t *breakpoints; } breakpoint_set_t;
+typedef struct { void (*breakpoint_added)(conf_object_t *obj, breakpoint_handle_t handle); void (*breakpoint_removed)(conf_object_t *obj, breakpoint_handle_t handle); void (*breakpoint_changed)(conf_object_t *obj, breakpoint_handle_t handle); } breakpoint_change_interface_t;
+typedef struct { int size; breakpoint_t **vector; } breakpoint_vector_t;
+typedef void* breakpoint_range_t;
+typedef struct { void (*insert_breakpoint)(conf_object_t *object, breakpoint_t *bp, generic_address_t start, generic_address_t end); void (*remove_breakpoint)(conf_object_t *object, breakpoint_t *bp); void (*remove_breakpoint_range)(conf_object_t *object, breakpoint_id_t bp_id, access_t access, generic_address_t start, generic_address_t end); breakpoint_range_t *(*get_breakpoint_ranges)(conf_object_t *object, breakpoint_t *bp); breakpoint_vector_t (*get_breakpoints)(conf_object_t *object, access_t access, breakpoint_kind_t type, generic_address_t start, generic_address_t end); } breakpoint_interface_t;
+typedef struct { void (*trigger_breakpoint)(conf_object_t *obj, conf_object_t *initiator_obj, breakpoint_handle_t handle, generic_address_t address, generic_address_t size, access_t access, uint8 *data, logical_address_t program_counter); } breakpoint_trigger_interface_t;
+typedef struct { breakpoint_set_t (*get_breakpoints)(conf_object_t *obj, access_t read_write_execute, generic_address_t start, generic_address_t end); void (*free_breakpoint_set)(conf_object_t *obj, breakpoint_set_t *set); } breakpoint_query_interface_t;
+constant Sim_Break_Physical = 0;
+constant Sim_Break_Virtual = 1;
+constant Sim_Break_Linear = 2;

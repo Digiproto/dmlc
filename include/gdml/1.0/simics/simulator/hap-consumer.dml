@@ -1,0 +1,31 @@
+// Copyright 2008-2010 Virtutech AB
+
+// This file is part of Virtutech Simics, which is distributed
+// under the Virtutech Simics Software License Agreement.
+
+dml 1.0;
+
+header %{
+#include <simics\simulator\hap-consumer.h>
+%}
+
+import "simics/base/types.dml";
+import "simics/base/attr-value.dml";
+
+extern attr_value_t SIM_get_all_hap_types(void);
+extern int SIM_hap_callback_exists(const char *id, obj_hap_func_t func, void *data);
+extern hap_handle_t SIM_hap_add_callback(const char *hap, obj_hap_func_t func, void *data);
+extern hap_handle_t SIM_hap_add_callback_index(const char *hap, obj_hap_func_t func, void *data, integer_t index);
+extern hap_handle_t SIM_hap_add_callback_range(const char *hap, obj_hap_func_t func, void *data, integer_t start, integer_t end);
+extern hap_handle_t SIM_hap_add_callback_obj(const char *hap, conf_object_t *obj, hap_flags_t flags, obj_hap_func_t func, void *data);
+extern hap_handle_t SIM_hap_add_callback_obj_index(const char *hap, conf_object_t *obj, hap_flags_t flags, obj_hap_func_t func, void *data, integer_t index);
+extern hap_handle_t SIM_hap_add_callback_obj_range(const char *hap, conf_object_t *obj, hap_flags_t flags, obj_hap_func_t func, void *data, integer_t start, integer_t end);
+extern void SIM_hap_delete_callback_id(const char *hap, hap_handle_t handle);
+extern void SIM_hap_delete_callback(const char *hap, obj_hap_func_t func, void *data);
+extern void SIM_hap_delete_callback_obj_id(const char *hap, conf_object_t *obj, hap_handle_t handle);
+extern void SIM_hap_delete_callback_obj(const char *hap, conf_object_t *obj, obj_hap_func_t func, void *data);
+typedef int hap_handle_t;
+typedef int hap_flags_t;
+constant Sim_Hap_Simulation = 1;
+constant Sim_Hap_Attr = 2;
+typedef void (*obj_hap_func_t)(void *, conf_object_t *ini_obj);

@@ -1,0 +1,53 @@
+// Copyright 2008-2010 Virtutech AB
+
+// This file is part of Virtutech Simics, which is distributed
+// under the Virtutech Simics Software License Agreement.
+
+dml 1.0;
+
+header %{
+#include <simics\simulator\cmd-line.h>
+%}
+
+import "simics/base/types.dml";
+import "simics/pywrap.dml";
+
+extern cmd_line_id_t VT_command_line_create(conf_object_t *obj, int interactive, int primary);
+extern void VT_command_line_delete(cmd_line_id_t id);
+extern void VT_command_line_key(cmd_line_id_t id, cmd_line_mod_t mod, cmd_line_key_t key);
+extern void VT_command_line_new_selection(cmd_line_id_t id, int left, int right);
+extern void VT_command_line_new_position(cmd_line_id_t id, int pos);
+extern void VT_command_line_to_clipboard(cmd_line_id_t id, const char *str);
+extern void VT_command_line_set_size(cmd_line_id_t, int cols, int rows);
+typedef int cmd_line_id_t;
+typedef int cmd_line_mod_t;
+constant Cmd_Line_Mod_None = 0;
+constant Cmd_Line_Mod_Shift = 1;
+constant Cmd_Line_Mod_Ctrl = 2;
+constant Cmd_Line_Mod_Alt = 4;
+typedef int cmd_line_key_t;
+constant Cmd_Line_Key_Left = 0;
+constant Cmd_Line_Key_Right = 1;
+constant Cmd_Line_Key_Up = 2;
+constant Cmd_Line_Key_Down = 3;
+constant Cmd_Line_Key_PgUp = 4;
+constant Cmd_Line_Key_PgDn = 5;
+constant Cmd_Line_Key_Home = 6;
+constant Cmd_Line_Key_End = 7;
+constant Cmd_Line_Key_Back = 8;
+constant Cmd_Line_Key_Tab = 9;
+constant Cmd_Line_Key_Enter = 10;
+constant Cmd_Line_Key_Del = 11;
+constant Cmd_Line_Key_Ins = 12;
+constant Cmd_Line_Key_F1 = 13;
+constant Cmd_Line_Key_F2 = 14;
+constant Cmd_Line_Key_F3 = 15;
+constant Cmd_Line_Key_F4 = 16;
+constant Cmd_Line_Key_F5 = 17;
+constant Cmd_Line_Key_F6 = 18;
+constant Cmd_Line_Key_F7 = 19;
+constant Cmd_Line_Key_F8 = 20;
+constant Cmd_Line_Key_F9 = 21;
+constant Cmd_Line_Key_F10 = 22;
+constant Cmd_Line_Key_F11 = 23;
+constant Cmd_Line_Key_F12 = 24;

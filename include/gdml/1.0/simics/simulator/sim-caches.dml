@@ -1,0 +1,15 @@
+// Copyright 2008-2010 Virtutech AB
+
+// This file is part of Virtutech Simics, which is distributed
+// under the Virtutech Simics Software License Agreement.
+
+dml 1.0;
+
+header %{
+#include <simics\simulator\sim-caches.h>
+%}
+
+import "simics/base/types.dml";
+
+extern void SIM_flush_cell_caches(conf_object_t *obj);
+extern void SIM_flush_all_caches(void);

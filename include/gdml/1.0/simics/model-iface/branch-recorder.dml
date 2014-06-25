@@ -1,0 +1,25 @@
+// Copyright 2008-2010 Virtutech AB
+
+// This file is part of Virtutech Simics, which is distributed
+// under the Virtutech Simics Software License Agreement.
+
+dml 1.0;
+
+header %{
+#include <simics\model-iface\branch-recorder.h>
+%}
+
+import "simics/base/types.dml";
+import "simics/base/attr-value.dml";
+import "simics/pywrap.dml";
+
+typedef int branch_arc_type_t;
+typedef struct { uinteger_t addr_from; uinteger_t addr_to; integer_t count; branch_arc_type_t type; } branch_arc_t;
+//typedef struct { branch_arc_t *(*next)(branch_arc_iter_t *i); void (*destroy)(branch_arc_iter_t *i); } branch_arc_iter_t;
+constant Branch_Arc_Branch = 0;
+constant Branch_Arc_Exception = 1;
+constant Branch_Arc_Exception_Return = 2;
+constant Branch_Arc_Max = 3;
+typedef int branch_recorder_direction_t;
+constant BR_Direction_From = 0;
+constant BR_Direction_To = 1;

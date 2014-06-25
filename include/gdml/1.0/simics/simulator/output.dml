@@ -1,0 +1,28 @@
+// Copyright 2008-2010 Virtutech AB
+
+// This file is part of Virtutech Simics, which is distributed
+// under the Virtutech Simics Software License Agreement.
+
+dml 1.0;
+
+header %{
+#include <simics\simulator\output.h>
+%}
+
+import "simics/base/types.dml";
+import "simics/util/vtprintf.dml";
+
+extern int SIM_get_quiet(void);
+extern int SIM_get_verbose(void);
+extern int SIM_putchar(int c);
+extern int SIM_printf(const char *format, ...);
+extern int pr(const char *format, ...);
+extern int SIM_puts(const char *s);
+extern int SIM_write(const void *src, int length);
+extern int SIM_flush(void);
+extern void SIM_set_quiet(int quiet);
+extern void SIM_set_verbose(int verbose);
+extern void SIM_add_output_handler(output_handler_t func, void *user_data);
+extern void SIM_remove_output_handler(output_handler_t func, void *user_data);
+extern void pr_err(const char *str, ...);
+typedef void (*output_handler_t)(void *data, const char *src, size_t length);

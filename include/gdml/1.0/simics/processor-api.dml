@@ -1,0 +1,21 @@
+// Copyright 2008-2010 Virtutech AB
+
+// This file is part of Virtutech Simics, which is distributed
+// under the Virtutech Simics Software License Agreement.
+
+dml 1.0;
+
+header %{
+#include <simics\processor-api.h>
+%}
+
+import "simics/device-api.dml";
+import "simics/processor/types.dml";
+import "simics/processor/data-profiler.dml";
+import "simics/processor/event.dml";
+import "simics/processor/generic-spr.dml";
+import "simics/processor/instruction-info.dml";
+import "simics/processor/memory-augmentation.dml";
+import "simics/processor/stc.dml";
+import "simics/processor/time.dml";
+

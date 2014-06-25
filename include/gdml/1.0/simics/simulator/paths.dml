@@ -1,0 +1,19 @@
+// Copyright 2008-2010 Virtutech AB
+
+// This file is part of Virtutech Simics, which is distributed
+// under the Virtutech Simics Software License Agreement.
+
+dml 1.0;
+
+header %{
+#include <simics\simulator\paths.h>
+%}
+
+import "simics/base/attr-value.dml";
+
+extern attr_value_t SIM_get_directories(void);
+extern char *SIM_lookup_file(const char *file);
+extern char *VT_lookup_in_checkpoint_path(const char *file);
+extern char *SIM_native_path(const char *path);
+extern void SIM_add_directory(const char *directory, int prepend);
+extern void SIM_clear_directories(void);

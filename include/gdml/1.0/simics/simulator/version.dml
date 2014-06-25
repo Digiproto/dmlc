@@ -1,0 +1,23 @@
+// Copyright 2008-2010 Virtutech AB
+
+// This file is part of Virtutech Simics, which is distributed
+// under the Virtutech Simics Software License Agreement.
+
+dml 1.0;
+
+header %{
+#include <simics\simulator\version.h>
+%}
+
+import "simics/host-info.dml";
+
+extern const char *SIM_license_file(const char *format);
+extern const char *SIM_version(void);
+extern const char *SIM_version_base(void);
+extern const char *SIM_version_major(void);
+extern const char *VT_copyright_notice(void);
+extern const char *VT_license_notice(void);
+extern const char *VT_readme(void);
+extern void SIM_register_copyright(const char *str);
+extern void SIM_copyright(void);
+extern void SIM_license(void);
