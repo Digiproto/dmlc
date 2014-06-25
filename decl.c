@@ -53,7 +53,7 @@ params_t* get_param_decl(tree_t* node, symtab_t table) {
 	params_t* param = (params_t*)gdml_zmalloc(sizeof(params_t));
 	table->pass_num = 0;
 	cdecl_t* decl = parse_cdecl(node, table);
-	table->pass_num = 1;
+	//table->pass_num = 1;
 	if (decl->common.no_decalare) {
 		param->var_name = decl->var_name;
 		decl->common.categ = NO_TYPE;
@@ -611,7 +611,7 @@ static cdecl_t* parse_type_ident(tree_t* node, symtab_t table) {
 				DEBUG_DECL("unknown symbol: %s\n", type->var_name);
 			}
 			else {
-				error("'%s' isn't declared (first use)\n", node->ident.str);
+				PERRORN("'%s' isn't declared (first use)\n", node, node->ident.str);
 			}
 		}
 	}
@@ -1271,7 +1271,7 @@ void parse_typedef_cdecl(tree_t* node, symtab_t table) {
 				type->typedef_name = strdup(type->var_name);
 				symbol_insert(table, type->var_name, TYPEDEF_T, type);
 			} else {
-				error("useless type name in empty declaration\n");
+				PERRORN("useless type name in empty declaration\n", node);
 			}
 		}
 	}
@@ -1279,9 +1279,7 @@ void parse_typedef_cdecl(tree_t* node, symtab_t table) {
 		if ((type->var_name) && (type->common.no_decalare == 0)) {
 			type->typedef_name = strdup(type->var_name);
 			if (symbol_insert(table, type->var_name, TYPEDEF_T, type)) {
-				int *p = NULL;
-				*p = 0;
-				error("duplicate defined '%s'\n", type->var_name);
+				PERRORN("duplicate defined '%s'\n", node, type->var_name);
 			}
 		}
 	}

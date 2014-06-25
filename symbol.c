@@ -764,6 +764,7 @@ void get_all_symbol(symtab_t symtab, symbol_callback func_callback)
  * @param table : symbol table with symbol
  */
 void print_all_symbol(symtab_t table) {
+#if 0
 	fprintf(stderr, "------------------start print table %d -----------------------\n", table->table_num);
 	symbol_t symbol = table->list;
 	const char *type;
@@ -773,6 +774,7 @@ void print_all_symbol(symtab_t table) {
 		symbol = symbol->lnext;
 	}
 	fprintf(stderr, "------------------finish print-----------------------\n");
+#endif
 
 	return ;
 }

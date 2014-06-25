@@ -1626,7 +1626,7 @@ void parse_parameter(tree_t* node, symtab_t table) {
 			}
 		}
         } else {
-           error( "duplicate assignment to parameter2 '%s'\n", node->ident.str);
+           PERRORN( "duplicate assignment to parameter2 '%s'\n", node, node->ident.str);
         }
 
 	return;

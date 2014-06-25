@@ -3328,8 +3328,8 @@ expr_t* check_expression(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL); assert(expr != NULL);
 
 	EXPR_TRACE("in expression dispatch: node type %s, file %s, line %d\n", TYPENAME(node->common.type),
-																			node->common.location.file->name,
-																			node->common.location.first_line);
+										node->common.location.file->name,
+										node->common.location.first_line);
 	switch (node->common.type) {
 		case EXPR_ASSIGN_TYPE:
 			expr = check_assign_expr(node, table, expr);

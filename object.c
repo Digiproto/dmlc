@@ -590,7 +590,7 @@ static void merge_symbol(symbol_t dst, symbol_t src) {
 	attr1 = dst->attr;
 	attr2 = src->attr;
 	
-	fprintf(stderr, "mergexxx symbol, name %s, dst file %s, dst line %d, src file %s, src line %d\n", dst->name, 
+	fprintf(stderr, "mergexxx symbol, name %s, dst file %s, dst line %d, src file %s, src line %d-------------------\n", dst->name,
 													attr1->node->common.location.file->name,
 													attr1->node->common.location.first_line,
 													attr2->node->common.location.file->name,
