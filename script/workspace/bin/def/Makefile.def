@@ -6,10 +6,10 @@ EXTRA_LIBRARY=
 # set environment variable
 QEMU_DIR=@QEMU_DIR@
 QEMU_INSTALL_DIR=@QEMU_INSTALL_DIR@
-SYSTEMC_DIR=@SYSTEMC_DIR@
-SYSTEMC_INSTALL_DIR=@SYSTEMC_INSTALL_DIR@
+#SYSTEMC_DIR=@SYSTEMC_DIR@
+#SYSTEMC_INSTALL_DIR=@SYSTEMC_INSTALL_DIR@
 QEMU_CONF_FLAGS=@QEMU_CONF_FLAGS@
-SYSTEMC_CONF_FLAGS=@SYSTEMC_CONF_FLAGS@
+#SYSTEMC_CONF_FLAGS=@SYSTEMC_CONF_FLAGS@
 DMLC=@DMLC@
 MAKE+= -j2
 PYTHON=@PYTHON@
@@ -20,7 +20,7 @@ OBJ_NAME=$(shell basename $(CURR_DIR))
 
 # set QEMU and SystemC path
 QEMU_DIR_IN=$(QEMU_DIR)/hw/simics/$(OBJ_NAME)
-SYSTEMC_DIR_IN=../../targets/systemc/$(OBJ_NAME)
+#SYSTEMC_DIR_IN=../../targets/systemc/$(OBJ_NAME)
 EXTRA_LIBRARY_DIR=$(foreach var,$(EXTRA_LIBRARY),../../interface/$(var))
 EXTRA_LIBRARY_FILE=$(foreach var,$(EXTRA_LIBRARY),../../interface/$(var)/$(var).dml)
 EXTRA_INCLUDE_FILE=$(foreach var,$(EXTRA_LIBRARY),$(wildcard ../../interface/$(var)/*.h))
@@ -28,22 +28,22 @@ EXTRA_INCLUDE_FILE=$(foreach var,$(EXTRA_LIBRARY),$(wildcard ../../interface/$(v
 
 # set target device name
 QEMU_OBJ=$(QEMU_DIR_IN)/$(OBJ_NAME).o
-ifeq ($(shell uname),Linux)
-	SYSTEMC_OBJ=$(SYSTEMC_DIR_IN)/lib$(OBJ_NAME).so
-else
-	SYSTEMC_OBJ=$(SYSTEMC_DIR_IN)/lib$(OBJ_NAME).dll
-endif
+#ifeq ($(shell uname),Linux)
+#	SYSTEMC_OBJ=$(SYSTEMC_DIR_IN)/lib$(OBJ_NAME).so
+#else
+#	SYSTEMC_OBJ=$(SYSTEMC_DIR_IN)/lib$(OBJ_NAME).dll
+#endif
 
 @FOR_QEMU@qemu: $(QEMU_DIR_IN)/$(OBJ_NAME).c \
 @FOR_QEMU@	     $(QEMU_DIR_IN)/$(OBJ_NAME).h \
 @FOR_QEMU@	     $(QEMU_DIR_IN)/$(OBJ_NAME)_protos.c \
 @FOR_QEMU@	     $(QEMU_DIR_IN)/$(OBJ_NAME)_struct.h
 
-@FOR_SYSTEMC@systemc: $(SYSTEMC_DIR_IN)/$(OBJ_NAME).c \
-@FOR_SYSTEMC@	       $(SYSTEMC_DIR_IN)/$(OBJ_NAME).h \
-@FOR_SYSTEMC@	       $(SYSTEMC_DIR_IN)/$(OBJ_NAME)_module.c \
-@FOR_SYSTEMC@	       $(SYSTEMC_DIR_IN)/$(OBJ_NAME)_protos.c \
-@FOR_SYSTEMC@	       $(SYSTEMC_DIR_IN)/$(OBJ_NAME)_struct.h
+#@FOR_SYSTEMC@systemc: $(SYSTEMC_DIR_IN)/$(OBJ_NAME).c \
+#@FOR_SYSTEMC@	       $(SYSTEMC_DIR_IN)/$(OBJ_NAME).h \
+#@FOR_SYSTEMC@	       $(SYSTEMC_DIR_IN)/$(OBJ_NAME)_module.c \
+#@FOR_SYSTEMC@	       $(SYSTEMC_DIR_IN)/$(OBJ_NAME)_protos.c \
+#@FOR_SYSTEMC@	       $(SYSTEMC_DIR_IN)/$(OBJ_NAME)_struct.h
 
 @FOR_QEMU@$(QEMU_DIR_IN)/$(OBJ_NAME).c \
 @FOR_QEMU@$(QEMU_DIR_IN)/$(OBJ_NAME).h \
@@ -60,21 +60,21 @@ endif
 @FOR_QEMU@	@cp output/* $(QEMU_DIR_IN)
 @FOR_QEMU@	@rm -rf output
 
-@FOR_SYSTEMC@$(SYSTEMC_DIR_IN)/$(OBJ_NAME).c \
-@FOR_SYSTEMC@$(SYSTEMC_DIR_IN)/$(OBJ_NAME).h \
-@FOR_SYSTEMC@$(SYSTEMC_DIR_IN)/$(OBJ_NAME)_module.c \
-@FOR_SYSTEMC@$(SYSTEMC_DIR_IN)/$(OBJ_NAME)_protos.c \
-@FOR_SYSTEMC@$(SYSTEMC_DIR_IN)/$(OBJ_NAME)_struct.h: $(OBJ_NAME).dml $(EXTRA_LIBRARY_FILE) $(EXTRA_INCLUDE_FILE)
-@FOR_SYSTEMC@	@echo [  gdml] translate $(OBJ_NAME).dml to SYSTEMC C codes
-@FOR_SYSTEMC@	@mkdir -p output
-@FOR_SYSTEMC@ifeq ($(EXTRA_LIBRARY),)
-@FOR_SYSTEMC@	@$(DMLC)_systemc $(OBJ_NAME).dml
-@FOR_SYSTEMC@else
-@FOR_SYSTEMC@	@$(DMLC)_systemc $(OBJ_NAME).dml -L $(EXTRA_LIBRARY_DIR)
-@FOR_SYSTEMC@	@cp $(EXTRA_INCLUDE_FILE) $(SYSTEMC_DIR_IN)
-@FOR_SYSTEMC@endif
-@FOR_SYSTEMC@	@cp output/* $(SYSTEMC_DIR_IN)
-@FOR_SYSTEMC@	@rm -rf output
+#@FOR_SYSTEMC@$(SYSTEMC_DIR_IN)/$(OBJ_NAME).c \
+#@FOR_SYSTEMC@$(SYSTEMC_DIR_IN)/$(OBJ_NAME).h \
+#@FOR_SYSTEMC@$(SYSTEMC_DIR_IN)/$(OBJ_NAME)_module.c \
+#@FOR_SYSTEMC@$(SYSTEMC_DIR_IN)/$(OBJ_NAME)_protos.c \
+#@FOR_SYSTEMC@$(SYSTEMC_DIR_IN)/$(OBJ_NAME)_struct.h: $(OBJ_NAME).dml $(EXTRA_LIBRARY_FILE) $(EXTRA_INCLUDE_FILE)
+#@FOR_SYSTEMC@	@echo [  gdml] translate $(OBJ_NAME).dml to SYSTEMC C codes
+#@FOR_SYSTEMC@	@mkdir -p output
+#@FOR_SYSTEMC@ifeq ($(EXTRA_LIBRARY),)
+#@FOR_SYSTEMC@	@$(DMLC)_systemc $(OBJ_NAME).dml
+#@FOR_SYSTEMC@else
+#@FOR_SYSTEMC@	@$(DMLC)_systemc $(OBJ_NAME).dml -L $(EXTRA_LIBRARY_DIR)
+#@FOR_SYSTEMC@	@cp $(EXTRA_INCLUDE_FILE) $(SYSTEMC_DIR_IN)
+#@FOR_SYSTEMC@endif
+#@FOR_SYSTEMC@	@cp output/* $(SYSTEMC_DIR_IN)
+#@FOR_SYSTEMC@	@rm -rf output
 
 test: test.py
 	@$(PYTHON) test.py
@@ -85,17 +85,17 @@ clean:
 @FOR_QEMU@		$(QEMU_DIR_IN)/$(OBJ_NAME)_protos.c \
 @FOR_QEMU@		$(QEMU_DIR_IN)/$(OBJ_NAME)_struct.h \
 @FOR_QEMU@		$(foreach var,$(EXTRA_LIBRARY),$(QEMU_DIR_IN)/$(var).h)
-@FOR_SYSTEMC@	-rm -rf $(SYSTEMC_DIR_IN)/$(OBJ_NAME).c \
-@FOR_SYSTEMC@		$(SYSTEMC_DIR_IN)/$(OBJ_NAME).h \
-@FOR_SYSTEMC@		$(SYSTEMC_DIR_IN)/$(OBJ_NAME)_module.c \
-@FOR_SYSTEMC@		$(SYSTEMC_DIR_IN)/$(OBJ_NAME)_protos.c \
-@FOR_SYSTEMC@		$(SYSTEMC_DIR_IN)/$(OBJ_NAME)_struct.h \
-@FOR_SYSTEMC@		$(foreach var,$(EXTRA_LIBRARY),$(SYSTEMC_DIR_IN)/$(var).h)
+#@FOR_SYSTEMC@	-rm -rf $(SYSTEMC_DIR_IN)/$(OBJ_NAME).c \
+#@FOR_SYSTEMC@		$(SYSTEMC_DIR_IN)/$(OBJ_NAME).h \
+#@FOR_SYSTEMC@		$(SYSTEMC_DIR_IN)/$(OBJ_NAME)_module.c \
+#@FOR_SYSTEMC@		$(SYSTEMC_DIR_IN)/$(OBJ_NAME)_protos.c \
+#@FOR_SYSTEMC@		$(SYSTEMC_DIR_IN)/$(OBJ_NAME)_struct.h \
+#@FOR_SYSTEMC@		$(foreach var,$(EXTRA_LIBRARY),$(SYSTEMC_DIR_IN)/$(var).h)
 
 distclean: clean
 @FOR_QEMU@	-rm -rf $(QEMU_OBJ)
-@FOR_SYSTEMC@	-rm -rf $(SYSTEMC_DIR_IN)/$(OBJ_NAME).o \
-@FOR_SYSTEMC@		$(SYSTEMC_DIR_IN)/$(OBJ_NAME)_module.o \
-@FOR_SYSTEMC@		$(SYSTEMC_OBJ)
+#@FOR_SYSTEMC@	-rm -rf $(SYSTEMC_DIR_IN)/$(OBJ_NAME).o \
+#@FOR_SYSTEMC@		$(SYSTEMC_DIR_IN)/$(OBJ_NAME)_module.o \
+#@FOR_SYSTEMC@		$(SYSTEMC_OBJ)
 
 .PHONY: clean distclean

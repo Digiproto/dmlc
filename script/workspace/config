@@ -2,8 +2,8 @@
 # The configure file for setting QEMU and Skyeye path, and setting feature.
 # The file is important very much, don't remove this.
 
-QEMU_DIR=$HOME/qemu/qemu
-QEMU_INSTALL_DIR=$HOME/qemu/qemu
+QEMU_DIR=$HOME/qemu
+QEMU_INSTALL_DIR=$HOME/qemu
 SYSTEMC_DIR=/opt/dml_all
 SYSTEMC_INSTALL_DIR=/opt/dml_all
 QEMU_CONF_FLAGS="--target-list=arm-softmmu --enable-dml"

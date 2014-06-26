@@ -57,6 +57,7 @@ fi
 for var in $@
 do
 	dml_var=`echo "$@" | sed -e "s/-/_/g"`
+	#dml_var=`echo "$@"`
 
 	# create a module in modules directory
 	NEW_DIR=$EXEC_DIR/../modules/$var

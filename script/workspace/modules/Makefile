@@ -4,7 +4,7 @@ $(shell sed -e 's/\$$\(\w\+\)/\$$(\1)/g' -e 's/["]//g' ../config > ../config.tmp
 sinclude ../config.tmp
 $(shell rm -rf ../config.tmp)
 
-SYSTEMC_DIR_IN := ../targets/systemc
+#SYSTEMC_DIR_IN := ../targets/systemc
 QEMU_DIR_IN := $(QEMU_DIR)/hw/simics
 HOST := $(shell uname)
 
@@ -23,17 +23,17 @@ SPECIAL_WORDS := clean distclean all test
 TARGETS := $(filter-out $(SPECIAL_WORDS),$(MAKECMDGOALS))
 
 # systemc or qemu target goals
-ifneq ($(SYSTEMC_BUILD),)
-ALL_SYSTEMC_DEV := $(patsubst %,%_systemc_dev,$(MODULES))
-TARGETS_SYSTEMC_DEV := $(patsubst %,%_systemc_dev,$(TARGETS))
-ifeq ($(HOST),Linux)
-ALL_SYSTEMC_OBJ := $(foreach var,$(MODULES),$(SYSTEMC_DIR_IN)/$(var)/lib$(var).so)
-TARGETS_SYSTEMC_OBJ := $(foreach var,$(TARGETS),$(SYSTEMC_DIR_IN)/$(var)/lib$(var).so)
-else
-ALL_SYSTEMC_OBJ := $(foreach var,$(MODULES),$(SYSTEMC_DIR_IN)/$(var)/lib$(var).dll)
-TARGETS_SYSTEMC_OBJ := $(foreach var,$(TARGETS),$(SYSTEMC_DIR_IN)/$(var)/lib$(var).dll)
-endif
-endif # SYSTEMC_BUILD
+#ifneq ($(SYSTEMC_BUILD),)
+#ALL_SYSTEMC_DEV := $(patsubst %,%_systemc_dev,$(MODULES))
+#TARGETS_SYSTEMC_DEV := $(patsubst %,%_systemc_dev,$(TARGETS))
+#ifeq ($(HOST),Linux)
+#ALL_SYSTEMC_OBJ := $(foreach var,$(MODULES),$(SYSTEMC_DIR_IN)/$(var)/lib$(var).so)
+#TARGETS_SYSTEMC_OBJ := $(foreach var,$(TARGETS),$(SYSTEMC_DIR_IN)/$(var)/lib$(var).so)
+#else
+#ALL_SYSTEMC_OBJ := $(foreach var,$(MODULES),$(SYSTEMC_DIR_IN)/$(var)/lib$(var).dll)
+#TARGETS_SYSTEMC_OBJ := $(foreach var,$(TARGETS),$(SYSTEMC_DIR_IN)/$(var)/lib$(var).dll)
+#endif
+#endif # SYSTEMC_BUILD
 ifneq ($(QEMU_BUILD),)
 ALL_QEMU_OBJ := $(foreach var,$(MODULES),$(QEMU_DIR_IN)/$(var)/$(var).o)
 TARGETS_QEMU_OBJ := $(foreach var,$(TARGETS),$(QEMU_DIR_IN)/$(var)/$(var).o)
@@ -42,10 +42,14 @@ TARGETS_QEMU_DEV := $(patsubst %,%_qemu_dev,$(TARGETS))
 endif # QEMU_BUILD
 
 # all target goals
-ALL_OBJ := $(ALL_SYSTEMC_OBJ) $(ALL_QEMU_OBJ)
-TARGETS_OBJ := $(TARGETS_SYSTEMC_OBJ) $(TARGETS_QEMU_OBJ)
-ALL_DEV := $(ALL_SYSTEMC_DEV) $(ALL_QEMU_DEV)
-TARGETS_DEV := $(TARGETS_SYSTEMC_DEV) $(TARGETS_QEMU_DEV)
+#ALL_OBJ := $(ALL_SYSTEMC_OBJ) $(ALL_QEMU_OBJ)
+#TARGETS_OBJ := $(TARGETS_SYSTEMC_OBJ) $(TARGETS_QEMU_OBJ)
+#ALL_DEV := $(ALL_SYSTEMC_DEV) $(ALL_QEMU_DEV)
+#TARGETS_DEV := $(TARGETS_SYSTEMC_DEV) $(TARGETS_QEMU_DEV)
+ALL_OBJ := $(ALL_QEMU_OBJ)
+TARGETS_OBJ := $(TARGETS_QEMU_OBJ)
+ALL_DEV := $(ALL_QEMU_DEV)
+TARGETS_DEV := $(TARGETS_QEMU_DEV)
 
 # configure and make QEMU after generating all C codes
 # GOAL is all targets needed.
@@ -76,12 +80,12 @@ $(TARGETS): $(TARGETS_OBJ)
 # create each module rule
 define PROGRAM_TEMPLATE
 
-ifneq ($(SYSTEMC_BUILD),)
-$(SYSTEMC_DIR_IN)/$(1)/lib$(1).so $(SYSTEMC_DIR_IN)/$(1)/lib$(1).dll: $(GOAL_DEV)
-	@cd ../targets/systemc && $(MAKE) $(1)
-$(1)_systemc_dev:
-	@cd $(1) && make systemc
-endif # SYSTEMC_BUILD
+#ifneq ($(SYSTEMC_BUILD),)
+#$(SYSTEMC_DIR_IN)/$(1)/lib$(1).so $(SYSTEMC_DIR_IN)/$(1)/lib$(1).dll: $(GOAL_DEV)
+#	@cd ../targets/systemc && $(MAKE) $(1)
+#$(1)_systemc_dev:
+#	@cd $(1) && make systemc
+#endif # SYSTEMC_BUILD
 
 ifneq ($(QEMU_BUILD),)
 $(QEMU_DIR_IN)/$(1)/$(1).o: $(GOAL_DEV)
