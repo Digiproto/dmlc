@@ -75,6 +75,47 @@ tree_t* get_ast (const char *filename)
 	return root;
 }
 
+char* device_file_name = NULL;
+
+/**
+* @brief change the '-' to '_' in device file name.
+*
+* @param the device file name
+*
+* @return the device file name about changed
+*/
+static char* change_string_char(char device_file[]) {
+	assert(device_file != NULL);
+	char* pos = NULL;
+	do {
+		pos = strchr(device_file, '-');
+		if (pos)
+			*pos = '_';
+	}while(pos != NULL);
+
+	return device_file;
+}
+
+/**
+* @brief get the device file name for generate.
+*
+* @param filename about device simics
+*
+* @return the name about device file
+*/
+static char* get_device_file_name(const char* filename) {
+	assert(filename != NULL);
+	const char* file = strrchr(filename, '/');
+	file = (file == NULL) ? filename : (file + 1);
+	const char* dml = strstr(file, ".dml");
+	int len = (unsigned)(dml) - (unsigned)(file);
+	char* device_file = gdml_zmalloc(len + 1);
+	strncpy(device_file, file, len);
+	device_file[len] = '\0';
+	device_file = change_string_char(device_file);
+	return device_file;
+}
+
 struct file_stack* filestack_top = NULL;
 symtab_t root_table = NULL;
 extern void gen_qemu_code(tree_t *root, const char *out_dir);
@@ -136,6 +177,7 @@ int main (int argc, char *argv[])
 
 	//insert_pre_dml_struct();
 	/* main ast */
+	device_file_name = get_device_file_name(strdup(argv[file_num]));
 	tree_t* ast = get_ast (argv[file_num]);
 	assert (ast != NULL);
 	if (root_table->type != DEVICE_TYPE) {

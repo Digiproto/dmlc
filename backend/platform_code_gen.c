@@ -24,6 +24,7 @@
 #include "gen_method_protos.h"
 #include "gen_object.h"
 extern void gen_device_footer(device_t *, FILE *);
+extern char* device_file_name;
 /**
  * @brief gen_cfile : generate the c file about device
  *
@@ -35,7 +36,8 @@ void gen_cfile(device_t *dev, const char *out) {
 	char tmp[1024];
 	FILE *f;
 	
-	snprintf(tmp, 1024, "%s/%s.c", out, dev_name);
+	//snprintf(tmp, 1024, "%s/%s.c", out, dev_name);
+	snprintf(tmp, 1024, "%s/%s.c", out, device_file_name);
 	f = fopen(tmp, "w");
 	if(f) {
 		setbuf(f, NULL);
@@ -53,7 +55,8 @@ void gen_cfile(device_t *dev, const char *out) {
 #if backend == 3 
 	gen_platform_device_info(dev, out);
 #endif
-	snprintf(tmp, 1024, "%s/%s_protos.c", out, dev_name);
+	//snprintf(tmp, 1024, "%s/%s_protos.c", out, dev_name);
+	snprintf(tmp, 1024, "%s/%s_protos.c", out, device_file_name);
 	f = fopen(tmp, "w");
 	if(f) {
 		setbuf(f, NULL);

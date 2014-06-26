@@ -28,6 +28,7 @@
 #include "gen_header.h"
 
 const char *headfile_dir = "simics";
+extern char* device_file_name;
 
 /**
  * @brief gen_object_headfile : generate the content of project header file
@@ -69,7 +70,7 @@ static void gen_object_headfile(device_t *dev, FILE *f) {
 	gen_device_typedef(dev, f);
 	gen_device_toplevel_struct(dev, f);
 
-    fprintf(f, "#include \"%s_struct.h\"\n", dev_name);
+    fprintf(f, "#include \"%s_struct.h\"\n", device_file_name);
     gen_device_loggroup(dev, f);
     fprintf(f, "\n");
     fprintf(f, "void %s_hard_reset(%s_t *_obj);\n", dev_name, dev_name);
@@ -88,8 +89,8 @@ void gen_headerfiles(device_t *dev, const char *out_dir) {
 	FILE *f;
 	char tmp[1024];	
 	const char *dev_name = dev->obj.name;
-	
-	snprintf(tmp, 1024, "%s/%s.h", out_dir, dev_name);
+	//snprintf(tmp, 1024, "%s/%s.h", out_dir, dev_name);
+	snprintf(tmp, 1024, "%s/%s.h", out_dir, device_file_name);
 
 	f = fopen(tmp, "w");
 	if(f) {
@@ -99,7 +100,8 @@ void gen_headerfiles(device_t *dev, const char *out_dir) {
 		printf("cannot open %s\n", tmp);
 	}
 
-	snprintf(tmp, 1024, "%s/%s_struct.h", out_dir, dev_name);
+	//snprintf(tmp, 1024, "%s/%s_struct.h", out_dir, dev_name);
+	snprintf(tmp, 1024, "%s/%s_struct.h", out_dir, device_file_name);
 	f = fopen(tmp, "w");
 	if(f) {
 		gen_object_struct(dev, f);

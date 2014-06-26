@@ -188,7 +188,6 @@ static void process_object_names(object_t *obj, arraydef_attr_t *array) {
 			obj->dotname = name;
 		}
 	} else {
-		fprintf(stderr, "obj parent %s \n", obj->parent->name);
 		obj->qname = string_concat_with(obj->parent->qname, obj->name, "__");
 		if(!obj->is_array) {
 			obj->dotname = string_concat_with(obj->parent->dotname, obj->name, ".");
@@ -218,7 +217,6 @@ static void process_object_names(object_t *obj, arraydef_attr_t *array) {
 			symbol_insert(obj->symtab, index, PARAMETER_TYPE, val);
 			int size;
 			if(!array->fix_array) {
-				fprintf(stderr, "highxxx %d, low %d\n", array->high, array->low);
 				size = array->high - array->low + 1;
 			} else {
 				size = array->high;
@@ -483,9 +481,7 @@ static void merge_table(symtab_t dst, symtab_t src) {
 	}
 	struct template_table *templ;
 	templ = src->template_table;
-	fprintf(stderr, "template %p\n",templ );
 	while(templ ) {
-		fprintf(stderr, "template name %s\n", templ->template_name);
 		merge_table(dst, templ->table);	
 		templ = templ->next;
 	}
@@ -590,17 +586,11 @@ static void merge_symbol(symbol_t dst, symbol_t src) {
 	attr1 = dst->attr;
 	attr2 = src->attr;
 	
-	fprintf(stderr, "mergexxx symbol, name %s, dst file %s, dst line %d, src file %s, src line %d-------------------\n", dst->name,
-													attr1->node->common.location.file->name,
-													attr1->node->common.location.first_line,
-													attr2->node->common.location.file->name,
-													attr2->node->common.location.first_line);
 	if(!attr1->table) {
 		attr1->table = symtab_create(TMP_TYPE);
 	}
 	parse_register(attr2->node, attr2->table);
 	if(attr2->table) {
-		fprintf(stderr, "merge table %d, table2 %d\n", attr1->table->table_num, attr2->table->table_num);
 		print_all_symbol(attr1->table);
 		
 		print_all_symbol(attr2->table);
@@ -642,7 +632,6 @@ static void create_field_object(object_t *obj, symbol_t sym){
 	symtab_t table = field_attr->common.table;
 	parse_field_attr(node, obj->symtab);
 	/* parse the elements that in filed table*/
-	fprintf(stderr, "file %s, line %d\n", node->common.location.file->name, node->common.location.first_line);
 	parse_field(node, table);
 	init_object(&fld->obj, obj, sym->name, "field", node, table);
 	create_objs(&fld->obj, DATA_TYPE);
@@ -668,16 +657,13 @@ static void create_register_object(object_t *obj, symbol_t sym){
 		register_attr_t *reg_attr = (register_attr_t *)(sym->attr);
 		symtab_t table = reg_attr->common.table;
 
-		fprintf(stderr, "registerxxx name %s, table %p, file %s, line %d\n", sym->name, obj->symtab, reg_attr->common.node->common.location.file->name, reg_attr->common.node->common.location.first_line);
 		print_all_symbol(obj->symtab->sibling);
 		if(!strcmp(obj->obj_type, "group")) {
 			//in_group = 1;	
 		}
 		parse_register_attr(reg_attr->common.node, obj->symtab);
 		in_group = 0;
-		fprintf(stderr, "start to parse register %s\n", sym->name);
 		parse_register(reg_attr->common.node, table);
-		fprintf(stderr, "end to parse register \n");
 
 		init_object(&reg->obj, obj, sym->name, "register", reg_attr->common.node, table);
 		//merge_object(&reg->obj, sym);
@@ -686,7 +672,6 @@ static void create_register_object(object_t *obj, symbol_t sym){
 		create_objs(&reg->obj, EVENT_TYPE);
 		if(!strcmp(sym->name, "status")) {
 			tree_t *node = reg_attr->common.node;
-			fprintf(stderr, "file %s, line %d\n", node->common.location.file->name, node->common.location.first_line );
 		}
 		merge_object(&reg->obj, sym);
 	}
@@ -745,9 +730,7 @@ static void create_attribute_object(object_t *obj, symbol_t sym) {
 	/* parse the elements that in the attribute table*/
 	//parse_attribute(att->obj.node, att->obj.symtab->sibling);
 		
-	fprintf(stderr, "in attribute before data\n");
 	create_objs(&att->obj, DATA_TYPE);
-	fprintf(stderr, "after data\n");
 	create_objs(&att->obj, EVENT_TYPE);
 }
 
@@ -774,9 +757,8 @@ static void create_data_object(object_t *obj, symbol_t sym) {
 	data_t *data = (data_t *)gdml_zmalloc(sizeof (*data));
 	cdecl_t *type = (cdecl_t *)sym->attr;
 	init_object(&data->obj, obj, sym->name, "data", type->node, NULL );
-	fprintf(stderr, "create dataxxx name %s, in parent %s, data type %d\n", sym->name, obj->name, type->common.categ);
 	if(type->common.bty) {
-		fprintf(stderr, "type %d\n", type->common.bty->common.categ);
+		//fprintf(stderr, "type %d\n", type->common.bty->common.categ);
 	}
 }
 
@@ -842,7 +824,6 @@ static void create_group_object(object_t *obj, symbol_t sym) {
 	INIT_LIST_HEAD(&gp->attributes);
 	INIT_LIST_HEAD(&gp->registers);
 	init_object(&gp->obj, obj, sym->name, "group", attr->common.node, table);
-	fprintf(stderr, "create groupxxx  %s\n", sym->name);
 	create_objs(&gp->obj, REGISTER_TYPE);
 	create_objs(&gp->obj, GROUP_TYPE);
 	create_objs(&gp->obj, DATA_TYPE);
@@ -1447,15 +1428,7 @@ static int get_reg_offset(paramspec_t *t, int *interval, symtab_t table) {
 		node = t->expr_node;
 		ret = get_binopnode_constant(node, ADD_TYPE, &offset, table);
 		if(ret < 0) {
-			/*wrong format base + $i * register_size */
-			BE_DBG(GENERAL, "wrong register offset format, node type %d, expected format %d(+)\n", node->common.type, ADD_TYPE);
-				
-			fprintf(stderr, "wrong register offset format, node type %d, expected format %d(+), file %s, line %d\n", node->common.type, ADD_TYPE,
-																node->common.location.file->name,
-																node->common.location.first_line);
 			offset = -2;
-			//exit(-1);
-
 		} else if(!ret) {
 			tmp = node->binary.right;
 		} else if(ret == 2) {
@@ -1492,7 +1465,6 @@ static int get_offset_info(tree_t *expr, offset_info_t *info, symtab_t table) {
 		} */ 
 		if(left->common.type == INTEGER_TYPE) {
 			info->offset = left->int_cst.value;
-			fprintf(stderr, "index %d, offset %d\n", my_index, info->offset);
 		} else {
 			get_offset_info(left, info, table);
 		}
@@ -1506,12 +1478,13 @@ static int get_offset_info(tree_t *expr, offset_info_t *info, symtab_t table) {
 				tmp = sub_right->int_cst.value;	
 			}
 			info->interval[my_index++] = tmp;	
-			fprintf(stderr, "index %d, interval %d\n", my_index, tmp);
 		} else if(right->common.type == QUOTE_TYPE){
 			info->interval[my_index++] = 1;	
 		} else {
-			fprintf(stderr, "error offset format, expect multiply, got %d\n", right->common.type);
-			fprintf(stderr, "file %s, line %d\n", right->common.location.file->name, right->common.location.first_line);
+			fprintf(stderr, "file: %s, line %d error offset format, expect multiply, got %d\n",
+										right->common.location.file->name,
+										right->common.location.first_line,
+										right->common.type);
 			exit(-1);
 		}
 	} else if(expr->common.type == BINARY_TYPE && expr->binary.type == MUL_TYPE) {
@@ -1524,14 +1497,11 @@ static int get_offset_info(tree_t *expr, offset_info_t *info, symtab_t table) {
 				tmp = sub_right->int_cst.value;	
 			}
 			//if(my_index < MAX_DEPTH) {
-				fprintf(stderr, "my index %d\n", my_index);
 				info->interval[my_index++] = tmp;	
 			//}
 	} else {
-		fprintf(stderr, "error offsetxxx format, got %d, binary %d, expr %p\n", expr->common.type, expr->binary.type, expr);
 		fprintf(stderr, "file %s, line %d\n", expr->common.location.file->name, expr->common.location.first_line);
-		int *p = NULL;
-		*p = 0;
+		fprintf(stderr, "error offset format, got %d, binary %d, expr %p\n", expr->common.type, expr->binary.type, expr);
 		exit(-1);
 	}
 	return 0;
@@ -1558,7 +1528,6 @@ static int get_register_offset2(object_t *reg, tree_t *offset_expr, symtab_t tab
 	} else if(ret == -2) {
 		return -1;
 	}
-	fprintf(stderr, "file %s, line %d\n", offset_expr->common.location.file->name, offset_expr->common.location.first_line);	
 	expr = offset_expr;					
 	if(expr->common.type == EXPR_BRACK_TYPE) {
 		expr = expr->expr_brack.expr_in_brack;
@@ -1566,23 +1535,19 @@ static int get_register_offset2(object_t *reg, tree_t *offset_expr, symtab_t tab
 	if(offset_expr->common.type == BINARY_TYPE && offset_expr->binary.type == MUL_TYPE) {
 		if(offset_expr->binary.right->common.type == INTEGER_TYPE) {
 			interval = offset_expr->binary.right->int_cst.value; 	
-			fprintf(stderr, "right\n");
 			if(offset_expr->binary.left->common.type == EXPR_BRACK_TYPE){
 				expr = 	offset_expr->binary.left->expr_brack.expr_in_brack;
 				multi = 1;
-				fprintf(stderr, "brack, expr %p\n", expr);
 			} else {
 				info->offset = 0;	
 				info->interval[0] = interval; 
 				return ;
 			}
 		} else if(offset_expr->binary.left->common.type == INTEGER_TYPE) {
-			fprintf(stderr, "left \n");
 			interval = offset_expr->binary.left->int_cst.value; 	
 			if(offset_expr->binary.right->common.type == EXPR_BRACK_TYPE){
 				expr = 	offset_expr->binary.right->expr_brack.expr_in_brack;
 				multi = 1;
-				fprintf(stderr, "brack, expr %p\n", expr);
 			} else {
 				info->offset = 0;	
 				info->interval[0] = interval; 
@@ -1600,7 +1565,6 @@ static int get_register_offset2(object_t *reg, tree_t *offset_expr, symtab_t tab
 												expr->common.location.first_line);
 		exit(-1);
 	}
-	fprintf(stderr, "expr %p\n", expr);
 	//complex_expr = expr;
 	/*
 	if(left->common.type == INTEGER_TYPE) {
@@ -1624,7 +1588,6 @@ static int get_register_offset2(object_t *reg, tree_t *offset_expr, symtab_t tab
 	rexpr = check_expr(right, table);	
 	if(lexpr->is_const && lexpr->type->common.categ == INT_T) {
 			tmp = lexpr->val->int_v.value;
-			fprintf(stderr, "left const \n");
 			if(interval != -1)
 				info->offset = tmp * interval;
 			else 
@@ -1633,7 +1596,6 @@ static int get_register_offset2(object_t *reg, tree_t *offset_expr, symtab_t tab
 			goto check_multiply;
 	} else if(rexpr->is_const && rexpr->type->common.categ == INT_T) {
 			tmp = rexpr->val->int_v.value;
-			fprintf(stderr, "right const \n");
 			if(interval != -1)
 				info->offset = tmp * interval;
 			else 
@@ -1642,10 +1604,6 @@ static int get_register_offset2(object_t *reg, tree_t *offset_expr, symtab_t tab
 			goto check_multiply;
 	} 
 	my_index = 0;
-	fprintf(stderr, "expr %p\n", expr);
-	if(expr->common.type == BINARY_TYPE && expr->binary.type == ADD_TYPE){	
-		fprintf(stderr, "expect binary op , got %d, binary %d, ADD_TYPE %d\n", expr->common.type, expr->binary.type, ADD_TYPE);
-	}
 	ret = get_offset_info(expr, info, table);
 	if(ret == -1) {
 		goto check_multiply;	
@@ -1702,14 +1660,14 @@ static int register_unmapped(object_t *obj) {
 }
 
 static void print_offset_info(offset_info_t *info) {
-	fprintf(stderr, "offsetxxx info\n");
+#if 0
 	if(info) {
-		fprintf(stderr, "offset %d\n", info->offset);
 		int i;
 		for(i = 0; i < MAX_DEPTH; i++) {
 			fprintf(stderr, "interval %d 0x%x\n", i, info->interval[i]);
 		}
 	}		
+#endif
 }
 
 /**
@@ -1776,19 +1734,15 @@ static void register_realize(object_t *obj) {
 	if(reg->offset >= 0) 
 		reg->offset_info.offset = reg->offset;
 	if(reg->offset == -1) {
-		fprintf(stderr, "register  %s\n", obj->name);
 		int ret = -1;
 		param_value_t valuexxx;
 		memset(&valuexxx, 0, sizeof(valuexxx));
 		paramspec_t spec = {.expr_node = reg->obj.node->reg.offset, .value = &valuexxx};
-		fprintf(stderr, "ddddxx\n");
 		reg->offset = get_reg_offset(&spec, &ret, obj->symtab);
-		fprintf(stderr, "ssssxxxx\n");
 		my_index = 0;
 		ret = get_register_offset2(obj, spec.expr_node, obj->symtab, &reg->offset_info);
 		print_offset_info(&reg->offset_info);
 		reg->offset = -3;
-		fprintf(stderr, "ddddxxx\n");
 		if(ret != -1) {
 				reg->interval = ret;
 		} else {
@@ -1808,7 +1762,6 @@ static void register_realize(object_t *obj) {
 				}
 				if(reg->interval == -1) {
 					BE_DBG(GENERAL, "register array interval not right\n");
-					fprintf(stderr, "fucking you\n");
 					exit(-1);
 				}
 				BE_DBG(GENERAL, "reg offset 0x%x\n", reg->offset);
@@ -2023,9 +1976,11 @@ static void data_realize(object_t *obj) {
 	cdecl = obj->node->common.cdecl;
 	process_object_names(obj, NULL);
 	obj->is_array = (cdecl->common.categ == ARRAY_T);	
+#if 0
 	if(obj->is_array ) {
 		fprintf(stderr, "dataxxx name %s , data type %s\n", obj->name, obj->obj_type);
 	}
+#endif
 }
 
 static offset_info_t *loc;
@@ -2203,7 +2158,6 @@ static const char* get_type(const char* str, attribute_t* attr) {
 		type = "i";
 		attr->ty = INT_T;
 	}
-	fprintf(stderr, "typexxxxx %s\n", type);
 	return type;
 }
 
@@ -2263,7 +2217,6 @@ static void attribute_realize(object_t *obj) {
 	sym = defined_symbol(obj->symtab->sibling, "type", PARAMETER_TYPE);
 	if (sym) {
 		get_param_spec(attr, spec);
-		fprintf(stderr, "type1xx\n");
 		if (spec->value->u.string != NULL) {
 			attr_obj->type = get_type(spec->value->u.string, attr_obj);
 		} else {
@@ -2377,6 +2330,7 @@ void device_realize(device_t *dev) {
 
 	/* calculate the number of bank */
 	list_for_each(p, &dev->obj.childs) {
+		tmp = list_entry(p, object_t, entry);
 		if ((!strcmp(tmp->obj_type, "bank")) && (!strcmp(tmp->name, "__fake_bank"))) {
 			continue;
 		}
@@ -2441,8 +2395,10 @@ void device_realize(device_t *dev) {
 }
 
 void print_data(object_t *data, int tab_count) {
+#if 0
     BE_DBG(OBJ, "data name %s\n",data->name );
     fprintf(stderr, "%sdata name %s\n", tab[tab_count], data->name);
+#endif
 }
 
 /**
@@ -2455,8 +2411,6 @@ void print_object(object_t *obj, int tab_count) {
 	const char *pos = (const char *)tab[tab_count];
 	BE_DBG(OBJ, "%sobject type %s, name %s, symtab %p, sibling %p, symtab parent %p\n", pos, obj->obj_type, obj->name, obj->symtab, obj->symtab->sibling, obj->symtab->parent);
 
-	fprintf(stderr, "%sstart print objectxxx type %s, name %s, symtab %p, sibling %p, symtab parent %p \n", pos, obj->obj_type, obj->name, obj->symtab, obj->symtab->sibling, obj->symtab->parent);
-	
 	struct list_head *p;
 	object_t *tmp;
 
@@ -2623,8 +2577,6 @@ struct template_def *create_template_def(const char* name, struct template_list*
 			return def;
 		my_DBG("-----------------start parsing template %s-------------\n", name);
 	
-		fprintf(stderr, "-----------------start parsing template %s-------------\n", name);
-	
 		while (statement) {
 			if (statement->common.type == PARAMETER_TYPE ||
 				statement->common.type == METHOD_TYPE ||
@@ -2634,8 +2586,6 @@ struct template_def *create_template_def(const char* name, struct template_list*
 			statement = statement->common.sibling;
 		}
 		my_DBG("-----------------finish parsing template %s-------------\n", name);
-		
-		fprintf(stderr, "-----------------finish parsing template %s-------------\n", name);
 		
 		tmp = tmp->next;
 	}
@@ -3068,8 +3018,6 @@ void add_object_method(object_t *obj,const char *name){
 	m->name = strdup(name);
 	INIT_LIST_HEAD(&m->entry);
 	BE_DBG(OBJ, "add object %s, name, %s\n", obj->name, name);
-	
-	fprintf(stderr, "add object %s, name, %s\n", obj->name, name);
 	
 	sym = object_symbol_find(obj->symtab, name, METHOD_TYPE);
 	//sym = (sym == NULL) ? get_symbol_from_templates(obj->symtab->sibling, name, METHOD_TYPE) : sym;
