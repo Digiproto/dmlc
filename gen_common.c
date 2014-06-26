@@ -96,15 +96,11 @@ void translate_quote(tree_t *t) {
 			printf_ref(&ref_ret);
 			//D("%s", name);
 		} else {
-			my_DBG("TODO: sym %p\n", sym);
-			fprintf(stderr, "fucking you %p\n", sym);
 			if(sym)
 				fprintf(stderr, "type %d, %d\n", sym->type, ATTRIBUTE_TYPE);
 			exit(-1);
 		}
 	} else {
-		my_DBG("other type %d\n", node->common.type);
-
 		fprintf(stderr, "other type %d\n", node->common.type);
 
 		exit(-1);
@@ -406,7 +402,6 @@ static tree_t* get_method_param_node(tree_t* node) {
 	/* base on the grammar, if an expression have brack
 	 * the topest node about the expression is brack */
 	if (node->common.type == EXPR_BRACK_TYPE) {
-		fprintf(stderr, "heeeh %p\n", node->expr_brack.expr_in_brack);
 		return node->expr_brack.expr_in_brack;
 	}
 	else
@@ -433,7 +428,6 @@ static int check_method_in_param(symbol_t sym, tree_t* call_expr, int in_line) {
 
 	tree_t* param_node = get_method_param_node(call_expr);
 	int arg_num = (param_node == NULL) ? 0 : get_param_num(param_node);
-	fprintf(stderr, "file %s, line %d\n", expr->common.location.file->name, expr->common.location.first_line);
 	if ((params == NULL) && (arg_num == 0)) {
 		ret = 0;
 	} else if ((params == NULL) || (params->in_argc != arg_num)) {
@@ -1407,11 +1401,6 @@ symbol_t get_expression_sym(tree_t *node) {
 		init_ref_ret(&ref_ret);
 		sym = get_ref_sym(node, &ref_ret, NULL);
 		return sym;
-	} else {
-		my_DBG("TODO: other cases \n");
-		fprintf(stderr, "get expression symbol other case %d\n", node->common.type);
-		
-		//exit(-1);
 	}
 	return NULL;
 }
@@ -1467,7 +1456,7 @@ void translate_foreach(tree_t *t) {
 		current_table = table;
 	}
 	tmp = symbol_find(current_table, ident, FOREACH_TYPE);
-	if(val->u.list.vector[0].type == PARAM_TYPE_REF) {
+	if(!(val->is_original) && (val->u.list.vector[0].type == PARAM_TYPE_REF)) {
 		symbol_set_type(tmp, OBJECT_TYPE);
 	}
 	POS;

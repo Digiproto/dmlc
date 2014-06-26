@@ -85,7 +85,6 @@ void parse_data_cdecl(tree_t* node, symtab_t table) {
 	decl->node = node;
 	node->common.cdecl = decl;
 	symbol_insert(table, decl->var_name, DATA_TYPE, decl);
-	fprintf(stderr, "insert date type, name %s\n", decl->var_name);
 	return;
 }
 
@@ -142,7 +141,6 @@ void parse_local_decl(tree_t* node, symtab_t table) {
 		insert_record_elems(decl);
 	}
 	symbol_insert(table, decl->var_name, decl->common.categ, decl);
-	fprintf(stderr, "localxxx %s, type %p\n", decl->var_name, decl);
 
 	return;
 }

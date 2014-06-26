@@ -233,7 +233,6 @@ symbol_t get_symbol_from_banks(const char* name) {
 	bank_attr_t* attr = NULL;
 	symbol_t symbol = NULL;
 	device_t* dev = get_device();
-	fprintf(stderr, "dev %p\n", dev);
 	list_for_each(p, &dev->obj.childs) {
 		tmp = list_entry(p, object_t, entry);
 		//symbol = defined_symbol(tmp->symtab->sibling, name, 0);
@@ -242,7 +241,6 @@ symbol_t get_symbol_from_banks(const char* name) {
 		} else {
 			symbol = defined_symbol(tmp->symtab->sibling, name, 0);
 		}
-		fprintf(stderr, "bank name %s, symbol %p\n", tmp->name, symbol);
 		//symbol = defined_symbol(tmp->symtab, name, OBJECT_T);
 		if (symbol)
 			return symbol;
@@ -364,7 +362,6 @@ reference_t* get_reference(tree_t* node, reference_t* ref, expr_t* expr, symtab_
 			new = get_reference(node->unary.expr, ref, expr, table);
 			break;
 		default:
-			fprintf(stderr, "xxx\n");
 			PERRORN("other node type: %s", node, node->common.name);
 			/* FIXME: handle the error */
 			break;
@@ -717,7 +714,6 @@ symtab_t get_symbol_table(symtab_t sym_tab, symbol_t symbol) {
 	symtab_t table = NULL;
 	void* attr = symbol->attr;
 
-	fprintf(stderr, "symbol type %d, DATA TYPE %d, object type %d\n", symbol->type, DATA_TYPE, OBJECT_TYPE);
 	switch(symbol->type) {
 		case TEMPLATE_TYPE:
 			table = ((template_attr_t*)attr)->table;
@@ -1221,7 +1217,6 @@ expr_t* check_binary_kids(tree_t* node, symtab_t table, expr_t* expr) {
  */
 expr_t* check_logical_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	assert(node != NULL); assert(table != NULL);
-	fprintf(stderr, "file %s, line %d\n", node->common.location.file->name, node->common.location.first_line);
 	expr = check_binary_kids(node, table, expr);
 	check_kids_no_defiend(expr, node);
 	if (both_scalar_type(expr->kids[0]->type, expr->kids[1]->type)) {
@@ -1283,8 +1278,8 @@ expr_t* check_bitwise_expr(tree_t* node, symtab_t table, expr_t* expr) {
 		new_int_type(expr);
 		return expr;
 	}
-	error("Line: %d, Invalid operands, type1: %d, type2: %d\n",
-		__LINE__, expr->kids[0]->type->common.categ, expr->kids[1]->type->common.categ);
+	PERRORN("Invalid operands, type1: %d, type2: %d\n", node,
+		expr->kids[0]->type->common.categ, expr->kids[1]->type->common.categ);
 	return expr;
 }
 
@@ -1314,16 +1309,16 @@ expr_t* check_equality_expr(tree_t* node, symtab_t table, expr_t* expr) {
 		return expr;
 	}
 	if(is_string_type(type1) ^ is_string_type(type2)) {
-		fprintf(stderr, "expect both string type, file %s, line %d\n", node->common.location.file->name, node->common.location.first_line);
-		fprintf(stderr, "type1 %d, type2 %d\n", type1->common.categ, type2->common.categ);
-		fprintf(stderr, "string CMP %d\n", STRING_T);
+		//fprintf(stderr, "expect both string type, file %s, line %d\n", node->common.location.file->name, node->common.location.first_line);
+		//fprintf(stderr, "type1 %d, type2 %d\n", type1->common.categ, type2->common.categ);
+		//fprintf(stderr, "string CMP %d\n", STRING_T);
 	} else if(is_string_type(type1)){
 		expr_t *expr1, *expr2;
 		expr1 = expr->kids[0];
 		expr2 = expr->kids[1];
 
 		if(!(expr1->is_const && expr2->is_const)) {
-			fprintf(stderr, "%s:%d: ", node->common.location.file->name, node->common.location.first_line);
+			//fprintf(stderr, "%s:%d: ", node->common.location.file->name, node->common.location.first_line);
 			fprintf(stderr, "error: comparison with string literal results in unspecified behavior\n");
 			exit(-1);
 		}
@@ -1749,7 +1744,7 @@ expr_t* check_ternary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	if (!is_scalar_type(cond_expr->type) &&
 		!is_no_type(cond_expr->type) &&
 		!is_parameter_type(cond_expr->type)) {
-		error("used struct type value where scalar is required\n");
+		PERRORN("used struct type value where scalar is required\n", node);
 	}
 
 	expr_t* true_expr = check_expr(node->ternary.expr_true, table);
@@ -1846,7 +1841,7 @@ expr_t* check_unary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 				expr = cal_const_value(expr);
 			}
 			else if (no_common_type(expr->kids[0]->type)){
-				error("wrong type argument to decrement\n");
+				PERRORN("wrong type argument to decrement\n", node);
 			}
 			else {
 				expr->type = expr->kids[0]->type;
@@ -1861,7 +1856,7 @@ expr_t* check_unary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 				expr = cal_const_value(expr);
 			}
 			else if (no_common_type(expr->kids[0]->type)){
-				error("wrong type argument to decrement\n");
+				PERRORN("wrong type argument to decrement\n", node);
 			}
 			else {
 				expr->type = expr->kids[0]->type;
@@ -1872,7 +1867,7 @@ expr_t* check_unary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 			expr->no_defined = expr->kids[0]->no_defined;
 			check_no_defiend_expr(expr, node);
 			if (expr->kids[0]->is_const) {
-				error("lvalue required as unary ‘&’ operand\n");
+				PERRORN("lvalue required as unary ‘&’ operand\n", node);
 			}
 			else {
 				expr->type = pointer_to(expr->kids[0]->type);
@@ -1884,7 +1879,7 @@ expr_t* check_unary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 			expr->no_defined = expr->kids[0]->no_defined;
 			check_no_defiend_expr(expr, node);
 			if (expr->kids[0]->type->common.categ != POINTER_T) {
-				error("invalid type argument of ‘unary *’\n");
+				PERRORN("invalid type argument of ‘unary *’\n", node);
 			}
 			else {
 				expr->type = expr->kids[0]->type->common.bty;
@@ -1935,7 +1930,7 @@ expr_t* check_unary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 				expr->type = expr->kids[0]->type;
 			}
 			else {
-				error("lvalue required as increment/decrement operand\n");
+				PERRORN("lvalue required as increment/decrement operand\n", node);
 			}
 			break;
 		case AFT_INC_OP_TYPE:
@@ -1949,14 +1944,13 @@ expr_t* check_unary_expr(tree_t* node, symtab_t table, expr_t* expr) {
 				expr->type = expr->kids[0]->type;
 			}
 			else {
-				error("lvalue required as increment/decrement operand\n");
+				PERRORN("lvalue required as increment/decrement operand\n", node);
 			}
 			break;
 		default:
 			PERRORN("other unary type: %s(%d)", node, node->common.name, node->unary.type);
 	}
 
-	EXPR_TRACE("end check unary expr op %s \n", TYPENAME(node->unary.type));
 	expr->node = node;
 	return expr;
 }
@@ -2200,14 +2194,12 @@ cdecl_t* check_parameter_type(symbol_t symbol, expr_t* expr) {
 			return type;
 		}
 		param_type = spec->value->type;
-		fprintf(stderr, "is orignal\n");
 	} else {
 		param_type = ((param_value_t*)parameter)->type;
 	}
 
 	if (param_type == PARAM_TYPE_NONE || param_type == PARAM_TYPE_LIST ||
 		param_type == PARAM_TYPE_REF) {
-		fprintf(stderr, "paramxxx check %d, list type %d\n", param_type, PARAM_TYPE_LIST);
 		type->common.categ = PARAMETER_TYPE;
 	} else if(param_type == PARAM_TYPE_LIST2) {
 		type->common.categ = LIST_T;
@@ -2260,7 +2252,6 @@ cdecl_t* check_parameter_type(symbol_t symbol, expr_t* expr) {
 		/* Pay attention: this is only for debugging */
 		PERRORN("other parameter type", expr->node);
 	}
-	//fprintf(stderr, "++++++++++++type %d\n ", type->common.categ);
 	return type;
 }
 
@@ -2521,7 +2512,6 @@ expr_t* check_ident_expr(tree_t* node, symtab_t table, expr_t* expr) {
 			expr->type = type;
 			expr->node = node;
 			node->ident.ty = expression_type_copy(node->ident.ty, expr->type);
-			//fprintf(stderr, "this ~~~~~~~~~~\n");
 			return expr;
 	}
 	symbol_t symbol = symbol_find_notype(table, node->ident.str);
@@ -2532,9 +2522,7 @@ expr_t* check_ident_expr(tree_t* node, symtab_t table, expr_t* expr) {
 		if (!symbol)
 			symbol = get_symbol_from_banks(node->ident.str);
 	}
-	fprintf(stderr, "symbol %p\n", symbol);
 	if (symbol != NULL) {
-		//fprintf(stderr, "symbol name: %s, type: %d, table %d\n", symbol->name, symbol->type, table->table_num);
 		if (is_common_type(symbol->type)) {
 			EXPR_TRACE("common symbol type\n");
 			expr->type = symbol->attr;
@@ -2546,7 +2534,6 @@ expr_t* check_ident_expr(tree_t* node, symtab_t table, expr_t* expr) {
 		}
 	}
 	else {
-		//fprintf(stderr, "special case\n");
 		const char* str = node->ident.str;
 		cdecl_t* type = NULL;
 		if ((strcmp(str, "false") == 0) || (strcmp(str, "true") == 0)) {
@@ -2883,18 +2870,10 @@ expr_t* check_refer(symtab_t table, reference_t* ref, expr_t* expr) {
 	reference_t* tmp = ref;
 
 	if (table->no_check == 1) {
-		fprintf(stderr, "no check \n");
 		expr->type->common.categ = INT_T;
 		return expr;
 	}
-	if(!strcmp(tmp->name, "arl_table")) {
-		fprintf(stderr, "+++++++++++++try to find arl table \n");
-	}
 	symbol = symbol_find_notype(table, tmp->name);
-	if(!strcmp(tmp->name, "arl_table")) {
-		fprintf(stderr, "+++++++++++++try to find arl table %p, name %s, type %d\n", symbol, symbol->name, symbol->type);
-	}
-	fprintf(stderr, "symbol name %s\n", tmp->name);
 	symbol = (symbol == NULL) ? get_symbol_from_banks(tmp->name) : symbol;
 	while (tmp->next) {
 		if ((symbol->type == INTERFACE_TYPE) ||
@@ -2904,7 +2883,6 @@ expr_t* check_refer(symtab_t table, reference_t* ref, expr_t* expr) {
 			symbol = symbol_find_notype(table, tmp->name);
 			symbol = (symbol == NULL) ? get_symbol_from_root_table(tmp->name, 0) : symbol;
 		}
-		fprintf(stderr, "symbol %p\n", symbol);	
 		if (symbol != NULL) {
 			ref_table = get_symbol_table(table, symbol);
 			ref_table = (ref_table == NULL) ? get_symbol_table_from_template(table, tmp->name) : ref_table;
@@ -2935,10 +2913,8 @@ expr_t* check_refer(symtab_t table, reference_t* ref, expr_t* expr) {
 			obj_type = ((object_t*)(symbol->attr))->obj_type;
 		}
 		ref_symbol = symbol_find_notype(ref_table, tmp->next->name);
-		fprintf(stderr, "ref name %s\n", tmp->next->name);
 		const char *wired = tmp->next->name;
 		if(!strcmp(wired, "c") || !strcmp(wired, "rma")) {
-			fprintf(stderr, "%s, ref_table %p, table %p\n", wired, ref_table, table);
 			print_all_symbol(ref_table);
 			print_all_symbol(table);
 		}
@@ -3006,9 +2982,7 @@ expr_t* check_component_expr(tree_t* node, symtab_t table, expr_t* expr) {
 	reference->name = ident->ident.str;
 	reference = get_reference(node->component.expr, reference, expr, table);
 	print_reference(reference);
-	fprintf(stderr, "before ref check, file %s, line %d\n", node->common.location.file->name, node->common.location.first_line);
 	expr = check_refer(table, reference, expr);
-	fprintf(stderr, "after ref check\n");
 	check_no_defiend_expr(expr, node);
 	expr->node = node;
 	node->component.ty = expression_type_copy(node->component.ty, expr->type);
@@ -3259,7 +3233,6 @@ expr_t* check_array_expr(tree_t* node, symtab_t table, expr_t* expr) {
 
 	EXPR_TRACE("end check array expr\n");
 	expr->node = node;
-	fprintf(stderr, "check array typexx %s, line %d\n", node->common.location.file->name, node->common.location.first_line);
 	return expr;
 }
 
@@ -3449,7 +3422,6 @@ expr_t* check_comma_expr(tree_t* node, symtab_t table) {
 	tree_t* expr_node = node;
 	expr_t* expr = NULL;
 	while (node != NULL) {
-		fprintf(stderr, "check node type %d, assign %d\n", node->common.type, EXPR_ASSIGN_TYPE);
 		expr = check_expr(node, table);
 		if (expr->no_defined) {
 			break;

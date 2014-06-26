@@ -35,7 +35,7 @@
 void check_expr_type(tree_t *node, symtab_t table, type_info_t **info);
 
 
-#define ENABLE_TRACE_NODE
+//#define ENABLE_TRACE_NODE
 #ifdef ENABLE_TRACE_NODE
 #define NODE_TRACE(fmt, ...) do { \
 			fprintf(stderr, fmt, ## __VA_ARGS__); \

@@ -183,7 +183,6 @@ void collect_ref_info(tree_t *expr, ref_info_t *fi){
 		add_node_info(fi,ni);
 	} else if (type == DML_KEYWORD_TYPE) {
 		/*bank field */
-		fprintf(stderr, "dml keyword %s\n", expr->ident.str);
 		ni = new_node_info(expr, NULL);
 		add_node_info(fi, ni);
 	}  else if (type == BIT_SLIC_EXPR_TYPE) {
@@ -204,7 +203,6 @@ void collect_ref_info(tree_t *expr, ref_info_t *fi){
 			e->flags |= FLAGS_POINTER;
 	} else {
 		my_DBG("TODO: other type %d\n", type);
-		fprintf(stderr, "other type %d\n", type);
 		exit(-1);
 	}
 }
@@ -235,13 +233,10 @@ void printf_ref(ref_ret_t *ref_ret){
 
 	check_expr_type(ref_ret->node, table, &ref_ret->type_info);
 
-	fprintf(stderr, "node file %s, line %d\n", ref_ret->node->common.location.file->name, ref_ret->node->common.location.first_line);
 	if((ref_ret->type_info) && (ref_ret->type_info->kind & (TYPE_LAYOUT | TYPE_BITFIELD))) {
 		/* translate layout and bitfield*/
 		enum type_info kind = ref_ret->type_info->kind;
 		tree_t *node = ref_ret->node;
-		//fprintf(stderr, "exit, type kind %d,file %s, line %d\n", kind,node->common.location.file->name, node->common.location.first_line );
-		//exit(-1);
 		switch(kind) {
 			case TYPE_LAYOUT:
 				translate_layout(ref_ret->type_info);
@@ -255,11 +250,9 @@ void printf_ref(ref_ret_t *ref_ret){
 		}
 		return;
 	}
-	fprintf(stderr, "node2 file %s, line %d\n", ref_ret->node->common.location.file->name, ref_ret->node->common.location.first_line);
 	if(ref_ret->con) {
 		con = ref_ret->con;
 	}
-	fprintf(stderr, "nameMe %s\n", name);
 	fi = ref_ret->ref;
 	head = &fi->list;
 	p = head->next;
@@ -296,7 +289,6 @@ void printf_ref(ref_ret_t *ref_ret){
 				if(!sym){
 					my_DBG("no sym %s found in current symtab \n",name);
 					sym = get_default_bank_obj(name);	
-					fprintf(stderr, "get default bank name %s\n", name);
 				}
 				if(!strcmp(name, "this")) {
 					object_t *obj;
@@ -311,7 +303,6 @@ void printf_ref(ref_ret_t *ref_ret){
 						obj = (object_t *)sym->attr;
 					}
 					alias = get_obj_ref(obj);
-					fprintf(stderr, "obj %p, alias %p\n", obj, alias);
 					if(obj->is_array && strcmp(obj->obj_type, "data")) {
 						int len = 0;
 						tmp_str = strrchr(alias, '[');
@@ -623,7 +614,6 @@ symbol_t get_ref_sym(tree_t *t, ref_ret_t *ret, symtab_t table){
 		ni_next = list_entry(p->next, node_info_t, entry);
 		node = ni->node;
 		node_next = ni_next->node;
-		fprintf(stderr, "node_next %p\n", node_next);
 	normal_case:
 		if(node_next) {
 			if(node_next->common.type == DML_KEYWORD_TYPE) {
@@ -704,14 +694,9 @@ symbol_t get_ref_sym(tree_t *t, ref_ret_t *ret, symtab_t table){
 					}
 					else {
 						fprintf(stderr, "file %s, line %d\n", t->common.location.file->name, t->common.location.first_line);
-						int *p = NULL;
-						*p = 0;
-						printf("symbol '%s' not find\n", name2);
+						fprintf(stderr, "symbol '%s' not find\n", name2);
 					}
-				} else {
-					fprintf(stderr, "ref->obj %d\n", ret->is_obj);	
 				}
-			
 			}
 			p = ni_next->entry.next;
 			fore_name = name;

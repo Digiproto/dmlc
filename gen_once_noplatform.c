@@ -537,14 +537,12 @@ static int find_slot(reg_array_t *list, int base,  int size) {
 	int i = 1;
 	reg_array_t *e;
 
-	fprintf(stderr, "base %d, size %d, list %p\n", base, size, list);	
 	for(; i < list->list_count; i++) {
 		e = &list[i];
 		if(e->size == size) {
 			return i;
 		}
 	} 
-	fprintf(stderr, "here list %p\n", list);
 	for(i = 1; i < list->list_count; i++) {
 		e = &list[i];
 		if(!e->size) {
@@ -552,12 +550,10 @@ static int find_slot(reg_array_t *list, int base,  int size) {
 			return i;
 		}
 	}
-	fprintf(stderr, "here2 list %p\n", list);
 	if(i >= list->list_count) {
 		list->list_count *= 2;
 		list = realloc(list, list->list_count * sizeof(*e));
 	}
-	fprintf(stderr, "here3 list %p\n", list);
 	for(; i < list->list_count; i++) {
 		e = &list[i];
 		e->size = 0;
@@ -610,15 +606,12 @@ static reg_array_t *sort_register_array(bank_t *b) {
 		if(reg->is_undefined || reg->is_unmapped) {
 			continue;
 		}
-		fprintf(stderr, "i %d, reg %s, base 0x%x, list %p\n", i++, reg->obj.name, reg->offset, list);
 		if(reg->is_array) {
-			fprintf(stderr, "is array list %p\n", list);
 			i = find_slot(list, reg->offset,  reg->array_size);		
 			reg_list_insert(list, i, obj);
 		} else {
 			reg_list_insert(list, 0, obj);
 		}
-		fprintf(stderr, "end\n");
 	}
 	return list;
 }
@@ -636,19 +629,15 @@ static reg_array_t *sort_register_array2(struct list_head *regs_list) {
 	list_for_each(p, regs_list) {
 		obj = list_entry(p, object_t, entry);	
 		reg = (dml_register_t *)obj;
-		fprintf(stderr, "i %d, regxxx %s, base 0x%x, list %p\n", i++, reg->obj.name, reg->offset_info.offset, list);
 		if(reg->is_undefined || reg->is_unmapped) {
 			continue;
 		}
-		fprintf(stderr, "i %d, regxxx %s, base 0x%x, list %p\n", i++, reg->obj.name, reg->offset_info.offset, list);
 		if(reg->is_array) {
-			fprintf(stderr, "is array list %p\n", list);
 			i = find_slot(list, reg->offset_info.offset,  reg->array_size);		
 			reg_list_insert(list, i, obj);
 		} else {
 			reg_list_insert(list, 0, obj);
 		}
-		fprintf(stderr, "end\n");
 	}
 	return list;
 }

@@ -46,7 +46,6 @@ static int handle_inline_case(tree_t *t, type_t type) {
 
     if(type == CALL_TYPE || type == THROW_TYPE) {
         tmp = it->call_inline.expr;
-	fprintf(stderr, "file %s, line %d\n", t->common.location.file->name, t->common.location.first_line);
 	init_ref_ret(&ref_ret);
 	if(tmp->common.type == EXPR_BRACK_TYPE) {
 		flowx = 1;
@@ -56,7 +55,6 @@ static int handle_inline_case(tree_t *t, type_t type) {
 	}
 	flowx = 0;
         if(!sym) {
-            my_DBG("err,no inline function\n");
 		fprintf(stderr, "no inline function found\n");
 		exit(-1);
         }    
@@ -249,11 +247,9 @@ static int block_has_node_type(tree_t *t, type_t node_type) {
     } else if(node->common.type == INLINE_TYPE) {
 		ret = handle_inline_case(node, node_type);
 	} else if(node->common.type == FOR_TYPE) {
-		fprintf(stderr, "for+++++++++\n ");
 		ret = block_has_node_type(node->for_tree.block, node_type);
 	} else if(node->common.type == IF_ELSE_TYPE) {
 		it = node;
-		fprintf(stderr, "it it\n");
 		ret = block_has_node_type(it->if_else.if_block, node_type);
 		if(ret) {
 			return ret;

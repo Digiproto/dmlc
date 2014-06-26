@@ -227,7 +227,7 @@ void add_child (tree_t* parent, tree_t* child)
  * @param node : tree node to be translated
  */
 void dummy_translate(tree_t *node) {
-#ifndef RELEASE
+#if 0
 	printf("not correct, should call you own translate function, node name %s, file %s, line %d\n", node->common.name,
 																									node->common.location.file->name,
 																									node->common.location.first_line
@@ -863,7 +863,6 @@ paramspec_t* get_param_spec(tree_t* node, symtab_t table) {
 
 	if (node->paramspec.expr && (table->no_check == 0)) {
 		expr_t* expr = check_expr(node->paramspec.expr, table);
-		fprintf(stderr, "after check\n");
 		if (expr->no_defined) {
 			undef_var_insert(table, node->paramspec.expr);
 			value->type = PARAM_TYPE_NONE;
@@ -887,8 +886,6 @@ paramspec_t* get_param_spec(tree_t* node, symtab_t table) {
 			if (expr->val)
 				value->u.floating = expr->val->d;
 		} else if(expr->type->common.categ == ARRAY_TYPE) {
-			fprintf(stderr, "lll");
-			
 			value->type = PARAM_TYPE_LIST2;
 		}
 		else {
@@ -973,9 +970,7 @@ int get_offset(tree_t* node, symtab_t table) {
 	}
 	else {
 		
-		fprintf(stderr, "dddd0\n");
 		expr_t* expr = check_expr(node, table);
-		fprintf(stderr, "dddd\n");
 		/*
 		if (expr->is_const == 0) {
 			return 4;
@@ -1229,13 +1224,10 @@ void parse_device(tree_t* node, symtab_t table) {
 	 * other objects, and they will be parsed two times
 	 * as some variables can be used befor defined*/
 	/* the first time to parse the symbols and expressions */
-	fprintf(stderr, "parse object\n");
 	parse_object(node, table);
 
-	fprintf(stderr, "end parse object\n");
 	/* the second time to parse symbols and expressions */
 	parse_undef_list(table);
-	fprintf(stderr, "end\n");
 	table->is_parsed = 1;
 
 	return;
@@ -1539,8 +1531,7 @@ void parse_unparsed_obj(tree_t* node, symtab_t table) {
 	} else if (node->common.type == IMPLEMENT_TYPE) {
 		node->implement.spec;
 	} else if (node->common.type == DEVICE_TYPE){
-		fprintf(stderr, "node file %s, line %d\n", node->common.location.file->name, node->common.location.first_line);
-		//error("other object type\n");
+		//fprintf(stderr, "node file %s, line %d\n", node->common.location.file->name, node->common.location.first_line);
 		return;
 	} else {
 		//error("other object type2\n");
@@ -1718,9 +1709,10 @@ void parse_method(tree_t* node, symtab_t table) {
 	symbol_insert(table, node->ident.str, METHOD_TYPE, attr);
 	/* insert the parameters of method into method table */
 	params_insert_table(attr->table, attr->method_params);
-	fprintf(stderr, "parse method %s\n", node->ident.str); 
+#if 0
 	if(attr->method_params)	
 		fprintf(stderr, "param %p, in argc %d\n",  attr->method_params, attr->method_params->in_argc);
+#endif
 	return;
 }
 
@@ -1801,7 +1793,6 @@ void parse_constant(tree_t* node, symtab_t table) {
 	attr->value = check_expr(node->assign.expr, table);
 	if (attr->value->no_defined) {
 		undef_var_insert(table, node);
-		fprintf(stderr, "constxxx undef name %s\n", attr->name);
 		return;
 	}
 	if (attr->value->is_const) {
@@ -2209,7 +2200,6 @@ static void parse_call_inline_method(symtab_t table, tree_t* call_expr, tree_t* 
 	assert(call_expr != NULL);
 	object_t *obj = NULL; tree_t* block = NULL;
 	tree_t *node = NULL; method_attr_t *method_attr = NULL;
-	fprintf(stderr, "tablex %d, file %s, line %d\n", table->table_num, call_expr->common.location.file->name, call_expr->common.location.first_line);
 	symbol_t method_sym = get_call_expr_info(call_expr, table);
 	symtab_t saved_table;
 	if (method_sym) {
@@ -2225,14 +2215,10 @@ static void parse_call_inline_method(symtab_t table, tree_t* call_expr, tree_t* 
 		if(method_sym && (method_sym->type == METHOD_TYPE)) {
 			obj = (object_t *)method_sym->owner;
 			if(!obj) {
-				int *p = NULL;
-				*p = 0;
 				error("method '%s' object cannot empty\n", method_sym->name);
 			} else {
-				fprintf(stderr, "call/inline obj %s, func %s\n", obj->name, method_sym->name);
 				if (!block_empty(block)) {
 					DBG("ADD: obj name %s, method name %s\n", obj->name, method_sym->name);
-					fprintf(stderr, "call/inline obj %s, func %s\n", obj->name, method_sym->name);
 					add_object_method(obj, method_sym->name);
 				}
 			}
@@ -2508,7 +2494,6 @@ void parse_foreach(tree_t* node, symtab_t table) {
 	 *		foreach ident in '(' expression ')' statement
 	 */
 	/* insert ident into table of foreach */
-	fprintf(stderr, "foreach: file %s, line %d\n", node->common.location.file->name, node->common.location.first_line);
 	tree_t* ident = node->foreach.ident;
 	foreach_attr_t* attr = (foreach_attr_t*)gdml_zmalloc(sizeof(foreach_attr_t));
 	attr->ident = ident->ident.str;
@@ -2529,7 +2514,6 @@ void parse_foreach(tree_t* node, symtab_t table) {
 	symtab_t saved = current_table;
 	int len, i;
 	len = i = 0;
-	fprintf(stderr, "list type %d, array_type  %d, parameter type %d\n", list->type, ARRAY_TYPE, PARAMETER_TYPE);
 	if(list->type != ARRAY_TYPE){
 		if(list->type == PARAMETER_TYPE ) {
 			val = list->attr;
@@ -2542,14 +2526,12 @@ void parse_foreach(tree_t* node, symtab_t table) {
 			my_DBG("error type in foreach\n");
 		}
 	}
-	fprintf(stderr, "len %d\n",  len);
 	symbol_t tmp = symbol_find(attr->table, ident->ident.str, FOREACH_TYPE);
 	if (val->u.list.vector == NULL) {
 		current_table = saved;
 		return;
 	}
-	else if(val->u.list.vector[0].type == PARAM_TYPE_REF) {
-		fprintf(stderr, "object \n");
+	else if(!(val->is_original) && (val->u.list.vector[0].type == PARAM_TYPE_REF)) {
 		symbol_set_type(tmp, OBJECT_TYPE);
 	}
 	tree_t* block = node->foreach.block;

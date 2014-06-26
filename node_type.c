@@ -35,13 +35,11 @@ static cdecl_t* get_common_type2(symtab_t table, symbol_t symbol) {
 	expr_t expr;
 
 	cdecl_t* type = NULL;
-	fprintf(stderr, "sym type %d, object type %d, no type %d\n", symbol->type, OBJECT_TYPE, NO_TYPE);
 	switch(symbol->type) {
 		case PARAM_TYPE:
 			type = ((params_t*)(symbol->attr))->decl;
 			if(type->common.categ == NO_TYPE) {
 				tree_t *node = type->node;				
-				fprintf(stderr, "parse cdeclxx\n");
 				type = parse_cdecl(node, table);		
 				if(type->common.categ == NO_TYPE) {
 				type = new_int(); 
@@ -49,7 +47,6 @@ static cdecl_t* get_common_type2(symtab_t table, symbol_t symbol) {
 			}
 			break;
 		case PARAMETER_TYPE:
-			fprintf(stderr, "to check parameterxxxx! type\n");
 			type = check_parameter_type(symbol, &expr);
 			parameter_attr_t *attr = symbol->attr;
 			paramspec_t *spec = attr->param_spec; 
@@ -148,10 +145,8 @@ static symtab_t get_obj_table(cdecl_t *type) {
 	object_t *obj;
 
 	obj = type->object.obj;
-	fprintf(stderr, "obj %p, obj name %s, is array %d, type %s\n",  obj, obj->name, obj->is_array, obj->obj_type);
 	if(!strcmp(obj->obj_type, "data")) {
 		type->common.categ = obj->node->common.cdecl->common.categ; 
-		fprintf(stderr, "get data table\n");
 		return get_data_table2(obj);
 	} else {
 		return obj->symtab;
@@ -231,7 +226,6 @@ void check_ident_node(tree_t* node, symtab_t table, type_info_t **info) {
 			type->common.categ = OBJECT_T;
 			object_t *obj = get_current_obj();			
 			type->object.obj = obj; 
-			fprintf(stderr, "object ++++++++++ obj %p\n", obj);
 		}
 		else if (strcmp(str, "i") == 0) {
 			object_t* obj = get_current_obj();
@@ -240,14 +234,12 @@ void check_ident_node(tree_t* node, symtab_t table, type_info_t **info) {
 				type->common.categ = INT_T;
 				type->common.size = sizeof(int) * 8;
 
-				fprintf(stderr, "kkkkkkk++++\n");
 			} else {
 				error("%s no undeclared\n", str);
 			}
 		}
 		else {
 			if (table->pass_num == 0) {
-				fprintf(stderr, "kkkkkkk___\n");
 			} else {
 				error("%s no undeclared in template\n", str);
 			}
@@ -286,7 +278,6 @@ void check_bit_slic_node(tree_t *node, symtab_t table, type_info_t **info) {
 				*elem = *obj;
 				if(!strcmp(obj->obj_type, "data")) {
 					cdecl_t *type = obj->node->common.cdecl;
-					fprintf(stderr, "arrayxxx name %s\n", obj->name);
 					if(type->common.categ == ARRAY_T) {
 						cdecl_t *type2 = type->common.bty;
 						if(type2 && type2->common.categ == ARRAY_T) {
@@ -301,10 +292,8 @@ void check_bit_slic_node(tree_t *node, symtab_t table, type_info_t **info) {
 				typex->common.categ = OBJECT_T;
 				typex->object.obj = elem;
 				type = typex;
-				fprintf(stderr, "object arrayxxxx, obj type %s\n", elem->obj_type);
 			} else {
 				if(!obj->is_abstract) {
-					fprintf(stderr, "objxxxx name %s\n", obj->name);
 					cdecl_t *typex = gdml_zmalloc(sizeof *type);
 					typex->common.categ = INT_T;
 					type->common.size = sizeof(int);
@@ -404,7 +393,6 @@ void check_component_node(tree_t *node, symtab_t table, type_info_t **info) {
 	symtab_t tab;
 
 	NODE_TRACE("before check component %p, %p, file %s, line %d\n", node->component.expr, table, node->common.location.file->name, node->common.location.first_line);
-	fprintf(stderr, "table num %d\n", table->table_num);
 	check_expr_type(node->component.expr, table, info);
 	type = node->component.expr->common.cdecl;
 	if(type->common.categ == LIST_T){ 
@@ -415,7 +403,6 @@ void check_component_node(tree_t *node, symtab_t table, type_info_t **info) {
 		check_expr_type(elem, table, &dummy);	
 		node->component.expr = elem;
 		type = elem->common.cdecl;
-		fprintf(stderr, "list eval, node %p\n", elem);
 	}
 	if(node->component.type == COMPONENT_DOT_TYPE) {
 		if(!is_type_aggregate(type) && !is_type_object(type) ){
@@ -433,7 +420,6 @@ void check_component_node(tree_t *node, symtab_t table, type_info_t **info) {
 	if(is_type_aggregate(type) || type->common.categ == POINTER_T) {
 		tab = get_type_aggregate_table(type);
 	} else {
-		fprintf(stderr, "type %d\n", type->common.categ);
 		tab = get_obj_table(type);
 	}
 	const char *field = node->component.ident->ident.str;

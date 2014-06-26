@@ -40,7 +40,6 @@ static void chk_object_method(object_t *obj){
 	struct method_name *m;
 	struct list_head *p;
 
-	fprintf(stderr, "check xobj %s\n", obj->name);
 	list_for_each(p, &obj->methods){
 		m = list_entry(p,struct method_name, entry);
 		chk_dml_method(obj, m);

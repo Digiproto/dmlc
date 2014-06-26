@@ -53,18 +53,16 @@ void chk_dml_method(object_t *obj, struct method_name *m) {
          * expressions that in the method block, as we did
          * not do them before */
         //pre_chk_method(obj, method);
-		context_t context;
-		obj_ref_t obj_ref;
+	context_t context;
+	obj_ref_t obj_ref;
 
-		obj_ref.obj = obj;
-		obj_ref.ref = NULL;
-		current_table = obj->symtab; 
-		pre_gen_method(&obj_ref, method, &context);
-		fprintf(stderr, "obj %s, start to check method %s\n", obj->name, m->name);
+	obj_ref.obj = obj;
+	obj_ref.ref = NULL;
+	current_table = obj->symtab;
+	pre_gen_method(&obj_ref, method, &context);
         parse_method_block(method);
         //post_chk_method(obj, method);
-		fprintf(stderr, "obj %s, end to check method %s\n", obj->name, m->name);
-		post_gen_method(&obj_ref, method, &context);
+	post_gen_method(&obj_ref, method, &context);
 }
 
 symtab_t get_current_table() {

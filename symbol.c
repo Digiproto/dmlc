@@ -238,7 +238,6 @@ symbol_t symbol_find_from_templates(struct template_table* templates, const char
 
         while (templates != NULL) {
                 table = templates->table;
-		fprintf(stderr, "try to search template %s\n", templates->template_name);
                 if(table) {
 			rt = symbol_find(table, name, type);
 			//rt = _symbol_find(table->table, name, type);
