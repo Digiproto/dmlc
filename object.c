@@ -1660,7 +1660,7 @@ static int register_unmapped(object_t *obj) {
 }
 
 static void print_offset_info(offset_info_t *info) {
-#if 0
+#if 1
 	if(info) {
 		int i;
 		for(i = 0; i < MAX_DEPTH; i++) {
@@ -1794,6 +1794,15 @@ static void register_realize(object_t *obj) {
 	process_object_templates(obj);
 }
 
+static int  cal_group_offset(object_t *obj) {
+	group_t *group = (group_t *)obj;		
+	int offset = 0;
+
+	offset = group->offset_info.offset + group->offset_info.len * obj->array_size;	
+	printf("group offset_info len 0x%x, array_size 0x%x\n",  group->offset_info.len,  obj->array_size);
+	return offset;
+}
+
 /**
  * @brief bank_calculate_register_offset : calculate the size about bank based on register offset
  *
@@ -1808,7 +1817,11 @@ static void bank_calculate_register_offset(object_t *obj) {
 	int register_size = bank->register_size;
 	int size;
 	int last = 0;
-
+	int start = 0;
+	struct list_head *p;
+	object_t *tmp;
+	int group_offset = 0;
+	int offset_tmp;
 
 	for(i = 0; i < bank->reg_count; i++) {
 		reg = (dml_register_t *)bank->regs[i];
@@ -1827,13 +1840,26 @@ static void bank_calculate_register_offset(object_t *obj) {
 		} else if(reg->offset > offset) {
 			offset = reg->offset;
 		}
+		if(i == 0) {
+			start = reg->offset;
+		}
 		if(reg->is_array) {
-			size = reg->array_size * reg->interval;
+			size = reg->array_size * reg->offset_info.interval[0];
 		} else {
 			size = reg->size;
 		}
 		offset += size;
 	}
+	list_for_each(p, &bank->groups) {
+		tmp = list_entry(p, object_t, entry);	
+		 offset_tmp = cal_group_offset(tmp);	
+		if(offset_tmp > group_offset) {
+			group_offset = offset_tmp;
+		}
+	}
+	if(group_offset > offset)
+		offset = group_offset;
+	
 	/*take the register total size as bank size in a conservative way. Maybe some alignment should make */
 	bank->size = offset;
 }
@@ -2154,8 +2180,14 @@ static const char* get_type(const char* str, attribute_t* attr) {
 	} else if (!strcmp(str, "\"a\"")) {
 		type = "a";
 		attr->ty = FLOAT_T;
-	} else {
-		type = "i";
+	} else if(!strcmp(str, "\"[ii]\"")){
+		type = "ii";
+		attr->ty = INT_T;
+	} else if(!strcmp(str, "\"[iiiiiii]\"")) {
+		type = "iiiiiii";
+		attr->ty = INT_T;
+	} else if(!strcmp(str, "\"[iiiii]\"")) {
+		type = "iiiii";
 		attr->ty = INT_T;
 	}
 	return type;
