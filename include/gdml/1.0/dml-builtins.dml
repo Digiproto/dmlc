@@ -460,6 +460,7 @@ template register {
     parameter log_group                 default $parent.log_group;
 
     method hard_reset_register default {
+	/*
 	if ($fields[0].explicit) {
 	    foreach field in ($fields)
 		call field.hard_reset;
@@ -467,7 +468,8 @@ template register {
 	    // No explicit fields
 	    //inline $hard_reset;
 	    call $hard_reset;
-	}
+	}*/
+	call $hard_reset();
         //inline $after_hard_reset;
         call $after_hard_reset;
     }
@@ -557,20 +559,19 @@ template register {
     method set(value) default {
 	if ($fields[0].explicit) {
 	    foreach field in ($fields) {
-		if ($bitsize == field.bitsize)
-		    // Only one field
-		    inline field.set(value);
-		else
-		    inline field.set(value[field.msb:field.lsb]);
+			local uint32 tmp = value[field.msb:field.lsb]; 
+		    	call field.set(tmp);
 	    }
 	} else {
 	    // No explicit fields
-	    if ($allocate) {
+	    //if ($allocate) {
 		$this = value;
+		/*
 	    } else if ($configuration != "none"
                        && $configuration != "pseudo") {
                 error "set() not implemented for non-allocated register";
 	    }
+		*/
 	}
     }
 
