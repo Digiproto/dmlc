@@ -860,7 +860,6 @@ static void create_bank_object(object_t *obj, symbol_t sym){
 	create_objs(&bank->obj, IMPLEMENT_TYPE);
 	create_objs(&bank->obj, ATTRIBUTE_TYPE);
 	//fprintf(stderr, "bankxxx name %s, file %s, line %d\n", sym->name, b->common.node->common.location.file->name, b->common.node->common.location.first_line);
-	//print_all_symbol(table);
 }
 
 /**
@@ -1816,8 +1815,6 @@ static void bank_calculate_register_offset(object_t *obj) {
 	int offset = 0;
 	int register_size = bank->register_size;
 	int size;
-	int last = 0;
-	int start = 0;
 	struct list_head *p;
 	object_t *tmp;
 	int group_offset = 0;
@@ -1840,9 +1837,6 @@ static void bank_calculate_register_offset(object_t *obj) {
 		} else if(reg->offset > offset) {
 			offset = reg->offset;
 		}
-		if(i == 0) {
-			start = reg->offset;
-		}
 		if(reg->is_array) {
 			size = reg->array_size * reg->offset_info.interval[0];
 		} else {
@@ -1860,6 +1854,7 @@ static void bank_calculate_register_offset(object_t *obj) {
 	if(group_offset > offset)
 		offset = group_offset;
 	
+	printf("offset 0x%x, bank reg count %d\n", bank->reg_count);
 	/*take the register total size as bank size in a conservative way. Maybe some alignment should make */
 	bank->size = offset;
 }
@@ -2442,6 +2437,8 @@ void print_data(object_t *data, int tab_count) {
 void print_object(object_t *obj, int tab_count) {
 	const char *pos = (const char *)tab[tab_count];
 	BE_DBG(OBJ, "%sobject type %s, name %s, symtab %p, sibling %p, symtab parent %p\n", pos, obj->obj_type, obj->name, obj->symtab, obj->symtab->sibling, obj->symtab->parent);
+
+	printf("%sobject type %s, name %s, symtab %p, sibling %p, symtab parent %p\n", pos, obj->obj_type, obj->name, obj->symtab, obj->symtab->sibling, obj->symtab->parent);
 
 	struct list_head *p;
 	object_t *tmp;

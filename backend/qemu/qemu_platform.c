@@ -87,7 +87,7 @@ static void gen_bank_read_access(object_t *obj, FILE *f) {
 	fprintf(f, "\n");
 	fprintf(f, "\tmemset(&v%d_memop, 0, sizeof(v%d_memop));\n", index, index);
 	fprintf(f, "\tSIM_set_mem_op(&v%d_memop, %s);\n", index,"!SIM_Trn_Write");
-	fprintf(f, "\t\tSIM_set_mem_op_ini_ptr(&v%d_memop);\n", index);
+	fprintf(f, "\tSIM_set_mem_op_ini_ptr(&v%d_memop);\n", index);
 	fprintf(f, "\tv%d_ret = _DML_M_%s__access(_dev, &v%d_memop, (physical_address_t)addr, (physical_address_t)size);\n",index2, name, index);
 	fprintf(f, "\tif(!v%d_ret) {\n", index2);
 	fprintf(f, "\t\tv%d_val = SIM_mem_op_get_value(&v%d_memop);\n", index3, index);
@@ -123,7 +123,7 @@ static void gen_bank_write_access(object_t *obj, FILE *f) {
 	fprintf(f, "\tmemset(&v%d_memop, 0, sizeof(v%d_memop));\n", index, index);
 	fprintf(f, "\tSIM_set_mem_op(&v%d_memop, %s);\n", index, "SIM_Trans_Store");
 	fprintf(f, "\tSIM_mem_op_set_value(&v%d_memop, val);\n", index);
-	fprintf(f, "\t\tSIM_set_mem_op_ini_ptr(&v%d_memop);\n", index);
+	fprintf(f, "\tSIM_set_mem_op_ini_ptr(&v%d_memop);\n", index);
 	fprintf(f, "\tv%d_ret = _DML_M_%s__access(_dev, &v%d_memop, (physical_address_t)addr, (physical_address_t)size);\n", index2, name, index);
 	F_END;
 	fprintf(f, "}\n");
