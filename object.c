@@ -1659,7 +1659,7 @@ static int register_unmapped(object_t *obj) {
 }
 
 static void print_offset_info(offset_info_t *info) {
-#if 1
+#if 0
 	if(info) {
 		int i;
 		for(i = 0; i < MAX_DEPTH; i++) {
