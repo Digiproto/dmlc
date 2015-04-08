@@ -8,7 +8,7 @@ CFLAGS = -g -Werror-implicit-function-declaration \
 		-Wmissing-field-initializers
 INCLUDE = -I. -I./backend/
 BUILD_DIR = build
-#BUILD_DIRS_SKYEYE = $(patsubst %,$(BUILD_DIR)/skyeye/%,$(shell find backend -type d))
+BUILD_DIRS_SKYEYE = $(patsubst %,$(BUILD_DIR)/skyeye/%,$(shell find backend -type d))
 BUILD_DIRS_QEMU = $(patsubst %,$(BUILD_DIR)/qemu/%,$(shell find backend -type d))
 BUILD_DIRS_SYSTEMC = $(patsubst %,$(BUILD_DIR)/systemc/%,$(shell find backend -type d))
 TARGET_NAME = dmlc
@@ -20,10 +20,10 @@ endif
 
 # select platform: qemu skyeye
 PLATFORM ?= all
-#ifeq ($(PLATFORM),skyeye)
-#BACKEND_NUM = 2
-#TARGETS = $(TARGET_NAME)_skyeye
-#else
+ifeq ($(PLATFORM),skyeye)
+BACKEND_NUM = 2
+TARGETS = $(TARGET_NAME)_skyeye
+else
 ifeq ($(PLATFORM),qemu)
 BACKEND_NUM = 1
 TARGETS = $(TARGET_NAME)_qemu
@@ -33,16 +33,16 @@ BACKEND_NUM = 3
 TARGETS = $(TARGET_NAME)_systemc
 else
 ifeq ($(PLATFORM),all)
-#TARGETS = $(TARGET_NAME)_skyeye $(TARGET_NAME)_qemu $(TARGET_NAME)_systemc
-TARGETS = $(TARGET_NAME)_qemu $(TARGET_NAME)_systemc
+TARGETS = $(TARGET_NAME)_skyeye $(TARGET_NAME)_qemu $(TARGET_NAME)_systemc
+#TARGETS = $(TARGET_NAME)_qemu $(TARGET_NAME)_systemc
 else
 $(error PLATFORM="$(PLATFORM)" not found, PLATFORM is qemu or skyeye or systemc.)
 endif # all
 endif # systemc
 endif # qemu
-#endif # skyeye
+endif # skyeye
 CFLAGS_QEMU = $(CFLAGS) -D backend=1
-#CFLAGS_SKYEYE = $(CFLAGS) -D backend=2
+CFLAGS_SKYEYE = $(CFLAGS) -D backend=2
 CFLAGS_SYSTEMC = $(CFLAGS) -D backend=3
 
 # args is diffent on windows or linux
@@ -59,7 +59,7 @@ endif
 # find all c files
 TOP_FILES := $(wildcard *.c)
 BACKEND_FILES  = $(wildcard backend/*.c)
-#BACKEND_SKYEYE_FILES += $(wildcard backend/skyeye/*.c)
+BACKEND_SKYEYE_FILES += $(wildcard backend/skyeye/*.c)
 BACKEND_QEMU_FILES += $(wildcard backend/qemu/*.c)
 ifeq ($(SYSTEMC4SKYEYE),no) 
 BACKEND_SYSTEMC_FILES += $(filter-out backend/systemc/systemc_skyeye%.c, $(wildcard backend/systemc/*.c))
@@ -71,21 +71,21 @@ SPECIAL_FILES = Parser.c Lexer.c
 
 # link all c_files string
 C_FILES := $(TOP_FILES) $(BACKEND_FILES) $(BACKEND_QEMU_FILES) $(BACKEND_SKYEYE_FILES) $(SPECIAL_FILES)
-#C_SKYEYE_FILES := $(TOP_FILES) $(BACKEND_FILES) $(BACKEND_SKYEYE_FILES) $(SPECIAL_FILES)
+C_SKYEYE_FILES := $(TOP_FILES) $(BACKEND_FILES) $(BACKEND_SKYEYE_FILES) $(SPECIAL_FILES)
 C_QEMU_FILES := $(TOP_FILES) $(BACKEND_FILES) $(BACKEND_QEMU_FILES) $(SPECIAL_FILES)
 C_SYSTEMC_FILES := $(TOP_FILES) $(BACKEND_FILES) $(BACKEND_SYSTEMC_FILES) $(SPECIAL_FILES)
 
 OBJECTS := $(patsubst %.c,$(BUILD_DIR)/%.o,$(C_FILES))
-#OBJECTS_SKYEYE := $(patsubst %.c,$(BUILD_DIR)/skyeye/%.o,$(C_SKYEYE_FILES))
+OBJECTS_SKYEYE := $(patsubst %.c,$(BUILD_DIR)/skyeye/%.o,$(C_SKYEYE_FILES))
 OBJECTS_QEMU := $(patsubst %.c,$(BUILD_DIR)/qemu/%.o,$(C_QEMU_FILES))
 OBJECTS_SYSTEMC := $(patsubst %.c,$(BUILD_DIR)/systemc/%.o,$(C_SYSTEMC_FILES))
 
-#all: Makefile.build $(BUILD_DIRS_SKYEYE) $(BUILD_DIRS_QEMU) $(BUILD_DIRS_SYSTEMC) $(TARGETS)
-all: Makefile.build $(BUILD_DIRS_QEMU) $(BUILD_DIRS_SYSTEMC) $(TARGETS)
+all: Makefile.build $(BUILD_DIRS_SKYEYE) $(BUILD_DIRS_QEMU) $(BUILD_DIRS_SYSTEMC) $(TARGETS)
+#all: Makefile.build $(BUILD_DIRS_QEMU) $(BUILD_DIRS_SYSTEMC) $(TARGETS)
 	@echo [ALL] build finished.
 
-#skyeye: Makefile.build $(BUILD_DIRS_SKYEYE) $(TARGET_NAME)_skyeye
-#	@echo [skyeye] build finished.
+skyeye: Makefile.build $(BUILD_DIRS_SKYEYE) $(TARGET_NAME)_skyeye
+	@echo [skyeye] build finished.
 
 qemu: Makefile.build $(BUILD_DIRS_QEMU) $(TARGET_NAME)_qemu
 	@echo [qemu] build finished.
@@ -99,9 +99,9 @@ sinclude $(OBJECTS:.o=.d)
 endif
 endif
 
-#$(TARGET_NAME)_skyeye: $(OBJECTS_SKYEYE)
-#	@echo [LD] $@
-#	@$(CC) $(CFLAGS_SKYEYE) $^ -o $@ $(LIBRARY_DIR) $(LIBRARY)
+$(TARGET_NAME)_skyeye: $(OBJECTS_SKYEYE)
+	@echo [LD] $@
+	@$(CC) $(CFLAGS_SKYEYE) $^ -o $@ $(LIBRARY_DIR) $(LIBRARY)
 
 $(TARGET_NAME)_qemu: $(OBJECTS_QEMU)
 	@echo [LD] $@
@@ -117,9 +117,9 @@ $(BUILD_DIR)/%.d: %.c
 		sed 's#^.*:#$(patsubst $(BUILD_DIR)/%.d,$(BUILD_DIR)/qemu/%.o,$@) $(patsubst $(BUILD_DIR)/%.d,$(BUILD_DIR)/systemc/%.o,$@):#' > $@
 #		sed 's#^.*:#$(patsubst $(BUILD_DIR)/%.d,$(BUILD_DIR)/skyeye/%.o,$@) $(patsubst $(BUILD_DIR)/%.d,$(BUILD_DIR)/qemu/%.o,$@) $(patsubst $(BUILD_DIR)/%.d,$(BUILD_DIR)/systemc/%.o,$@):#' > $@
 
-#$(BUILD_DIR)/skyeye/%.o: %.c
-#	@echo [CC] $@
-#	@$(CC) $(CFLAGS_SKYEYE) -c $< -o $@ $(INCLUDE) $(LIBRARY_DIR) $(LIBRARY)
+$(BUILD_DIR)/skyeye/%.o: %.c
+	@echo [CC] $@
+	@$(CC) $(CFLAGS_SKYEYE) -c $< -o $@ $(INCLUDE) $(LIBRARY_DIR) $(LIBRARY)
 
 $(BUILD_DIR)/qemu/%.o: %.c
 	@echo [CC] $@
@@ -143,28 +143,28 @@ Parser.h: gdml.y
 	@echo [BISON] $@
 	@bison -d gdml.y
 
-#install: $(TARGET_NAME)_skyeye $(TARGET_NAME)_qemu $(TARGET_NAME)_systemc include/gdml
-install: $(TARGET_NAME)_qemu $(TARGET_NAME)_systemc include/gdml
+install: $(TARGET_NAME)_skyeye $(TARGET_NAME)_qemu $(TARGET_NAME)_systemc include/gdml
+#install: $(TARGET_NAME)_qemu $(TARGET_NAME)_systemc include/gdml
 	@echo ===== start install =====
 	@echo install $(TARGET_NAME)_skyeye $(TARGET_NAME)_skyeye  $(TARGET_NAME)_systemc [to /usr/bin]
-#	@cp -r $(TARGET_NAME)_skyeye /usr/bin
+	@cp -r $(TARGET_NAME)_skyeye /usr/bin
 	@cp -r $(TARGET_NAME)_qemu /usr/bin
 	@cp -r $(TARGET_NAME)_systemc /usr/bin
 	@echo install include/gdml [to /usr/include]
 	@cp -r include/gdml /usr/include
 
-#uninstall: /usr/bin/$(TARGET_NAME)_skyeye /usr/bin/$(TARGET_NAME)_qemu $(TARGET_NAME)_systemc /usr/include/gdml
-uninstall: /usr/bin/$(TARGET_NAME)_qemu $(TARGET_NAME)_systemc /usr/include/gdml
+uninstall: /usr/bin/$(TARGET_NAME)_skyeye /usr/bin/$(TARGET_NAME)_qemu $(TARGET_NAME)_systemc /usr/include/gdml
+#uninstall: /usr/bin/$(TARGET_NAME)_qemu $(TARGET_NAME)_systemc /usr/include/gdml
 	@echo ===== start uninstall =====
 	@echo uninstall $(TARGET_NAME)_skyeye $(TARGET_NAME)_qemu [from /usr/bin]
 	@rm -rf /usr/bin/$(TARGET_NAME)_skyeye /usr/bin/$(TARGET_NAME)_qemu /usr/bin/$(TARGET_NAME)_systemc
 	@echo uninstall lib/gdml [from /usr/include]
 	@rm -rf /usr/include/gdml
 
-#check: $(TARGET_NAME)_skyeye $(TARGET_NAME)_qemu $(TARGET_NAME)_systemc ../include/gdml output
-check: $(TARGET_NAME)_qemu $(TARGET_NAME)_systemc ../include/gdml output
+check: $(TARGET_NAME)_skyeye $(TARGET_NAME)_qemu $(TARGET_NAME)_systemc ../include/gdml output
+#check: $(TARGET_NAME)_qemu $(TARGET_NAME)_systemc ../include/gdml output
 	@echo ===== start check =====
-#	./$(TARGET_NAME)_skyeye testcase/simple-device.dml 1>/dev/null
+	./$(TARGET_NAME)_skyeye testcase/simple-device.dml 1>/dev/null
 	./$(TARGET_NAME)_qemu testcase/simple-device.dml 1>/dev/null
 	./$(TARGET_NAME)_systemc testcase/simple-device.dml 1>/dev/null
 
@@ -175,8 +175,8 @@ check: $(TARGET_NAME)_qemu $(TARGET_NAME)_systemc ../include/gdml output
 output:
 	mkdir -p output
 
-#$(BUILD_DIRS_SKYEYE):
-#	mkdir -p $(BUILD_DIRS_SKYEYE)
+$(BUILD_DIRS_SKYEYE):
+	mkdir -p $(BUILD_DIRS_SKYEYE)
 
 $(BUILD_DIRS_QEMU):
 	mkdir -p $(BUILD_DIRS_QEMU)
