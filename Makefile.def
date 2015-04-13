@@ -145,8 +145,8 @@ Parser.h: gdml.y
 
 install: $(TARGET_NAME)_skyeye $(TARGET_NAME)_qemu $(TARGET_NAME)_systemc include/gdml
 #install: $(TARGET_NAME)_qemu $(TARGET_NAME)_systemc include/gdml
-	@echo ===== start install =====
-	@echo install $(TARGET_NAME)_skyeye $(TARGET_NAME)_skyeye  $(TARGET_NAME)_systemc [to /usr/bin]
+	#echo ===== start install =====
+	#echo install $(TARGET_NAME)_skyeye $(TARGET_NAME)_skyeye  $(TARGET_NAME)_systemc [to /usr/bin]
 	@cp -r $(TARGET_NAME)_skyeye /usr/bin
 	@cp -r $(TARGET_NAME)_qemu /usr/bin
 	@cp -r $(TARGET_NAME)_systemc /usr/bin
@@ -185,7 +185,7 @@ $(BUILD_DIRS_SYSTEMC):
 	mkdir -p $(BUILD_DIRS_SYSTEMC)
 
 clean:
-	@echo ===== start clean =====
+	#echo ===== start clean =====
 	cd output && make clean
 	-rm Parser.* Lexer.* -rf
 	-find . -name "*.d" | xargs rm -f
