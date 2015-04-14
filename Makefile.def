@@ -147,11 +147,17 @@ install: $(TARGET_NAME)_skyeye $(TARGET_NAME)_qemu $(TARGET_NAME)_systemc includ
 #install: $(TARGET_NAME)_qemu $(TARGET_NAME)_systemc include/gdml
 	#echo ===== start install =====
 	#echo install $(TARGET_NAME)_skyeye $(TARGET_NAME)_skyeye  $(TARGET_NAME)_systemc [to /usr/bin]
-	@cp -r $(TARGET_NAME)_skyeye /usr/bin
-	@cp -r $(TARGET_NAME)_qemu /usr/bin
-	@cp -r $(TARGET_NAME)_systemc /usr/bin
+	#@cp -r $(TARGET_NAME)_skyeye /usr/bin
+	@mkdir -p /opt/gdml/bin
+	@cp -r $(TARGET_NAME)_skyeye /opt/gdml/bin/dmlc
+
+	#@cp -r $(TARGET_NAME)_qemu /usr/bin
+	#@cp -r $(TARGET_NAME)_systemc /usr/bin
 	@echo install include/gdml [to /usr/include]
-	@cp -r include/gdml /usr/include
+	#@cp -r include/gdml /usr/include
+	@mkdir -p /opt/gdml/include
+	@cp -r include/gdml /opt/gdml/include
+
 
 uninstall: /usr/bin/$(TARGET_NAME)_skyeye /usr/bin/$(TARGET_NAME)_qemu $(TARGET_NAME)_systemc /usr/include/gdml
 #uninstall: /usr/bin/$(TARGET_NAME)_qemu $(TARGET_NAME)_systemc /usr/include/gdml
