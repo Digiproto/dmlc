@@ -144,12 +144,13 @@ void gen_device_init(device_t *dev, FILE *f) {
     fprintf(f, "\nstatic conf_object_t  *%s_create(const char *name) {\n", dev_name);
 	F_HEAD;
     fprintf(f, "\t%s_t *_dev = skyeye_mm_zero(sizeof(*_dev));\n", dev_name);
-	fprintf(f, "\tconf_object_register(&_dev->obj, name);\n");
+//	fprintf(f, "\tconf_object_register(&_dev->obj, name);\n");
+	fprintf(f, "\t_dev->obj = new_conf_object(name, _dev);\n");
     fprintf(f, "\tbool v%d_exec = 0;\n", index);
     fprintf(f, "\tUNUSED(v%d_exec);\n", index);
     fprintf(f, "\n\t%s_hard_reset(_dev);\n", dev_name);
     fprintf(f, "\tv%d_exec = _DML_M_init(_dev);\n", index);
-    fprintf(f, "\t%s_mmio_setup(_dev, name);\n", dev_name);
+    //fprintf(f, "\t%s_mmio_setup(_dev, name);\n", dev_name);
 	F_END;
     fprintf(f, "\treturn &_dev->obj;\n");
     fprintf(f, "}\n");
@@ -237,7 +238,14 @@ void gen_device_type_info(device_t *dev, FILE *f) {
 	fprintf(f, "\t\t.connects = %s_connects,\n", name);
 	fprintf(f, "\t\t.ifaces = %s_ifaces,\n", name);
 	fprintf(f, "\t};\n");
-	fprintf(f, "\tSKY_register_class(class_data.class_name, &class_data);\n");
+	fprintf(f, "\tconf_class_t* clss = SKY_register_class(class_data.class_name, &class_data);\n");
+        
+	//fprintf(f, "\tSKY_register_class(class_data.class_name, &class_data);\n");
+	fprintf(f, "\tstatic const memory_space_intf io_memory = {\n");
+	fprintf(f, "\t\t.read = %s_read,\n", "regs");
+	fprintf(f, "\t\t.write = %s_write,\n", "regs");
+	fprintf(f, "\t};\n");
+	fprintf(f, "\tSKY_register_iface(clss, MEMORY_SPACE_INTF_NAME, &io_memory);\n");
 	F_END;
 	fprintf(f, "}\n");
 }

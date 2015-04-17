@@ -43,7 +43,7 @@ void gen_object_struct(device_t *dev, FILE *f) {
     fprintf(f, "\ntypedef struct %s %s_t;\n", dev_name, dev_name);
     gen_device_macros(dev, f);
     fprintf(f, "\nstruct %s {\n", dev_name);
-    fprintf(f, "\tconf_object_t obj;\n");
+    fprintf(f, "\tconf_object_t* obj;\n");
     gen_device_struct(dev, f);
     /*more here */
     fprintf(f,"};\n");
