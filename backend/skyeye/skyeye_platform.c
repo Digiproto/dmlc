@@ -152,7 +152,7 @@ void gen_device_init(device_t *dev, FILE *f) {
     fprintf(f, "\tv%d_exec = _DML_M_init(_dev);\n", index);
     //fprintf(f, "\t%s_mmio_setup(_dev, name);\n", dev_name);
 	F_END;
-    fprintf(f, "\treturn &_dev->obj;\n");
+    fprintf(f, "\treturn _dev->obj;\n");
     fprintf(f, "}\n");
 }
 
