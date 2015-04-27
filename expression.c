@@ -35,6 +35,24 @@
 #include "info_output.h"
 #include "chk_common.h"
 
+static char *
+strndup (const char *s, size_t n)
+{
+  char *result;
+  size_t len = strlen (s);
+
+  if (n < len)
+    len = n;
+
+  result = (char *) malloc (len + 1);
+  if (!result)
+    return 0;
+
+  result[len] = '\0';
+  return (char *) memcpy (result, s, len);
+}
+
+
 /**
  * @brief common_decl_copy : copy the type of identifier to tree node
  *
