@@ -26,6 +26,7 @@
 #include "gen_method_protos.h"
 #include "gen_connect.h"
 #include "gen_implement.h"
+#include "skyeye_gen_attribute.h"
 
 extern object_t *DEV;
 
@@ -223,6 +224,7 @@ void gen_device_type_info(device_t *dev, FILE *f) {
 
 	gen_device_connect(dev, f);	
 	gen_device_implement(dev, f);
+	sky_gen_device_attribute_description(dev, f);
 	fprintf(f, "\nvoid init_%s(void) {\n", name);
 #ifdef DEVICE_TEST
 	fprintf(f, "\tdebug_function_pos = 0;\n");
@@ -246,6 +248,7 @@ void gen_device_type_info(device_t *dev, FILE *f) {
 	fprintf(f, "\t\t.write = %s_write,\n", "regs");
 	fprintf(f, "\t};\n");
 	fprintf(f, "\tSKY_register_iface(clss, MEMORY_SPACE_INTF_NAME, &io_memory);\n");
+	fprintf(f, "\t%s_register_attribute(clss);\n", name);
 	F_END;
 	fprintf(f, "}\n");
 }
