@@ -47,6 +47,7 @@ static void gen_headerfile(device_t *dev, FILE *f) {
     fprintf(f, "#include \"skyeye_mm.h\"\n");
     fprintf(f, "#include \"skyeye_class.h\"\n", name);
 	fprintf(f, "#include \"skyeye_iface.h\"\n");
+	fprintf(f, "#include \"skyeye_attribute.h\"\n");
 }
 
 void pre_gen_code(device_t *dev, FILE *f) {

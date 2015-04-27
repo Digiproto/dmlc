@@ -73,7 +73,7 @@ static void gen_attribute_get(device_t* dev, object_t *obj, FILE *f) {
 	fprintf(f, "attr_value_t\n");
 	fprintf(f, "get_attr_%s(void* arg, conf_object_t* conf_obj, attr_value_t* idx){", name);
 	fprintf(f, "\n\t%s_t* dev = (%s_t*)(conf_obj->obj);", dev->obj.name, dev->obj.name);
-        fprintf(f, "\n\treturn SKY_make_attr_uinteger(dev->%s)", name);
+        fprintf(f, "\n\treturn SKY_make_attr_uinteger(dev->%s);", name);
 	fprintf(f, "\n}\n");
 }
 
@@ -146,7 +146,7 @@ void sky_gen_device_attribute_description(device_t *dev, FILE *f) {
                 } else  {
                         name = tmp->name;
                 }
-		fprintf(f, "\n\tSKY_register_attribute(class, \"%s\", get_%s, NULL, set_%s, NULL, SKY_Attr_Optional, \"uinteger\", \"\");", name, name, name);
+		fprintf(f, "\n\tSKY_register_attribute(class, \"%s\", get_attr_%s, NULL, set_attr_%s, NULL, SKY_Attr_Optional, \"uinteger\", \"\");", name, name, name);
 		#if 0
                fprintf(f, "\t[%d] = (struct AttributeDescription) {\n", i);
                fprintf(f, "\t\t.name = \"%s\",\n", name);
