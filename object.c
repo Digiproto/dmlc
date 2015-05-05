@@ -1854,7 +1854,7 @@ static void bank_calculate_register_offset(object_t *obj) {
 	if(group_offset > offset)
 		offset = group_offset;
 	
-	printf("offset 0x%x, bank reg count %d\n", bank->reg_count);
+	//printf("offset 0x%x, bank reg count %d\n", bank->reg_count);
 	/*take the register total size as bank size in a conservative way. Maybe some alignment should make */
 	bank->size = offset;
 }
@@ -2438,7 +2438,7 @@ void print_object(object_t *obj, int tab_count) {
 	const char *pos = (const char *)tab[tab_count];
 	BE_DBG(OBJ, "%sobject type %s, name %s, symtab %p, sibling %p, symtab parent %p\n", pos, obj->obj_type, obj->name, obj->symtab, obj->symtab->sibling, obj->symtab->parent);
 
-	printf("%sobject type %s, name %s, symtab %p, sibling %p, symtab parent %p\n", pos, obj->obj_type, obj->name, obj->symtab, obj->symtab->sibling, obj->symtab->parent);
+	//printf("%sobject type %s, name %s, symtab %p, sibling %p, symtab parent %p\n", pos, obj->obj_type, obj->name, obj->symtab, obj->symtab->sibling, obj->symtab->parent);
 
 	struct list_head *p;
 	object_t *tmp;
