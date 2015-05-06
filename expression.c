@@ -35,6 +35,7 @@
 #include "info_output.h"
 #include "chk_common.h"
 
+#ifdef __WIN32__
 static char *
 strndup (const char *s, size_t n)
 {
@@ -51,6 +52,7 @@ strndup (const char *s, size_t n)
   result[len] = '\0';
   return (char *) memcpy (result, s, len);
 }
+#endif
 
 
 /**
