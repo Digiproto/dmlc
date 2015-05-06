@@ -157,6 +157,7 @@ install: $(TARGET_NAME)_skyeye $(TARGET_NAME)_qemu $(TARGET_NAME)_systemc includ
 	#@cp -r include/gdml /usr/include
 	@mkdir -p /opt/gdml/include
 	@cp -r include/gdml /opt/gdml/include
+	@cp -r testcase /opt/gdml/samples
 
 
 uninstall: /usr/bin/$(TARGET_NAME)_skyeye /usr/bin/$(TARGET_NAME)_qemu $(TARGET_NAME)_systemc /usr/include/gdml
