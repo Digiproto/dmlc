@@ -270,7 +270,7 @@ void gen_iface(object_t *obj, FILE *f) {
 
 	name = obj->name;
 	qname = obj->qname;
-	fprintf(f, "\nstatic const %s_interface_t %s_iface = {\n", name, qname);
+	fprintf(f, "\nstatic const %s_intf %s_iface = {\n", name, qname);
     while(list) {
         sym = list->sym;
 		attr = (method_attr_t *)sym->attr;	

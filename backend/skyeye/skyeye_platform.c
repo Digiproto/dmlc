@@ -27,6 +27,7 @@
 #include "gen_connect.h"
 #include "gen_implement.h"
 #include "skyeye_gen_attribute.h"
+#include "gen_struct.h"
 
 extern object_t *DEV;
 
@@ -223,6 +224,7 @@ static void gen_device_implement(device_t *dev, FILE *f) {
 void gen_device_type_info(device_t *dev, FILE *f) {
 	const char *name = dev->obj.name;
 
+	gen_device_struct(dev, f);
 	gen_device_connect(dev, f);	
 	gen_device_implement(dev, f);
 	sky_gen_device_attribute_description(dev, f);
@@ -242,6 +244,12 @@ void gen_device_type_info(device_t *dev, FILE *f) {
 	fprintf(f, "\t\t.ifaces = %s_ifaces,\n", name);
 	fprintf(f, "\t};\n");
 	fprintf(f, "\tconf_class_t* clss = SKY_register_class(class_data.class_name, &class_data);\n");
+
+	/* gen interface register */
+	fprintf(f, "\tint i = 0;");
+	fprintf(f, "\tfor(i = 0; i < (sizeof(%s_ifaces) / sizeof (InterfaceDescription)); i++){\n", name);
+	fprintf(f, "\t\tSKY_register_iface(clss, %s_ifaces[i].name, %s_ifaces[i].iface);\n", name, name);
+	fprintf(f, "\t}\n");
         
 	//fprintf(f, "\tSKY_register_class(class_data.class_name, &class_data);\n");
 	fprintf(f, "\tstatic const memory_space_intf io_memory = {\n");
