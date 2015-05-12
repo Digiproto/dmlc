@@ -1,0 +1,100 @@
+/* Copyright (C) 
+* 2015 - Michael.Kang blackfin.kang@gmail.com
+* This program is free software; you can redistribute it and/or
+* modify it under the terms of the GNU General Public License
+* as published by the Free Software Foundation; either version 2
+* of the License, or (at your option) any later version.
+* 
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+* 
+* You should have received a copy of the GNU General Public License
+* along with this program; if not, write to the Free Software
+* Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+* 
+*/
+
+dml 1.2;
+
+device rs422_serial_dml;
+
+parameter desc = "rs422 serial";
+
+parameter documentation = "rs422 serial";
+data char send_buf[1024];
+data char recv_buf[1024];
+data int start_send;
+data int end_send;
+data int start_recv;
+data int end_recv;
+
+attribute address {
+    parameter documentation = "The start address of io memory for this device.";
+    parameter allocate_type = "uint32";
+}
+attribute length {
+    parameter documentation = "The length of io memory of this device.";
+    parameter allocate_type = "uint32";
+}
+
+attribute skyeye_uart_intf {
+    parameter documentation = "The operation of skyeye uart .";
+    parameter allocate_type = "object";
+}
+attribute skyeye_ad_file_data_intf {
+    parameter documentation = "The operation of ad file data.";
+    parameter allocate_type = "object";
+}
+
+// Basic bank declaration
+bank regs {
+    parameter register_size = 4;
+    // USER-TODO: Add more register declarations here.  Usually use just one
+    // line per register, containing size (optional), offset, any templates
+    // implemented, and a short description. Use the read_write template for
+    // normal registers where a read usually returns the last written value,
+    // and the unimplemented template for registers that you haven't yet
+    // implemented.
+    // Implementation of registers
+	register send_reg @ 0x00 {
+		method read()->(typeof($this) value) {
+                        // value = $this;
+			value = send_buf[end_send];
+			end_send = end_send + 1;
+                }
+                method write(typeof($this) value) {
+                        $this = value;
+                }
+	}
+	register recv_reg @ 0x08{
+		method read()->(typeof($this) value) {
+                        // value = $this;
+			value = recv_buf[end_recv];
+			end_recv = end_recv + 1;
+                }
+                method write(typeof($this) value) {
+                        $this = value;
+                }
+	}
+	register brsr   @ 0x10;
+	register cmd @0x18;
+	register stu @0x10;
+	register header1 @0x30;
+	register header2 @0x38;
+	register tail1 @0x40;
+	register tail2 @0x48;
+
+}
+
+implement skyeye_file_data_timer{
+	method set_timer(int ms){
+	}
+}
+method init(){
+	//start_send = 0;
+	//end_send = 0;
+	//start_recv = 0;
+	//end_recv = 0;
+}
