@@ -224,7 +224,7 @@ static void gen_device_implement(device_t *dev, FILE *f) {
 void gen_device_type_info(device_t *dev, FILE *f) {
 	const char *name = dev->obj.name;
 
-	gen_device_struct(dev, f);
+	//gen_device_struct(dev, f);
 	gen_device_connect(dev, f);	
 	gen_device_implement(dev, f);
 	sky_gen_device_attribute_description(dev, f);
