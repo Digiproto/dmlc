@@ -18,11 +18,16 @@
 
 dml 1.2;
 
+
 device rs422_serial_dml;
 
 parameter desc = "rs422 serial";
 
 parameter documentation = "rs422 serial";
+
+import "utility.dml";
+import "simics/devs/uart_intf.dml";
+
 data char send_buf[1024];
 data char recv_buf[1024];
 data int start_send;
@@ -41,11 +46,11 @@ attribute length {
 
 attribute skyeye_uart_intf {
     parameter documentation = "The operation of skyeye uart .";
-    parameter allocate_type = "object";
+    parameter allocate_type = "iface";
 }
-attribute skyeye_ad_file_data_intf {
-    parameter documentation = "The operation of ad file data.";
-    parameter allocate_type = "object";
+
+connect skyeye_uart_intf_conn{
+	interface skyeye_uart_intf;
 }
 
 // Basic bank declaration
@@ -61,18 +66,34 @@ bank regs {
 	register send_reg @ 0x00 {
 		method read()->(typeof($this) value) {
                         // value = $this;
-			value = send_buf[end_send];
-			end_send = end_send + 1;
+			value = $send_buf[$end_send];
+			$end_send = $end_send + 1;
                 }
                 method write(typeof($this) value) {
-                        $this = value;
+			//regs->send_cache.value = val;
+			$send_buf[$start_send] = value;
+			$start_send = $start_send + 1;
+
+			if($start_send == 22){
+                                local uint8 tmp[10];
+                                local int i;
+                                for( i = 0; i < 22; i ++ ){
+                                        memset(tmp, 0, 10);
+                                        //call $sprintf(tmp, "0x%x", send_buf[i]);
+                                        //call $dev.skyeye_uart_intf->write(dev->term.obj, tmp, strlen(tmp));
+					$skyeye_uart_intf_conn.skyeye_uart_intf.write(tmp, strlen(tmp));
+                                }
+                        }
+
+                        $start_send = 0;
+                        memset($send_buf, 0 , 22);
                 }
 	}
 	register recv_reg @ 0x08{
 		method read()->(typeof($this) value) {
                         // value = $this;
-			value = recv_buf[end_recv];
-			end_recv = end_recv + 1;
+			value = $recv_buf[$end_recv];
+			$end_recv = $end_recv + 1;
                 }
                 method write(typeof($this) value) {
                         $this = value;
