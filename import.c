@@ -104,6 +104,7 @@ const char *import_file_list[] = {
 	"simics/devs/microwire.dml",
 	"simics/devs/ram.dml",
 	"simics/devs/signal.dml",
+	"simics/devs/uart_intf.dml",
 	"simics/devs/arinc-429.dml",
 	"simics/devs/eth-probe.dml",
 	"simics/devs/i2c.dml",

@@ -76,4 +76,10 @@ typedef struct i2c_device {
 	void (*write_data) (conf_object_t *obj, uint8_t value);
 } i2c_device_interface_t;
 
+typedef struct skyeye_uart_intf{
+        conf_object_t* conf_obj;
+        exception_t (*write) (conf_object_t *opaque, void* buf, size_t count);
+        exception_t (*read) (conf_object_t *opaque, void* buf, size_t count);
+}skyeye_uart_intf_interface_t;
+
 #endif /* __DEV_IFACE_H__ */
