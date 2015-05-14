@@ -43,6 +43,8 @@
 
 extern symtab_t current_table;
 
+//#define AST_DEBUG
+
 #ifdef AST_DEBUG
 #define DBG(fmt, ...) do { fprintf(stderr, fmt, ## __VA_ARGS__); } while (0)
 #else
@@ -193,7 +195,7 @@ tree_t* find_node (tree_t* node, int type)
 		return NULL;
 	}
 	if ((node->common.type) == type) {
-		DBG ("node find, name: %s\n", node->name);
+		DBG ("node find, name: %s\n", node->common.name);
 		return node;
 	}
 	else if (((node->common.child) != NULL) && ((node->common.type) != type)) {
