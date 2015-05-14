@@ -46,7 +46,17 @@ static void gen_attribute_set(device_t* dev, object_t *obj, FILE *f) {
 	fprintf(f, "\n");
 	fprintf(f, "set_attr_%s(void* arg, conf_object_t* conf_obj, attr_value_t* value, attr_value_t* idx){", name);
 	fprintf(f, "\n\t%s_t *dev = (%s_t *)(conf_obj->obj);", dev->obj.name, dev->obj.name);
-	fprintf(f, "\n\tdev->%s = SKY_attr_uinteger(*value);", name);
+	if(type == INT_T || type == LONG_T) {
+		fprintf(f, "\n\tdev->%s = SKY_attr_uinteger(*value);", name);
+	}
+	else if(type == INTERFACE_T){
+		fprintf(f, "\n\tdev->%s_conn.obj = SKY_attr_object(*value);", name);
+		fprintf(f, "\n\tdev->%s_conn.%s = (%s_interface_t *)SKY_get_iface(dev->%s_obj, \"%s\");", name, name, name, name, name);
+	}
+	else { // object type
+		fprintf(f, "\n\tdev->%s = SKY_attr_object(*value);", name);
+	}
+
         fprintf(f, "\n\treturn No_exp;");
 	fprintf(f, "\n}\n");
 	return;
@@ -73,7 +83,14 @@ static void gen_attribute_get(device_t* dev, object_t *obj, FILE *f) {
 	fprintf(f, "attr_value_t\n");
 	fprintf(f, "get_attr_%s(void* arg, conf_object_t* conf_obj, attr_value_t* idx){", name);
 	fprintf(f, "\n\t%s_t* dev = (%s_t*)(conf_obj->obj);", dev->obj.name, dev->obj.name);
-        fprintf(f, "\n\treturn SKY_make_attr_uinteger(dev->%s);", name);
+	if(type == INT_T || type == LONG_T) {
+	        fprintf(f, "\n\treturn SKY_make_attr_uinteger(dev->%s);", name);
+	} else if(type == INTERFACE_T){
+	        fprintf(f, "\n\treturn SKY_make_attr_obj(dev->%s_conn.obj);", name);
+	}
+	else{
+	        fprintf(f, "\n\treturn SKY_make_attr_obj(dev->%s_obj);", name);
+	}
 	fprintf(f, "\n}\n");
 }
 

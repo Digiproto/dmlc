@@ -149,14 +149,19 @@ static void gen_attribute_struct(object_t *obj, FILE *f) {
 
 	if(!obj->is_array) {
 		if(attr->alloc_type) {
-			fprintf(f, "\t%s %s;\n", attr->alloc_type, obj->name);
+			if(attr->alloc == INTERFACE_T){
+				fprintf(f, "\tconf_object_t* %s_obj;\n", obj->name);
+				fprintf(f, "\tinterface_t* %s;\n", obj->name, obj->name);
+			}
+			else
+				fprintf(f, "\t%s %s;\n", attr->alloc_type, obj->name);
 		} else {
 			fprintf(f, "\tstruct {\n");
 			//fprintf(f, "\t\tconf_object_t *obj;\n");
 		}
 	} else {
 		if(attr->alloc_type) {
-			fprintf(f, "\t%s %s[%d];\n", attr->alloc_type, obj->a_name, obj->array_size);
+				fprintf(f, "\t%s %s[%d];\n", attr->alloc_type, obj->a_name, obj->array_size);
 		} else {
 			fprintf(f, "\tstruct {\n");
 			//fprintf(f, "\t\tconf_object_t *obj;\n");
