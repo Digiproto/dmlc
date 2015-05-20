@@ -86,10 +86,10 @@ static void gen_attribute_get(device_t* dev, object_t *obj, FILE *f) {
 	if(type == INT_T || type == LONG_T) {
 	        fprintf(f, "\n\treturn SKY_make_attr_uinteger(dev->%s);", name);
 	} else if(type == INTERFACE_T){
-	        fprintf(f, "\n\treturn SKY_make_attr_obj(dev->%s_conn.obj);", name);
+	        fprintf(f, "\n\treturn SKY_make_attr_object(dev->%s_conn.obj);", name);
 	}
 	else{
-	        fprintf(f, "\n\treturn SKY_make_attr_obj(dev->%s_obj);", name);
+	        fprintf(f, "\n\treturn SKY_make_attr_object(dev->%s_obj);", name);
 	}
 	fprintf(f, "\n}\n");
 }
