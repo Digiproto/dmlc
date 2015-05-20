@@ -246,11 +246,26 @@ void gen_device_type_info(device_t *dev, FILE *f) {
 	fprintf(f, "\tconf_class_t* clss = SKY_register_class(class_data.class_name, &class_data);\n");
 
 	/* gen interface register */
-	fprintf(f, "\tint i = 0;");
-	fprintf(f, "\tfor(i = 0; i < (sizeof(%s_ifaces) / sizeof (InterfaceDescription)); i++){\n", name);
-	fprintf(f, "\t\tSKY_register_iface(clss, %s_ifaces[i].name, %s_ifaces[i].iface);\n", name, name);
-	fprintf(f, "\t}\n");
+	#if 0
+	list_empty
+	if(dev->implements){
+		fprintf(f, "\tint i = 0;");
+		fprintf(f, "\tfor(i = 0; i < (sizeof(%s_ifaces) / sizeof (InterfaceDescription)); i++){\n", name);
+		fprintf(f, "\t\tSKY_register_iface(clss, %s_ifaces[i].name, %s_ifaces[i].iface);\n", name, name);
+		fprintf(f, "\t}\n");
+        }
+	#endif
+	struct list_head *p;
+        object_t *tmp;
         
+        list_for_each(p, &dev->implements) {
+                tmp = list_entry(p, object_t, entry);
+                if(!strcmp(tmp->name, "io_memory")) {
+                        continue;
+                }
+		fprintf(f, "\t\tSKY_register_iface(clss, %s_ifaces[i].name, %s_ifaces[i].iface);\n", tmp->name, tmp->name);
+        }      
+
 	//fprintf(f, "\tSKY_register_class(class_data.class_name, &class_data);\n");
 	fprintf(f, "\tstatic const memory_space_intf io_memory = {\n");
 	fprintf(f, "\t\t.read = %s_read,\n", "regs");
