@@ -263,7 +263,7 @@ void gen_device_type_info(device_t *dev, FILE *f) {
                 if(!strcmp(tmp->name, "io_memory")) {
                         continue;
                 }
-		fprintf(f, "\t\tSKY_register_iface(clss, %s_ifaces[i].name, %s_ifaces[i].iface);\n", tmp->name, tmp->name);
+		fprintf(f, "\t\tSKY_register_iface(clss, \"%s\", &%s_iface);\n", tmp->name, tmp->name);
         }      
 
 	//fprintf(f, "\tSKY_register_class(class_data.class_name, &class_data);\n");
