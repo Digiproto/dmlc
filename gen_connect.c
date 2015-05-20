@@ -158,6 +158,7 @@ static void gen_connect_get(object_t *obj, FILE *f) {
 	} else {
 		fprintf(f, "\tif(_dev->%s.port) {\n", name);
 	}
+#if 0 /* FIXME, workaround build issues */
 	fprintf(f, "\t\tattr = SIM_alloc_attr_list(2);\n");
 	if(is_array) {
 		fprintf(f, "\t\tSIM_attr_list_set_item(&attr, 0, SIM_make_attr_string(_dev->%s[%s].port));\n", name, "index");
@@ -169,6 +170,7 @@ static void gen_connect_get(object_t *obj, FILE *f) {
 	} else {
 		fprintf(f, "\t\tSIM_attr_list_set_item(&attr, 1, SIM_make_attr_obj(_dev->%s.obj));\n", name);
 	}
+#endif
 	fprintf(f, "\t}\n");
 #endif
 	F_END;
